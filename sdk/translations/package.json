@@ -80,7 +80,7 @@
   },
   "devDependencies": {
     "@cookieyes/core": "workspace:*",
-    "@types/node": "^24.12.4",
+    "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "^4.1.7",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
