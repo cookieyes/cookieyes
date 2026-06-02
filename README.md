@@ -114,7 +114,7 @@ sdk/
 
 ## Local development
 
-**Prerequisites:** Node.js ≥ 18, [pnpm](https://pnpm.io) ≥ 10
+**Prerequisites:** Node.js ≥ 20, [pnpm](https://pnpm.io) ≥ 10
 
 ```bash
 git clone https://github.com/cookieyes/cookieyes.git
