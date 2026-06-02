@@ -1,0 +1,10 @@
+# Default owners for everything in the repo.
+# These users/teams are requested for review on every pull request.
+* @cookieyes/sdk-maintainers
+
+# Per-package ownership (extend as the team grows)
+/sdk/core/        @cookieyes/sdk-maintainers
+/sdk/react/       @cookieyes/sdk-maintainers
+/sdk/nextjs/      @cookieyes/sdk-maintainers
+/sdk/translations/ @cookieyes/sdk-maintainers
+/sdk/cli/         @cookieyes/sdk-maintainers

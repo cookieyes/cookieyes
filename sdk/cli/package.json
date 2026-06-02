@@ -1,0 +1,59 @@
+{
+  "name": "@cookieyes/cli",
+  "version": "0.1.0",
+  "description": "CLI for setting up the CookieYes consent SDK",
+  "keywords": [
+    "cookieyes",
+    "consent",
+    "GDPR",
+    "CCPA",
+    "cookie banner",
+    "cli"
+  ],
+  "homepage": "https://github.com/cookieyes/cookieyes/tree/main/sdk/cli#readme",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/cli"
+  },
+  "license": "MIT",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "type": "module",
+  "bin": {
+    "cookieyes": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.4.0",
+    "execa": "^9.6.1",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.4",
+    "@vitest/coverage-v8": "^4.1.7",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  }
+}

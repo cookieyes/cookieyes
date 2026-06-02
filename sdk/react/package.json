@@ -1,0 +1,81 @@
+{
+  "name": "@cookieyes/react",
+  "version": "0.1.0",
+  "description": "React adapter for the CookieYes consent SDK — components and hooks",
+  "keywords": [
+    "cookie consent",
+    "GDPR",
+    "CCPA",
+    "cookie banner",
+    "consent management",
+    "privacy",
+    "compliance",
+    "React",
+    "Next.js",
+    "TypeScript",
+    "open source"
+  ],
+  "homepage": "https://github.com/cookieyes/cookieyes/tree/main/sdk/react#readme",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/react"
+  },
+  "license": "MIT",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "@cookieyes/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^24.12.4",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.1.7",
+    "jsdom": "^29.1.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  }
+}
