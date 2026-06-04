@@ -10,7 +10,7 @@ participating you agree to uphold it.
 
 ## Development setup
 
-**Prerequisites:** Node.js ≥ 18 and [pnpm](https://pnpm.io) ≥ 10.
+**Prerequisites:** Node.js ≥ 20 and [pnpm](https://pnpm.io) ≥ 10.
 
 ```bash
 git clone https://github.com/cookieyes/cookieyes.git
