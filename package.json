@@ -1,0 +1,46 @@
+{
+  "name": "cookieyes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CookieYes Consent SDK — open-source, developer-first cookie consent for the web (Turborepo + pnpm workspaces)",
+  "homepage": "https://github.com/cookieyes/cookieyes#readme",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git"
+  },
+  "license": "MIT",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "packageManager": "pnpm@10.22.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "turbo run build --filter='./sdk/*'",
+    "dev": "turbo run dev --filter='./sdk/*'",
+    "test": "turbo run test --filter='./sdk/*'",
+    "typecheck": "turbo run typecheck --filter='./sdk/*'",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format .",
+    "format:write": "biome format --write .",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build --filter='./sdk/*' && changeset publish"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.0",
+    "@changesets/cli": "^2.31.0",
+    "turbo": "^2.9.14",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": "^8.5.14"
+    }
+  }
+}

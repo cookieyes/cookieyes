@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "../..",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node"],
+    "outDir": "node_modules/.cache/tsconfig-node"
+  },
+  "include": ["tsup.config.ts", "vitest.config.ts", "../../vitest.shared.ts"]
+}

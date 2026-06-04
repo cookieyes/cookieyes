@@ -1,0 +1,89 @@
+{
+  "name": "@cookieyes/translations",
+  "version": "0.1.0",
+  "description": "Curated translation catalog for the CookieYes consent SDK. Import only the locales you need — each is its own sub-path so unused languages don't bundle.",
+  "keywords": [
+    "cookie consent",
+    "translations",
+    "i18n",
+    "GDPR",
+    "CCPA",
+    "cookie banner",
+    "open source"
+  ],
+  "homepage": "https://github.com/cookieyes/cookieyes/tree/main/sdk/translations#readme",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/translations"
+  },
+  "license": "MIT",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./en": {
+      "types": "./dist/en.d.ts",
+      "import": "./dist/en.js",
+      "require": "./dist/en.cjs"
+    },
+    "./es": {
+      "types": "./dist/es.d.ts",
+      "import": "./dist/es.js",
+      "require": "./dist/es.cjs"
+    },
+    "./fr": {
+      "types": "./dist/fr.d.ts",
+      "import": "./dist/fr.js",
+      "require": "./dist/fr.cjs"
+    },
+    "./de": {
+      "types": "./dist/de.d.ts",
+      "import": "./dist/de.js",
+      "require": "./dist/de.cjs"
+    },
+    "./it": {
+      "types": "./dist/it.d.ts",
+      "import": "./dist/it.js",
+      "require": "./dist/it.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run --coverage"
+  },
+  "peerDependencies": {
+    "@cookieyes/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@cookieyes/core": "workspace:*",
+    "@types/node": "^24.12.4",
+    "@vitest/coverage-v8": "^4.1.7",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  }
+}

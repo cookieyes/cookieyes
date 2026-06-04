@@ -1,0 +1,12 @@
+# Normalize line endings to LF on checkin
+* text=auto eol=lf
+
+# Treat lockfiles as generated (collapsed in diffs, excluded from language stats)
+pnpm-lock.yaml linguist-generated=true
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
