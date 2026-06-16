@@ -32,11 +32,11 @@
     "release": "turbo run build --filter='./sdk/*' && changeset publish"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.0",
+    "@biomejs/biome": "^2.5.0",
     "@changesets/cli": "^2.31.0",
-    "turbo": "^2.9.14",
+    "turbo": "^2.9.18",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   },
   "pnpm": {
     "overrides": {
