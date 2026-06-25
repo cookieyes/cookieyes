@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CLI for setting up the CookieYes consent SDK",
   "keywords": [
     "cookieyes",

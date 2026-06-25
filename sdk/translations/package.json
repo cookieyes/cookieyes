@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/translations",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Curated translation catalog for the CookieYes consent SDK. Import only the locales you need — each is its own sub-path so unused languages don't bundle.",
   "keywords": [
     "cookie consent",
