@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Headless consent engine — the single source of truth for all CookieYes consent logic",
   "keywords": [
     "cookie consent",

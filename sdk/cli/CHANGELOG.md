@@ -1,4 +1,4 @@
-# @cookieyes/translations
+# @cookieyes/cli
 
 ## 0.1.1
 
@@ -23,6 +23,3 @@
   - **Build:** migrated from `tsup` to **Rollup**, emitting minified first-party ESM + CJS +
     type declarations with no external runtime URLs. Public APIs and the visual design are
     unchanged.
-
-- Updated dependencies [8a0a8b0]
-  - @cookieyes/core@0.1.1
