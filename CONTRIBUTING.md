@@ -25,7 +25,7 @@ packages live under `sdk/*`.
 
 | Command | What it does |
 |---------|--------------|
-| `pnpm build` | Build all packages with tsup (ESM + CJS + types) |
+| `pnpm build` | Build all packages with Rollup (ESM + CJS + types, minified) |
 | `pnpm dev` | Watch-mode build for all packages |
 | `pnpm test` | Run the Vitest suites |
 | `pnpm typecheck` | Type-check every package |

@@ -1,15 +1,27 @@
 "use client";
 
 import { useRegulation } from "../hooks/useRegulation.js";
+import { useTranslations } from "../hooks/useTranslations.js";
 import { Banner } from "../primitives/Banner.js";
 
 export function CookieBanner() {
   const reg = useRegulation();
+  const t = useTranslations();
   const isCCPA = reg === "CCPA";
 
   return (
     <Banner.Root className="cy-banner-wrap" data-cy-theme="system">
-      <div className="cy-banner">
+      {/* Canonical banner element: the visible card carries the stable
+          `data-cky-banner` hook + dialog role, and (via `display: contents` on
+          the wrapper) is the only measurable banner box. */}
+      <div
+        className="cy-banner"
+        data-cky-banner=""
+        role="dialog"
+        aria-modal="false"
+        aria-live="polite"
+        aria-label={t.bannerTitle}
+      >
         {isCCPA && <Banner.Close className="cy-banner-close" />}
 
         <div className="cy-banner-text">

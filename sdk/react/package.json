@@ -51,8 +51,8 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "rm -rf dist && rollup -c",
+    "dev": "rollup -c -w",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
     "clean": "rm -rf dist"
@@ -74,7 +74,6 @@
     "jsdom": "^29.1.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   }

@@ -19,8 +19,12 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
 ) {
   const visible = useBannerVisibility();
   if (!visible) return null;
+  // Neutral grouping element (the preset gives it `display: contents`). The
+  // dialog role / aria / canonical `data-cky-banner` live on the visible card
+  // so the identified, measurable banner element equals what the user sees.
+  // Callers can still pass `role` and other attributes via props.
   return (
-    <div ref={ref} role="dialog" aria-modal="false" aria-live="polite" {...props}>
+    <div ref={ref} {...props}>
       {children}
     </div>
   );

@@ -69,8 +69,8 @@
     "provenance": true
   },
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
+    "build": "rm -rf dist && rollup -c",
+    "dev": "rollup -c -w",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "test": "vitest run --coverage"
@@ -82,7 +82,6 @@
     "@cookieyes/core": "workspace:*",
     "@types/node": "^24.12.4",
     "@vitest/coverage-v8": "^4.1.7",
-    "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   }
