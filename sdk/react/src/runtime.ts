@@ -168,6 +168,14 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   const colorScheme = cfg.colorScheme ?? "system";
   injectStyles(cfg.theme, colorScheme);
 
+  // Per-mount SSR snapshot: a fresh-visitor state (banner visible, dialogs
+  // closed) carrying the *configured* regulation so server-rendered markup
+  // matches the client's first hydration render (no GDPR/CCPA mismatch).
+  const ssrSnapshot: CookieYesSnapshot = Object.freeze({
+    ...SSR_SNAPSHOT,
+    regulation: (cfg.regulation ?? "DEFAULT") as Regulation,
+  }) as CookieYesSnapshot;
+
   const runtime: CookieYesRuntime = {
     subscribe: (listener) => {
       listeners.add(listener);
@@ -176,7 +184,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       };
     },
     getSnapshot: () => cachedSnapshot,
-    getServerSnapshot: () => SSR_SNAPSHOT,
+    getServerSnapshot: () => ssrSnapshot,
     manager,
     translations: resolveTranslations(cfg.i18n),
     theme: cfg.theme,

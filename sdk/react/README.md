@@ -108,6 +108,25 @@ For fully custom UIs, compose the slot namespaces `Banner`, `Preferences`, and
 `OptOut` (e.g. `Banner.Root`, `Banner.AcceptAll`, `Preferences.Category`). The
 presets above are built from exactly these primitives.
 
+## Rendering & selector contract
+
+`<CookieBanner />` is **server-rendered**: its markup is present in the initial
+HTML (first-byte paint) and on every load, before client JavaScript hydrates the
+interactive parts. It uses fixed positioning, so showing it never shifts page
+layout (no CLS), and it issues **no network request on load** (offline mode makes
+zero requests; self-hosted mode only POSTs to your backend when the user accepts,
+rejects, or saves).
+
+The following selectors are a **stable, public contract** — automated tooling and
+your own integrations may rely on them, and they will not change without a
+major-version bump and a regression test:
+
+| Selector | Element |
+|----------|---------|
+| `[data-cky-banner]` | **Canonical** banner element — the visible card. Carries `role="dialog"`. |
+| `.cy-banner` | The visible banner card (same element as above). Its bounding box equals what the user sees. |
+| `.cy-banner-wrap` | A logical grouping wrapper rendered with `display: contents` — it generates **no box** and is never the measured element. |
+
 ## Hooks
 
 ```tsx

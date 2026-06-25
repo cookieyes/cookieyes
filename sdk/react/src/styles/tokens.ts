@@ -125,23 +125,23 @@ ${darkBlock}
 
 /* ── Banner wrapper ──────────────────────────────────────────────── */
 .cy-banner-wrap {
-  position: fixed;
-  z-index: 9999999;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 40px;
-  display: flex;
-  justify-content: flex-start;
-  align-items: flex-end;
-  pointer-events: none;
-  font-family: var(--cy-font);
-  box-sizing: border-box;
+  /* Pure logical grouping — generates no box (display: contents), so the only
+     measurable banner element is the visible .cy-banner card below. Inheritable
+     typography set on this element (above) still flows to the card. */
+  display: contents;
 }
 
 /* ── Banner card ─────────────────────────────────────────────────── */
 .cy-banner {
-  position: relative;
+  /* Canonical, measurable banner element. Fixed positioning lives here (moved
+     off the old full-screen wrapper) so the reported bounding box equals the
+     visible card (~13% of 1280×720) and showing the banner never reflows page
+     content (CLS 0). Width matches the previous wrapper-padding layout. */
+  position: fixed;
+  left: 40px;
+  bottom: 40px;
+  right: auto;
+  z-index: 9999999;
   pointer-events: all;
   background: var(--cy-bg);
   color: var(--cy-text);
@@ -149,7 +149,7 @@ ${darkBlock}
   box-shadow: 0 -1px 10px 0 rgba(172, 171, 171, 0.3);
   border: 1px solid var(--cy-border);
   max-width: 440px;
-  width: 100%;
+  width: min(440px, calc(100vw - 80px));
   padding: 24px 24px 12px;
   box-sizing: border-box;
   animation: cy-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -832,15 +832,11 @@ ${darkBlock}
 
 /* Banner: full-width + stacked buttons at <=440px (matches reference) */
 @media (max-width: 440px) {
-  .cy-banner-wrap {
-    padding: 0;
-    width: 100%;
+  .cy-banner {
     left: 0;
     right: 0;
     bottom: 0;
-    justify-content: flex-start;
-  }
-  .cy-banner {
+    width: 100%;
     max-width: 100%;
     border-radius: 0;
   }
