@@ -58,10 +58,10 @@
     "test": "vitest run --coverage"
   },
   "devDependencies": {
-    "@types/node": "^24.12.4",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@types/node": "^26.0.1",
+    "@vitest/coverage-v8": "^4.1.9",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.9"
   }
 }
