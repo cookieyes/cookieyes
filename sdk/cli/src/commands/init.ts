@@ -25,7 +25,7 @@ import { insertImport, patchNextjsLayout, patchNextjsPagesApp } from "../utils/p
 type Locale = "es" | "fr" | "de";
 
 type OptionInputs = {
-  mode: "self-hosted" | "offline";
+  mode: "self-hosted" | "cookie-only";
   regulation: "GDPR" | "CCPA";
   colorScheme: "light" | "dark";
   backendURL?: string | undefined;
@@ -308,17 +308,21 @@ export async function runInit(): Promise<void> {
   const modeAnswer = await select({
     message: "Backend mode?",
     options: [
-      { value: "offline" as const, label: "Offline", hint: "no backend — cookie-only" },
+      {
+        value: "cookie-only" as const,
+        label: "Cookie-only",
+        hint: "no backend — stored in a browser cookie",
+      },
       { value: "self-hosted" as const, label: "Self-hosted", hint: "sync consent to your backend" },
     ],
-    initialValue: "offline" as const,
+    initialValue: "cookie-only" as const,
   });
 
   if (isCancel(modeAnswer)) {
     cancel("Setup cancelled.");
     process.exit(0);
   }
-  const mode = modeAnswer as "offline" | "self-hosted";
+  const mode = modeAnswer as "cookie-only" | "self-hosted";
 
   // ── Backend URL (only when self-hosted) ────────────────────────────────────
   let backendURL: string | undefined;

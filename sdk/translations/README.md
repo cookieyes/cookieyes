@@ -20,7 +20,7 @@ import { fr } from "@cookieyes/translations/fr";
 // Pass into the SDK as the translation map, e.g. with the builder:
 //   createCookieYes().i18n({ messages: { en, fr } }).mount();
 // or with the core runtime:
-//   getOrCreateConsentRuntime({ mode: "offline", i18n: { messages: { en, fr } } });
+//   getOrCreateConsentRuntime({ mode: "cookie-only", i18n: { messages: { en, fr } } });
 ```
 
 Available sub-paths: `./en`, `./es`, `./fr`, `./de`, `./it`. The package root

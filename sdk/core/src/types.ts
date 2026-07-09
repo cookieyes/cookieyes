@@ -125,7 +125,13 @@ export interface ConsentBackend {
   persist(payload: ConsentPayload): Promise<void> | void;
 }
 
-export type ConsentRuntimeMode = "self-hosted" | "offline";
+/**
+ * @deprecated Use `"cookie-only"` instead — identical behavior, clearer name.
+ * `"offline"` still works but will be removed in a future release.
+ */
+type DeprecatedOfflineMode = "offline";
+
+export type ConsentRuntimeMode = "self-hosted" | "cookie-only" | DeprecatedOfflineMode;
 
 export type ConsentRuntimeOptions = {
   mode: ConsentRuntimeMode;
