@@ -11,6 +11,13 @@ yarn add @cookieyes/core
 bun add @cookieyes/core
 ```
 
+## Which API should I use?
+
+**`consentStore.subscribe` is the recommended way to read consent outside
+React.** See the [shared decision tree](../../docs/which-api-should-i-use.md)
+if you're not sure which API applies to your situation — core also exposes a
+handful of lower-level options (below) for specific edge cases.
+
 ## Usage
 
 The recommended entry point is `getOrCreateConsentRuntime()`. It returns a
@@ -26,7 +33,9 @@ const { consentManager, consentStore } = getOrCreateConsentRuntime({
   colorScheme: "system",                    // "light" | "dark" | "system"
 });
 
-// React to every saved state change
+// consentStore.subscribe fires on every state change — category saves,
+// transient preference-dialog toggles, and the dialog opening/closing.
+// That's the right level for "should this script run right now?" checks:
 const unsubscribe = consentStore.subscribe((state) => {
   if (state.has("analytics")) {
     // load analytics scripts (gtag, Mixpanel, …)
@@ -35,14 +44,6 @@ const unsubscribe = consentStore.subscribe((state) => {
     // load ad scripts (Meta Pixel, Google Ads, …)
   }
 });
-
-// React only to saved preference changes (not transient UI toggles)
-consentStore
-  .getState()
-  .subscribeToConsentChanges(({ allowedCategories, deniedCategories }) => {
-    console.log("Allowed:", allowedCategories);
-    console.log("Denied:", deniedCategories);
-  });
 
 // Imperative actions
 consentStore.getState().has("analytics");           // → boolean
@@ -96,28 +97,30 @@ Returns `{ consentManager, consentStore }` (a singleton — call
 | `i18n` | `I18nConfig` | Translation messages / locale. |
 | `networkBlocker` | `NetworkBlockerConfig` | Block network requests by category. |
 | `reloadOnRevoke` | `boolean` | Reload the page when consent is revoked. |
-| `onConsentReady` / `onConsentUpdate` | `(state) => void` | Lifecycle callbacks. |
+| `onConsentReady` / `onConsentUpdate` | `(state) => void` | Low-level lifecycle callbacks — see below. |
 
 **`consentStore`** — `subscribe(listener)` and `getState()`. State
 (`ConsentStoreState`) includes `consentId`, `hasActed`, `categories`,
 `regulation`, `lastRenewed`, `activeUI`, plus the methods `has()`,
-`saveConsents()`, `setConsent()`, and `subscribeToConsentChanges()`.
-
-### `createConsentManager(config)` (low-level)
-
-The underlying manager, if you want to bypass the store. Returns a
-`ConsentManager` with:
-
-- **State**: `consentId`, `hasActed`, `categories`, `regulation`, `lastRenewed`, `isPreferencesOpen`
-- **Methods**: `acceptAll()`, `rejectAll()`, `acceptSelected(cats)`, `updateCategory(cat, val)`, `savePreferences()`, `resetConsent()`, `showPreferences()`, `hidePreferences()`, `subscribe(fn)`, `registerScript(entry)`
-
-`config` (`ConsentConfig`) accepts: `regulation`, `colorScheme`, `theme`,
-`apiUrl`, `apiKey`, `backend`, `reloadOnRevoke`, `onConsentReady`,
-`onConsentUpdate`.
+`saveConsents()`, `setConsent()`, and the low-level `subscribeToConsentChanges()`
+(below).
 
 > The applicable regulation comes from your configuration
 > (`overrides.regulation` / `config.regulation`) and defaults to `"DEFAULT"`.
 > The core engine does not perform IP-based geo-detection.
+
+## Low-level / advanced API
+
+You shouldn't need these for a typical integration — each exists for a
+specific narrower situation than `consentStore.subscribe`:
+
+| API | Use when |
+|---|---|
+| `subscribeToConsentChanges(listener)` (on `consentStore.getState()`) | You only care about *saved* consent decisions (accept/reject/save), not every transient toggle or dialog open/close that `subscribe` also reports. |
+| `onConsentReady` (config option) | You need a one-time callback right after the initial state is known — e.g. conditionally loading analytics on first load — rather than an ongoing subscription. |
+| `onConsentUpdate` (config option) | Like `subscribeToConsentChanges`, scoped to saved changes only, but registered once at config time instead of dynamically after mount. Prefer `subscribeToConsentChanges` unless you specifically need a config-time callback. |
+| `createConsentManager(config)` | Bypasses `consentStore` entirely for direct access to the manager: `acceptAll()`, `rejectAll()`, `acceptSelected(cats)`, `updateCategory(cat, val)`, `savePreferences()`, `resetConsent()`, `showPreferences()`, `hidePreferences()`, `subscribe(fn)`, `registerScript(entry)`. `config` (`ConsentConfig`) accepts `regulation`, `colorScheme`, `theme`, `apiUrl`, `apiKey`, `backend`, `reloadOnRevoke`, `onConsentReady`, `onConsentUpdate`. |
+| `parseCookie` / `serializeCookie` | Reading or writing the raw `cookieyes-consent` cookie directly — e.g. in a Next.js Server Component or route handler, where no live runtime or React hooks are available. |
 
 ## Consent categories
 

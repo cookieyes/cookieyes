@@ -65,7 +65,9 @@ export type Builder = {
   apiKey: (key: string) => Builder;
   blockNetwork: (config: NetworkBlockerConfig) => Builder;
   reloadOnRevoke: (value?: boolean) => Builder;
+  /** Low-level: fires once, after initial state is known. Prefer `useConsent()` for ongoing reads inside a component. */
   onConsentReady: (fn: (state: ConsentSnapshot) => void) => Builder;
+  /** Low-level: fires on every *saved* change only (not transient toggles), registered once here. For dynamic subscribe/unsubscribe, use `useConsentRuntime()`. */
   onConsentUpdate: (fn: (state: ConsentSnapshot) => void) => Builder;
   mount: () => CookieYesRuntime;
 };
@@ -213,6 +215,11 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   return runtime;
 }
 
+/**
+ * Low-level: imperative, non-hook access to the mounted runtime — for use
+ * outside React components/render (event handlers, non-component modules).
+ * Inside a component, prefer `useConsent()` or `useConsentActions()`.
+ */
 export function getCookieYes(): CookieYesRuntime {
   if (!_instance) {
     throw new Error(

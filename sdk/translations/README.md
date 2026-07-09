@@ -3,6 +3,9 @@
 Curated translation catalog for the [CookieYes Consent SDK](https://github.com/cookieyes/cookieyes).
 Each locale is its own sub-path export, so importing one language never bundles the others.
 
+This package only provides locale strings — for which API to use to read
+consent status, see the [shared decision tree](../../docs/which-api-should-i-use.md).
+
 ## Install
 
 ```bash

@@ -4,6 +4,9 @@ Scaffolder for the [CookieYes Consent SDK](https://github.com/cookieyes/cookieye
 detects your framework and package manager, installs the right `@cookieyes/*` packages,
 and wires up the provider and banner for you.
 
+Once scaffolded, see the [decision tree](../../docs/which-api-should-i-use.md)
+for which API to use to read consent status in your code.
+
 ## Usage
 
 Run it in an existing project — no install required:

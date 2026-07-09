@@ -143,7 +143,9 @@ export type ConsentRuntimeOptions = {
   theme?: ThemeConfig | undefined;
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
+  /** Low-level: fires once, after the runtime's initial state is known (e.g. to conditionally load analytics on first load). For ongoing updates, use `consentStore.subscribeToConsentChanges` instead. */
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
+  /** Low-level: fires on every saved consent change, for the lifetime of this config. If you need to subscribe/unsubscribe dynamically after mount, use `consentStore.getState().subscribeToConsentChanges` instead. */
   onConsentUpdate?: ((state: ConsentSnapshot) => void) | undefined;
 };
 
@@ -160,9 +162,16 @@ export type ConsentStoreState = ConsentSnapshot & {
   has: (category: ConsentCategory) => boolean;
   saveConsents: (target: "all" | "necessary" | ConsentCategory[]) => Promise<void>;
   setConsent: (category: ConsentCategory, value: boolean) => void;
+  /** Low-level: fires only on *saved* preference changes, not transient UI toggles — see `ConsentStore.subscribe` for the recommended, general-purpose subscription. */
   subscribeToConsentChanges: (listener: (payload: ConsentChangePayload) => void) => () => void;
 };
 
+/**
+ * The recommended way to read consent state outside React. `subscribe` fires
+ * on every state change (including transient UI toggles, e.g. a checkbox
+ * flip before saving); for saved-changes-only, see
+ * `ConsentStoreState.subscribeToConsentChanges`.
+ */
 export type ConsentStore = {
   subscribe: (listener: (state: ConsentStoreState) => void) => () => void;
   getState: () => ConsentStoreState;

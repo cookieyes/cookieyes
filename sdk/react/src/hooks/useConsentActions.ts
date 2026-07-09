@@ -30,6 +30,11 @@ const NOOP_ACTIONS: ConsentActions = {
   hideOptOut: () => undefined,
 };
 
+/**
+ * Imperative actions for driving consent (accept/reject/save/reset, open or
+ * close the preferences dialog). Pair this with `useConsent()` for
+ * reading state — this hook only writes, it does not subscribe to changes.
+ */
 export function useConsentActions(): ConsentActions {
   const runtime = _tryGetCookieYes();
   return useMemo<ConsentActions>(() => {

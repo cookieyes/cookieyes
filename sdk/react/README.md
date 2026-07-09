@@ -13,6 +13,13 @@ bun add @cookieyes/react
 
 **Peer dependencies:** React ≥ 18, React DOM ≥ 18
 
+## Which API should I use?
+
+**`useConsent()` is the recommended way to read consent in React.** See the
+[shared decision tree](../../docs/which-api-should-i-use.md) if you're not
+sure which API applies to your situation — this package also exposes a
+handful of lower-level hooks (see [Hooks](#hooks)) for specific edge cases.
+
 ## Quick start
 
 Configure the runtime once with `createCookieYes()`, then render the preset
@@ -65,7 +72,7 @@ Chain configuration methods and finish with `.mount()`. `.mode()` is required;
 | `.apiKey(key)` | Optional auth key. |
 | `.blockNetwork(config)` | Block network requests until consent. |
 | `.reloadOnRevoke(true)` | Reload the page when consent is revoked. |
-| `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Lifecycle callbacks. |
+| `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |
 | `.mount()` | Build and register the runtime. |
 
 ## Components
@@ -129,24 +136,45 @@ major-version bump and a regression test:
 
 ## Hooks
 
+**Read consent state:**
+
 ```tsx
 const snapshot = useConsent();
 // { consentId, hasActed, categories, regulation, lastRenewed, isPreferencesOpen, isOptOutOpen }
+```
 
+**Drive consent (accept/reject/save, open or close dialogs):**
+
+```tsx
 const {
   acceptAll, rejectAll, acceptSelected, save, updateCategory, reset,
   showPreferences, hidePreferences, showOptOut, hideOptOut,
 } = useConsentActions();
-
-const analyticsAllowed = useConsentCategory("analytics"); // boolean
-const regulation = useRegulation();                       // "GDPR" | "CCPA" | "DEFAULT"
-const t = useTranslations();                              // active TranslationMap
-const bannerVisible = useBannerVisibility();              // boolean
-const prefsOpen = usePreferencesOpen();                   // boolean
-const optOutOpen = useOptOutOpen();                       // boolean
 ```
 
-`useConsentRuntime()` returns the underlying runtime if you need direct access.
+**Other hooks** (each reads something `useConsent()` doesn't cover, so these
+aren't alternatives to it):
+
+```tsx
+const regulation = useRegulation();          // "GDPR" | "CCPA" | "DEFAULT"
+const t = useTranslations();                 // active TranslationMap
+const bannerVisible = useBannerVisibility();  // boolean
+const prefsOpen = usePreferencesOpen();       // boolean
+const optOutOpen = useOptOutOpen();           // boolean
+```
+
+### Low-level hooks
+
+You shouldn't need these for a typical integration — each exists for a
+narrower situation than `useConsent()` / `useConsentActions()`:
+
+| Hook / callback | Use when |
+|---|---|
+| `useConsentCategory(category)` | You're gating one thing (e.g. an embed) and want to re-render only when *that* category changes, not on every consent update. |
+| `useConsentRuntime()` | You need direct access to the underlying runtime (manager, snapshot getters, script registration) — something neither `useConsent()` nor `useConsentActions()` exposes. |
+| `getCookieYes()` | You need imperative, non-hook access outside a component (event handlers, non-component modules). |
+| `.onConsentReady(fn)` (builder) | A one-time callback right after the initial state is known, rather than an ongoing subscription. |
+| `.onConsentUpdate(fn)` (builder) | Fires on every *saved* change only (not transient toggles), registered once at config time. For a dynamic subscribe/unsubscribe instead, use `useConsentRuntime().manager.subscribe` or core's `consentStore.getState().subscribeToConsentChanges`. |
 
 ## Theming
 

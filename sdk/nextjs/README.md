@@ -15,6 +15,16 @@ bun add @cookieyes/nextjs
 
 **Peer dependencies:** Next.js ≥ 14, React ≥ 18, React DOM ≥ 18
 
+## Which API should I use?
+
+This package re-exports `@cookieyes/react` verbatim, so the same guidance
+applies: **`useConsent()`** in client components, and for Server Components
+or route handlers (no React hooks available), read the raw cookie with
+`parseCookie` from `@cookieyes/core`. See the
+[shared decision tree](../../docs/which-api-should-i-use.md) and
+[`@cookieyes/react`'s Hooks section](../react/README.md#hooks) for the full
+low-level surface.
+
 ## Setup (App Router)
 
 Create a client component that configures the runtime and renders the consent

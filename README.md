@@ -26,6 +26,11 @@ Open-source, developer-first cookie consent SDK. The same compliance engine that
 
 All business logic lives in `@cookieyes/core`. Framework adapters are thin wrappers — no logic, only wiring.
 
+**Not sure which API reads consent status in your case?** See the
+[decision tree](./docs/which-api-should-i-use.md) — there's one recommended
+path per platform; everything else is a documented low-level option for a
+specific edge case.
+
 ## Quick start
 
 You configure the SDK once with a small builder, then drop in the banner and
