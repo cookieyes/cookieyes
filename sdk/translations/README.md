@@ -17,10 +17,8 @@ Import only the locales you need (each is a **named** export):
 import { en } from "@cookieyes/translations/en";
 import { fr } from "@cookieyes/translations/fr";
 
-// Pass into the SDK as the translation map, e.g. with the builder:
-//   createCookieYes().i18n({ messages: { en, fr } }).mount();
-// or with the core runtime:
-//   getOrCreateConsentRuntime({ mode: "offline", i18n: { messages: { en, fr } } });
+// Pass into the SDK as the translation map via initCookieYes:
+//   initCookieYes({ mode: "offline", i18n: { messages: { en, fr } } });
 ```
 
 Available sub-paths: `./en`, `./es`, `./fr`, `./de`, `./it`. The package root

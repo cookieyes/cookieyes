@@ -28,8 +28,10 @@ All business logic lives in `@cookieyes/core`. Framework adapters are thin wrapp
 
 ## Quick start
 
-You configure the SDK once with a small builder, then drop in the banner and
-dialog components. Both React and Next.js use the same `createCookieYes()` API.
+You configure the SDK once with a single config object, then drop in the banner
+and dialog components. Every package — core, React, and Next.js — accepts the
+exact same `initCookieYes(config)` shape. Full options are documented in
+[Configuration](./docs/configuration.md).
 
 ### React
 
@@ -45,14 +47,14 @@ import {
   CookieBanner,
   CookiePreferences,
   RecallButton,
-  createCookieYes,
+  initCookieYes,
 } from "@cookieyes/react";
 
-createCookieYes()
-  .mode("offline")        // "offline" (cookie-only) | "self-hosted"
-  .regulation("GDPR")     // "GDPR" | "CCPA"
-  .colorScheme("system")  // "light" | "dark" | "system"
-  .mount();
+initCookieYes({
+  mode: "offline",       // "offline" (cookie-only) | "self-hosted"
+  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  colorScheme: "system", // "light" | "dark" | "system"
+});
 
 export function CookieYesRoot() {
   return (

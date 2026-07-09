@@ -18,7 +18,7 @@ bun add @cookieyes/nextjs
 ## Setup (App Router)
 
 Create a client component that configures the runtime and renders the consent
-UI. Because `createCookieYes()` and the components are client-side, this file
+UI. Because `initCookieYes()` and the components are client-side, this file
 **must** start with `"use client"`.
 
 ```tsx
@@ -29,14 +29,14 @@ import {
   CookieBanner,
   CookiePreferences,
   RecallButton,
-  createCookieYes,
+  initCookieYes,
 } from "@cookieyes/nextjs";
 
-createCookieYes()
-  .mode("offline")        // "offline" (cookie-only) | "self-hosted"
-  .regulation("GDPR")     // "GDPR" | "CCPA"
-  .colorScheme("system")  // "light" | "dark" | "system"
-  .mount();
+initCookieYes({
+  mode: "offline",       // "offline" (cookie-only) | "self-hosted"
+  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  colorScheme: "system", // "light" | "dark" | "system"
+});
 
 export function CookieYesRoot() {
   return (
@@ -88,7 +88,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
 ## CCPA
 
-For `regulation("CCPA")`, also render the opt-out dialog:
+For `regulation: "CCPA"`, also render the opt-out dialog:
 
 ```tsx
 import { CookieBanner, CookiePreferences, CookieOptOut, RecallButton } from "@cookieyes/nextjs";
@@ -104,12 +104,13 @@ import { CookieBanner, CookiePreferences, CookieOptOut, RecallButton } from "@co
 
 ## API
 
-This package re-exports everything from `@cookieyes/react` — the builder
-(`createCookieYes`), components (`CookieBanner`, `CookiePreferences`,
+This package re-exports everything from `@cookieyes/react` — the setup function
+(`initCookieYes`), components (`CookieBanner`, `CookiePreferences`,
 `CookieOptOut`, `RecallButton`, `GatedScript`, `GatedFrame`), headless
 primitives (`Banner`, `Preferences`, `OptOut`), and all hooks (`useConsent`,
-`useConsentActions`, `useConsentCategory`, `useRegulation`, …). See the
-[`@cookieyes/react` README](../react#readme) for the full reference.
+`useConsentActions`, `useConsentCategory`, `useRegulation`, …). Configuration
+options are documented in [Configuration](../../docs/configuration.md); see the
+[`@cookieyes/react` README](../react#readme) for the component/hook reference.
 
 ## License
 
