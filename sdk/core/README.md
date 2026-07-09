@@ -13,17 +13,17 @@ bun add @cookieyes/core
 
 ## Usage
 
-The recommended entry point is `getOrCreateConsentRuntime()`. It returns a
-process-wide singleton with a `consentStore` (reactive state) and a
-`consentManager` (imperative API).
+The recommended entry point is `initCookieYes()` (an alias of
+`getOrCreateConsentRuntime()`). It returns a process-wide singleton with a
+`consentStore` (reactive state) and a `consentManager` (imperative API).
 
 ```ts
-import { getOrCreateConsentRuntime } from "@cookieyes/core";
+import { initCookieYes } from "@cookieyes/core";
 
-const { consentManager, consentStore } = getOrCreateConsentRuntime({
-  mode: "offline",                          // "offline" (cookie-only) | "self-hosted"
-  overrides: { regulation: "GDPR" },        // "GDPR" | "CCPA" | "DEFAULT"
-  colorScheme: "system",                    // "light" | "dark" | "system"
+const { consentManager, consentStore } = initCookieYes({
+  mode: "offline",       // "offline" (cookie-only) | "self-hosted"
+  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  colorScheme: "system", // "light" | "dark" | "system"
 });
 
 // React to every saved state change
@@ -57,11 +57,11 @@ unsubscribe();
 
 ### Self-hosted mode
 
-Pass `mode: "self-hosted"` with either a `backendURL` (the SDK POSTs a
+Pass `mode: "self-hosted"` with either an `apiUrl` (the SDK POSTs a
 `ConsentPayload` to it) or a custom `backend` adapter for full control:
 
 ```ts
-getOrCreateConsentRuntime({
+initCookieYes({
   mode: "self-hosted",
   backend: {
     async persist(payload) {
@@ -77,26 +77,17 @@ getOrCreateConsentRuntime({
 
 ## API
 
-### `getOrCreateConsentRuntime(options)`
+### `initCookieYes(config)` / `getOrCreateConsentRuntime(config)`
 
-Returns `{ consentManager, consentStore }` (a singleton — call
-`resetConsentRuntime()` to clear it, primarily for tests).
+Both accept the canonical `CookieYesConfig` and return
+`{ consentManager, consentStore }` (a singleton — call `resetConsentRuntime()`
+to clear it, primarily for tests). `initCookieYes` is an alias of
+`getOrCreateConsentRuntime` provided so docs use one setup name everywhere.
 
-**`options`** (`ConsentRuntimeOptions`):
-
-| Option | Type | Notes |
-|--------|------|-------|
-| `mode` | `"offline" \| "self-hosted"` | **Required.** |
-| `backendURL` | `string` | Self-hosted: endpoint the payload is POSTed to. |
-| `backend` | `ConsentBackend` | Self-hosted: custom `persist(payload)` adapter. |
-| `apiKey` | `string` | Optional auth key. |
-| `overrides.regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | Force the applicable regulation. |
-| `colorScheme` | `"light" \| "dark" \| "system"` | |
-| `theme` | `ThemeConfig` | Color / spacing tokens. |
-| `i18n` | `I18nConfig` | Translation messages / locale. |
-| `networkBlocker` | `NetworkBlockerConfig` | Block network requests by category. |
-| `reloadOnRevoke` | `boolean` | Reload the page when consent is revoked. |
-| `onConsentReady` / `onConsentUpdate` | `(state) => void` | Lifecycle callbacks. |
+Every configuration option is documented once in
+**[Configuration](../../docs/configuration.md)**. Migrating off the deprecated
+`overrides.regulation` / `backendURL` keys? See the
+**[migration guide](../../docs/migration/builder-to-config.md)**.
 
 **`consentStore`** — `subscribe(listener)` and `getState()`. State
 (`ConsentStoreState`) includes `consentId`, `hasActed`, `categories`,
@@ -115,9 +106,9 @@ The underlying manager, if you want to bypass the store. Returns a
 `apiUrl`, `apiKey`, `backend`, `reloadOnRevoke`, `onConsentReady`,
 `onConsentUpdate`.
 
-> The applicable regulation comes from your configuration
-> (`overrides.regulation` / `config.regulation`) and defaults to `"DEFAULT"`.
-> The core engine does not perform IP-based geo-detection.
+> The applicable regulation comes from your top-level `regulation` config and
+> defaults to `"DEFAULT"`. The core engine does not perform IP-based
+> geo-detection.
 
 ## Consent categories
 

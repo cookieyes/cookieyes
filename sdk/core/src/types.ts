@@ -127,25 +127,76 @@ export interface ConsentBackend {
 
 export type ConsentRuntimeMode = "self-hosted" | "offline";
 
-export type ConsentRuntimeOptions = {
-  mode: ConsentRuntimeMode;
-  backendURL?: string | undefined;
-  apiKey?: string | undefined;
-  backend?: ConsentBackend | undefined;
-  consentCategories?: ConsentCategory[] | undefined;
-  overrides?:
-    | {
-        regulation?: Regulation | undefined;
-      }
-    | undefined;
-  i18n?: I18nConfig | undefined;
-  colorScheme?: "light" | "dark" | "system" | undefined;
+export type ColorScheme = "light" | "dark" | "system";
+
+/**
+ * Fields shared by every {@link CookieYesConfig} regardless of `mode`.
+ * This is the one canonical config surface — both `@cookieyes/core` and
+ * `@cookieyes/react` consume the exact same object, so a config is
+ * copy-pasteable between them with zero edits.
+ */
+type CookieYesConfigCommon = {
+  /**
+   * Which privacy regulation applies. Top-level and identical across every
+   * package (replaces the builder's `.regulation()` and core's former
+   * nested `overrides.regulation`).
+   */
+  regulation?: Regulation | undefined;
+  colorScheme?: ColorScheme | undefined;
   theme?: ThemeConfig | undefined;
+  i18n?: I18nConfig | undefined;
+  consentCategories?: ConsentCategory[] | undefined;
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
   onConsentUpdate?: ((state: ConsentSnapshot) => void) | undefined;
+  /**
+   * @deprecated Set `regulation` at the top level instead. This nested form
+   * still works and maps to the top-level field; if both are given, the
+   * top-level `regulation` wins. Retained for back-compat and removed after
+   * three release cycles, per the SDK deprecation policy.
+   */
+  overrides?: { regulation?: Regulation | undefined } | undefined;
 };
+
+/** Cookie-only mode — no backend keys are permitted (they fail at the type level). */
+export type CookieYesOfflineConfig = CookieYesConfigCommon & {
+  mode: "offline";
+};
+
+/** Self-hosted mode — consent decisions are persisted to your own backend. */
+export type CookieYesSelfHostedConfig = CookieYesConfigCommon & {
+  mode: "self-hosted";
+  /** Endpoint the {@link ConsentPayload} is POSTed to. Canonical key. */
+  apiUrl?: string | undefined;
+  apiKey?: string | undefined;
+  /** Custom persistence adapter — full control over transport/headers/retries. */
+  backend?: ConsentBackend | undefined;
+  /**
+   * @deprecated Renamed to `apiUrl`. This alias still works and maps to
+   * `apiUrl`; if both are given, `apiUrl` wins. Retained for back-compat and
+   * removed after three release cycles, per the SDK deprecation policy.
+   */
+  backendURL?: string | undefined;
+};
+
+/**
+ * The canonical configuration object for the CookieYes SDK, discriminated on
+ * `mode`. Passed identically to `initCookieYes()` /
+ * `getOrCreateConsentRuntime()` in `@cookieyes/core` and `initCookieYes()` in
+ * `@cookieyes/react`.
+ *
+ * The discriminated union guarantees invalid combinations fail at compile time
+ * — e.g. supplying `apiUrl`/`backend` under `mode: "offline"` is a type error.
+ */
+export type CookieYesConfig = CookieYesOfflineConfig | CookieYesSelfHostedConfig;
+
+/**
+ * @deprecated Renamed to {@link CookieYesConfig}. Retained as a type alias for
+ * back-compat and removed after three release cycles, per the SDK deprecation
+ * policy.
+ */
+export type ConsentRuntimeOptions = CookieYesConfig;
 
 export type ConsentChangePayload = {
   allowedCategories: ConsentCategory[];

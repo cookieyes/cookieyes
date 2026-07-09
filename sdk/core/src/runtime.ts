@@ -1,3 +1,4 @@
+import { _normalizeConfig } from "./config.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
 import type {
@@ -6,9 +7,9 @@ import type {
   ConsentChangePayload,
   ConsentConfig,
   ConsentRuntime,
-  ConsentRuntimeOptions,
   ConsentStore,
   ConsentStoreState,
+  CookieYesConfig,
 } from "./types.js";
 
 function splitCategories(categories: Record<ConsentCategory, boolean>): ConsentChangePayload {
@@ -23,19 +24,20 @@ function splitCategories(categories: Record<ConsentCategory, boolean>): ConsentC
 
 let _runtime: ConsentRuntime | null = null;
 
-export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): ConsentRuntime {
+export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRuntime {
   if (_runtime) return _runtime;
 
+  const options = _normalizeConfig(config);
   const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
   const userOnConsentUpdate = options.onConsentUpdate;
 
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
     if (options.backend) cfg.backend = options.backend;
-    else if (options.backendURL) cfg.apiUrl = options.backendURL;
+    else if (options.apiUrl) cfg.apiUrl = options.apiUrl;
   }
   if (options.apiKey) cfg.apiKey = options.apiKey;
-  if (options.overrides?.regulation) cfg.regulation = options.overrides.regulation;
+  if (options.regulation) cfg.regulation = options.regulation;
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
@@ -92,6 +94,16 @@ export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): Conse
 
   _runtime = { consentManager: manager, consentStore };
   return _runtime;
+}
+
+/**
+ * Canonical setup entry point. Alias of {@link getOrCreateConsentRuntime} that
+ * accepts the same {@link CookieYesConfig} and returns the same process-wide
+ * singleton — provided so documentation can use one setup name (`initCookieYes`)
+ * across every package.
+ */
+export function initCookieYes(config: CookieYesConfig): ConsentRuntime {
+  return getOrCreateConsentRuntime(config);
 }
 
 export function resetConsentRuntime(): void {

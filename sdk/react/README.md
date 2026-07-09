@@ -15,7 +15,7 @@ bun add @cookieyes/react
 
 ## Quick start
 
-Configure the runtime once with `createCookieYes()`, then render the preset
+Configure the runtime once with `initCookieYes(config)`, then render the preset
 components. Both the configuration call and the components must live in a
 `"use client"` module.
 
@@ -27,14 +27,14 @@ import {
   CookieBanner,
   CookiePreferences,
   RecallButton,
-  createCookieYes,
+  initCookieYes,
 } from "@cookieyes/react";
 
-createCookieYes()
-  .mode("offline")        // "offline" (cookie-only) | "self-hosted"
-  .regulation("GDPR")     // "GDPR" | "CCPA"
-  .colorScheme("system")  // "light" | "dark" | "system"
-  .mount();
+initCookieYes({
+  mode: "offline",       // "offline" (cookie-only) | "self-hosted"
+  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  colorScheme: "system", // "light" | "dark" | "system"
+});
 
 export function CookieYesRoot() {
   return (
@@ -49,24 +49,16 @@ export function CookieYesRoot() {
 
 Render `<CookieYesRoot />` once, near the root of your app.
 
-## The builder — `createCookieYes()`
+## Configuration
 
-Chain configuration methods and finish with `.mount()`. `.mode()` is required;
-`self-hosted` additionally requires `.backend()` or `.backendURL()`.
+`initCookieYes` takes the canonical `CookieYesConfig` object — the same shape
+accepted by `@cookieyes/core` and `@cookieyes/nextjs`. Every option (modes,
+`theme`, `i18n`, self-hosted persistence, callbacks, …) is documented once in
+**[Configuration](../../docs/configuration.md)**.
 
-| Method | Purpose |
-|--------|---------|
-| `.mode("offline" \| "self-hosted")` | **Required.** Cookie-only vs. synced to your backend. |
-| `.regulation("GDPR" \| "CCPA" \| "DEFAULT")` | Which regulation applies. |
-| `.colorScheme("light" \| "dark" \| "system")` | Theme mode. |
-| `.theme(themeConfig)` | Color / radius / font tokens. |
-| `.i18n({ messages })` | Provide locale translation maps. |
-| `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
-| `.apiKey(key)` | Optional auth key. |
-| `.blockNetwork(config)` | Block network requests until consent. |
-| `.reloadOnRevoke(true)` | Reload the page when consent is revoked. |
-| `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Lifecycle callbacks. |
-| `.mount()` | Build and register the runtime. |
+> Still using the `createCookieYes()` builder? It is deprecated but keeps
+> working — see the
+> [migration guide](../../docs/migration/builder-to-config.md).
 
 ## Components
 
@@ -150,25 +142,9 @@ const optOutOpen = useOptOutOpen();                       // boolean
 
 ## Theming
 
-Pass a `theme` to the builder. All values map to CSS custom properties, so you
-can also override them in your own stylesheet:
-
-```tsx
-createCookieYes()
-  .mode("offline")
-  .theme({
-    primaryColor: "#6366F1",
-    backgroundColor: "#ffffff",
-    textColor: "#111827",
-    mutedTextColor: "#6B7280",
-    borderColor: "#E5E7EB",
-    borderRadius: "8px",
-    fontFamily: "'Inter', sans-serif",
-    buttonVariant: "filled",        // "filled" | "outlined"
-    widgetPosition: "bottom-right", // "bottom-right" | "bottom-left"
-  })
-  .mount();
-```
+Pass a `theme` to `initCookieYes`. All values map to CSS custom properties, so
+you can also override them in your own stylesheet. See the theming reference in
+**[Configuration](../../docs/configuration.md#theming)**.
 
 ## License
 

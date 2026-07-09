@@ -3,6 +3,7 @@
 // Re-export core types for convenience
 export type {
   ActiveUI,
+  ColorScheme,
   ConsentBackend,
   ConsentCategory,
   ConsentChangePayload,
@@ -15,6 +16,9 @@ export type {
   ConsentSnapshot,
   ConsentStore,
   ConsentStoreState,
+  CookieYesConfig,
+  CookieYesOfflineConfig,
+  CookieYesSelfHostedConfig,
   I18nConfig,
   Regulation,
   ScriptEntry,
@@ -60,9 +64,10 @@ export type {
   CookieYesSnapshot,
   RuntimeMode,
 } from "./runtime.js";
-// Runtime — builder + module-level registry
+// Runtime — canonical initCookieYes + deprecated builder + module-level registry
 export {
   createCookieYes,
   getCookieYes,
+  initCookieYes,
   resetCookieYes,
 } from "./runtime.js";
