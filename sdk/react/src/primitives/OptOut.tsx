@@ -15,7 +15,7 @@ import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { chain, useEscapeKey, useFocusTrap } from "./utils.js";
+import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -60,6 +60,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
 
   useEscapeKey(open, hideOptOut);
   useFocusTrap(open, containerRef);
+  useAutoFocusDialog(open, containerRef);
 
   useEffect(() => {
     if (open) {
@@ -99,6 +100,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         role="dialog"
         aria-modal="true"
         aria-label="Opt-out preferences"
+        tabIndex={-1}
         {...props}
       >
         {children}

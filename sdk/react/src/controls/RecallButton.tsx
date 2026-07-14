@@ -1,6 +1,7 @@
 "use client";
 
 import { type ComponentPropsWithoutRef, forwardRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { RevisitIcon } from "../components/icons.js";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useConsent } from "../hooks/useConsent.js";
@@ -8,7 +9,7 @@ import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
 import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useRegulation } from "../hooks/useRegulation.js";
-import { chain } from "../primitives/utils.js";
+import { chain, useBodyPortalRoot } from "../primitives/utils.js";
 
 type Props = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
 
@@ -22,6 +23,7 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
   const optOutOpen = useOptOutOpen();
   const regulation = useRegulation();
   const { showPreferences, showOptOut } = useConsentActions();
+  const portalRoot = useBodyPortalRoot();
 
   if (bannerVisible) return null;
   if (preferencesOpen || optOutOpen) return null;
@@ -29,7 +31,7 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
 
   const onActivate = regulation === "CCPA" ? showOptOut : showPreferences;
 
-  return (
+  const button = (
     <button
       ref={ref}
       type="button"
@@ -44,4 +46,6 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
       {children ?? <RevisitIcon />}
     </button>
   );
+
+  return portalRoot ? createPortal(button, portalRoot) : button;
 });

@@ -127,6 +127,55 @@ major-version bump and a regression test:
 | `.cy-banner` | The visible banner card (same element as above). Its bounding box equals what the user sees. |
 | `.cy-banner-wrap` | A logical grouping wrapper rendered with `display: contents` — it generates **no box** and is never the measured element. |
 
+## Accessibility
+
+**Scope of this section:** keyboard operability, focus management, screen-reader
+labelling, and reduced motion for `<CookieBanner />`, `<CookiePreferences />`,
+`<CookieOptOut />`, and `<RecallButton />`. This is **not** a "WCAG 2.1 AA
+compliant" claim — things outside this scope (color contrast, text resizing,
+and anything in your own custom theme/content) aren't covered and shouldn't be
+assumed to be.
+
+### Keyboard behavior
+
+If you're building a custom UI on the headless primitives (`Banner`,
+`Preferences`, `OptOut`), this is the behavior to preserve:
+
+- **Tab order** follows DOM order in every preset — e.g. Preferences goes
+  Close → category toggles → Reject All → Save → Accept All → branding link.
+  The banner is **not modal**, so Tab can leave it into the rest of your page;
+  `<CookiePreferences />` and `<CookieOptOut />` **are** modal and trap focus.
+- **`Esc`** closes `<CookiePreferences />` and `<CookieOptOut />`.
+- **Focus trap**: while a dialog is open, `Tab` / `Shift+Tab` cycle only
+  through its own controls.
+- **Focus management on open/close**: opening a dialog moves focus into it
+  (onto the dialog element itself, which carries its `aria-label`); closing it
+  — via Save, Cancel, or `Esc` — returns focus to whatever control opened it.
+- **Visible focus indicator**: every interactive control has a `:focus-visible`
+  outline; none of this relies on the browser's default styling.
+
+### Reduced motion
+
+All entrance/exit animations (banner slide-in, dialog fade/slide, the recall
+button's pop-in) are removed under `prefers-reduced-motion: reduce` — every
+element still appears and works identically, just without motion.
+
+### Automated testing
+
+`axe-core` runs against `<CookieBanner />`, `<CookiePreferences />`, and
+`<CookieOptOut />` in CI (`src/__tests__/a11y.test.tsx`) and fails the build on
+any violation. **Caveat:** this runs under jsdom, not a real browser — it
+catches structural/ARIA regressions (missing accessible names, wrong roles,
+broken labelling) but can't evaluate layout- or paint-dependent rules like
+color contrast. It's a regression net, not a substitute for manual testing.
+
+### Manual testing
+
+Keyboard and focus-management behavior above was verified by hand across
+desktop/tablet/mobile viewports and light/dark color schemes, and the
+labelling behavior was verified with VoiceOver. If you find something that
+doesn't sound right with your own screen reader, please open an issue.
+
 ## Hooks
 
 ```tsx

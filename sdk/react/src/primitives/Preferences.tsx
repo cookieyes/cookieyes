@@ -14,7 +14,7 @@ import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { chain, useEscapeKey, useFocusTrap } from "./utils.js";
+import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -54,6 +54,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
 
     useEscapeKey(open, hidePreferences);
     useFocusTrap(open, containerRef);
+    useAutoFocusDialog(open, containerRef);
 
     if (!open) return null;
 
@@ -68,6 +69,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
           role="dialog"
           aria-modal="true"
           aria-label="Cookie preferences"
+          tabIndex={-1}
           {...props}
         >
           {children}
