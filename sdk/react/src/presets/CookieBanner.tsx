@@ -10,7 +10,7 @@ export function CookieBanner() {
   const isCCPA = reg === "CCPA";
 
   return (
-    <Banner.Root className="cy-banner-wrap" data-cy-theme="system">
+    <Banner.Root className="cy-banner-wrap">
       {/* Canonical banner element: the visible card carries the stable
           `data-cky-banner` hook + dialog role, and (via `display: contents` on
           the wrapper) is the only measurable banner box. */}

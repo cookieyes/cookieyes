@@ -98,6 +98,7 @@ describe("runInit — Next.js (offline, GDPR)", () => {
     expect(writes.some((w) => w.includes("createCookieYes"))).toBe(true);
     expect(writes.some((w) => w.includes("<CookieBanner />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/nextjs"'))).toBe(true);
+    expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(true);
     // App-router layout is generated when one does not already exist.
     expect(writes.some((w) => w.includes("RootLayout"))).toBe(true);
     expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/nextjs", "npm", expect.any(String));
@@ -122,6 +123,7 @@ describe("runInit — React (self-hosted, CCPA, locales, skip install)", () => {
     expect(writes.some((w) => w.includes("<CookieOptOut />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/translations/es"'))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/react"'))).toBe(true);
+    expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(true);
     // Install was declined.
     expect(h.installPackage).not.toHaveBeenCalled();
   });

@@ -4,7 +4,7 @@ import { Preferences } from "../primitives/Preferences.js";
 
 export function CookiePreferences() {
   return (
-    <Preferences.Root className="cy-dialog-overlay" data-cy-theme="system">
+    <Preferences.Root className="cy-dialog-overlay">
       <div className="cy-dialog">
         <div className="cy-dialog-header">
           <Preferences.Title className="cy-dialog-title" />

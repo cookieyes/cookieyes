@@ -16,7 +16,7 @@ import {
   type ThemeConfig,
   type TranslationMap,
 } from "@cookieyes/core";
-import { injectStyles } from "./styles/inject.js";
+import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 
 export type RuntimeMode = "offline" | "self-hosted";
 export type ColorSchemePref = "light" | "dark" | "system";
@@ -165,8 +165,9 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     installNetworkBlocker(cfg.networkBlocker, (cat) => manager.categories[cat] === true);
   }
 
+  warnOnStyleCspViolations();
+
   const colorScheme = cfg.colorScheme ?? "system";
-  injectStyles(cfg.theme, colorScheme);
 
   // Per-mount SSR snapshot: a fresh-visitor state (banner visible, dialogs
   // closed) carrying the *configured* regulation so server-rendered markup

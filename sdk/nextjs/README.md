@@ -31,6 +31,7 @@ import {
   RecallButton,
   createCookieYes,
 } from "@cookieyes/nextjs";
+import "@cookieyes/react/styles.css";
 
 createCookieYes()
   .mode("offline")        // "offline" (cookie-only) | "self-hosted"
@@ -48,6 +49,11 @@ export function CookieYesRoot() {
   );
 }
 ```
+
+The `@cookieyes/react/styles.css` import is required — the components ship
+no inline styling, so without it they render unstyled. It's exposed from
+`@cookieyes/react` (a dependency of this package) rather than duplicated
+under `@cookieyes/nextjs`.
 
 Then mount it in your root layout — the layout itself stays a Server Component:
 

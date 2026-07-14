@@ -13,6 +13,8 @@ import { CookieYesLogo } from "../components/icons.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
+import { useThemeConfig } from "../hooks/useThemeConfig.js";
+import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { chain, useEscapeKey, useFocusTrap } from "./utils.js";
 
@@ -51,9 +53,11 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
     const open = usePreferencesOpen();
     const { hidePreferences } = useConsentActions();
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const { theme, colorScheme } = useThemeConfig();
 
     useEscapeKey(open, hidePreferences);
     useFocusTrap(open, containerRef);
+    useThemeVars(containerRef, theme, colorScheme);
 
     if (!open) return null;
 
