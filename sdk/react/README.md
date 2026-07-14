@@ -36,6 +36,7 @@ import {
   RecallButton,
   createCookieYes,
 } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
 
 createCookieYes()
   .mode("cookie-only")    // "cookie-only" | "self-hosted"
@@ -55,6 +56,10 @@ export function CookieYesRoot() {
 ```
 
 Render `<CookieYesRoot />` once, near the root of your app.
+
+The `@cookieyes/react/styles.css` import is required — the banner and
+dialogs ship no inline styling, so without it they render unstyled. Import
+it once per app, wherever your bundler picks up CSS imports.
 
 ## The builder — `createCookieYes()`
 
@@ -259,6 +264,33 @@ createCookieYes()
   })
   .mount();
 ```
+
+## Content Security Policy
+
+The banner, dialogs, and theme colors all work under a strict `style-src`
+policy with no `unsafe-inline` and no nonce — nothing here writes CSS text
+into the page.
+
+- Layout, animations, and everything else in `cookieyes.css` ship as a real
+  stylesheet (`import "@cookieyes/react/styles.css"`), loaded via a `<link>`,
+  not a `<style>` block — `style-src` doesn't restrict where a real
+  stylesheet is fetched from as long as it's same-origin (which it is, once
+  bundled by your own build).
+- `.theme(...)` colors are applied with `element.style.setProperty(...)` —
+  direct CSSOM writes, not a generated `<style>` block — which `style-src`
+  doesn't govern at all, under any policy.
+
+A minimal policy line that works out of the box, with no CookieYes-specific
+allowance needed:
+
+```
+Content-Security-Policy: style-src 'self'
+```
+
+If something unrelated to CookieYes still gets blocked (your own inline
+styles, a third-party script), the SDK listens for the browser's
+`securitypolicyviolation` event and logs a console warning explaining what
+was blocked, rather than failing silently.
 
 ## License
 

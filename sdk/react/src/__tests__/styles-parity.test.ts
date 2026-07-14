@@ -1,17 +1,16 @@
+/// <reference types="node" />
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildCssVariables, buildStyleSheet } from "../styles/tokens.js";
+import { computeThemeVars } from "../styles/tokens.js";
+
+const sheet = readFileSync(join(process.cwd(), "src/styles/cookieyes.css"), "utf8");
+const vars = computeThemeVars(undefined, false);
 
 describe("styles-parity", () => {
-  const sheet = buildStyleSheet(undefined, "light");
-  const vars = buildCssVariables(undefined);
-
   describe("D1: floating revisit widget background token", () => {
-    it("D1: buildCssVariables includes --cy-widget-bg defaulting to #0056a7", () => {
-      expect(vars).toContain("--cy-widget-bg: #0056a7");
-    });
-
-    it("D1: stylesheet [data-cy-theme] block contains --cy-widget-bg", () => {
-      expect(sheet).toContain("--cy-widget-bg: #0056a7");
+    it("D1: computeThemeVars includes --cy-widget-bg defaulting to #0056a7", () => {
+      expect(vars["--cy-widget-bg"]).toBe("#0056a7");
     });
 
     it("D1: .cy-widget background references var(--cy-widget-bg)", () => {
@@ -77,16 +76,7 @@ describe("styles-parity", () => {
 
   describe("D4: Banner description scrollable at <=440px", () => {
     it("D4: @media (max-width: 440px) adds max-height: 40vh overflow-y: auto to .cy-banner-description", () => {
-      // Locate the 440px block and confirm the addition is inside it
       const mediaStart = sheet.indexOf("@media (max-width: 440px)");
-      void sheet.indexOf(
-        "}",
-        sheet.lastIndexOf(
-          "{",
-          sheet.indexOf(".cy-banner-description {\n    max-height: 40vh", mediaStart),
-        ),
-      );
-      // Simpler: check the combined substring exists in the sheet
       expect(sheet).toContain("max-height: 40vh");
       expect(sheet).toContain("overflow-y: auto");
       // And that it appears after the 440px media query opener
@@ -183,78 +173,72 @@ describe("styles-parity", () => {
       expect(sheet).toContain(".cy-dialog {");
       expect(sheet).toContain(".cy-toggle {");
       expect(sheet).toContain(".cy-branding");
-      expect(sheet).toContain("--cy-primary:");
       expect(sheet).toContain("@media (max-width: 576px)");
       expect(sheet).toContain("@media (max-width: 845px)");
+    });
+
+    it("REGRESSION: computeThemeVars still provides --cy-primary", () => {
+      expect(vars["--cy-primary"]).toBe("#1863dc");
     });
   });
 
   describe("theme value sanitization (CSS injection guard)", () => {
-    function extractValue(out: string, name: string): string {
-      const re = new RegExp(`--${name}:([^\\n]*)`);
-      const m = out.match(re);
-      if (!m || m[1] === undefined) throw new Error(`missing --${name} in output`);
-      return m[1].replace(/;$/, "").trim();
-    }
-
     it("strips `;` `{` `}` so a hostile theme value cannot break out of its declaration", () => {
-      const out = buildCssVariables({
-        primaryColor: "red; } body { display: none; .x{",
-      });
-      const v = extractValue(out, "cy-primary");
-      expect(v).not.toMatch(/[;{}]/);
+      const out = computeThemeVars({ primaryColor: "red; } body { display: none; .x{" }, false);
+      expect(out["--cy-primary"]).not.toMatch(/[;{}]/);
     });
 
     it("strips CSS comment delimiters", () => {
-      const out = buildCssVariables({
-        textColor: "blue /* comment */ green",
-      });
-      const v = extractValue(out, "cy-text");
-      expect(v).not.toContain("/*");
-      expect(v).not.toContain("*/");
+      const out = computeThemeVars({ textColor: "blue /* comment */ green" }, false);
+      expect(out["--cy-text"]).not.toContain("/*");
+      expect(out["--cy-text"]).not.toContain("*/");
     });
 
     it("strips backslash, angle brackets, and embedded newlines from the value", () => {
-      const out = buildCssVariables({
-        fontFamily: "Arial\\\n<script>",
-      });
-      const v = extractValue(out, "cy-font");
-      expect(v).not.toContain("\\");
-      expect(v).not.toContain("<");
-      expect(v).not.toContain(">");
-      expect(v).not.toMatch(/[\r\n]/);
+      const out = computeThemeVars({ fontFamily: "Arial\\\n<script>" }, false);
+      expect(out["--cy-font"]).not.toContain("\\");
+      expect(out["--cy-font"]).not.toContain("<");
+      expect(out["--cy-font"]).not.toContain(">");
+      expect(out["--cy-font"]).not.toMatch(/[\r\n]/);
     });
 
     it("falls back to the default when sanitization empties the value", () => {
-      const out = buildCssVariables({ primaryColor: ";;}}{{" });
-      expect(extractValue(out, "cy-primary")).toBe("#1863dc");
+      const out = computeThemeVars({ primaryColor: ";;}}{{" }, false);
+      expect(out["--cy-primary"]).toBe("#1863dc");
     });
 
     it("falls back to the default for non-string input", () => {
-      const out = buildCssVariables({
-        primaryColor: 123 as unknown as string,
-      });
-      expect(extractValue(out, "cy-primary")).toBe("#1863dc");
+      const out = computeThemeVars({ primaryColor: 123 as unknown as string }, false);
+      expect(out["--cy-primary"]).toBe("#1863dc");
     });
 
     it("caps value length at 200 chars", () => {
       const long = "a".repeat(500);
-      const out = buildCssVariables({ fontFamily: long });
-      const v = extractValue(out, "cy-font");
-      expect(v.length).toBeLessThanOrEqual(200);
+      const out = computeThemeVars({ fontFamily: long }, false);
+      expect(out["--cy-font"].length).toBeLessThanOrEqual(200);
     });
 
     it("passes through legitimate values untouched", () => {
-      const out = buildCssVariables({
-        primaryColor: "#ff8800",
-        backgroundColor: "rgb(20, 30, 40)",
-        fontFamily: "'Inter', sans-serif",
-        borderRadius: "8px",
-      });
-      expect(extractValue(out, "cy-primary")).toBe("#ff8800");
-      expect(extractValue(out, "cy-bg")).toBe("rgb(20, 30, 40)");
-      expect(extractValue(out, "cy-font")).toBe("'Inter', sans-serif");
-      expect(extractValue(out, "cy-radius")).toBe("8px");
+      const out = computeThemeVars(
+        {
+          primaryColor: "#ff8800",
+          backgroundColor: "rgb(20, 30, 40)",
+          fontFamily: "'Inter', sans-serif",
+          borderRadius: "8px",
+        },
+        false,
+      );
+      expect(out["--cy-primary"]).toBe("#ff8800");
+      expect(out["--cy-bg"]).toBe("rgb(20, 30, 40)");
+      expect(out["--cy-font"]).toBe("'Inter', sans-serif");
+      expect(out["--cy-radius"]).toBe("8px");
+    });
+
+    it("applies dark overrides only when isDark is true", () => {
+      const light = computeThemeVars(undefined, false);
+      const dark = computeThemeVars(undefined, true);
+      expect(light["--cy-bg"]).toBe("#ffffff");
+      expect(dark["--cy-bg"]).toBe("#161B27");
     });
   });
 });

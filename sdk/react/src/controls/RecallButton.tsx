@@ -1,6 +1,6 @@
 "use client";
 
-import { type ComponentPropsWithoutRef, forwardRef, type ReactNode } from "react";
+import { type ComponentPropsWithoutRef, forwardRef, type ReactNode, useRef } from "react";
 import { createPortal } from "react-dom";
 import { RevisitIcon } from "../components/icons.js";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
@@ -9,6 +9,8 @@ import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
 import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useRegulation } from "../hooks/useRegulation.js";
+import { useThemeConfig } from "../hooks/useThemeConfig.js";
+import { useThemeVars } from "../hooks/useThemeVars.js";
 import { chain, useBodyPortalRoot } from "../primitives/utils.js";
 
 type Props = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
@@ -24,6 +26,9 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
   const regulation = useRegulation();
   const { showPreferences, showOptOut } = useConsentActions();
   const portalRoot = useBodyPortalRoot();
+  const containerRef = useRef<HTMLButtonElement | null>(null);
+  const { theme, colorScheme } = useThemeConfig();
+  useThemeVars(containerRef, theme, colorScheme);
 
   if (bannerVisible) return null;
   if (preferencesOpen || optOutOpen) return null;
@@ -33,11 +38,14 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
 
   const button = (
     <button
-      ref={ref}
+      ref={(node) => {
+        containerRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      }}
       type="button"
       aria-label="Consent Preferences"
       className={className ?? "cy-widget"}
-      data-cy-theme="system"
       data-pos="bottom-left"
       data-tooltip="Consent Preferences"
       onClick={chain(onClick, onActivate)}

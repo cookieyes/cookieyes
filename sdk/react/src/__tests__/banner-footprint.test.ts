@@ -1,12 +1,14 @@
+/// <reference types="node" />
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildStyleSheet } from "../styles/tokens.js";
 
 /**
  * FIX 1 / FIX 4 — footprint (canonical element ≤15% of viewport) + zero layout shift.
- * Asserted against the generated stylesheet (jsdom cannot measure real pixels).
+ * Asserted against the static stylesheet (jsdom cannot measure real pixels).
  */
 describe("banner footprint + zero layout shift", () => {
-  const sheet = buildStyleSheet(undefined, "light");
+  const sheet = readFileSync(join(process.cwd(), "src/styles/cookieyes.css"), "utf8");
 
   function baseRule(selector: string): string {
     const start = sheet.indexOf(`${selector} {`);

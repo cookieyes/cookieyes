@@ -1,11 +1,13 @@
 "use client";
 
-import { type ComponentPropsWithoutRef, forwardRef, type ReactNode } from "react";
+import { type ComponentPropsWithoutRef, forwardRef, type ReactNode, useRef } from "react";
 import { createPortal } from "react-dom";
 import { CookieYesLogo } from "../components/icons.js";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useRegulation } from "../hooks/useRegulation.js";
+import { useThemeConfig } from "../hooks/useThemeConfig.js";
+import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { chain, useBodyPortalRoot } from "./utils.js";
 
@@ -20,6 +22,9 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
 ) {
   const visible = useBannerVisibility();
   const portalRoot = useBodyPortalRoot();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { theme, colorScheme } = useThemeConfig();
+  useThemeVars(containerRef, theme, colorScheme);
 
   if (!visible) return null;
 
@@ -28,7 +33,14 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   // so the identified, measurable banner element equals what the user sees.
   // Callers can still pass `role` and other attributes via props.
   const content = (
-    <div ref={ref} {...props}>
+    <div
+      ref={(node) => {
+        containerRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      }}
+      {...props}
+    >
       {children}
     </div>
   );

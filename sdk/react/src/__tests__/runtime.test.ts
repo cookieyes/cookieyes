@@ -169,14 +169,12 @@ describe("builder option plumbing", () => {
     expect(persist).toHaveBeenCalled();
   });
 
-  it("injects the stylesheet and re-injects (removing the old) on a second mount", () => {
+  it("warns when mount is called more than once", () => {
     createCookieYes().mode("offline").theme({ primaryColor: "#abcabc" }).mount();
-    expect(document.getElementById("cookieyes-styles")).not.toBeNull();
 
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    createCookieYes().mode("offline").mount(); // second mount → warns + replaces styles
+    createCookieYes().mode("offline").mount(); // second mount → warns + replaces the runtime
     expect(warn).toHaveBeenCalled();
-    expect(document.querySelectorAll("#cookieyes-styles").length).toBe(1);
     warn.mockRestore();
   });
 });
