@@ -32,6 +32,7 @@ export function CookiePreferences() {
                               role="switch"
                               checked={checked}
                               aria-checked={checked}
+                              aria-label={label}
                               onChange={(e) => toggle(e.target.checked)}
                             />
                             <span className="cy-toggle-track" aria-hidden="true">

@@ -810,6 +810,17 @@ ${darkBlock}
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* ── Respect prefers-reduced-motion: same end state, no motion ───── */
+@media (prefers-reduced-motion: reduce) {
+  .cy-banner,
+  .cy-banner[data-leaving],
+  .cy-dialog-overlay,
+  .cy-dialog,
+  .cy-widget {
+    animation: none;
+  }
+}
+
 /* ── ConsentFrame placeholder ────────────────────────────────────── */
 .cy-frame-placeholder {
   background: var(--cy-bg);
