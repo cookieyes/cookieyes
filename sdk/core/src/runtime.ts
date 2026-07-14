@@ -1,3 +1,4 @@
+import { _warnOfflineModeDeprecated } from "./deprecations.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
 import type {
@@ -25,6 +26,8 @@ let _runtime: ConsentRuntime | null = null;
 
 export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): ConsentRuntime {
   if (_runtime) return _runtime;
+
+  if (options.mode === "offline") _warnOfflineModeDeprecated();
 
   const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
   const userOnConsentUpdate = options.onConsentUpdate;

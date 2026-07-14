@@ -1,7 +1,7 @@
 "use client";
 
-import type { NetworkBlockerConfig } from "@cookieyes/core";
 import {
+  _warnOfflineModeDeprecated,
   type ConsentBackend,
   type ConsentCategory,
   type ConsentConfig,
@@ -10,6 +10,7 @@ import {
   createConsentManager,
   type I18nConfig,
   installNetworkBlocker,
+  type NetworkBlockerConfig,
   type Regulation,
   resolveTranslations,
   type ScriptEntry,
@@ -18,7 +19,13 @@ import {
 } from "@cookieyes/core";
 import { injectStyles } from "./styles/inject.js";
 
-export type RuntimeMode = "offline" | "self-hosted";
+/**
+ * @deprecated Use `"cookie-only"` instead — identical behavior, clearer name.
+ * `"offline"` still works but will be removed in a future release.
+ */
+type DeprecatedOfflineMode = "offline";
+
+export type RuntimeMode = "cookie-only" | "self-hosted" | DeprecatedOfflineMode;
 export type ColorSchemePref = "light" | "dark" | "system";
 
 type RuntimeConfig = {
@@ -117,9 +124,10 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (!cfg.mode) {
     throw new Error(
       "createCookieYes(): .mode() is required before .mount(). " +
-        "Call .mode('offline') or .mode('self-hosted').",
+        "Call .mode('cookie-only') or .mode('self-hosted').",
     );
   }
+  if (cfg.mode === "offline") _warnOfflineModeDeprecated();
   if (cfg.mode === "self-hosted" && !cfg.backend && !cfg.backendURL) {
     throw new Error(
       "createCookieYes(): .mode('self-hosted') requires either .backend(...) or .backendURL(...).",

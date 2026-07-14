@@ -1,4 +1,8 @@
 export { generateConsentId, parseCookie, serializeCookie } from "./cookie.js";
+export {
+  _resetOfflineModeWarning,
+  _warnOfflineModeDeprecated,
+} from "./deprecations.js";
 export { defaultTranslations, resolveTranslations } from "./i18n.js";
 export { createConsentManager } from "./manager.js";
 export type {

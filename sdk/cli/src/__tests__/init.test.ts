@@ -82,11 +82,11 @@ beforeEach(() => {
   h.reactProjectPaths.mockReturnValue(REACT_PATHS);
 });
 
-describe("runInit — Next.js (offline, GDPR)", () => {
+describe("runInit — Next.js (cookie-only, GDPR)", () => {
   it("scaffolds the consent-manager and installs the nextjs adapter", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -156,7 +156,7 @@ describe("runInit — patching existing files", () => {
   it("patches an existing Next.js app-router layout", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -175,7 +175,7 @@ describe("runInit — patching existing files", () => {
   it("patches an existing Pages-router _app", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -194,7 +194,7 @@ describe("runInit — patching existing files", () => {
   it("patches an existing React entry and warns when install fails", async () => {
     h.select
       .mockResolvedValueOnce("react")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -212,7 +212,7 @@ describe("runInit — patching existing files", () => {
   it("prints a manual step when a Pages-router _app does not exist", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -229,7 +229,7 @@ describe("runInit — patching existing files", () => {
   it("skips patching when the layout already uses CookieYesRoot", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -247,7 +247,7 @@ describe("runInit — patching existing files", () => {
   it("warns when the translations install fails", async () => {
     h.select
       .mockResolvedValueOnce("vanilla")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce(["de"]);
@@ -263,7 +263,7 @@ describe("runInit — patching existing files", () => {
   it("skips the React provider/index when they already exist", async () => {
     h.select
       .mockResolvedValueOnce("react")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -279,7 +279,7 @@ describe("runInit — patching existing files", () => {
   it("skips the vanilla consent file when it already exists", async () => {
     h.select
       .mockResolvedValueOnce("vanilla")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);

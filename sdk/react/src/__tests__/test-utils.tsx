@@ -6,9 +6,18 @@ export function clearCookie(): void {
   document.cookie = "cookieyes-consent=; max-age=0; path=/";
 }
 
-/** Mounts an offline runtime for the given regulation and returns it. */
+/**
+ * Mounts a cookie-only runtime for the given regulation and returns it.
+ * @deprecated call sites kept for coverage still use {@link mountOffline} —
+ * both produce an identical runtime.
+ */
 export function mountOffline(regulation: Regulation = "GDPR"): CookieYesRuntime {
   return createCookieYes().mode("offline").regulation(regulation).mount();
+}
+
+/** Mounts a cookie-only runtime for the given regulation and returns it. */
+export function mountCookieOnly(regulation: Regulation = "GDPR"): CookieYesRuntime {
+  return createCookieYes().mode("cookie-only").regulation(regulation).mount();
 }
 
 /** Standard afterEach: drop the singleton runtime and clear the cookie. */

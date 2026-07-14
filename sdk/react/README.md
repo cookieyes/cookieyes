@@ -38,7 +38,7 @@ import {
 } from "@cookieyes/react";
 
 createCookieYes()
-  .mode("offline")        // "offline" (cookie-only) | "self-hosted"
+  .mode("cookie-only")    // "cookie-only" | "self-hosted"
   .regulation("GDPR")     // "GDPR" | "CCPA"
   .colorScheme("system")  // "light" | "dark" | "system"
   .mount();
@@ -63,7 +63,7 @@ Chain configuration methods and finish with `.mount()`. `.mode()` is required;
 
 | Method | Purpose |
 |--------|---------|
-| `.mode("offline" \| "self-hosted")` | **Required.** Cookie-only vs. synced to your backend. |
+| `.mode("cookie-only" \| "self-hosted")` | **Required.** Cookie-only vs. synced to your backend. See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
 | `.regulation("GDPR" \| "CCPA" \| "DEFAULT")` | Which regulation applies. |
 | `.colorScheme("light" \| "dark" \| "system")` | Theme mode. |
 | `.theme(themeConfig)` | Color / radius / font tokens. |
@@ -74,6 +74,19 @@ Chain configuration methods and finish with `.mount()`. `.mode()` is required;
 | `.reloadOnRevoke(true)` | Reload the page when consent is revoked. |
 | `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |
 | `.mount()` | Build and register the runtime. |
+
+### Deprecated: `mode: "offline"`
+
+`"offline"` was renamed to `"cookie-only"` — same behavior, clearer name. It
+still works today and logs a one-time console warning, and will be removed
+3 releases from now.
+
+```diff
+ createCookieYes()
+-  .mode("offline")
++  .mode("cookie-only")
+   .mount();
+```
 
 ## Components
 
@@ -120,9 +133,9 @@ presets above are built from exactly these primitives.
 `<CookieBanner />` is **server-rendered**: its markup is present in the initial
 HTML (first-byte paint) and on every load, before client JavaScript hydrates the
 interactive parts. It uses fixed positioning, so showing it never shifts page
-layout (no CLS), and it issues **no network request on load** (offline mode makes
-zero requests; self-hosted mode only POSTs to your backend when the user accepts,
-rejects, or saves).
+layout (no CLS), and it issues **no network request on load** (cookie-only mode
+makes zero requests; self-hosted mode only POSTs to your backend when the user
+accepts, rejects, or saves).
 
 The following selectors are a **stable, public contract** — automated tooling and
 your own integrations may rely on them, and they will not change without a
@@ -183,7 +196,7 @@ can also override them in your own stylesheet:
 
 ```tsx
 createCookieYes()
-  .mode("offline")
+  .mode("cookie-only")
   .theme({
     primaryColor: "#6366F1",
     backgroundColor: "#ffffff",

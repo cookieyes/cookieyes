@@ -28,7 +28,7 @@ process-wide singleton with a `consentStore` (reactive state) and a
 import { getOrCreateConsentRuntime } from "@cookieyes/core";
 
 const { consentManager, consentStore } = getOrCreateConsentRuntime({
-  mode: "offline",                          // "offline" (cookie-only) | "self-hosted"
+  mode: "cookie-only",                      // "cookie-only" | "self-hosted"
   overrides: { regulation: "GDPR" },        // "GDPR" | "CCPA" | "DEFAULT"
   colorScheme: "system",                    // "light" | "dark" | "system"
 });
@@ -76,6 +76,19 @@ getOrCreateConsentRuntime({
 });
 ```
 
+### Deprecated: `mode: "offline"`
+
+`"offline"` was renamed to `"cookie-only"` — same behavior, clearer name. It
+still works today and logs a one-time console warning, and will be removed
+3 releases from now.
+
+```diff
+ getOrCreateConsentRuntime({
+-  mode: "offline",
++  mode: "cookie-only",
+ });
+```
+
 ## API
 
 ### `getOrCreateConsentRuntime(options)`
@@ -87,7 +100,7 @@ Returns `{ consentManager, consentStore }` (a singleton — call
 
 | Option | Type | Notes |
 |--------|------|-------|
-| `mode` | `"offline" \| "self-hosted"` | **Required.** |
+| `mode` | `"cookie-only" \| "self-hosted"` | **Required.** See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
 | `backendURL` | `string` | Self-hosted: endpoint the payload is POSTed to. |
 | `backend` | `ConsentBackend` | Self-hosted: custom `persist(payload)` adapter. |
 | `apiKey` | `string` | Optional auth key. |

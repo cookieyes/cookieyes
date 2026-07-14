@@ -43,7 +43,7 @@ import {
 } from "@cookieyes/nextjs";
 
 createCookieYes()
-  .mode("offline")        // "offline" (cookie-only) | "self-hosted"
+  .mode("cookie-only")    // "cookie-only" | "self-hosted"
   .regulation("GDPR")     // "GDPR" | "CCPA"
   .colorScheme("system")  // "light" | "dark" | "system"
   .mount();
