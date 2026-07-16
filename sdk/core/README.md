@@ -135,6 +135,85 @@ specific narrower situation than `consentStore.subscribe`:
 | `createConsentManager(config)` | Bypasses `consentStore` entirely for direct access to the manager: `acceptAll()`, `rejectAll()`, `acceptSelected(cats)`, `updateCategory(cat, val)`, `savePreferences()`, `resetConsent()`, `showPreferences()`, `hidePreferences()`, `subscribe(fn)`, `registerScript(entry)`. `config` (`ConsentConfig`) accepts `regulation`, `colorScheme`, `theme`, `apiUrl`, `apiKey`, `backend`, `reloadOnRevoke`, `onConsentReady`, `onConsentUpdate`. |
 | `parseCookie` / `serializeCookie` | Reading or writing the raw `cookieyes-consent` cookie directly — e.g. in a Next.js Server Component or route handler, where no live runtime or React hooks are available. |
 
+## Stopping tracking when consent is withdrawn
+
+When a visitor revokes consent, the SDK stops tracking **without reloading the
+page** — nothing they were doing (form input, scroll position, an open dialog)
+is lost. There are three layers:
+
+1. **Network blocking** (`networkBlocker` / `blockNetwork`) — intercepts
+   `fetch`, `XMLHttpRequest`, **and `navigator.sendBeacon`** to blocked domains,
+   in real time, for as long as the page is open. `sendBeacon` matters because
+   GA4/Meta use it for exit/unload tracking that fetch/XHR interception misses.
+2. **Integration stop-handlers** (`integrations`) — call a vendor's own
+   documented "stop" API on revoke, and resume it on re-accept:
+
+   ```ts
+   getOrCreateConsentRuntime({
+     mode: "cookie-only",
+     integrations: [
+       { vendor: "ga4" },   // Consent Mode v2: gtag('consent','update',{ analytics_storage })
+       { vendor: "meta" },  // fbq('consent','revoke'|'grant')
+     ],
+   });
+   ```
+
+   > **GA4 uses Google Consent Mode v2.** The SDK sends the `update` on every
+   > consent change (`analytics_storage: 'granted'|'denied'`). You must set the
+   > **deny-by-default** state yourself, in your gtag bootstrap snippet *before*
+   > GA loads — the SDK can't set the `default` because it doesn't control that
+   > load order:
+   >
+   > ```js
+   > gtag('consent', 'default', { analytics_storage: 'denied', wait_for_update: 500 });
+   > ```
+3. **Your own scripts** (`customStopHandlers`) — for anything without a built-in
+   integration. Provide a clean `stop()`/`resume()`, or register it as
+   reload-only so revoking it shows the reload notice rather than silently
+   continuing to track:
+
+   ```ts
+   customStopHandlers: [
+     { id: "my-tool", category: "analytics", stop: () => window.myTool?.disable() },
+     { id: "legacy-widget", category: "advertisement", needsReload: true },
+   ]
+   ```
+
+### Vendor audit — which stop cleanly, which need a reload
+
+| Vendor | Runtime stop | How |
+|--------|-------------|-----|
+| **GA4** (gtag.js) | ✅ clean | Consent Mode v2 — `gtag('consent','update',{ analytics_storage })`. Set the deny-by-default state in your gtag snippet. |
+| **Google Tag Manager** | ✅ clean | Consent Mode v2 — GTM-managed tags honor `gtag('consent','update',…)` at runtime (per Google's tag-platform consent docs). Maps to `analytics_storage`. |
+| **Meta Pixel** | ✅ clean | `fbq('consent', 'revoke')` / `'grant'` |
+| TikTok Pixel | ⚠️ reload | No runtime stop we could confidently verify; modelled as reload-only. |
+| LinkedIn Insight Tag | ⚠️ reload | No documented runtime opt-out after load. |
+| Hotjar | ⚠️ reload | No documented "stop after load"; gate before load instead. |
+| Segment (analytics.js) | ⚠️ reload | No documented runtime "stop all"; gate `analytics.load()`. |
+
+"Reload" vendors surface the reload notice (below) on a genuine revoke — the SDK
+never continues tracking them silently. Any of them can be upgraded to a clean
+stop later (in `resolveBuiltInIntegration`) once a real runtime API is confirmed.
+
+### Reload notice
+
+If a revoked tool has no clean runtime stop, the manager computes
+`manager.reloadNotice` (`{ required, reasons }`) automatically on revoke, with
+`manager.dismissReloadNotice()` to clear it. The *state* is automatic; showing
+it is up to you.
+
+**If you configure any reload-only tool, surface this state to the visitor** —
+otherwise a revoke that needs a reload is silent and that tool keeps running.
+In React that means rendering the built-in `<ReloadNotice />` (dismissible,
+`role="alert"`, wording via translations); it never reloads on its own. Outside
+React, read `manager.reloadNotice.required` and render your own prompt.
+
+### `reloadOnRevoke` (legacy, off by default)
+
+`reloadOnRevoke` performs a full page reload on revoke. It is **off by default**
+— the clean stop-handlers above are the safe path. Turn it on only if you
+explicitly want the old behavior; note it erases whatever the visitor was doing.
+
 ## Consent categories
 
 `necessary` (always on), `functional`, `analytics`, `performance`, `advertisement`.

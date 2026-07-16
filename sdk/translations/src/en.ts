@@ -51,4 +51,10 @@ export const en: TranslationMap = {
     successText: "Your opt-out preference has been honored.",
     successCountdown: "Banner closes automatically in {seconds} s...",
   },
+  reloadNotice: {
+    message:
+      "Some tracking on this page can only be fully stopped by reloading. Reload to apply your change, or dismiss to keep browsing.",
+    reloadButton: "Reload page",
+    dismissButton: "Dismiss",
+  },
 };

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createConsentManager } from "../manager.js";
+import { _clearStopHandlers } from "../stop-handlers.js";
 
 // Mock browser APIs
 beforeEach(() => {
@@ -187,6 +188,109 @@ describe("createConsentManager", () => {
       mgr.updateCategory("analytics", false);
       mgr.savePreferences();
       expect(reloadSpy).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("stop-handlers + reload notice (no page reload)", () => {
+    beforeEach(() => _clearStopHandlers());
+    afterEach(() => _clearStopHandlers());
+
+    it("runs a clean-stop integration on revoke without reloading, and resumes on re-accept", () => {
+      const gtag = vi.fn();
+      (window as unknown as Record<string, unknown>).gtag = gtag;
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        integrations: [{ vendor: "ga4" }],
+      });
+
+      mgr.acceptAll();
+      expect(gtag).toHaveBeenLastCalledWith("consent", "update", { analytics_storage: "granted" });
+      expect(mgr.reloadNotice.required).toBe(false);
+
+      mgr.rejectAll();
+      // Stopped cleanly via Consent Mode update — no reload notice.
+      expect(gtag).toHaveBeenLastCalledWith("consent", "update", { analytics_storage: "denied" });
+      expect(mgr.reloadNotice.required).toBe(false);
+
+      mgr.acceptAll();
+      expect(gtag).toHaveBeenLastCalledWith("consent", "update", { analytics_storage: "granted" });
+    });
+
+    it("sends stored consent at load — a returning visitor who granted analytics gets update:granted", () => {
+      // Simulate a returning visitor whose cookie already grants analytics.
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        "consentid:abc,consent:yes,action:yes,necessary:yes,functional:no,analytics:yes,performance:no,advertisement:no,lastRenewedDate:1",
+      )}`;
+      const gtag = vi.fn();
+      (window as unknown as Record<string, unknown>).gtag = gtag;
+
+      // Just constructing the manager should reflect the stored grant — otherwise
+      // GA stays stuck in the page's deny-by-default Consent Mode state.
+      createConsentManager({ regulation: "GDPR", integrations: [{ vendor: "ga4" }] });
+
+      expect(gtag).toHaveBeenCalledWith("consent", "update", { analytics_storage: "granted" });
+    });
+
+    it("surfaces the reload notice when a reload-only integration's category is revoked", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        integrations: [{ vendor: "hotjar" }], // reload-only, category analytics
+      });
+      mgr.acceptAll();
+      expect(mgr.reloadNotice.required).toBe(false);
+
+      mgr.rejectAll();
+      expect(mgr.reloadNotice.required).toBe(true);
+      expect(mgr.reloadNotice.reasons).toContain("hotjar");
+    });
+
+    it("dismissReloadNotice hides it and it stays dismissed until a new revoke", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        integrations: [{ vendor: "hotjar" }],
+      });
+      mgr.acceptAll();
+      mgr.rejectAll();
+      expect(mgr.reloadNotice.required).toBe(true);
+
+      mgr.dismissReloadNotice();
+      expect(mgr.reloadNotice.required).toBe(false);
+
+      // Re-saving the same denied state doesn't resurrect the dismissed notice.
+      mgr.savePreferences();
+      expect(mgr.reloadNotice.required).toBe(false);
+    });
+
+    it("re-accepting clears the reload notice", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        integrations: [{ vendor: "hotjar" }],
+      });
+      mgr.acceptAll();
+      mgr.rejectAll();
+      expect(mgr.reloadNotice.required).toBe(true);
+
+      mgr.acceptAll();
+      expect(mgr.reloadNotice.required).toBe(false);
+    });
+
+    it("a custom stop-handler that throws falls back to the reload notice, no crash", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        customStopHandlers: [
+          {
+            id: "custom",
+            category: "analytics",
+            stop: () => {
+              throw new Error("not ready");
+            },
+          },
+        ],
+      });
+      mgr.acceptAll();
+      expect(() => mgr.rejectAll()).not.toThrow();
+      expect(mgr.reloadNotice.required).toBe(true);
+      expect(mgr.reloadNotice.reasons).toContain("custom");
     });
   });
 });

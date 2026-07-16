@@ -1,4 +1,5 @@
 import type { NetworkBlockerConfig } from "./network-blocker.js";
+import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 
 export type ConsentCategory =
   | "necessary"
@@ -36,6 +37,11 @@ export type TranslationMap = {
     successText: string;
     successCountdown: string;
   };
+  reloadNotice: {
+    message: string;
+    reloadButton: string;
+    dismissButton: string;
+  };
 };
 
 export type ThemeConfig = {
@@ -72,8 +78,31 @@ export type ConsentConfig = {
   theme?: ThemeConfig | undefined;
   colorScheme?: "light" | "dark" | "system" | undefined;
   reloadOnRevoke?: boolean | undefined;
+  /**
+   * Built-in, first-party integrations to stop cleanly (no reload) when their
+   * category is revoked — e.g. `{ vendor: "ga4", measurementId: "G-XXX" }`.
+   * Integrations with no clean runtime stop fall back to the reload notice.
+   */
+  integrations?: BuiltInIntegration[] | undefined;
+  /**
+   * Your own scripts' stop instructions, for anything without a built-in
+   * integration. A handler that can stop cleanly provides `stop()`; one that
+   * can't should be registered as a reload-only handler instead so revoking it
+   * shows the reload notice rather than silently continuing to track.
+   */
+  customStopHandlers?: StopHandler[] | undefined;
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
   onConsentUpdate?: ((state: ConsentSnapshot) => void) | undefined;
+};
+
+/**
+ * Surfaced when a revoked tool has no clean runtime stop and can only be fully
+ * applied by reloading. `required` is false once dismissed; `reasons` lists the
+ * handler ids that triggered it (e.g. `["hotjar"]`).
+ */
+export type ReloadNoticeState = {
+  required: boolean;
+  reasons: string[];
 };
 
 export type ConsentSnapshot = {
@@ -96,6 +125,10 @@ export type ConsentManager = ConsentSnapshot & {
   isPreferencesOpen: boolean;
   subscribe: (listener: (state: ConsentSnapshot) => void) => () => void;
   registerScript: (entry: ScriptEntry) => void;
+  /** Current reload-notice state (see {@link ReloadNoticeState}). */
+  reloadNotice: ReloadNoticeState;
+  /** Dismiss the reload notice; it won't reappear until a new revoke needs one. */
+  dismissReloadNotice: () => void;
 };
 
 /**
@@ -149,6 +182,10 @@ export type ConsentRuntimeOptions = {
   theme?: ThemeConfig | undefined;
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
+  /** Built-in integrations to stop cleanly on revoke — see {@link ConsentConfig.integrations}. */
+  integrations?: BuiltInIntegration[] | undefined;
+  /** Your own scripts' stop instructions — see {@link ConsentConfig.customStopHandlers}. */
+  customStopHandlers?: StopHandler[] | undefined;
   /** Low-level: fires once, after the runtime's initial state is known (e.g. to conditionally load analytics on first load). For ongoing updates, use `consentStore.subscribeToConsentChanges` instead. */
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
   /** Low-level: fires on every saved consent change, for the lifetime of this config. If you need to subscribe/unsubscribe dynamically after mount, use `consentStore.getState().subscribeToConsentChanges` instead. */

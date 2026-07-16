@@ -51,4 +51,10 @@ export const fr: TranslationMap = {
     successText: "Votre choix de désinscription a été enregistré et pris en compte.",
     successCountdown: "La bannière se ferme automatiquement dans {seconds} s...",
   },
+  reloadNotice: {
+    message:
+      "Certains traceurs de cette page ne peuvent être totalement arrêtés qu'en rechargeant. Rechargez pour appliquer votre choix, ou ignorez ce message pour continuer.",
+    reloadButton: "Recharger la page",
+    dismissButton: "Ignorer",
+  },
 };

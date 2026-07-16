@@ -2,7 +2,9 @@
 
 export type {
   ActiveUI,
+  AnyStopHandler,
   Builder,
+  BuiltInIntegration,
   ColorSchemePref,
   ConsentActions,
   ConsentBackend,
@@ -21,10 +23,14 @@ export type {
   CookieYesSnapshot,
   I18nConfig,
   Regulation,
+  ReloadNoticeState,
+  ReloadOnlyHandler,
   RuntimeMode,
   ScriptEntry,
+  StopHandler,
   ThemeConfig,
   TranslationMap,
+  UseReloadNoticeResult,
 } from "@cookieyes/react";
 // Runtime — builder + module-level registry
 // Hooks
@@ -46,8 +52,11 @@ export {
   OptOut,
   Preferences,
   RecallButton,
+  ReloadNotice,
+  registerStopHandler,
   resetConsentRuntime,
   resetCookieYes,
+  resolveBuiltInIntegration,
   resolveTranslations,
   useBannerVisibility,
   useConsent,
@@ -57,5 +66,6 @@ export {
   useOptOutOpen,
   usePreferencesOpen,
   useRegulation,
+  useReloadNotice,
   useTranslations,
 } from "@cookieyes/react";

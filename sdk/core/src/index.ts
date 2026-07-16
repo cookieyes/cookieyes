@@ -18,6 +18,17 @@ export {
   getOrCreateConsentRuntime,
   resetConsentRuntime,
 } from "./runtime.js";
+export type {
+  AnyStopHandler,
+  BuiltInIntegration,
+  ReloadOnlyHandler,
+  StopHandler,
+} from "./stop-handlers.js";
+export {
+  _clearStopHandlers,
+  registerStopHandler,
+  resolveBuiltInIntegration,
+} from "./stop-handlers.js";
 
 export type {
   ActiveUI,
@@ -35,6 +46,7 @@ export type {
   ConsentStoreState,
   I18nConfig,
   Regulation,
+  ReloadNoticeState,
   ScriptEntry,
   ThemeConfig,
   TranslationMap,

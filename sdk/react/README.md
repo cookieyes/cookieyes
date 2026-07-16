@@ -75,10 +75,27 @@ Chain configuration methods and finish with `.mount()`. `.mode()` is required;
 | `.i18n({ messages })` | Provide locale translation maps. |
 | `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
 | `.apiKey(key)` | Optional auth key. |
-| `.blockNetwork(config)` | Block network requests until consent. |
-| `.reloadOnRevoke(true)` | Reload the page when consent is revoked. |
+| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. |
+| `.integrations([...])` | Stop built-in vendors cleanly on revoke — e.g. `{ vendor: "ga4", measurementId: "G-XXX" }`, `{ vendor: "meta" }`. See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
+| `.customStopHandlers([...])` | Stop your own scripts on revoke (clean `stop()`, or `needsReload: true`). |
+| `.reloadOnRevoke(true)` | **Legacy, off by default.** Full page reload on revoke — erases what the visitor was doing. Prefer `.integrations(...)`. |
 | `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |
 | `.mount()` | Build and register the runtime. |
+
+**If you use any reload-only integration** (TikTok, LinkedIn, Hotjar, Segment,
+or a `customStopHandlers` entry marked `needsReload`), **you must render
+`<ReloadNotice />`** alongside `<CookieBanner />`. It's the prompt shown when a
+tool that was running is revoked and can be fully stopped only by reloading — a
+dismissible, screen-reader-announced (`role="alert"`) message inviting, never
+forcing, a reload. It appears only on a genuine revoke (a category that was
+granted, then denied — not a first-time reject), renders nothing until then,
+and stays dismissed until a new revoke needs it; wording is customizable via
+`.i18n(...)` (`reloadNotice.*`).
+
+⚠️ Without it, a revoke that needs a reload has no way to tell the visitor —
+and that tool keeps running. (Integrations that stop cleanly, like GA4 and
+Meta, don't need it.) For a fully custom notice, read the state with
+`useReloadNotice()` instead.
 
 ### Deprecated: `mode: "offline"`
 

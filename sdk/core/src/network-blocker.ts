@@ -56,6 +56,7 @@ type InstallationState = {
   originalFetch: typeof fetch;
   originalXhrOpen: typeof XMLHttpRequest.prototype.open;
   originalXhrSend: typeof XMLHttpRequest.prototype.send;
+  originalSendBeacon: typeof navigator.sendBeacon | undefined;
 };
 
 let active: InstallationState | null = null;
@@ -72,6 +73,13 @@ export function installNetworkBlocker(
     originalFetch: window.fetch,
     originalXhrOpen: XMLHttpRequest.prototype.open,
     originalXhrSend: XMLHttpRequest.prototype.send,
+    // `navigator.sendBeacon` is how GA4, Meta, and others fire exit/unload
+    // tracking — fetch/XHR interception alone misses it, so patch it too.
+    // Store the raw reference (not bound) so uninstall restores it exactly.
+    originalSendBeacon:
+      typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function"
+        ? navigator.sendBeacon
+        : undefined,
   };
   active = state;
 
@@ -140,6 +148,25 @@ export function installNetworkBlocker(
     return state.originalXhrSend.call(this, body);
   };
 
+  if (state.originalSendBeacon) {
+    const originalSendBeacon = state.originalSendBeacon;
+    navigator.sendBeacon = function patchedSendBeacon(
+      url: string | URL,
+      data?: BodyInit | null,
+    ): boolean {
+      // sendBeacon is always a POST.
+      const blockingRule = findBlockingRule(config.rules, url.toString(), "POST", hasConsent);
+      if (blockingRule) {
+        notify({ rule: blockingRule, url: url.toString(), method: "POST" });
+        // Returning true tells the caller the beacon was "queued" — nothing is
+        // actually sent. Returning false makes some libraries retry via other
+        // transports, which we'd then also block; true is the quieter stop.
+        return true;
+      }
+      return originalSendBeacon.call(navigator, url, data);
+    };
+  }
+
   return uninstallNetworkBlocker;
 }
 
@@ -149,6 +176,9 @@ export function uninstallNetworkBlocker(): void {
     window.fetch = active.originalFetch;
     XMLHttpRequest.prototype.open = active.originalXhrOpen;
     XMLHttpRequest.prototype.send = active.originalXhrSend;
+    if (active.originalSendBeacon) {
+      navigator.sendBeacon = active.originalSendBeacon;
+    }
   }
   active = null;
 }

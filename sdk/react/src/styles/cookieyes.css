@@ -6,6 +6,7 @@
 .cy-banner-wrap,
 .cy-dialog-overlay,
 .cy-widget,
+.cy-reload-notice,
 .cy-frame-placeholder {
   font-family: var(--cy-font);
   font-size: 14px;
@@ -26,9 +27,11 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-frame-placeholder) *,
-:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-frame-placeholder) *::before,
-:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-frame-placeholder) *::after {
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-reload-notice, .cy-frame-placeholder) *,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-reload-notice, .cy-frame-placeholder)
+  *::before,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-reload-notice, .cy-frame-placeholder)
+  *::after {
   box-sizing: border-box;
 }
 :where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) button,
@@ -824,13 +827,59 @@
   }
 }
 
+/* ── Reload notice (shown when a revoked tool can't be stopped cleanly) ── */
+.cy-reload-notice {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999999;
+  max-width: min(520px, calc(100vw - 40px));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--cy-bg);
+  color: var(--cy-text);
+  border: 1px solid var(--cy-border);
+  border-radius: var(--cy-radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+  animation: cy-reload-notice-in 0.3s ease both;
+}
+@keyframes cy-reload-notice-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.cy-reload-notice-text {
+  flex: 1 1 220px;
+  font-size: 14px;
+  line-height: 20px;
+}
+.cy-reload-notice-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.cy-reload-notice .cy-btn {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+}
+
 /* ── Respect prefers-reduced-motion: same end state, no motion ───── */
 @media (prefers-reduced-motion: reduce) {
   .cy-banner,
   .cy-banner[data-leaving],
   .cy-dialog-overlay,
   .cy-dialog,
-  .cy-widget {
+  .cy-widget,
+  .cy-reload-notice {
     animation: none;
   }
 }

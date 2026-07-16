@@ -22,16 +22,7 @@ function splitCategories(categories: Record<ConsentCategory, boolean>): ConsentC
   return { allowedCategories: allowed, deniedCategories: denied };
 }
 
-let _runtime: ConsentRuntime | null = null;
-
-export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): ConsentRuntime {
-  if (_runtime) return _runtime;
-
-  if (options.mode === "offline") _warnOfflineModeDeprecated();
-
-  const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
-  const userOnConsentUpdate = options.onConsentUpdate;
-
+function buildConsentConfig(options: ConsentRuntimeOptions): ConsentConfig {
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
     if (options.backend) cfg.backend = options.backend;
@@ -42,7 +33,23 @@ export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): Conse
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
+  if (options.integrations) cfg.integrations = options.integrations;
+  if (options.customStopHandlers) cfg.customStopHandlers = options.customStopHandlers;
   if (options.onConsentReady) cfg.onConsentReady = options.onConsentReady;
+  return cfg;
+}
+
+let _runtime: ConsentRuntime | null = null;
+
+export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): ConsentRuntime {
+  if (_runtime) return _runtime;
+
+  if (options.mode === "offline") _warnOfflineModeDeprecated();
+
+  const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
+  const userOnConsentUpdate = options.onConsentUpdate;
+
+  const cfg: ConsentConfig = buildConsentConfig(options);
 
   cfg.onConsentUpdate = (snap) => {
     userOnConsentUpdate?.(snap);

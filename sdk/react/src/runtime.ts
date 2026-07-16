@@ -2,6 +2,7 @@
 
 import {
   _warnOfflineModeDeprecated,
+  type BuiltInIntegration,
   type ConsentBackend,
   type ConsentCategory,
   type ConsentConfig,
@@ -12,8 +13,10 @@ import {
   installNetworkBlocker,
   type NetworkBlockerConfig,
   type Regulation,
+  type ReloadNoticeState,
   resolveTranslations,
   type ScriptEntry,
+  type StopHandler,
   type ThemeConfig,
   type TranslationMap,
 } from "@cookieyes/core";
@@ -39,6 +42,8 @@ type RuntimeConfig = {
   apiKey?: string;
   networkBlocker?: NetworkBlockerConfig;
   reloadOnRevoke?: boolean;
+  integrations?: BuiltInIntegration[];
+  customStopHandlers?: StopHandler[];
   onConsentReady?: (state: ConsentSnapshot) => void;
   onConsentUpdate?: (state: ConsentSnapshot) => void;
 };
@@ -46,6 +51,7 @@ type RuntimeConfig = {
 export type CookieYesSnapshot = ConsentSnapshot & {
   isPreferencesOpen: boolean;
   isOptOutOpen: boolean;
+  reloadNotice: ReloadNoticeState;
 };
 
 export type CookieYesRuntime = {
@@ -59,6 +65,7 @@ export type CookieYesRuntime = {
   registerScript: (entry: ScriptEntry) => void;
   showOptOut: () => void;
   hideOptOut: () => void;
+  dismissReloadNotice: () => void;
 };
 
 export type Builder = {
@@ -72,6 +79,10 @@ export type Builder = {
   apiKey: (key: string) => Builder;
   blockNetwork: (config: NetworkBlockerConfig) => Builder;
   reloadOnRevoke: (value?: boolean) => Builder;
+  /** Stop these built-in integrations cleanly (no reload) when their category is revoked. */
+  integrations: (list: BuiltInIntegration[]) => Builder;
+  /** Register stop instructions for your own scripts (see `StopHandler`). */
+  customStopHandlers: (list: StopHandler[]) => Builder;
   /** Low-level: fires once, after initial state is known. Prefer `useConsent()` for ongoing reads inside a component. */
   onConsentReady: (fn: (state: ConsentSnapshot) => void) => Builder;
   /** Low-level: fires on every *saved* change only (not transient toggles), registered once here. For dynamic subscribe/unsubscribe, use `useConsentRuntime()`. */
@@ -93,6 +104,8 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
     apiKey: (key) => next({ apiKey: key }),
     blockNetwork: (config) => next({ networkBlocker: config }),
     reloadOnRevoke: (value = true) => next({ reloadOnRevoke: value }),
+    integrations: (list) => next({ integrations: list }),
+    customStopHandlers: (list) => next({ customStopHandlers: list }),
     onConsentReady: (fn) => next({ onConsentReady: fn }),
     onConsentUpdate: (fn) => next({ onConsentUpdate: fn }),
     mount: () => mountRuntime(cfg),
@@ -116,6 +129,7 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
   regulation: "DEFAULT" as Regulation,
   isPreferencesOpen: false,
   isOptOutOpen: false,
+  reloadNotice: Object.freeze({ required: false, reasons: [] }) as ReloadNoticeState,
 }) as CookieYesSnapshot;
 
 let _instance: CookieYesRuntime | null = null;
@@ -144,6 +158,8 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
+  if (cfg.integrations) coreCfg.integrations = cfg.integrations;
+  if (cfg.customStopHandlers) coreCfg.customStopHandlers = cfg.customStopHandlers;
   if (cfg.onConsentReady) coreCfg.onConsentReady = cfg.onConsentReady;
   if (cfg.onConsentUpdate) coreCfg.onConsentUpdate = cfg.onConsentUpdate;
 
@@ -160,6 +176,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       lastRenewed: manager.lastRenewed,
       isPreferencesOpen: manager.isPreferencesOpen,
       isOptOutOpen,
+      reloadNotice: manager.reloadNotice,
     };
   }
 
@@ -211,6 +228,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       isOptOutOpen = false;
       notify();
     },
+    dismissReloadNotice: () => manager.dismissReloadNotice(),
   };
 
   if (_instance && typeof console !== "undefined") {
