@@ -152,21 +152,15 @@ is lost. There are three layers:
    getOrCreateConsentRuntime({
      mode: "cookie-only",
      integrations: [
-       { vendor: "ga4" },   // Consent Mode v2: gtag('consent','update',{ analytics_storage })
        { vendor: "meta" },  // fbq('consent','revoke'|'grant')
      ],
    });
    ```
 
-   > **GA4 uses Google Consent Mode v2.** The SDK sends the `update` on every
-   > consent change (`analytics_storage: 'granted'|'denied'`). You must set the
-   > **deny-by-default** state yourself, in your gtag bootstrap snippet *before*
-   > GA loads — the SDK can't set the `default` because it doesn't control that
-   > load order:
-   >
-   > ```js
-   > gtag('consent', 'default', { analytics_storage: 'denied', wait_for_update: 500 });
-   > ```
+   > **Google Analytics & Tag Manager are handled automatically** — you don't
+   > list them here. The SDK broadcasts Google Consent Mode v2 whenever a
+   > `dataLayer` is present (see [Google Consent Mode](#google-consent-mode-v2)
+   > below). You still set the **deny-by-default** state in your gtag snippet.
 3. **Your own scripts** (`customStopHandlers`) — for anything without a built-in
    integration. Provide a clean `stop()`/`resume()`, or register it as
    reload-only so revoking it shows the reload notice rather than silently
@@ -183,8 +177,7 @@ is lost. There are three layers:
 
 | Vendor | Runtime stop | How |
 |--------|-------------|-----|
-| **GA4** (gtag.js) | ✅ clean | Consent Mode v2 — `gtag('consent','update',{ analytics_storage })`. Set the deny-by-default state in your gtag snippet. |
-| **Google Tag Manager** | ✅ clean | Consent Mode v2 — GTM-managed tags honor `gtag('consent','update',…)` at runtime (per Google's tag-platform consent docs). Maps to `analytics_storage`. |
+| **Google Analytics 4 / Tag Manager** | ✅ automatic | Consent Mode v2 broadcast — no `integrations` entry needed (see [below](#google-consent-mode-v2)). |
 | **Meta Pixel** | ✅ clean | `fbq('consent', 'revoke')` / `'grant'` |
 | TikTok Pixel | ⚠️ reload | No runtime stop we could confidently verify; modelled as reload-only. |
 | LinkedIn Insight Tag | ⚠️ reload | No documented runtime opt-out after load. |
@@ -216,12 +209,138 @@ explicitly want the old behavior; note it erases whatever the visitor was doing.
 
 ## Consent categories
 
+By default the SDK ships the familiar five:
+
 `necessary` (always on), `functional`, `analytics`, `performance`, `advertisement`.
+
+Configure nothing and you get exactly these, unchanged.
+
+### Defining your own categories
+
+Pass a `categories` array to use your own taxonomy — rename, add, remove, or
+restructure. Each entry is a [`CategoryDef`](./src/categories.ts):
+
+```ts
+getOrCreateConsentRuntime({
+  mode: "cookie-only",
+  categories: [
+    { id: "essential", required: true, label: "Strictly Necessary" },
+    { id: "marketing", label: "Marketing & Ads",
+      gcm: ["ad_storage", "ad_user_data", "ad_personalization"] },
+    { id: "insights", label: "Product Insights",
+      gcm: ["analytics_storage"] },
+  ],
+});
+```
+
+- **`id`** — the stable key stored in the cookie and used everywhere (banner,
+  preferences UI, read APIs, `gate`/integration category names, events). Pick it
+  once and keep it stable; renaming an `id` is a taxonomy change (see below).
+- **`required`** — the always-on, non-optional category. **Mark it explicitly** —
+  it is *never* inferred from the name `necessary`, so you can rename it freely.
+  At least one category must be `required: true`.
+- **`label` / `description`** — shown in the preferences UI. For the five
+  built-in ids these fall back to the translation strings if omitted; for a
+  custom id with no `label`, the UI falls back to the `id` itself.
+- **`gcm`** — which Google Consent Mode signals this category governs (see
+  [below](#google-consent-mode-v2)).
+
+**Id rules.** An `id` must be a non-empty string, unique within the list, and
+must not contain `,` or `:` or be one of the cookie's reserved keys (`consentid`,
+`consent`, `action`, `tax`, `lastRenewedDate`) — those would corrupt the stored
+cookie. Otherwise any string is fine (spaces and unicode are OK).
+
+**Invalid config is safe.** If the array is empty, has duplicate/reserved/invalid
+ids, or has no `required` category, the SDK logs a `console.warn` and falls back
+to the built-in five rather than leaving you a broken or unprotected banner.
+
+### Changing your taxonomy later (upgrade behaviour)
+
+Every stored consent record is stamped with a **taxonomy signature** (a hash of
+the ids, `required` flags, and `gcm` mappings — visible as `taxonomyHash` on the
+snapshot and `tax:` in the cookie). This lets the SDK tell what a returning
+visitor actually agreed to.
+
+- **Signature unchanged** → the returning visitor's stored consent is reused
+  silently. No re-prompt.
+- **Signature changed** (you renamed/added/removed a category or changed a `gcm`
+  mapping) → the SDK **re-requests consent**: it discards the stale record and
+  shows the banner again, so the visitor consents against the taxonomy that's
+  actually in effect. This is the one documented outcome for a taxonomy change.
+- **Legacy cookies** written before this feature (no `tax:` stamp) are treated
+  as the built-in five: if you're still on the default taxonomy they're honoured
+  as-is (returning visitors are **never** silently reset by upgrading the SDK);
+  if you've since moved to a custom taxonomy they re-request like any other
+  change.
+
+## Google Consent Mode v2
+
+If a Google `dataLayer` is present on the page, the SDK **broadcasts** all seven
+Consent Mode v2 signals — on load and on every consent change — for every
+visitor. This is what governs Google Analytics 4 and Tag Manager; you do **not**
+register them under `integrations`.
+
+Each signal is `granted` when any granted category maps to it (via its `gcm`
+field), otherwise `denied`. `security_storage` is always `granted`. The built-in
+five map like this:
+
+| Category | GCM signals |
+|----------|-------------|
+| `necessary` | *(none — `security_storage` is always granted)* |
+| `functional` | `functionality_storage`, `personalization_storage` |
+| `analytics` | `analytics_storage` |
+| `performance` | *(none)* |
+| `advertisement` | `ad_storage`, `ad_user_data`, `ad_personalization` |
+
+Under the hood the broadcast does the equivalent of:
+
+```js
+dataLayer.push(["consent", "update", {
+  ad_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
+  analytics_storage: "granted",
+  functionality_storage: "granted",
+  personalization_storage: "granted",
+  security_storage: "granted",
+}]);
+```
+
+> **You still own the default.** Consent Mode requires a **deny-by-default**
+> state set *before* your Google tags load — the SDK can't set it because it
+> doesn't control that load order. Put it in your gtag bootstrap snippet:
+>
+> ```js
+> gtag('consent', 'default', {
+>   ad_storage: 'denied',
+>   ad_user_data: 'denied',
+>   ad_personalization: 'denied',
+>   analytics_storage: 'denied',
+>   functionality_storage: 'denied',
+>   personalization_storage: 'denied',
+>   security_storage: 'granted',
+>   wait_for_update: 500,
+> });
+> ```
+>
+> Set all seven signals explicitly: deny the six consent-gated ones and grant
+> `security_storage` (it's strictly necessary). Leaving any signal unspecified
+> makes Google treat it as granted until the SDK's `update` fires, leaking it for
+> that first moment. The SDK owns the `update`; you own the `default`.
+
+To wire Consent Mode to a **custom** taxonomy, put the `gcm` field on whichever
+of your categories should drive each signal — see the example under
+[Defining your own categories](#defining-your-own-categories) (the `marketing`
+and `insights` entries carry `gcm` mappings). A signal no category maps to
+simply stays `denied`.
 
 ## Cookie
 
 Consent is persisted in the `cookieyes-consent` cookie (`SameSite=Lax`, `path=/`).
-Use `parseCookie` / `serializeCookie` from this package to read or write it directly.
+It stores each category id as `id:yes|no`, plus a `tax:` stamp recording the
+[taxonomy signature](#changing-your-taxonomy-later-upgrade-behaviour) that was in
+effect when the consent was recorded. Use `parseCookie` / `serializeCookie` from
+this package to read or write it directly.
 
 ## License
 

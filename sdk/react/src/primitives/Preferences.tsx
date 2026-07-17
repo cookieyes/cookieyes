@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConsentCategory } from "@cookieyes/core";
+import type { ConsentCategory, TranslationMap } from "@cookieyes/core";
 import {
   type ComponentPropsWithoutRef,
   createContext,
@@ -10,6 +10,7 @@ import {
   useRef,
 } from "react";
 import { CookieYesLogo } from "../components/icons.js";
+import { useCategories } from "../hooks/useCategories.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
@@ -24,13 +25,19 @@ type AnchorProps = ComponentPropsWithoutRef<"a">;
 type ParagraphProps = ComponentPropsWithoutRef<"p">;
 type HeadingProps = ComponentPropsWithoutRef<"h2">;
 
-const CATEGORY_ORDER: ConsentCategory[] = [
+// Only the five built-in ids have translation entries. Narrow to that set so
+// we can safely index the translation map; custom ids fall back to the def.
+type BuiltInCategory = keyof TranslationMap["categories"];
+const BUILT_IN: readonly BuiltInCategory[] = [
   "necessary",
   "functional",
   "analytics",
   "performance",
   "advertisement",
 ];
+function isBuiltIn(id: ConsentCategory): id is BuiltInCategory {
+  return (BUILT_IN as readonly string[]).includes(id);
+}
 
 type PreferencesContextValue = {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -157,9 +164,12 @@ const Categories = forwardRef<
     children: (category: ConsentCategory) => ReactNode;
   }
 >(function PreferencesCategories({ children, ...props }, ref) {
+  // Iterate the *configured* taxonomy (custom list or built-in five fallback),
+  // in declaration order.
+  const { ids } = useCategories();
   return (
     <div ref={ref} role="list" {...props}>
-      {CATEGORY_ORDER.map((cat) => (
+      {ids.map((cat) => (
         <div key={cat} role="listitem">
           {children(cat)}
         </div>
@@ -186,19 +196,30 @@ const Category = forwardRef<
 >(function PreferencesCategory({ category, children, ...props }, ref) {
   const snapshot = useConsent();
   const { updateCategory } = useConsentActions();
+  const { list, requiredIds } = useCategories();
   const t = useTranslations();
-  const isNecessary = category === "necessary";
-  const checked = isNecessary ? true : snapshot.categories[category] === true;
+
+  const def = list.find((c) => c.id === category);
+  const required = requiredIds.has(category);
+  // A required category is always on and can't be toggled.
+  const checked = required ? true : snapshot.categories[category] === true;
+
+  // Label/description precedence: explicit def value → built-in translation →
+  // the id itself (a sensible last resort for a custom category with no label).
+  const builtIn = isBuiltIn(category) ? t.categories[category] : undefined;
+  const label = def?.label ?? builtIn?.label ?? category;
+  const description = def?.description ?? builtIn?.description ?? "";
+
   return (
     <div ref={ref} {...props}>
       {children({
         category,
-        label: t.categories[category].label,
-        description: t.categories[category].description,
+        label,
+        description,
         checked,
-        disabled: isNecessary,
+        disabled: required,
         toggle: (next) => {
-          if (isNecessary) return;
+          if (required) return;
           updateCategory(category, next);
         },
       })}

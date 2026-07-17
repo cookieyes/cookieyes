@@ -14,6 +14,10 @@ describe("@cookieyes/core public exports", () => {
     "resolveTranslations",
     "installNetworkBlocker",
     "uninstallNetworkBlocker",
+    "resolveCategories",
+    "DEFAULT_CATEGORIES",
+    "broadcastGoogleConsent",
+    "computeGoogleConsent",
   ] as const;
 
   it.each(EXPECTED)("exports %s", (name) => {

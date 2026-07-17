@@ -1,4 +1,4 @@
-import type { ConsentCategory, ScriptEntry } from "./types.js";
+import type { ScriptEntry } from "./types.js";
 
 const registry = new Map<string, ScriptEntry>();
 const loaded = new Set<string>();
@@ -8,7 +8,7 @@ export function registerScript(entry: ScriptEntry): void {
   registry.set(entry.id, entry);
 }
 
-export function applyScripts(categories: Record<ConsentCategory, boolean>): void {
+export function applyScripts(categories: Record<string, boolean>): void {
   if (typeof document === "undefined") return;
 
   for (const [id, entry] of registry) {

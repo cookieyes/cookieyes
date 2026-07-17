@@ -1,12 +1,20 @@
+import type { CategoryDef } from "./categories.js";
 import type { NetworkBlockerConfig } from "./network-blocker.js";
 import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 
+/**
+ * A consent category id. The five built-in ids are offered for autocomplete,
+ * but any string is valid — customers can define their own taxonomy via
+ * `categories` (see {@link CategoryDef}).
+ */
 export type ConsentCategory =
   | "necessary"
   | "functional"
   | "analytics"
   | "performance"
-  | "advertisement";
+  | "advertisement"
+  // biome-ignore lint/complexity/noBannedTypes: `string & {}` keeps literal autocomplete while allowing any custom id
+  | (string & {});
 
 export type Regulation = "GDPR" | "CCPA" | "DEFAULT";
 
@@ -75,13 +83,21 @@ export type ConsentConfig = {
   apiKey?: string | undefined;
   backend?: ConsentBackend | undefined;
   regulation?: Regulation | undefined;
+  /**
+   * Define your own category taxonomy. Omit to get the built-in five
+   * (necessary, functional, analytics, performance, advertisement) unchanged.
+   * At least one category must be `{ required: true }`. Invalid configs fall
+   * back to the built-in five with a console warning. See {@link CategoryDef}.
+   */
+  categories?: CategoryDef[] | undefined;
   theme?: ThemeConfig | undefined;
   colorScheme?: "light" | "dark" | "system" | undefined;
   reloadOnRevoke?: boolean | undefined;
   /**
    * Built-in, first-party integrations to stop cleanly (no reload) when their
-   * category is revoked — e.g. `{ vendor: "ga4", measurementId: "G-XXX" }`.
-   * Integrations with no clean runtime stop fall back to the reload notice.
+   * category is revoked — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag
+   * Manager are handled automatically via the Consent Mode broadcast — no entry
+   * needed.) Integrations with no clean runtime stop fall back to the reload notice.
    */
   integrations?: BuiltInIntegration[] | undefined;
   /**
@@ -108,9 +124,16 @@ export type ReloadNoticeState = {
 export type ConsentSnapshot = {
   consentId: string;
   hasActed: boolean;
-  categories: Record<ConsentCategory, boolean>;
+  /** Category id → granted. Keys are the configured taxonomy's ids. */
+  categories: Record<string, boolean>;
   regulation: Regulation;
   lastRenewed?: number | undefined;
+  /**
+   * Signature of the category taxonomy in effect when this consent was
+   * recorded. Lets us (and the customer) tell what a returning visitor
+   * actually agreed to, and drives re-request when the taxonomy changes.
+   */
+  taxonomyHash?: string | undefined;
 };
 
 export type ConsentManager = ConsentSnapshot & {
@@ -140,7 +163,7 @@ export type ConsentManager = ConsentSnapshot & {
  */
 export type ConsentPayload = {
   consentId: string;
-  categories: Record<ConsentCategory, boolean>;
+  categories: Record<string, boolean>;
   regulation: Regulation;
   domain: string;
 };
@@ -172,6 +195,8 @@ export type ConsentRuntimeOptions = {
   apiKey?: string | undefined;
   backend?: ConsentBackend | undefined;
   consentCategories?: ConsentCategory[] | undefined;
+  /** Define your own category taxonomy — see {@link ConsentConfig.categories}. */
+  categories?: CategoryDef[] | undefined;
   overrides?:
     | {
         regulation?: Regulation | undefined;
@@ -201,7 +226,7 @@ export type ActiveUI = "banner" | "dialog" | null;
 
 export type ConsentStoreState = ConsentSnapshot & {
   activeUI: ActiveUI;
-  consents: Record<ConsentCategory, boolean>;
+  consents: Record<string, boolean>;
   has: (category: ConsentCategory) => boolean;
   saveConsents: (target: "all" | "necessary" | ConsentCategory[]) => Promise<void>;
   setConsent: (category: ConsentCategory, value: boolean) => void;

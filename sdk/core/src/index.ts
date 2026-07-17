@@ -1,8 +1,18 @@
+export type {
+  CategoryDef,
+  GoogleConsentSignal,
+  ResolvedCategories,
+} from "./categories.js";
+export { DEFAULT_CATEGORIES, resolveCategories } from "./categories.js";
 export { generateConsentId, parseCookie, serializeCookie } from "./cookie.js";
 export {
   _resetOfflineModeWarning,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
+export {
+  broadcastGoogleConsent,
+  computeGoogleConsent,
+} from "./google-consent-mode.js";
 export { defaultTranslations, resolveTranslations } from "./i18n.js";
 export { createConsentManager } from "./manager.js";
 export type {

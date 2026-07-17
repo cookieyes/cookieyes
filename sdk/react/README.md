@@ -76,7 +76,8 @@ Chain configuration methods and finish with `.mount()`. `.mode()` is required;
 | `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
 | `.apiKey(key)` | Optional auth key. |
 | `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. |
-| `.integrations([...])` | Stop built-in vendors cleanly on revoke — e.g. `{ vendor: "ga4", measurementId: "G-XXX" }`, `{ vendor: "meta" }`. See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
+| `.categories([...])` | Define your own category taxonomy instead of the built-in five. See [core: consent categories](../core/README.md#consent-categories). |
+| `.integrations([...])` | Stop built-in vendors cleanly on revoke — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag Manager are handled automatically via Consent Mode — no entry needed.) See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
 | `.customStopHandlers([...])` | Stop your own scripts on revoke (clean `stop()`, or `needsReload: true`). |
 | `.reloadOnRevoke(true)` | **Legacy, off by default.** Full page reload on revoke — erases what the visitor was doing. Prefer `.integrations(...)`. |
 | `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |
@@ -93,9 +94,9 @@ and stays dismissed until a new revoke needs it; wording is customizable via
 `.i18n(...)` (`reloadNotice.*`).
 
 ⚠️ Without it, a revoke that needs a reload has no way to tell the visitor —
-and that tool keeps running. (Integrations that stop cleanly, like GA4 and
-Meta, don't need it.) For a fully custom notice, read the state with
-`useReloadNotice()` instead.
+and that tool keeps running. (Tools that stop cleanly — Google Analytics/Tag
+Manager via Consent Mode, and Meta — don't need it.) For a fully custom notice,
+read the state with `useReloadNotice()` instead.
 
 ### Deprecated: `mode: "offline"`
 

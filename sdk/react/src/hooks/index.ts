@@ -1,6 +1,7 @@
 "use client";
 
 export { useBannerVisibility } from "./useBannerVisibility.js";
+export { useCategories } from "./useCategories.js";
 export { useConsent } from "./useConsent.js";
 export { type ConsentActions, useConsentActions } from "./useConsentActions.js";
 export { useConsentCategory } from "./useConsentCategory.js";

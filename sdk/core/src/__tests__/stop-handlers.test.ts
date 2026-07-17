@@ -32,19 +32,6 @@ afterEach(() => {
 });
 
 describe("resolveBuiltInIntegration", () => {
-  it("ga4 is a clean-stop handler using Consent Mode v2 (gtag consent update)", () => {
-    const gtag = vi.fn();
-    (window as unknown as Record<string, unknown>).gtag = gtag;
-    const h = resolveBuiltInIntegration({ vendor: "ga4" });
-    expect(h.category).toBe("analytics");
-    if ("needsReload" in h) throw new Error("ga4 should be a clean-stop handler");
-
-    h.stop();
-    expect(gtag).toHaveBeenCalledWith("consent", "update", { analytics_storage: "denied" });
-    h.resume?.();
-    expect(gtag).toHaveBeenCalledWith("consent", "update", { analytics_storage: "granted" });
-  });
-
   it("meta is a clean-stop handler that calls fbq consent revoke/grant", () => {
     const fbq = vi.fn();
     (window as unknown as Record<string, unknown>).fbq = fbq;
@@ -56,15 +43,6 @@ describe("resolveBuiltInIntegration", () => {
     expect(fbq).toHaveBeenCalledWith("consent", "revoke");
     h.resume?.();
     expect(fbq).toHaveBeenCalledWith("consent", "grant");
-  });
-
-  it("gtm is a clean-stop handler using Consent Mode v2 (verified: GTM honors it)", () => {
-    const gtag = vi.fn();
-    (window as unknown as Record<string, unknown>).gtag = gtag;
-    const h = resolveBuiltInIntegration({ vendor: "gtm" });
-    if ("needsReload" in h) throw new Error("gtm should be a clean-stop handler");
-    h.stop();
-    expect(gtag).toHaveBeenCalledWith("consent", "update", { analytics_storage: "denied" });
   });
 
   it.each([

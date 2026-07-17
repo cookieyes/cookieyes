@@ -193,42 +193,47 @@ describe("createConsentManager", () => {
 
   describe("stop-handlers + reload notice (no page reload)", () => {
     beforeEach(() => _clearStopHandlers());
-    afterEach(() => _clearStopHandlers());
-
-    it("runs a clean-stop integration on revoke without reloading, and resumes on re-accept", () => {
-      const gtag = vi.fn();
-      (window as unknown as Record<string, unknown>).gtag = gtag;
-      const mgr = createConsentManager({
-        regulation: "GDPR",
-        integrations: [{ vendor: "ga4" }],
-      });
-
-      mgr.acceptAll();
-      expect(gtag).toHaveBeenLastCalledWith("consent", "update", { analytics_storage: "granted" });
-      expect(mgr.reloadNotice.required).toBe(false);
-
-      mgr.rejectAll();
-      // Stopped cleanly via Consent Mode update — no reload notice.
-      expect(gtag).toHaveBeenLastCalledWith("consent", "update", { analytics_storage: "denied" });
-      expect(mgr.reloadNotice.required).toBe(false);
-
-      mgr.acceptAll();
-      expect(gtag).toHaveBeenLastCalledWith("consent", "update", { analytics_storage: "granted" });
+    afterEach(() => {
+      _clearStopHandlers();
+      (window as unknown as Record<string, unknown>).dataLayer = undefined;
     });
 
-    it("sends stored consent at load — a returning visitor who granted analytics gets update:granted", () => {
+    it("broadcasts Google Consent Mode updates on consent change when a dataLayer exists", () => {
+      const dataLayer: unknown[] = [];
+      (window as unknown as Record<string, unknown>).dataLayer = dataLayer;
+      const mgr = createConsentManager({ regulation: "GDPR" });
+
+      const lastConsent = () => {
+        const entry = dataLayer[dataLayer.length - 1] as [string, string, Record<string, string>];
+        return entry[2];
+      };
+
+      mgr.acceptAll();
+      expect(lastConsent().analytics_storage).toBe("granted");
+      expect(lastConsent().ad_storage).toBe("granted");
+
+      mgr.rejectAll();
+      expect(lastConsent().analytics_storage).toBe("denied");
+      expect(lastConsent().ad_storage).toBe("denied");
+      // security_storage is always granted; never gated on consent.
+      expect(lastConsent().security_storage).toBe("granted");
+    });
+
+    it("broadcasts stored consent at load — a returning visitor who granted analytics gets granted", () => {
       // Simulate a returning visitor whose cookie already grants analytics.
+      // No `tax` stamp = legacy cookie on the default taxonomy → reused as-is.
       document.cookie = `cookieyes-consent=${encodeURIComponent(
         "consentid:abc,consent:yes,action:yes,necessary:yes,functional:no,analytics:yes,performance:no,advertisement:no,lastRenewedDate:1",
       )}`;
-      const gtag = vi.fn();
-      (window as unknown as Record<string, unknown>).gtag = gtag;
+      const dataLayer: unknown[] = [];
+      (window as unknown as Record<string, unknown>).dataLayer = dataLayer;
 
       // Just constructing the manager should reflect the stored grant — otherwise
       // GA stays stuck in the page's deny-by-default Consent Mode state.
-      createConsentManager({ regulation: "GDPR", integrations: [{ vendor: "ga4" }] });
+      createConsentManager({ regulation: "GDPR" });
 
-      expect(gtag).toHaveBeenCalledWith("consent", "update", { analytics_storage: "granted" });
+      const entry = dataLayer[dataLayer.length - 1] as [string, string, Record<string, string>];
+      expect(entry[2].analytics_storage).toBe("granted");
     });
 
     it("surfaces the reload notice when a reload-only integration's category is revoked", () => {
@@ -291,6 +296,81 @@ describe("createConsentManager", () => {
       expect(() => mgr.rejectAll()).not.toThrow();
       expect(mgr.reloadNotice.required).toBe(true);
       expect(mgr.reloadNotice.reasons).toContain("custom");
+    });
+  });
+
+  describe("configurable categories", () => {
+    const CUSTOM = [{ id: "essential", required: true }, { id: "marketing" }, { id: "stats" }];
+
+    it("drives state off a custom taxonomy", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(Object.keys(mgr.categories).sort()).toEqual(["essential", "marketing", "stats"]);
+      expect(mgr.categories.essential).toBe(true); // required → on
+      expect(mgr.categories.marketing).toBe(false);
+    });
+
+    it("keeps the required category on through reject/select", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      mgr.rejectAll();
+      expect(mgr.categories.essential).toBe(true);
+      expect(mgr.categories.marketing).toBe(false);
+
+      mgr.acceptSelected(["marketing"]);
+      expect(mgr.categories.essential).toBe(true);
+      expect(mgr.categories.marketing).toBe(true);
+      expect(mgr.categories.stats).toBe(false);
+    });
+
+    it("updateCategory can't toggle a required category off, and ignores unknown ids", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      mgr.updateCategory("essential", false);
+      expect(mgr.categories.essential).toBe(true);
+      mgr.updateCategory("nope", true);
+      expect(mgr.categories.nope).toBeUndefined();
+    });
+
+    it("reuses a returning visitor's consent when the taxonomy is unchanged", () => {
+      const hash = createConsentManager({ regulation: "GDPR", categories: CUSTOM }).taxonomyHash;
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        `consentid:ret,consent:yes,action:yes,tax:${hash},essential:yes,marketing:yes,stats:no,lastRenewedDate:1`,
+      )}`;
+
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(mgr.hasActed).toBe(true); // consent reused
+      expect(mgr.categories.marketing).toBe(true);
+      expect(mgr.categories.stats).toBe(false);
+    });
+
+    it("re-requests consent when the taxonomy changed (AC2: documented outcome)", () => {
+      // Stored consent under the OLD (default five) taxonomy...
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        "consentid:ret,consent:yes,action:yes,tax:oldhash,necessary:yes,analytics:yes,lastRenewedDate:1",
+      )}`;
+
+      // ...but the app now runs a different custom taxonomy → re-prompt.
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(mgr.hasActed).toBe(false); // must act again
+      expect(mgr.categories.essential).toBe(true);
+      expect(mgr.categories.marketing).toBe(false);
+    });
+
+    it("upgrade-safe: a legacy cookie with no tax stamp on the default five is preserved (AC3)", () => {
+      // Pre-feature cookie (no `tax:`) — a returning visitor on the built-in five.
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        "consentid:legacy,consent:yes,action:yes,necessary:yes,functional:no,analytics:yes,performance:no,advertisement:no,lastRenewedDate:1",
+      )}`;
+
+      // No custom categories → default five → legacy consent must NOT be reset.
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      expect(mgr.hasActed).toBe(true);
+      expect(mgr.categories.analytics).toBe(true);
+      expect(mgr.consentId).toBe("legacy");
+    });
+
+    it("records the taxonomy hash on the snapshot", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(typeof mgr.taxonomyHash).toBe("string");
+      expect(mgr.taxonomyHash).toBeTruthy();
     });
   });
 });

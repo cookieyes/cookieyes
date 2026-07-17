@@ -12,7 +12,7 @@ import type {
   ConsentStoreState,
 } from "./types.js";
 
-function splitCategories(categories: Record<ConsentCategory, boolean>): ConsentChangePayload {
+function splitCategories(categories: Record<string, boolean>): ConsentChangePayload {
   const allowed: ConsentCategory[] = [];
   const denied: ConsentCategory[] = [];
   for (const cat of Object.keys(categories) as ConsentCategory[]) {
@@ -35,6 +35,7 @@ function buildConsentConfig(options: ConsentRuntimeOptions): ConsentConfig {
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
   if (options.integrations) cfg.integrations = options.integrations;
   if (options.customStopHandlers) cfg.customStopHandlers = options.customStopHandlers;
+  if (options.categories) cfg.categories = options.categories;
   if (options.onConsentReady) cfg.onConsentReady = options.onConsentReady;
   return cfg;
 }
@@ -74,6 +75,7 @@ export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): Conse
       consents: categories,
       regulation: manager.regulation,
       lastRenewed: manager.lastRenewed,
+      taxonomyHash: manager.taxonomyHash,
       activeUI: activeUI(),
       has: (category) => manager.categories[category] ?? false,
       saveConsents: async (target) => {

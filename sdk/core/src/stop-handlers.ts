@@ -36,12 +36,14 @@ function isReloadOnly(h: AnyStopHandler): h is ReloadOnlyHandler {
  * Built-in, first-party integrations. Each maps to either a clean stop-handler
  * or a reload-only marker (see the audit in the README).
  *
+ * Note: Google Analytics 4 and Google Tag Manager are **not** listed here.
+ * They're governed by Google Consent Mode v2, which the SDK broadcasts
+ * automatically whenever a `dataLayer` is present (see google-consent-mode.ts)
+ * — on load and on every consent change, derived from each category's `gcm`
+ * mapping. So you don't register them as integrations; just add the standard
+ * Consent Mode default snippet and the SDK owns the updates.
+ *
  * VERIFIED clean-stop vendors (documented, stable runtime opt-out):
- * - `ga4`   — Google Consent Mode v2: `gtag('consent','update',{ analytics_storage })`.
- *             The `default` state (deny-by-default) must be set in your gtag
- *             bootstrap snippet before GA loads; this handler sends the *update*
- *             on consent change. `measurementId` is optional (Consent Mode is
- *             global, not per-ID) and used only for a stable handler id.
  * - `meta`  — `fbq('consent','revoke'|'grant')`, Meta's official consent API.
  *
  * The rest have no confident, documented runtime stop, so they're modelled as
@@ -49,52 +51,19 @@ function isReloadOnly(h: AnyStopHandler): h is ReloadOnlyHandler {
  * later is a one-line change here once a real API is confirmed.
  */
 export type BuiltInIntegration =
-  | { vendor: "ga4"; measurementId?: string | undefined; category?: ConsentCategory | undefined }
   | { vendor: "meta"; category?: ConsentCategory | undefined }
   | { vendor: "tiktok"; category?: ConsentCategory | undefined }
   | { vendor: "linkedin"; category?: ConsentCategory | undefined }
   | { vendor: "hotjar"; category?: ConsentCategory | undefined }
-  | { vendor: "segment"; category?: ConsentCategory | undefined }
-  | { vendor: "gtm"; category?: ConsentCategory | undefined };
+  | { vendor: "segment"; category?: ConsentCategory | undefined };
 
 type WindowWithVendors = Window &
   typeof globalThis & {
     fbq?: (...args: unknown[]) => void;
-    gtag?: (...args: unknown[]) => void;
   };
-
-/**
- * A Google Consent Mode v2 handler: sends `gtag('consent','update',{ signal })`
- * on revoke/re-accept. `gtag` queues onto dataLayer, so it's safe even before
- * the Google library finishes loading (no-op if the stub is absent). The
- * deny-by-default state belongs in the customer's gtag snippet, not here.
- *
- * Shared by GA4 and GTM — both are governed by Consent Mode identically
- * (verified against Google's tag-platform consent docs).
- */
-function consentModeHandler(id: string, category: ConsentCategory, signal: string): StopHandler {
-  return {
-    id,
-    category,
-    stop: () => (window as WindowWithVendors).gtag?.("consent", "update", { [signal]: "denied" }),
-    resume: () =>
-      (window as WindowWithVendors).gtag?.("consent", "update", { [signal]: "granted" }),
-  };
-}
 
 export function resolveBuiltInIntegration(cfg: BuiltInIntegration): AnyStopHandler {
   switch (cfg.vendor) {
-    case "ga4":
-      return consentModeHandler(
-        cfg.measurementId ? `ga4:${cfg.measurementId}` : "ga4",
-        cfg.category ?? "analytics",
-        "analytics_storage",
-      );
-    case "gtm":
-      // GTM-managed tags respect Consent Mode updates at runtime, same as GA4.
-      // (Full per-category signal mapping — ad_storage etc. — is the GCM v2
-      // integration tracked separately; here GTM maps to analytics_storage.)
-      return consentModeHandler("gtm", cfg.category ?? "analytics", "analytics_storage");
     case "meta":
       return {
         id: "meta",
@@ -151,7 +120,7 @@ export type StopHandlerResult = {
  * Never throws: a failing `stop()` is downgraded to a reload requirement for
  * that one tool, so a broken handler can't break the page.
  */
-export function applyStopHandlers(categories: Record<ConsentCategory, boolean>): StopHandlerResult {
+export function applyStopHandlers(categories: Record<string, boolean>): StopHandlerResult {
   const reloadRequiredBy: string[] = [];
 
   for (const handler of handlers.values()) {
@@ -207,7 +176,7 @@ export function applyStopHandlers(categories: Record<ConsentCategory, boolean>):
  * needs no "reload to apply"), but it *does* seed reload-only tools' active
  * state from the stored consent, so a later live revoke is correctly detected.
  */
-export function initStopHandlers(categories: Record<ConsentCategory, boolean>): void {
+export function initStopHandlers(categories: Record<string, boolean>): void {
   for (const handler of handlers.values()) {
     const denied = categories[handler.category] !== true;
 

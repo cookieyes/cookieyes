@@ -1,3 +1,4 @@
+import { resolveCategories } from "./categories.js";
 import {
   clearConsentCookie,
   defaultSnapshot,
@@ -6,6 +7,7 @@ import {
   readConsentCookie,
   writeConsentCookie,
 } from "./cookie.js";
+import { broadcastGoogleConsent } from "./google-consent-mode.js";
 import { applyScripts, registerScript } from "./scripts.js";
 import {
   applyStopHandlers,
@@ -23,20 +25,27 @@ import type {
   ScriptEntry,
 } from "./types.js";
 
-const ALL_CATEGORIES: ConsentCategory[] = [
-  "necessary",
-  "functional",
-  "analytics",
-  "performance",
-  "advertisement",
-];
-
 export function createConsentManager(config: ConsentConfig): ConsentManager {
   const listeners = new Set<(state: ConsentSnapshot) => void>();
 
+  // Resolve the category taxonomy (built-in five, or the customer's, or a
+  // validated fallback to the five). Everything below is driven by this.
+  const resolved = resolveCategories(config.categories);
+
   let state: ConsentSnapshot;
   let isPreferencesOpen = false;
-  let lastPersistedCategories: Record<ConsentCategory, boolean>;
+  let lastPersistedCategories: Record<string, boolean>;
+
+  /** Build a category map over the resolved ids; required ids are always granted. */
+  function buildCategories(
+    grantNonRequired: (id: ConsentCategory) => boolean,
+  ): Record<string, boolean> {
+    const cats: Record<string, boolean> = {};
+    for (const id of resolved.ids) {
+      cats[id] = resolved.requiredIds.has(id) ? true : grantNonRequired(id);
+    }
+    return cats;
+  }
 
   // Reload-notice state: `reasons` is the set of handler ids that currently
   // can't be stopped cleanly; `dismissed` suppresses the notice until a
@@ -56,11 +65,25 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   const rawFields = readConsentCookie();
   const savedRegulation = config.regulation ?? "DEFAULT";
 
-  if (rawFields) {
-    state = rawFieldsToSnapshot(rawFields, savedRegulation);
+  // Decide whether stored consent is still valid for the current taxonomy:
+  // - tax stamp matches            → reuse it.
+  // - legacy cookie (no stamp) on the default taxonomy → reuse it (upgrade-safe:
+  //   never resets existing users who were on the built-in five).
+  // - otherwise (taxonomy changed) → re-request from scratch.
+  const storedTax = rawFields?.tax;
+  const taxMatches = storedTax === resolved.taxonomyHash;
+  const legacyCookie = storedTax === undefined;
+  const storedConsentValid =
+    rawFields != null && (taxMatches || (legacyCookie && resolved.isDefault));
+
+  if (rawFields != null && storedConsentValid) {
+    state = rawFieldsToSnapshot(rawFields, savedRegulation, resolved);
   } else {
-    const consentId = generateConsentId();
-    state = defaultSnapshot(consentId, savedRegulation);
+    const consentId = rawFields?.consentid ?? generateConsentId();
+    state = defaultSnapshot(consentId, savedRegulation, resolved);
+    // Taxonomy changed under an existing visitor → drop the stale cookie so we
+    // genuinely re-request rather than leaving a mismatched record behind.
+    if (rawFields != null) clearConsentCookie();
 
     // CCPA is an opt-out model: consent is implicit from page load.
     // Write the cookie immediately so all-category values (yes) are available
@@ -69,6 +92,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       writeConsentCookie(state);
     }
   }
+  // The state's taxonomy is always the resolved one — stamp it so cookies
+  // written from here on carry the current signature (upgrades legacy cookies).
+  state = { ...state, taxonomyHash: resolved.taxonomyHash };
   lastPersistedCategories = { ...state.categories };
 
   // Fire onConsentReady synchronously on next tick.
@@ -87,6 +113,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       categories: { ...state.categories },
       regulation: state.regulation,
       lastRenewed: state.lastRenewed,
+      taxonomyHash: state.taxonomyHash,
     };
   }
 
@@ -121,8 +148,8 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
     // Detect "revoke" — any category that was previously consented but now isn't.
     let didRevoke = false;
-    for (const cat of ALL_CATEGORIES) {
-      if (lastPersistedCategories[cat] && !state.categories[cat]) {
+    for (const id of resolved.ids) {
+      if (lastPersistedCategories[id] && !state.categories[id]) {
         didRevoke = true;
         break;
       }
@@ -134,6 +161,10 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     // and surfaces the reload notice instead of silently continuing to track.
     const { reloadRequiredBy } = applyStopHandlers(state.categories);
     setReloadReasons(reloadRequiredBy);
+
+    // Broadcast Google Consent Mode signals for the new state (no-op unless a
+    // dataLayer is present). Derived from the category → GCM-signal mapping.
+    broadcastGoogleConsent(resolved, state.categories);
 
     notify();
     config.onConsentUpdate?.(state);
@@ -162,53 +193,36 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     get lastRenewed() {
       return state.lastRenewed;
     },
+    get taxonomyHash() {
+      return state.taxonomyHash;
+    },
     get isPreferencesOpen() {
       return isPreferencesOpen;
     },
 
     acceptAll() {
-      state = {
-        ...state,
-        categories: {
-          necessary: true,
-          functional: true,
-          analytics: true,
-          performance: true,
-          advertisement: true,
-        },
-      };
+      state = { ...state, categories: buildCategories(() => true) };
       isPreferencesOpen = false;
       persist();
     },
 
     rejectAll() {
-      state = {
-        ...state,
-        categories: {
-          necessary: true,
-          functional: false,
-          analytics: false,
-          performance: false,
-          advertisement: false,
-        },
-      };
+      state = { ...state, categories: buildCategories(() => false) };
       isPreferencesOpen = false;
       persist();
     },
 
     acceptSelected(categories: ConsentCategory[]) {
-      const cats = { ...state.categories };
-      for (const cat of ALL_CATEGORIES) {
-        if (cat === "necessary") continue;
-        cats[cat] = categories.includes(cat);
-      }
-      state = { ...state, categories: cats };
+      state = { ...state, categories: buildCategories((id) => categories.includes(id)) };
       isPreferencesOpen = false;
       persist();
     },
 
     updateCategory(category: ConsentCategory, value: boolean) {
-      if (category === "necessary") return;
+      // Required categories are always on and can't be toggled off.
+      if (resolved.requiredIds.has(category)) return;
+      // Ignore ids that aren't part of the configured taxonomy.
+      if (!resolved.ids.includes(category)) return;
       state = {
         ...state,
         categories: { ...state.categories, [category]: value },
@@ -224,11 +238,12 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     resetConsent() {
       clearConsentCookie();
       const consentId = generateConsentId();
-      state = defaultSnapshot(consentId, state.regulation);
+      state = defaultSnapshot(consentId, state.regulation, resolved);
       isPreferencesOpen = false;
       // Realign clean-stop flags with the reset state; clear any reload notice
       // (a reset re-prompts, so a stale "reload to apply" message is wrong).
       applyStopHandlers(state.categories);
+      broadcastGoogleConsent(resolved, state.categories);
       reloadReasons = [];
       reloadDismissed = false;
       notify();
@@ -278,6 +293,11 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   // deny-by-default state. No reload notice at load (that's only for live
   // revokes). Live changes after this go through applyStopHandlers.
   initStopHandlers(state.categories);
+
+  // Broadcast the initial Consent Mode state on load (no-op unless a Google
+  // dataLayer is present), so Google tags see the returning visitor's choice
+  // — or the deny-by-default for a first-time visitor — from first paint.
+  broadcastGoogleConsent(resolved, state.categories);
 
   return manager;
 }

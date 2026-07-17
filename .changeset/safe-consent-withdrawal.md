@@ -11,12 +11,11 @@ Revoking consent no longer needs a full page reload to take effect (and
 `reloadOnRevoke` stays off by default). Instead:
 
 - **`integrations`** — call a vendor's own documented stop API on revoke and
-  resume it on re-accept. Built in: `ga4` and `gtm` (Google Consent Mode v2 —
-  `gtag('consent','update',{ analytics_storage })`) and `meta`
-  (`fbq('consent','revoke'|'grant')`) stop cleanly; `tiktok`, `linkedin`,
-  `hotjar`, and `segment` have no confidently-documented runtime stop and are
-  modelled as reload-only (see the vendor audit in the core README). For GA4/GTM,
-  set the deny-by-default Consent Mode state in your gtag snippet.
+  resume it on re-accept. Built in: `meta` (`fbq('consent','revoke'|'grant')`)
+  stops cleanly; `tiktok`, `linkedin`, `hotjar`, and `segment` have no
+  confidently-documented runtime stop and are modelled as reload-only (see the
+  vendor audit in the core README). (Google Analytics/Tag Manager are governed
+  by the automatic Google Consent Mode v2 broadcast — no integration entry.)
 - **`customStopHandlers`** — register stop instructions for your own scripts;
   a script with no clean stop is marked `needsReload` so revoking it prompts a
   reload instead of silently continuing to track.

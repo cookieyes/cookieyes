@@ -3,8 +3,8 @@
 import {
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
+  type CategoryDef,
   type ConsentBackend,
-  type ConsentCategory,
   type ConsentConfig,
   type ConsentManager,
   type ConsentSnapshot,
@@ -14,6 +14,8 @@ import {
   type NetworkBlockerConfig,
   type Regulation,
   type ReloadNoticeState,
+  type ResolvedCategories,
+  resolveCategories,
   resolveTranslations,
   type ScriptEntry,
   type StopHandler,
@@ -44,6 +46,7 @@ type RuntimeConfig = {
   reloadOnRevoke?: boolean;
   integrations?: BuiltInIntegration[];
   customStopHandlers?: StopHandler[];
+  categories?: CategoryDef[];
   onConsentReady?: (state: ConsentSnapshot) => void;
   onConsentUpdate?: (state: ConsentSnapshot) => void;
 };
@@ -60,6 +63,8 @@ export type CookieYesRuntime = {
   getServerSnapshot: () => CookieYesSnapshot;
   manager: ConsentManager;
   translations: TranslationMap;
+  /** The resolved category taxonomy in effect (built-in five or the customer's). */
+  categories: ResolvedCategories;
   theme: ThemeConfig | undefined;
   colorScheme: ColorSchemePref;
   registerScript: (entry: ScriptEntry) => void;
@@ -83,6 +88,8 @@ export type Builder = {
   integrations: (list: BuiltInIntegration[]) => Builder;
   /** Register stop instructions for your own scripts (see `StopHandler`). */
   customStopHandlers: (list: StopHandler[]) => Builder;
+  /** Define your own category taxonomy. Omit for the built-in five (see `CategoryDef`). */
+  categories: (list: CategoryDef[]) => Builder;
   /** Low-level: fires once, after initial state is known. Prefer `useConsent()` for ongoing reads inside a component. */
   onConsentReady: (fn: (state: ConsentSnapshot) => void) => Builder;
   /** Low-level: fires on every *saved* change only (not transient toggles), registered once here. For dynamic subscribe/unsubscribe, use `useConsentRuntime()`. */
@@ -106,6 +113,7 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
     reloadOnRevoke: (value = true) => next({ reloadOnRevoke: value }),
     integrations: (list) => next({ integrations: list }),
     customStopHandlers: (list) => next({ customStopHandlers: list }),
+    categories: (list) => next({ categories: list }),
     onConsentReady: (fn) => next({ onConsentReady: fn }),
     onConsentUpdate: (fn) => next({ onConsentUpdate: fn }),
     mount: () => mountRuntime(cfg),
@@ -125,7 +133,7 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
     analytics: false,
     performance: false,
     advertisement: false,
-  }) as Record<ConsentCategory, boolean>,
+  }) as Record<string, boolean>,
   regulation: "DEFAULT" as Regulation,
   isPreferencesOpen: false,
   isOptOutOpen: false,
@@ -160,10 +168,14 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
   if (cfg.integrations) coreCfg.integrations = cfg.integrations;
   if (cfg.customStopHandlers) coreCfg.customStopHandlers = cfg.customStopHandlers;
+  if (cfg.categories) coreCfg.categories = cfg.categories;
   if (cfg.onConsentReady) coreCfg.onConsentReady = cfg.onConsentReady;
   if (cfg.onConsentUpdate) coreCfg.onConsentUpdate = cfg.onConsentUpdate;
 
   const manager = createConsentManager(coreCfg);
+  // Same resolution the manager uses internally — so the UI iterates exactly
+  // the taxonomy that's in effect (custom, or the built-in five fallback).
+  const resolved = resolveCategories(cfg.categories);
   const listeners = new Set<() => void>();
   let isOptOutOpen = false;
 
@@ -174,6 +186,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       categories: manager.categories,
       regulation: manager.regulation,
       lastRenewed: manager.lastRenewed,
+      taxonomyHash: manager.taxonomyHash,
       isPreferencesOpen: manager.isPreferencesOpen,
       isOptOutOpen,
       reloadNotice: manager.reloadNotice,
@@ -197,11 +210,21 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   const colorScheme = cfg.colorScheme ?? "system";
 
   // Per-mount SSR snapshot: a fresh-visitor state (banner visible, dialogs
-  // closed) carrying the *configured* regulation so server-rendered markup
-  // matches the client's first hydration render (no GDPR/CCPA mismatch).
+  // closed) carrying the *configured* regulation and the *resolved* taxonomy's
+  // fresh-visitor category map — so server markup matches the client's first
+  // hydration render (no regulation or category-shape mismatch), including for
+  // custom taxonomies. CCPA is opt-out (everything on); otherwise only the
+  // required category(ies) start on. Mirrors core's defaultSnapshot.
+  const ssrRegulation = (cfg.regulation ?? "DEFAULT") as Regulation;
+  const ssrOptOut = ssrRegulation === "CCPA";
+  const ssrCategories: Record<string, boolean> = {};
+  for (const id of resolved.ids) {
+    ssrCategories[id] = resolved.requiredIds.has(id) ? true : ssrOptOut;
+  }
   const ssrSnapshot: CookieYesSnapshot = Object.freeze({
     ...SSR_SNAPSHOT,
-    regulation: (cfg.regulation ?? "DEFAULT") as Regulation,
+    regulation: ssrRegulation,
+    categories: Object.freeze(ssrCategories) as Record<string, boolean>,
   }) as CookieYesSnapshot;
 
   const runtime: CookieYesRuntime = {
@@ -215,6 +238,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     getServerSnapshot: () => ssrSnapshot,
     manager,
     translations: resolveTranslations(cfg.i18n),
+    categories: resolved,
     theme: cfg.theme,
     colorScheme,
     registerScript: (entry) => manager.registerScript(entry),
