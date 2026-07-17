@@ -1,7 +1,21 @@
 # Contributing to the CookieYes Consent SDK
 
 Thanks for your interest in contributing! This document explains how to set up the
-project, the standards we hold code to, and how releases work.
+project, the standards we hold code to, and how releases work. It applies across all
+CookieYes packages in this monorepo (`@cookieyes/core`, `@cookieyes/react`,
+`@cookieyes/nextjs`, `@cookieyes/cli`, `@cookieyes/translations`) — the process is the
+same no matter which package you're working on.
+
+## Ways to contribute
+
+- Report a bug using the **Bug Report** issue template.
+- Suggest a feature using the **Feature Request** issue template.
+- Improve documentation.
+- Submit a pull request that fixes an open issue or adds a well-scoped improvement.
+
+If you're planning a larger change (new feature, breaking change, architectural shift),
+please open an issue to discuss it first — this saves everyone time and avoids a PR being
+rejected after significant work.
 
 ## Code of Conduct
 
@@ -42,6 +56,10 @@ packages live under `sdk/*`.
   packages (`react`, `nextjs`) should only wire the engine to the framework.
 - **Tests** live next to source in `__tests__/` and run on jsdom via Vitest. Add or
   update tests for any behavioral change.
+- **Commit messages** follow [Conventional Commits](https://www.conventionalcommits.org):
+  `fix:`, `feat:`, `docs:`, `chore:`, `refactor:`, `test:`. Example:
+  `fix(core): stop tracking scripts without a full page reload`. Keep commits focused —
+  one logical change per commit where practical.
 
 ## Pull request workflow
 
@@ -62,6 +80,11 @@ Releases are automated with [Changesets](https://github.com/changesets/changeset
   [provenance](https://docs.npmjs.com/generating-provenance-statements) via GitHub Actions.
 
 You do **not** publish from your machine — `npm publish` is performed only by CI.
+
+## Licensing
+
+By submitting a contribution, you agree that it is licensed under this project's existing
+license (see [LICENSE](./LICENSE), MIT).
 
 ## Reporting bugs & requesting features
 
