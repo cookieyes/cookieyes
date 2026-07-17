@@ -6,6 +6,7 @@ export type {
   AnyStopHandler,
   BuiltInIntegration,
   CategoryDef,
+  ColorScheme,
   ConsentBackend,
   ConsentCategory,
   ConsentChangePayload,
@@ -18,6 +19,9 @@ export type {
   ConsentSnapshot,
   ConsentStore,
   ConsentStoreState,
+  CookieYesConfig,
+  CookieYesOfflineConfig,
+  CookieYesSelfHostedConfig,
   GoogleConsentSignal,
   I18nConfig,
   Regulation,
@@ -76,9 +80,10 @@ export type {
   CookieYesSnapshot,
   RuntimeMode,
 } from "./runtime.js";
-// Runtime — builder + module-level registry
+// Runtime — canonical initCookieYes + deprecated builder + module-level registry
 export {
   createCookieYes,
   getCookieYes,
+  initCookieYes,
   resetCookieYes,
 } from "./runtime.js";

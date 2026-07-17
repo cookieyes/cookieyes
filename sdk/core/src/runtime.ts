@@ -1,3 +1,4 @@
+import { _normalizeConfig } from "./config.js";
 import { _warnOfflineModeDeprecated } from "./deprecations.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
@@ -7,9 +8,9 @@ import type {
   ConsentChangePayload,
   ConsentConfig,
   ConsentRuntime,
-  ConsentRuntimeOptions,
   ConsentStore,
   ConsentStoreState,
+  CookieYesConfig,
 } from "./types.js";
 
 function splitCategories(categories: Record<string, boolean>): ConsentChangePayload {
@@ -22,14 +23,28 @@ function splitCategories(categories: Record<string, boolean>): ConsentChangePayl
   return { allowedCategories: allowed, deniedCategories: denied };
 }
 
-function buildConsentConfig(options: ConsentRuntimeOptions): ConsentConfig {
+let _runtime: ConsentRuntime | null = null;
+
+export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRuntime {
+  if (_runtime) return _runtime;
+
+  // `"offline"` is a deprecated alias for `"cookie-only"` — same behavior, one
+  // warning per page load. Checked on the raw config before normalization.
+  if (config.mode === "offline") _warnOfflineModeDeprecated();
+
+  // Collapse deprecated aliases (`overrides.regulation` → `regulation`,
+  // `backendURL` → `apiUrl`) into the one canonical shape both packages share.
+  const options = _normalizeConfig(config);
+  const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
+  const userOnConsentUpdate = options.onConsentUpdate;
+
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
     if (options.backend) cfg.backend = options.backend;
-    else if (options.backendURL) cfg.apiUrl = options.backendURL;
+    else if (options.apiUrl) cfg.apiUrl = options.apiUrl;
   }
   if (options.apiKey) cfg.apiKey = options.apiKey;
-  if (options.overrides?.regulation) cfg.regulation = options.overrides.regulation;
+  if (options.regulation) cfg.regulation = options.regulation;
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
@@ -37,20 +52,6 @@ function buildConsentConfig(options: ConsentRuntimeOptions): ConsentConfig {
   if (options.customStopHandlers) cfg.customStopHandlers = options.customStopHandlers;
   if (options.categories) cfg.categories = options.categories;
   if (options.onConsentReady) cfg.onConsentReady = options.onConsentReady;
-  return cfg;
-}
-
-let _runtime: ConsentRuntime | null = null;
-
-export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): ConsentRuntime {
-  if (_runtime) return _runtime;
-
-  if (options.mode === "offline") _warnOfflineModeDeprecated();
-
-  const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
-  const userOnConsentUpdate = options.onConsentUpdate;
-
-  const cfg: ConsentConfig = buildConsentConfig(options);
 
   cfg.onConsentUpdate = (snap) => {
     userOnConsentUpdate?.(snap);
@@ -104,6 +105,16 @@ export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): Conse
 
   _runtime = { consentManager: manager, consentStore };
   return _runtime;
+}
+
+/**
+ * Canonical setup entry point. Alias of {@link getOrCreateConsentRuntime} that
+ * accepts the same {@link CookieYesConfig} and returns the same process-wide
+ * singleton — provided so documentation can use one setup name (`initCookieYes`)
+ * across every package.
+ */
+export function initCookieYes(config: CookieYesConfig): ConsentRuntime {
+  return getOrCreateConsentRuntime(config);
 }
 
 export function resetConsentRuntime(): void {

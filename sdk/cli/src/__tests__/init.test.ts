@@ -95,7 +95,7 @@ describe("runInit — Next.js (cookie-only, GDPR)", () => {
     await runInit();
 
     const writes = writtenContents();
-    expect(writes.some((w) => w.includes("createCookieYes"))).toBe(true);
+    expect(writes.some((w) => w.includes("initCookieYes"))).toBe(true);
     expect(writes.some((w) => w.includes("<CookieBanner />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/nextjs"'))).toBe(true);
     expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(true);
@@ -119,7 +119,8 @@ describe("runInit — React (self-hosted, CCPA, locales, skip install)", () => {
     await runInit();
 
     const writes = writtenContents();
-    expect(writes.some((w) => w.includes(".backend({"))).toBe(true);
+    expect(writes.some((w) => w.includes("backend: {"))).toBe(true);
+    expect(writes.some((w) => w.includes("initCookieYes({"))).toBe(true);
     expect(writes.some((w) => w.includes("<CookieOptOut />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/translations/es"'))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/react"'))).toBe(true);
@@ -144,6 +145,9 @@ describe("runInit — Vanilla (self-hosted, locales, install)", () => {
 
     const writes = writtenContents();
     expect(writes.some((w) => w.includes("getOrCreateConsentRuntime"))).toBe(true);
+    // Regulation is a top-level key now — the deprecated `overrides` wrapper is gone.
+    expect(writes.some((w) => w.includes('regulation: "GDPR"'))).toBe(true);
+    expect(writes.every((w) => !w.includes("overrides"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/translations/de"'))).toBe(true);
     expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/core", "npm", expect.any(String));
     expect(h.installPackage).toHaveBeenCalledWith(
@@ -225,7 +229,7 @@ describe("runInit — patching existing files", () => {
     await runInit();
 
     // provider + index are still scaffolded
-    expect(writtenContents().some((w) => w.includes("createCookieYes"))).toBe(true);
+    expect(writtenContents().some((w) => w.includes("initCookieYes"))).toBe(true);
   });
 
   it("skips patching when the layout already uses CookieYesRoot", async () => {

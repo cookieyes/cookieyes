@@ -5,6 +5,7 @@ import * as core from "../index.js";
 describe("@cookieyes/core public exports", () => {
   const EXPECTED = [
     "getOrCreateConsentRuntime",
+    "initCookieYes",
     "resetConsentRuntime",
     "createConsentManager",
     "generateConsentId",

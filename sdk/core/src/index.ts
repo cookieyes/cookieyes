@@ -4,6 +4,9 @@ export type {
   ResolvedCategories,
 } from "./categories.js";
 export { DEFAULT_CATEGORIES, resolveCategories } from "./categories.js";
+/** @internal — shared config normalizer consumed by framework adapters. */
+export type { _NormalizedConfig } from "./config.js";
+export { _normalizeConfig } from "./config.js";
 export { generateConsentId, parseCookie, serializeCookie } from "./cookie.js";
 export {
   _resetOfflineModeWarning,
@@ -26,6 +29,7 @@ export {
 } from "./network-blocker.js";
 export {
   getOrCreateConsentRuntime,
+  initCookieYes,
   resetConsentRuntime,
 } from "./runtime.js";
 export type {
@@ -42,6 +46,7 @@ export {
 
 export type {
   ActiveUI,
+  ColorScheme,
   ConsentBackend,
   ConsentCategory,
   ConsentChangePayload,
@@ -54,6 +59,9 @@ export type {
   ConsentSnapshot,
   ConsentStore,
   ConsentStoreState,
+  CookieYesConfig,
+  CookieYesOfflineConfig,
+  CookieYesSelfHostedConfig,
   I18nConfig,
   Regulation,
   ReloadNoticeState,

@@ -91,7 +91,7 @@ export type ConsentConfig = {
    */
   categories?: CategoryDef[] | undefined;
   theme?: ThemeConfig | undefined;
-  colorScheme?: "light" | "dark" | "system" | undefined;
+  colorScheme?: ColorScheme | undefined;
   reloadOnRevoke?: boolean | undefined;
   /**
    * Built-in, first-party integrations to stop cleanly (no reload) when their
@@ -155,7 +155,7 @@ export type ConsentManager = ConsentSnapshot & {
 };
 
 /**
- * Shape of the JSON body POSTed to the customer's `backendURL`
+ * Shape of the JSON body POSTed to the customer's `apiUrl`
  * on every consent decision (Accept All / Reject All / Save Preferences).
  *
  * Customers building a TypeScript backend can import this type to get
@@ -172,7 +172,7 @@ export type ConsentPayload = {
  * Customer-implemented adapter that decides how a consent decision
  * reaches their backend. Provide this when `mode: "self-hosted"` and you
  * need full control over the request shape, headers, auth, transport,
- * batching, retries, etc. — anything you can't express with `backendURL`.
+ * batching, retries, etc. — anything you can't express with `apiUrl`.
  *
  * The SDK hands you a standardised `ConsentPayload`; you transform and
  * dispatch it however your backend expects.
@@ -189,33 +189,104 @@ type DeprecatedOfflineMode = "offline";
 
 export type ConsentRuntimeMode = "self-hosted" | "cookie-only" | DeprecatedOfflineMode;
 
-export type ConsentRuntimeOptions = {
-  mode: ConsentRuntimeMode;
-  backendURL?: string | undefined;
-  apiKey?: string | undefined;
-  backend?: ConsentBackend | undefined;
-  consentCategories?: ConsentCategory[] | undefined;
-  /** Define your own category taxonomy — see {@link ConsentConfig.categories}. */
-  categories?: CategoryDef[] | undefined;
-  overrides?:
-    | {
-        regulation?: Regulation | undefined;
-      }
-    | undefined;
-  i18n?: I18nConfig | undefined;
-  colorScheme?: "light" | "dark" | "system" | undefined;
+export type ColorScheme = "light" | "dark" | "system";
+
+/**
+ * Fields shared by every {@link CookieYesConfig} regardless of `mode`.
+ * This is the one canonical config surface — both `@cookieyes/core` and
+ * `@cookieyes/react` consume the exact same object, so a config is
+ * copy-pasteable between them with zero edits.
+ */
+type CookieYesConfigCommon = {
+  /**
+   * Which privacy regulation applies. Top-level and identical across every
+   * package (replaces the builder's `.regulation()` and core's former
+   * nested `overrides.regulation`).
+   */
+  regulation?: Regulation | undefined;
+  colorScheme?: ColorScheme | undefined;
   theme?: ThemeConfig | undefined;
+  i18n?: I18nConfig | undefined;
+  consentCategories?: ConsentCategory[] | undefined;
+  /**
+   * Define your own category taxonomy. Omit to get the built-in five
+   * (necessary, functional, analytics, performance, advertisement) unchanged.
+   * At least one category must be `{ required: true }`. Invalid configs fall
+   * back to the built-in five with a console warning. See {@link CategoryDef}.
+   */
+  categories?: CategoryDef[] | undefined;
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
-  /** Built-in integrations to stop cleanly on revoke — see {@link ConsentConfig.integrations}. */
+  /**
+   * Built-in, first-party integrations to stop cleanly (no reload) when their
+   * category is revoked — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag
+   * Manager are handled automatically via the Consent Mode broadcast — no entry
+   * needed.) Integrations with no clean runtime stop fall back to the reload notice.
+   */
   integrations?: BuiltInIntegration[] | undefined;
-  /** Your own scripts' stop instructions — see {@link ConsentConfig.customStopHandlers}. */
+  /**
+   * Your own scripts' stop instructions, for anything without a built-in
+   * integration. A handler that can stop cleanly provides `stop()`; one that
+   * can't should be registered as a reload-only handler instead so revoking it
+   * shows the reload notice rather than silently continuing to track.
+   */
   customStopHandlers?: StopHandler[] | undefined;
   /** Low-level: fires once, after the runtime's initial state is known (e.g. to conditionally load analytics on first load). For ongoing updates, use `consentStore.subscribeToConsentChanges` instead. */
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
   /** Low-level: fires on every saved consent change, for the lifetime of this config. If you need to subscribe/unsubscribe dynamically after mount, use `consentStore.getState().subscribeToConsentChanges` instead. */
   onConsentUpdate?: ((state: ConsentSnapshot) => void) | undefined;
+  /**
+   * @deprecated Set `regulation` at the top level instead. This nested form
+   * still works and maps to the top-level field; if both are given, the
+   * top-level `regulation` wins. Retained for back-compat and removed after
+   * three release cycles, per the SDK deprecation policy.
+   */
+  overrides?: { regulation?: Regulation | undefined } | undefined;
 };
+
+/**
+ * Cookie-only mode — consent is stored client-side only; no backend keys are
+ * permitted (they fail at the type level). `mode: "cookie-only"` is the
+ * canonical value; `mode: "offline"` is a deprecated alias with identical
+ * behavior that emits a one-time-per-page-load deprecation warning.
+ */
+export type CookieYesOfflineConfig = CookieYesConfigCommon & {
+  mode: "cookie-only" | DeprecatedOfflineMode;
+};
+
+/** Self-hosted mode — consent decisions are persisted to your own backend. */
+export type CookieYesSelfHostedConfig = CookieYesConfigCommon & {
+  mode: "self-hosted";
+  /** Endpoint the {@link ConsentPayload} is POSTed to. Canonical key. */
+  apiUrl?: string | undefined;
+  apiKey?: string | undefined;
+  /** Custom persistence adapter — full control over transport/headers/retries. */
+  backend?: ConsentBackend | undefined;
+  /**
+   * @deprecated Renamed to `apiUrl`. This alias still works and maps to
+   * `apiUrl`; if both are given, `apiUrl` wins. Retained for back-compat and
+   * removed after three release cycles, per the SDK deprecation policy.
+   */
+  backendURL?: string | undefined;
+};
+
+/**
+ * The canonical configuration object for the CookieYes SDK, discriminated on
+ * `mode`. Passed identically to `initCookieYes()` /
+ * `getOrCreateConsentRuntime()` in `@cookieyes/core` and `initCookieYes()` in
+ * `@cookieyes/react`.
+ *
+ * The discriminated union guarantees invalid combinations fail at compile time
+ * — e.g. supplying `apiUrl`/`backend` under `mode: "cookie-only"` is a type error.
+ */
+export type CookieYesConfig = CookieYesOfflineConfig | CookieYesSelfHostedConfig;
+
+/**
+ * @deprecated Renamed to {@link CookieYesConfig}. Retained as a type alias for
+ * back-compat and removed after three release cycles, per the SDK deprecation
+ * policy.
+ */
+export type ConsentRuntimeOptions = CookieYesConfig;
 
 export type ConsentChangePayload = {
   allowedCategories: ConsentCategory[];

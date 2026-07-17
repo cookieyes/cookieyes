@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  _normalizeConfig,
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
   type CategoryDef,
@@ -8,6 +9,7 @@ import {
   type ConsentConfig,
   type ConsentManager,
   type ConsentSnapshot,
+  type CookieYesConfig,
   createConsentManager,
   type I18nConfig,
   installNetworkBlocker,
@@ -73,6 +75,13 @@ export type CookieYesRuntime = {
   dismissReloadNotice: () => void;
 };
 
+/**
+ * @deprecated The chainable builder is deprecated in favour of
+ * {@link initCookieYes}, which takes one canonical `CookieYesConfig` object.
+ * The builder still works but will be removed after three release cycles, per
+ * the SDK deprecation policy. Migration guide:
+ * https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md
+ */
 export type Builder = {
   mode: (m: RuntimeMode) => Builder;
   regulation: (r: Regulation) => Builder;
@@ -120,8 +129,61 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
   };
 }
 
+let _builderDeprecationWarned = false;
+
+function warnBuilderDeprecated(): void {
+  if (_builderDeprecationWarned) return;
+  _builderDeprecationWarned = true;
+  if (typeof console !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[CookieYes] `createCookieYes()` (the builder) is deprecated. Configure the " +
+        "SDK with `initCookieYes(config)` — one canonical config object instead of a " +
+        "chain. The builder will be removed after three release cycles, per the SDK " +
+        "deprecation policy. Migration guide: " +
+        "https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md",
+    );
+  }
+}
+
+/**
+ * @deprecated Use {@link initCookieYes} with a canonical `CookieYesConfig`
+ * object instead of the builder chain. Still functional, but removed after
+ * three release cycles per the SDK deprecation policy. Migration guide:
+ * https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md
+ */
 export function createCookieYes(): Builder {
+  warnBuilderDeprecated();
   return makeBuilder({});
+}
+
+/**
+ * Canonical setup entry point for `@cookieyes/react`. Accepts the exact same
+ * {@link CookieYesConfig} as `@cookieyes/core` — a config object is
+ * copy-pasteable between the two packages with zero edits.
+ *
+ * After a single call, `<CookieBanner />`, `<CookiePreferences />` and every
+ * hook (`useConsent()` etc.) wire up automatically against the registered
+ * runtime — no further setup required.
+ */
+export function initCookieYes(config: CookieYesConfig): CookieYesRuntime {
+  const n = _normalizeConfig(config);
+  const cfg: RuntimeConfig = { mode: n.mode };
+  if (n.regulation !== undefined) cfg.regulation = n.regulation;
+  if (n.i18n !== undefined) cfg.i18n = n.i18n;
+  if (n.theme !== undefined) cfg.theme = n.theme;
+  if (n.colorScheme !== undefined) cfg.colorScheme = n.colorScheme;
+  if (n.backend !== undefined) cfg.backend = n.backend;
+  if (n.apiUrl !== undefined) cfg.backendURL = n.apiUrl;
+  if (n.apiKey !== undefined) cfg.apiKey = n.apiKey;
+  if (n.networkBlocker !== undefined) cfg.networkBlocker = n.networkBlocker;
+  if (n.reloadOnRevoke !== undefined) cfg.reloadOnRevoke = n.reloadOnRevoke;
+  if (n.integrations !== undefined) cfg.integrations = n.integrations;
+  if (n.customStopHandlers !== undefined) cfg.customStopHandlers = n.customStopHandlers;
+  if (n.categories !== undefined) cfg.categories = n.categories;
+  if (n.onConsentReady !== undefined) cfg.onConsentReady = n.onConsentReady;
+  if (n.onConsentUpdate !== undefined) cfg.onConsentUpdate = n.onConsentUpdate;
+  return mountRuntime(cfg);
 }
 
 const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
@@ -294,4 +356,5 @@ export const _noopSubscribe = (): (() => void) => () => undefined;
 
 export function resetCookieYes(): void {
   _instance = null;
+  _builderDeprecationWarned = false;
 }

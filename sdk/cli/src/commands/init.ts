@@ -32,30 +32,36 @@ type OptionInputs = {
   locales: Locale[];
 };
 
-function buildBuilderChain(opts: OptionInputs, indent: string): string {
-  const lines: string[] = [`createCookieYes()`];
-  lines.push(`${indent}.mode("${opts.mode}")`);
+/**
+ * Emit the canonical `CookieYesConfig` object literal. `indent` is the
+ * indentation of the enclosing statement (the closing brace lands there); the
+ * object's own keys sit one level (2 spaces) deeper.
+ */
+function buildConfigLiteral(opts: OptionInputs, indent: string): string {
+  const inner = `${indent}  `;
+  const lines: string[] = ["{"];
+  lines.push(`${inner}mode: "${opts.mode}",`);
 
   if (opts.mode === "self-hosted" && opts.backendURL) {
-    lines.push(`${indent}.backend({`);
-    lines.push(`${indent}  async persist(payload) {`);
-    lines.push(`${indent}    await fetch("${opts.backendURL}", {`);
-    lines.push(`${indent}      method: "POST",`);
-    lines.push(`${indent}      headers: { "Content-Type": "application/json" },`);
-    lines.push(`${indent}      body: JSON.stringify(payload),`);
-    lines.push(`${indent}    });`);
-    lines.push(`${indent}  },`);
-    lines.push(`${indent}})`);
+    lines.push(`${inner}backend: {`);
+    lines.push(`${inner}  async persist(payload) {`);
+    lines.push(`${inner}    await fetch("${opts.backendURL}", {`);
+    lines.push(`${inner}      method: "POST",`);
+    lines.push(`${inner}      headers: { "Content-Type": "application/json" },`);
+    lines.push(`${inner}      body: JSON.stringify(payload),`);
+    lines.push(`${inner}    });`);
+    lines.push(`${inner}  },`);
+    lines.push(`${inner}},`);
   }
 
-  lines.push(`${indent}.regulation("${opts.regulation}")`);
-  lines.push(`${indent}.colorScheme("${opts.colorScheme}")`);
+  lines.push(`${inner}regulation: "${opts.regulation}",`);
+  lines.push(`${inner}colorScheme: "${opts.colorScheme}",`);
 
   if (opts.locales.length > 0) {
-    lines.push(`${indent}.i18n({ messages: { ${opts.locales.join(", ")} } })`);
+    lines.push(`${inner}i18n: { messages: { ${opts.locales.join(", ")} } },`);
   }
 
-  lines.push(`${indent}.mount();`);
+  lines.push(`${indent}}`);
   return lines.join("\n");
 }
 
@@ -83,11 +89,11 @@ function nextjsProviderTemplate(opts: OptionInputs, isCCPA: boolean): string {
     `  CookieBanner,${ccpaImport}`,
     `  CookiePreferences,`,
     `  RecallButton,`,
-    `  createCookieYes,`,
+    `  initCookieYes,`,
     `} from "@cookieyes/nextjs";`,
     `import "@cookieyes/react/styles.css";`,
     ``,
-    `${buildBuilderChain(opts, "  ")}`,
+    `initCookieYes(${buildConfigLiteral(opts, "")});`,
     ``,
     `export function CookieYesRoot() {`,
     `  return (`,
@@ -138,11 +144,11 @@ function reactProviderTemplate(opts: OptionInputs, isCCPA: boolean): string {
     `  CookieBanner,${ccpaImport}`,
     `  CookiePreferences,`,
     `  RecallButton,`,
-    `  createCookieYes,`,
+    `  initCookieYes,`,
     `} from "@cookieyes/react";`,
     `import "@cookieyes/react/styles.css";`,
     ``,
-    `${buildBuilderChain(opts, "  ")}`,
+    `initCookieYes(${buildConfigLiteral(opts, "")});`,
     ``,
     `export function CookieYesRoot() {`,
     `  return (`,
@@ -156,29 +162,6 @@ function reactProviderTemplate(opts: OptionInputs, isCCPA: boolean): string {
   ].join("\n");
 }
 
-function vanillaOptionsLiteral(opts: OptionInputs): string {
-  const lines: string[] = ["{"];
-  lines.push(`  mode: "${opts.mode}",`);
-  if (opts.mode === "self-hosted" && opts.backendURL) {
-    lines.push(`  backend: {`);
-    lines.push(`    async persist(payload) {`);
-    lines.push(`      await fetch("${opts.backendURL}", {`);
-    lines.push(`        method: "POST",`);
-    lines.push(`        headers: { "Content-Type": "application/json" },`);
-    lines.push(`        body: JSON.stringify(payload),`);
-    lines.push(`      });`);
-    lines.push(`    },`);
-    lines.push(`  },`);
-  }
-  lines.push(`  overrides: { regulation: "${opts.regulation}" },`);
-  lines.push(`  colorScheme: "${opts.colorScheme}",`);
-  if (opts.locales.length > 0) {
-    lines.push(`  i18n: { messages: { ${opts.locales.join(", ")} } },`);
-  }
-  lines.push(`}`);
-  return lines.join("\n");
-}
-
 function vanillaTemplate(opts: OptionInputs): string {
   const coreImport = `import { getOrCreateConsentRuntime } from "@cookieyes/core";`;
   const localeImports = localeImportLines(opts);
@@ -188,7 +171,7 @@ function vanillaTemplate(opts: OptionInputs): string {
     ...localeImports,
     ``,
     `// Create (or retrieve) the singleton consent runtime.`,
-    `export const { consentManager, consentStore } = getOrCreateConsentRuntime(${vanillaOptionsLiteral(opts)});`,
+    `export const { consentManager, consentStore } = getOrCreateConsentRuntime(${buildConfigLiteral(opts, "")});`,
     ``,
     `// ─── React to state changes ───────────────────────────────────────`,
     ``,
@@ -574,5 +557,6 @@ export async function runInit(): Promise<void> {
     }
   }
 
-  outro(`${pc.green("✓")} Done! Docs: ${pc.cyan("https://docs.cookieyes.com")}`);
+  // TODO: switch to https://docs.cookieyes.com once the docs site is live.
+  outro(`${pc.green("✓")} Done! Docs: ${pc.cyan("https://github.com/cookieyes/cookieyes#readme")}`);
 }

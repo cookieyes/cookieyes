@@ -8,6 +8,7 @@ import * as react from "../index.js";
 describe("@cookieyes/react public exports", () => {
   const EXPECTED = [
     "createCookieYes",
+    "initCookieYes",
     "getCookieYes",
     "resetCookieYes",
     "CookieBanner",

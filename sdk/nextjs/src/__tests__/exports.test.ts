@@ -10,7 +10,8 @@ import * as nextjs from "../index.js";
  */
 describe("@cookieyes/nextjs barrel", () => {
   const EXPECTED = [
-    // Runtime builder
+    // Runtime setup
+    "initCookieYes",
     "createCookieYes",
     "getCookieYes",
     "resetCookieYes",
