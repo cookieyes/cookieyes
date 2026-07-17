@@ -1,10 +1,53 @@
-# @cookieyes/nextjs
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes consent banner rendered in a Next.js app" width="820">
+  </picture>
+</p>
 
-Next.js adapter for the CookieYes consent SDK. It re-exports the entire
-`@cookieyes/react` surface, pre-marked with `"use client"` so it composes
-cleanly with the App Router and Server Components.
+<h1 align="center">@cookieyes/nextjs</h1>
 
-## Install
+<p align="center"><strong>Cookie consent for Next.js — App Router and Pages Router, SSR-safe.</strong></p>
+
+<p align="center">The full <code>@cookieyes/react</code> surface, pre-marked <code>"use client"</code> so it composes cleanly with Server Components.</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cookieyes/nextjs"><img src="https://img.shields.io/npm/v/@cookieyes/nextjs" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@cookieyes/nextjs"><img src="https://img.shields.io/npm/dw/@cookieyes/nextjs" alt="npm downloads"></a>
+  <a href="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml"><img src="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@cookieyes/nextjs" alt="license"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#pages-router">Pages Router</a> ·
+  <a href="#troubleshooting">Troubleshooting</a> ·
+  <a href="https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md">Docs</a>
+</p>
+
+---
+
+> **Free-tier note:** the "Powered by CookieYes" attribution in the banner may not be removed
+> on the free tier. Paid plans remove it.
+
+---
+
+## Key features
+
+- **App Router & Pages Router** — one component works in both.
+- **SSR-safe** — the banner is server-rendered into the first paint with no hydration mismatch.
+- **GDPR & CCPA** — opt-in and "Do Not Sell" opt-out flows.
+- **1:1 with `@cookieyes/react`** — every component, hook, and primitive, re-exported.
+
+## Prerequisites
+
+- **Node.js** ≥ 20
+- **Next.js** ≥ 14 (App Router or Pages Router)
+- **React** ≥ 18 and **React DOM** ≥ 18 (peer dependencies)
+
+## Quick start
+
+**1. Install the package**
 
 ```bash
 npm install @cookieyes/nextjs
@@ -13,13 +56,10 @@ yarn add @cookieyes/nextjs
 bun add @cookieyes/nextjs
 ```
 
-**Peer dependencies:** Next.js ≥ 14, React ≥ 18, React DOM ≥ 18
+**2. Create a client consent-manager component**
 
-## Setup (App Router)
-
-Create a client component that configures the runtime and renders the consent
-UI. Because `initCookieYes()` and the components are client-side, this file
-**must** start with `"use client"`.
+Because `initCookieYes()` and the components are client-side, this file **must** start with
+`"use client"`.
 
 ```tsx
 // components/consent-manager.tsx
@@ -33,7 +73,7 @@ import {
 } from "@cookieyes/nextjs";
 
 initCookieYes({
-  mode: "offline",       // "offline" (cookie-only) | "self-hosted"
+  mode: "offline",       // "offline" = cookie-only, no backend needed | "self-hosted"
   regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
   colorScheme: "system", // "light" | "dark" | "system"
 });
@@ -49,7 +89,7 @@ export function CookieYesRoot() {
 }
 ```
 
-Then mount it in your root layout — the layout itself stays a Server Component:
+**3. Mount it in your root layout** — the layout itself stays a Server Component:
 
 ```tsx
 // app/layout.tsx
@@ -67,10 +107,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
+**4. Done.** The banner appears on first load. If it doesn't, see [Troubleshooting](#troubleshooting).
+
+> Prefer zero manual setup? Run `npx @cookieyes/cli init` — it detects Next.js (App or Pages
+> Router) and wires this up for you.
+
 ## Pages Router
 
-The same `CookieYesRoot` component works in the Pages Router — render it in
-`pages/_app.tsx` alongside your app:
+The same `CookieYesRoot` component works in the Pages Router — render it in `pages/_app.tsx`:
 
 ```tsx
 import type { AppProps } from "next/app";
@@ -104,14 +148,56 @@ import { CookieBanner, CookiePreferences, CookieOptOut, RecallButton } from "@co
 
 ## API
 
-This package re-exports everything from `@cookieyes/react` — the setup function
-(`initCookieYes`), components (`CookieBanner`, `CookiePreferences`,
-`CookieOptOut`, `RecallButton`, `GatedScript`, `GatedFrame`), headless
-primitives (`Banner`, `Preferences`, `OptOut`), and all hooks (`useConsent`,
-`useConsentActions`, `useConsentCategory`, `useRegulation`, …). Configuration
-options are documented in [Configuration](../../docs/configuration.md); see the
-[`@cookieyes/react` README](../react#readme) for the component/hook reference.
+This package re-exports the entire `@cookieyes/react` surface — the setup function
+(`initCookieYes`), components (`CookieBanner`, `CookiePreferences`, `CookieOptOut`,
+`RecallButton`, `GatedScript`, `GatedFrame`), headless primitives (`Banner`, `Preferences`,
+`OptOut`), and all hooks (`useConsent`, `useConsentActions`, …).
+
+- Full option reference: **[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)**.
+- Component/hook reference: the **[`@cookieyes/react` README](https://github.com/cookieyes/cookieyes/tree/main/sdk/react#readme)**.
+
+## Troubleshooting
+
+**The banner doesn't appear.**
+Ensure `<CookieYesRoot />` is mounted in your root `layout.tsx` (App Router) or `_app.tsx`
+(Pages Router), and that `initCookieYes(...)` runs in the `"use client"` consent-manager module.
+The banner only shows while the user hasn't acted — clear the `cookieyes-consent` cookie and
+reload while testing.
+
+**I get a `"use client"` error.**
+The consent-manager file (the one calling `initCookieYes` and importing the components) must
+start with `"use client"`. Keep your `layout.tsx` a Server Component and import
+`<CookieYesRoot />` into it — don't add `"use client"` to the layout itself.
+
+**Hydration mismatch on load.**
+Use `@cookieyes/nextjs` (not `@cookieyes/react`) so the banner is pre-marked `"use client"`.
+The server-rendered banner carries your configured `regulation`, so keep that value stable —
+rendering with a different regulation on the client than on the server causes a mismatch.
+
+Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
+
+## Community & support
+
+- [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
+- Email — [support@cookieyes.com](mailto:support@cookieyes.com).
+- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md).
+
+_(A community chat channel is on the roadmap.)_
+
+## Contributing
+
+Contributions are welcome. Read our
+[Contributing Guidelines](https://github.com/cookieyes/cookieyes/blob/main/CONTRIBUTING.md) and
+[Code of Conduct](https://github.com/cookieyes/cookieyes/blob/main/CODE_OF_CONDUCT.md), then open
+a pull request.
+
+### Security
+
+Found a vulnerability? **Do not open a public issue** — follow our
+[Security Policy](https://github.com/cookieyes/cookieyes/blob/main/SECURITY.md) and use GitHub's
+private vulnerability reporting.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The "Powered by CookieYes" attribution may not be removed on the free tier.
+MIT — see [LICENSE](./LICENSE). The "Powered by CookieYes" attribution may not be removed on the
+free tier.

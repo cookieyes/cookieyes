@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes Consent SDK" width="820">
+  </picture>
+</p>
+
 # CookieYes Consent SDK
 
 [![CI](https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml/badge.svg)](https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml)

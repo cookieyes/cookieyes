@@ -551,5 +551,6 @@ export async function runInit(): Promise<void> {
     }
   }
 
-  outro(`${pc.green("✓")} Done! Docs: ${pc.cyan("https://docs.cookieyes.com")}`);
+  // TODO: switch to https://docs.cookieyes.com once the docs site is live.
+  outro(`${pc.green("✓")} Done! Docs: ${pc.cyan("https://github.com/cookieyes/cookieyes#readme")}`);
 }
