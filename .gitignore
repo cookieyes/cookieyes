@@ -8,10 +8,6 @@ dist/
 
 # Test / coverage
 coverage/
-fixture-dist/
-test-results/
-playwright-report/
-blob-report/
 
 # Environment
 .env
