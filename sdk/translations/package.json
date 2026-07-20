@@ -75,9 +75,6 @@
     "clean": "rm -rf dist",
     "test": "vitest run --coverage"
   },
-  "peerDependencies": {
-    "@cookieyes/core": "workspace:*"
-  },
   "devDependencies": {
     "@cookieyes/core": "workspace:*",
     "@types/node": "^24.12.4",
