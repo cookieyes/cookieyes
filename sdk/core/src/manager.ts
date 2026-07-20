@@ -35,6 +35,10 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   let state: ConsentSnapshot;
   let isPreferencesOpen = false;
   let lastPersistedCategories: Record<string, boolean>;
+  // Consent actually in effect — changes only on a real decision (accept /
+  // reject / save / reset / load), never on a dialog toggle. Gating reads this;
+  // `state.categories` stays live to drive the dialog checkboxes.
+  let committedCategories: Record<string, boolean>;
 
   /** Build a category map over the resolved ids; required ids are always granted. */
   function buildCategories(
@@ -96,6 +100,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   // written from here on carry the current signature (upgrades legacy cookies).
   state = { ...state, taxonomyHash: resolved.taxonomyHash };
   lastPersistedCategories = { ...state.categories };
+  committedCategories = { ...state.categories };
 
   // Fire onConsentReady synchronously on next tick.
   Promise.resolve().then(() => config.onConsentReady?.(state));
@@ -103,7 +108,13 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   function notify(): void {
     const snap = snapshot();
     for (const fn of listeners) fn(snap);
-    applyScripts(state.categories);
+    // Scripts are applied from committed consent (below), not here — so a dialog
+    // toggle, which calls notify, never loads a gated script before save.
+  }
+
+  /** Apply script gating against the committed consent, not the working toggles. */
+  function applyCommittedScripts(): void {
+    applyScripts(committedCategories);
   }
 
   function snapshot(): ConsentSnapshot {
@@ -155,16 +166,19 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       }
     }
     lastPersistedCategories = { ...state.categories };
+    // This is a real decision → commit it, and (re)apply script gating from it.
+    committedCategories = { ...state.categories };
+    applyCommittedScripts();
 
     // Stop (or resume) integrations to match the new consent state — without a
     // reload. Anything with no clean runtime stop comes back in reloadRequiredBy
     // and surfaces the reload notice instead of silently continuing to track.
-    const { reloadRequiredBy } = applyStopHandlers(state.categories);
+    const { reloadRequiredBy } = applyStopHandlers(committedCategories);
     setReloadReasons(reloadRequiredBy);
 
     // Broadcast Google Consent Mode signals for the new state (no-op unless a
     // dataLayer is present). Derived from the category → GCM-signal mapping.
-    broadcastGoogleConsent(resolved, state.categories);
+    broadcastGoogleConsent(resolved, committedCategories);
 
     notify();
     config.onConsentUpdate?.(state);
@@ -186,6 +200,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     },
     get categories() {
       return { ...state.categories };
+    },
+    get committedCategories() {
+      return { ...committedCategories };
     },
     get regulation() {
       return state.regulation;
@@ -239,11 +256,13 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       clearConsentCookie();
       const consentId = generateConsentId();
       state = defaultSnapshot(consentId, state.regulation, resolved);
+      committedCategories = { ...state.categories };
+      lastPersistedCategories = { ...state.categories };
       isPreferencesOpen = false;
       // Realign clean-stop flags with the reset state; clear any reload notice
       // (a reset re-prompts, so a stale "reload to apply" message is wrong).
-      applyStopHandlers(state.categories);
-      broadcastGoogleConsent(resolved, state.categories);
+      applyStopHandlers(committedCategories);
+      broadcastGoogleConsent(resolved, committedCategories);
       reloadReasons = [];
       reloadDismissed = false;
       notify();
@@ -266,7 +285,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
     registerScript(entry: ScriptEntry) {
       registerScript(entry);
-      applyScripts(state.categories);
+      applyCommittedScripts();
     },
 
     get reloadNotice(): ReloadNoticeState {
@@ -284,7 +303,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   };
 
   // Apply scripts for any that were already registered before manager created
-  applyScripts(state.categories);
+  applyCommittedScripts();
 
   // Reflect the full stored consent at load — in both directions — so tools
   // start in the right mode from first paint. In particular a returning

@@ -373,4 +373,57 @@ describe("createConsentManager", () => {
       expect(mgr.taxonomyHash).toBeTruthy();
     });
   });
+
+  describe("committed vs working consent (gating)", () => {
+    it("updateCategory changes the working value but NOT committedCategories", () => {
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.updateCategory("analytics", true);
+      expect(mgr.categories.analytics).toBe(true); // live/working reflects the toggle
+      expect(mgr.committedCategories.analytics).toBe(false); // committed is untouched
+    });
+
+    it("savePreferences commits the working values", () => {
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.updateCategory("analytics", true);
+      expect(mgr.committedCategories.analytics).toBe(false);
+      mgr.savePreferences();
+      expect(mgr.committedCategories.analytics).toBe(true);
+    });
+
+    it("acceptAll / rejectAll set committedCategories", () => {
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.acceptAll();
+      expect(mgr.committedCategories.analytics).toBe(true);
+      mgr.rejectAll();
+      expect(mgr.committedCategories.analytics).toBe(false);
+    });
+
+    it("does NOT load a gated script on a transient toggle — only on save", () => {
+      document.head.innerHTML = "";
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.registerScript({
+        id: "gs-toggle",
+        src: "https://cdn.example.com/g.js",
+        category: "analytics",
+      });
+      mgr.updateCategory("analytics", true);
+      expect(document.getElementById("gs-toggle")).toBeNull(); // toggle didn't load it
+      mgr.savePreferences();
+      expect(document.getElementById("gs-toggle")).not.toBeNull(); // saving did
+    });
+
+    it("keeps a loaded gated script after revoke (reload to re-block)", () => {
+      document.head.innerHTML = "";
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.registerScript({
+        id: "gs-revoke",
+        src: "https://cdn.example.com/h.js",
+        category: "analytics",
+      });
+      mgr.acceptAll();
+      expect(document.getElementById("gs-revoke")).not.toBeNull();
+      mgr.rejectAll();
+      expect(document.getElementById("gs-revoke")).not.toBeNull(); // stays until reload
+    });
+  });
 });

@@ -68,17 +68,20 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   }
 
   function buildState(): ConsentStoreState {
+    // `consents`/`categories` are live (drive checkboxes); `committedConsents`
+    // and `has()` are the consent in effect (gate scripts/embeds on those).
     const categories = manager.categories;
     return {
       consentId: manager.consentId,
       hasActed: manager.hasActed,
       categories,
       consents: categories,
+      committedConsents: manager.committedCategories,
       regulation: manager.regulation,
       lastRenewed: manager.lastRenewed,
       taxonomyHash: manager.taxonomyHash,
       activeUI: activeUI(),
-      has: (category) => manager.categories[category] ?? false,
+      has: (category) => manager.committedCategories[category] === true,
       saveConsents: async (target) => {
         if (target === "all") manager.acceptAll();
         else if (target === "necessary") manager.rejectAll();
@@ -100,7 +103,10 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   };
 
   if (options.networkBlocker && options.networkBlocker.rules.length > 0) {
-    installNetworkBlocker(options.networkBlocker, (cat) => manager.categories[cat] === true);
+    installNetworkBlocker(
+      options.networkBlocker,
+      (cat) => manager.committedCategories[cat] === true,
+    );
   }
 
   _runtime = { consentManager: manager, consentStore };

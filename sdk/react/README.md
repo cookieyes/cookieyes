@@ -94,7 +94,9 @@ export function CookieYesRoot() {
 }
 ```
 
-**3. Render it once near the root of your app**
+**3. Render it once near the root of your app** — ideally as the **first element**
+(before your page content), so the banner is early in the DOM: announced first
+by screen readers and painted before the rest of the page.
 
 The `@cookieyes/react/styles.css` import is required — the banner and
 dialogs ship no inline styling, so without it they render unstyled. Import
@@ -106,8 +108,8 @@ import { CookieYesRoot } from "./components/consent-manager";
 function App() {
   return (
     <>
-      <YourApp />
       <CookieYesRoot />
+      <YourApp />
     </>
   );
 }

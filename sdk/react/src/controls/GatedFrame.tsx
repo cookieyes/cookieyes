@@ -20,7 +20,13 @@ export function GatedFrame({ src, category, placeholder, ...rest }: Props) {
   const { theme, colorScheme } = useThemeConfig();
   useThemeVars(containerRef, theme, colorScheme);
 
-  if (allowed) return <iframe src={src} {...rest} />;
+  // Latch: once loaded under a committed grant, keep the iframe for the rest of
+  // the session. Revoking doesn't swap it back to the placeholder mid-session;
+  // the block takes effect on the next page load (when `allowed` starts false).
+  const everAllowed = useRef(false);
+  if (allowed) everAllowed.current = true;
+
+  if (everAllowed.current) return <iframe src={src} {...rest} />;
 
   return (
     <div ref={containerRef} className="cy-frame-placeholder">

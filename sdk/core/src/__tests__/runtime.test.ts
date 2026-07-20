@@ -71,10 +71,18 @@ describe("consentStore state machine", () => {
     expect(state.has("advertisement")).toBe(false);
   });
 
-  it("setConsent toggles a single category", () => {
+  it("setConsent updates the working value; has() (committed) reflects it only after save", () => {
     const { consentStore } = getOrCreateConsentRuntime({ mode: "offline" });
     consentStore.getState().setConsent("analytics", true);
+    // The working value (drives checkboxes) reflects the toggle immediately...
+    expect(consentStore.getState().consents.analytics).toBe(true);
+    // ...but committed consent — what gating uses — does not, until a save.
+    expect(consentStore.getState().has("analytics")).toBe(false);
+    expect(consentStore.getState().committedConsents.analytics).toBe(false);
+
+    consentStore.getState().saveConsents(["analytics"]);
     expect(consentStore.getState().has("analytics")).toBe(true);
+    expect(consentStore.getState().committedConsents.analytics).toBe(true);
   });
 
   it("reports the dialog UI while preferences are open", () => {

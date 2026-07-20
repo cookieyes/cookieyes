@@ -1,28 +1,25 @@
 import type { ScriptEntry } from "./types.js";
 
 const registry = new Map<string, ScriptEntry>();
-const loaded = new Set<string>();
 const injected = new Map<string, HTMLScriptElement>();
 
 export function registerScript(entry: ScriptEntry): void {
   registry.set(entry.id, entry);
 }
 
+/**
+ * Inject each registered script whose category is granted. Pass the *committed*
+ * consent so an unsaved toggle never loads a script. Once injected, a script
+ * stays — revoking doesn't unload it (that can't undo what already ran); the
+ * block takes effect on the next page load.
+ */
 export function applyScripts(categories: Record<string, boolean>): void {
   if (typeof document === "undefined") return;
 
   for (const [id, entry] of registry) {
-    const allowed = categories[entry.category] === true;
-    const strategy = entry.strategy ?? "afterConsent";
-
-    if (allowed) {
-      if (strategy === "lazyOnce" && loaded.has(id)) continue;
-      if (!injected.has(id)) {
-        injectScript(id, entry);
-      }
-    } else {
-      removeScript(id);
-    }
+    if (categories[entry.category] !== true) continue;
+    if (injected.has(id)) continue;
+    injectScript(id, entry);
   }
 }
 
@@ -39,13 +36,4 @@ function injectScript(id: string, entry: ScriptEntry): void {
   }
   document.head.appendChild(el);
   injected.set(id, el);
-  loaded.add(id);
-}
-
-function removeScript(id: string): void {
-  const el = injected.get(id);
-  if (el) {
-    el.remove();
-    injected.delete(id);
-  }
 }

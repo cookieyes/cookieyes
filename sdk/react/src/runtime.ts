@@ -54,6 +54,8 @@ type RuntimeConfig = {
 };
 
 export type CookieYesSnapshot = ConsentSnapshot & {
+  /** Consent in effect (changes only on Accept/Reject/Save) — use for gating. */
+  committedCategories: Record<string, boolean>;
   isPreferencesOpen: boolean;
   isOptOutOpen: boolean;
   reloadNotice: ReloadNoticeState;
@@ -196,6 +198,13 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
     performance: false,
     advertisement: false,
   }) as Record<string, boolean>,
+  committedCategories: Object.freeze({
+    necessary: true,
+    functional: false,
+    analytics: false,
+    performance: false,
+    advertisement: false,
+  }) as Record<string, boolean>,
   regulation: "DEFAULT" as Regulation,
   isPreferencesOpen: false,
   isOptOutOpen: false,
@@ -246,6 +255,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       consentId: manager.consentId,
       hasActed: manager.hasActed,
       categories: manager.categories,
+      committedCategories: manager.committedCategories,
       regulation: manager.regulation,
       lastRenewed: manager.lastRenewed,
       taxonomyHash: manager.taxonomyHash,
@@ -264,7 +274,9 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   manager.subscribe(notify);
 
   if (cfg.networkBlocker && cfg.networkBlocker.rules.length > 0) {
-    installNetworkBlocker(cfg.networkBlocker, (cat) => manager.categories[cat] === true);
+    // Gate on committed consent, not the live toggle — an unsaved switch flip
+    // must not open the network before the visitor actually consents.
+    installNetworkBlocker(cfg.networkBlocker, (cat) => manager.committedCategories[cat] === true);
   }
 
   warnOnStyleCspViolations();
@@ -287,6 +299,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     ...SSR_SNAPSHOT,
     regulation: ssrRegulation,
     categories: Object.freeze(ssrCategories) as Record<string, boolean>,
+    committedCategories: Object.freeze({ ...ssrCategories }) as Record<string, boolean>,
   }) as CookieYesSnapshot;
 
   const runtime: CookieYesRuntime = {

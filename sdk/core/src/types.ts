@@ -137,6 +137,12 @@ export type ConsentSnapshot = {
 };
 
 export type ConsentManager = ConsentSnapshot & {
+  /**
+   * Consent in effect — changes only on a real decision (accept / reject / save
+   * / reset), never on a dialog toggle. Gate scripts/embeds on this. (`categories`
+   * is the live value that drives the dialog checkboxes.)
+   */
+  committedCategories: Record<string, boolean>;
   acceptAll: () => void;
   rejectAll: () => void;
   acceptSelected: (categories: ConsentCategory[]) => void;
@@ -297,7 +303,14 @@ export type ActiveUI = "banner" | "dialog" | null;
 
 export type ConsentStoreState = ConsentSnapshot & {
   activeUI: ActiveUI;
+  /** Live/working values — reflect in-progress dialog toggles. Drive checkboxes. */
   consents: Record<string, boolean>;
+  /**
+   * Consent in effect — changes only on a saved decision, not a toggle. Gate
+   * scripts/embeds on this (or {@link ConsentStoreState.has}).
+   */
+  committedConsents: Record<string, boolean>;
+  /** True when `category` is committed-granted (a saved decision), not just toggled. */
   has: (category: ConsentCategory) => boolean;
   saveConsents: (target: "all" | "necessary" | ConsentCategory[]) => Promise<void>;
   setConsent: (category: ConsentCategory, value: boolean) => void;
