@@ -1,24 +1,38 @@
 "use client";
 
-import type { NetworkBlockerConfig } from "@cookieyes/core";
 import {
+  _normalizeConfig,
+  _warnOfflineModeDeprecated,
+  type BuiltInIntegration,
+  type CategoryDef,
   type ConsentBackend,
-  type ConsentCategory,
   type ConsentConfig,
   type ConsentManager,
   type ConsentSnapshot,
+  type CookieYesConfig,
   createConsentManager,
   type I18nConfig,
   installNetworkBlocker,
+  type NetworkBlockerConfig,
   type Regulation,
+  type ReloadNoticeState,
+  type ResolvedCategories,
+  resolveCategories,
   resolveTranslations,
   type ScriptEntry,
+  type StopHandler,
   type ThemeConfig,
   type TranslationMap,
 } from "@cookieyes/core";
-import { injectStyles } from "./styles/inject.js";
+import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 
-export type RuntimeMode = "offline" | "self-hosted";
+/**
+ * @deprecated Use `"cookie-only"` instead — identical behavior, clearer name.
+ * `"offline"` still works but will be removed in a future release.
+ */
+type DeprecatedOfflineMode = "offline";
+
+export type RuntimeMode = "cookie-only" | "self-hosted" | DeprecatedOfflineMode;
 export type ColorSchemePref = "light" | "dark" | "system";
 
 type RuntimeConfig = {
@@ -32,13 +46,19 @@ type RuntimeConfig = {
   apiKey?: string;
   networkBlocker?: NetworkBlockerConfig;
   reloadOnRevoke?: boolean;
+  integrations?: BuiltInIntegration[];
+  customStopHandlers?: StopHandler[];
+  categories?: CategoryDef[];
   onConsentReady?: (state: ConsentSnapshot) => void;
   onConsentUpdate?: (state: ConsentSnapshot) => void;
 };
 
 export type CookieYesSnapshot = ConsentSnapshot & {
+  /** Consent in effect (changes only on Accept/Reject/Save) — use for gating. */
+  committedCategories: Record<string, boolean>;
   isPreferencesOpen: boolean;
   isOptOutOpen: boolean;
+  reloadNotice: ReloadNoticeState;
 };
 
 export type CookieYesRuntime = {
@@ -47,13 +67,23 @@ export type CookieYesRuntime = {
   getServerSnapshot: () => CookieYesSnapshot;
   manager: ConsentManager;
   translations: TranslationMap;
+  /** The resolved category taxonomy in effect (built-in five or the customer's). */
+  categories: ResolvedCategories;
   theme: ThemeConfig | undefined;
   colorScheme: ColorSchemePref;
   registerScript: (entry: ScriptEntry) => void;
   showOptOut: () => void;
   hideOptOut: () => void;
+  dismissReloadNotice: () => void;
 };
 
+/**
+ * @deprecated The chainable builder is deprecated in favour of
+ * {@link initCookieYes}, which takes one canonical `CookieYesConfig` object.
+ * The builder still works but will be removed after three release cycles, per
+ * the SDK deprecation policy. Migration guide:
+ * https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md
+ */
 export type Builder = {
   mode: (m: RuntimeMode) => Builder;
   regulation: (r: Regulation) => Builder;
@@ -65,7 +95,15 @@ export type Builder = {
   apiKey: (key: string) => Builder;
   blockNetwork: (config: NetworkBlockerConfig) => Builder;
   reloadOnRevoke: (value?: boolean) => Builder;
+  /** Stop these built-in integrations cleanly (no reload) when their category is revoked. */
+  integrations: (list: BuiltInIntegration[]) => Builder;
+  /** Register stop instructions for your own scripts (see `StopHandler`). */
+  customStopHandlers: (list: StopHandler[]) => Builder;
+  /** Define your own category taxonomy. Omit for the built-in five (see `CategoryDef`). */
+  categories: (list: CategoryDef[]) => Builder;
+  /** Low-level: fires once, after initial state is known. Prefer `useConsent()` for ongoing reads inside a component. */
   onConsentReady: (fn: (state: ConsentSnapshot) => void) => Builder;
+  /** Low-level: fires on every *saved* change only (not transient toggles), registered once here. For dynamic subscribe/unsubscribe, use `useConsentRuntime()`. */
   onConsentUpdate: (fn: (state: ConsentSnapshot) => void) => Builder;
   mount: () => CookieYesRuntime;
 };
@@ -84,14 +122,70 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
     apiKey: (key) => next({ apiKey: key }),
     blockNetwork: (config) => next({ networkBlocker: config }),
     reloadOnRevoke: (value = true) => next({ reloadOnRevoke: value }),
+    integrations: (list) => next({ integrations: list }),
+    customStopHandlers: (list) => next({ customStopHandlers: list }),
+    categories: (list) => next({ categories: list }),
     onConsentReady: (fn) => next({ onConsentReady: fn }),
     onConsentUpdate: (fn) => next({ onConsentUpdate: fn }),
     mount: () => mountRuntime(cfg),
   };
 }
 
+let _builderDeprecationWarned = false;
+
+function warnBuilderDeprecated(): void {
+  if (_builderDeprecationWarned) return;
+  _builderDeprecationWarned = true;
+  if (typeof console !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[CookieYes] `createCookieYes()` (the builder) is deprecated. Configure the " +
+        "SDK with `initCookieYes(config)` — one canonical config object instead of a " +
+        "chain. The builder will be removed after three release cycles, per the SDK " +
+        "deprecation policy. Migration guide: " +
+        "https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md",
+    );
+  }
+}
+
+/**
+ * @deprecated Use {@link initCookieYes} with a canonical `CookieYesConfig`
+ * object instead of the builder chain. Still functional, but removed after
+ * three release cycles per the SDK deprecation policy. Migration guide:
+ * https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md
+ */
 export function createCookieYes(): Builder {
+  warnBuilderDeprecated();
   return makeBuilder({});
+}
+
+/**
+ * Canonical setup entry point for `@cookieyes/react`. Accepts the exact same
+ * {@link CookieYesConfig} as `@cookieyes/core` — a config object is
+ * copy-pasteable between the two packages with zero edits.
+ *
+ * After a single call, `<CookieBanner />`, `<CookiePreferences />` and every
+ * hook (`useConsent()` etc.) wire up automatically against the registered
+ * runtime — no further setup required.
+ */
+export function initCookieYes(config: CookieYesConfig): CookieYesRuntime {
+  const n = _normalizeConfig(config);
+  const cfg: RuntimeConfig = { mode: n.mode };
+  if (n.regulation !== undefined) cfg.regulation = n.regulation;
+  if (n.i18n !== undefined) cfg.i18n = n.i18n;
+  if (n.theme !== undefined) cfg.theme = n.theme;
+  if (n.colorScheme !== undefined) cfg.colorScheme = n.colorScheme;
+  if (n.backend !== undefined) cfg.backend = n.backend;
+  if (n.apiUrl !== undefined) cfg.backendURL = n.apiUrl;
+  if (n.apiKey !== undefined) cfg.apiKey = n.apiKey;
+  if (n.networkBlocker !== undefined) cfg.networkBlocker = n.networkBlocker;
+  if (n.reloadOnRevoke !== undefined) cfg.reloadOnRevoke = n.reloadOnRevoke;
+  if (n.integrations !== undefined) cfg.integrations = n.integrations;
+  if (n.customStopHandlers !== undefined) cfg.customStopHandlers = n.customStopHandlers;
+  if (n.categories !== undefined) cfg.categories = n.categories;
+  if (n.onConsentReady !== undefined) cfg.onConsentReady = n.onConsentReady;
+  if (n.onConsentUpdate !== undefined) cfg.onConsentUpdate = n.onConsentUpdate;
+  return mountRuntime(cfg);
 }
 
 const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
@@ -103,10 +197,18 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
     analytics: false,
     performance: false,
     advertisement: false,
-  }) as Record<ConsentCategory, boolean>,
+  }) as Record<string, boolean>,
+  committedCategories: Object.freeze({
+    necessary: true,
+    functional: false,
+    analytics: false,
+    performance: false,
+    advertisement: false,
+  }) as Record<string, boolean>,
   regulation: "DEFAULT" as Regulation,
   isPreferencesOpen: false,
   isOptOutOpen: false,
+  reloadNotice: Object.freeze({ required: false, reasons: [] }) as ReloadNoticeState,
 }) as CookieYesSnapshot;
 
 let _instance: CookieYesRuntime | null = null;
@@ -115,9 +217,10 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (!cfg.mode) {
     throw new Error(
       "createCookieYes(): .mode() is required before .mount(). " +
-        "Call .mode('offline') or .mode('self-hosted').",
+        "Call .mode('cookie-only') or .mode('self-hosted').",
     );
   }
+  if (cfg.mode === "offline") _warnOfflineModeDeprecated();
   if (cfg.mode === "self-hosted" && !cfg.backend && !cfg.backendURL) {
     throw new Error(
       "createCookieYes(): .mode('self-hosted') requires either .backend(...) or .backendURL(...).",
@@ -134,10 +237,16 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
+  if (cfg.integrations) coreCfg.integrations = cfg.integrations;
+  if (cfg.customStopHandlers) coreCfg.customStopHandlers = cfg.customStopHandlers;
+  if (cfg.categories) coreCfg.categories = cfg.categories;
   if (cfg.onConsentReady) coreCfg.onConsentReady = cfg.onConsentReady;
   if (cfg.onConsentUpdate) coreCfg.onConsentUpdate = cfg.onConsentUpdate;
 
   const manager = createConsentManager(coreCfg);
+  // Same resolution the manager uses internally — so the UI iterates exactly
+  // the taxonomy that's in effect (custom, or the built-in five fallback).
+  const resolved = resolveCategories(cfg.categories);
   const listeners = new Set<() => void>();
   let isOptOutOpen = false;
 
@@ -146,10 +255,13 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       consentId: manager.consentId,
       hasActed: manager.hasActed,
       categories: manager.categories,
+      committedCategories: manager.committedCategories,
       regulation: manager.regulation,
       lastRenewed: manager.lastRenewed,
+      taxonomyHash: manager.taxonomyHash,
       isPreferencesOpen: manager.isPreferencesOpen,
       isOptOutOpen,
+      reloadNotice: manager.reloadNotice,
     };
   }
 
@@ -162,18 +274,32 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   manager.subscribe(notify);
 
   if (cfg.networkBlocker && cfg.networkBlocker.rules.length > 0) {
-    installNetworkBlocker(cfg.networkBlocker, (cat) => manager.categories[cat] === true);
+    // Gate on committed consent, not the live toggle — an unsaved switch flip
+    // must not open the network before the visitor actually consents.
+    installNetworkBlocker(cfg.networkBlocker, (cat) => manager.committedCategories[cat] === true);
   }
 
+  warnOnStyleCspViolations();
+
   const colorScheme = cfg.colorScheme ?? "system";
-  injectStyles(cfg.theme, colorScheme);
 
   // Per-mount SSR snapshot: a fresh-visitor state (banner visible, dialogs
-  // closed) carrying the *configured* regulation so server-rendered markup
-  // matches the client's first hydration render (no GDPR/CCPA mismatch).
+  // closed) carrying the *configured* regulation and the *resolved* taxonomy's
+  // fresh-visitor category map — so server markup matches the client's first
+  // hydration render (no regulation or category-shape mismatch), including for
+  // custom taxonomies. CCPA is opt-out (everything on); otherwise only the
+  // required category(ies) start on. Mirrors core's defaultSnapshot.
+  const ssrRegulation = (cfg.regulation ?? "DEFAULT") as Regulation;
+  const ssrOptOut = ssrRegulation === "CCPA";
+  const ssrCategories: Record<string, boolean> = {};
+  for (const id of resolved.ids) {
+    ssrCategories[id] = resolved.requiredIds.has(id) ? true : ssrOptOut;
+  }
   const ssrSnapshot: CookieYesSnapshot = Object.freeze({
     ...SSR_SNAPSHOT,
-    regulation: (cfg.regulation ?? "DEFAULT") as Regulation,
+    regulation: ssrRegulation,
+    categories: Object.freeze(ssrCategories) as Record<string, boolean>,
+    committedCategories: Object.freeze({ ...ssrCategories }) as Record<string, boolean>,
   }) as CookieYesSnapshot;
 
   const runtime: CookieYesRuntime = {
@@ -187,6 +313,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     getServerSnapshot: () => ssrSnapshot,
     manager,
     translations: resolveTranslations(cfg.i18n),
+    categories: resolved,
     theme: cfg.theme,
     colorScheme,
     registerScript: (entry) => manager.registerScript(entry),
@@ -200,6 +327,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       isOptOutOpen = false;
       notify();
     },
+    dismissReloadNotice: () => manager.dismissReloadNotice(),
   };
 
   if (_instance && typeof console !== "undefined") {
@@ -213,6 +341,11 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   return runtime;
 }
 
+/**
+ * Low-level: imperative, non-hook access to the mounted runtime — for use
+ * outside React components/render (event handlers, non-component modules).
+ * Inside a component, prefer `useConsent()` or `useConsentActions()`.
+ */
 export function getCookieYes(): CookieYesRuntime {
   if (!_instance) {
     throw new Error(
@@ -236,4 +369,5 @@ export const _noopSubscribe = (): (() => void) => () => undefined;
 
 export function resetCookieYes(): void {
   _instance = null;
+  _builderDeprecationWarned = false;
 }

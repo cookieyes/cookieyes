@@ -51,4 +51,10 @@ export const es: TranslationMap = {
     successText: "Su opción de exclusión se ha registrado y será respetada.",
     successCountdown: "El báner se cerrará automáticamente en {seconds} s...",
   },
+  reloadNotice: {
+    message:
+      "Parte del seguimiento de esta página solo puede detenerse por completo recargándola. Vuelva a cargar la página para aplicar su cambio o descarte este aviso para seguir navegando.",
+    reloadButton: "Recargar la página",
+    dismissButton: "Descartar",
+  },
 };

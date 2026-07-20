@@ -4,7 +4,7 @@ import { OptOut } from "../primitives/OptOut.js";
 
 export function CookieOptOut() {
   return (
-    <OptOut.Root className="cy-dialog-overlay" data-cy-theme="system">
+    <OptOut.Root className="cy-dialog-overlay">
       <div className="cy-dialog cy-optout-dialog">
         <div className="cy-dialog-header">
           <OptOut.Title className="cy-dialog-title" />

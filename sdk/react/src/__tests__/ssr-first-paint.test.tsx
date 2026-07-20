@@ -38,6 +38,31 @@ describe("SSR first-byte paint", () => {
     expect(ssr.isOptOutOpen).toBe(false);
     expect(ssr.regulation).toBe("CCPA");
   });
+
+  it("server snapshot reflects a custom taxonomy's fresh-visitor category map", () => {
+    const rt = createCookieYes()
+      .mode("cookie-only")
+      .regulation("GDPR")
+      .categories([{ id: "essential", required: true }, { id: "marketing" }])
+      .mount();
+    const ssr = rt.getServerSnapshot();
+    // Right keys (not the built-in five), required on, rest off — matches the
+    // client's fresh state, so no shape mismatch on hydration.
+    expect(Object.keys(ssr.categories).sort()).toEqual(["essential", "marketing"]);
+    expect(ssr.categories.essential).toBe(true);
+    expect(ssr.categories.marketing).toBe(false);
+  });
+
+  it("server snapshot for CCPA + custom taxonomy is opt-out (all on)", () => {
+    const rt = createCookieYes()
+      .mode("cookie-only")
+      .regulation("CCPA")
+      .categories([{ id: "essential", required: true }, { id: "marketing" }])
+      .mount();
+    const ssr = rt.getServerSnapshot();
+    expect(ssr.categories.essential).toBe(true);
+    expect(ssr.categories.marketing).toBe(true);
+  });
 });
 
 describe("selector contract (public)", () => {

@@ -10,7 +10,8 @@ import * as nextjs from "../index.js";
  */
 describe("@cookieyes/nextjs barrel", () => {
   const EXPECTED = [
-    // Runtime builder
+    // Runtime setup
+    "initCookieYes",
     "createCookieYes",
     "getCookieYes",
     "resetCookieYes",
@@ -36,11 +37,14 @@ describe("@cookieyes/nextjs barrel", () => {
     "useBannerVisibility",
     "usePreferencesOpen",
     "useOptOutOpen",
+    "useCategories",
     // Core utilities (re-exported through react)
     "defaultTranslations",
     "resolveTranslations",
     "getOrCreateConsentRuntime",
     "resetConsentRuntime",
+    "resolveCategories",
+    "DEFAULT_CATEGORIES",
   ] as const;
 
   it.each(EXPECTED)("re-exports %s and it is defined", (name) => {

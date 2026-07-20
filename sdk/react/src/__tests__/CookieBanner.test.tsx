@@ -13,7 +13,11 @@ describe("CookieBanner — GDPR", () => {
   it("renders the title and the opt-in actions", () => {
     mountOffline("GDPR");
     render(<CookieBanner />);
-    expect(screen.getByText("We value your privacy")).toBeTruthy();
+    // The title also appears in a visually-hidden live-region announcer
+    // (for screen readers on first appearance) — scope to the visible title.
+    expect(
+      screen.getByText("We value your privacy", { selector: ".cy-banner-title" }),
+    ).toBeTruthy();
     expect(screen.getByText("Accept All")).toBeTruthy();
     expect(screen.getByText("Reject All")).toBeTruthy();
     expect(screen.getByText("Customise")).toBeTruthy();
@@ -39,6 +43,27 @@ describe("CookieBanner — GDPR", () => {
     render(<CookieBanner />);
     fireEvent.click(screen.getByText("Customise"));
     expect(rt.getSnapshot().isPreferencesOpen).toBe(true);
+  });
+});
+
+describe("CookieBanner — DOM placement", () => {
+  it("portals to the front of <body>, regardless of where it's rendered", () => {
+    mountOffline("GDPR");
+    // Render into a wrapper that's itself appended to <body>, simulating
+    // <CookieYesRoot> mounting after the app's own content — the exact case
+    // that made the banner unreachable without the portal.
+    const appContent = document.createElement("div");
+    appContent.id = "app-content-stand-in";
+    document.body.appendChild(appContent);
+    render(<CookieBanner />, { container: appContent });
+
+    const portalRoot = document.getElementById("cookieyes-portal-root");
+    expect(portalRoot).toBeTruthy();
+    expect(document.body.firstElementChild).toBe(portalRoot);
+    expect(portalRoot?.querySelector("[data-cky-banner]")).toBeTruthy();
+    expect(appContent.querySelector("[data-cky-banner]")).toBeNull();
+
+    document.body.removeChild(appContent);
   });
 });
 

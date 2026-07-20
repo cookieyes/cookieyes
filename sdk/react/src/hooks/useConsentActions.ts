@@ -2,6 +2,7 @@
 
 import type { ConsentCategory } from "@cookieyes/core";
 import { useMemo } from "react";
+import { rememberFocusBeforeDialog } from "../primitives/utils.js";
 import { _tryGetCookieYes } from "../runtime.js";
 
 export type ConsentActions = {
@@ -30,6 +31,11 @@ const NOOP_ACTIONS: ConsentActions = {
   hideOptOut: () => undefined,
 };
 
+/**
+ * Imperative actions for driving consent (accept/reject/save/reset, open or
+ * close the preferences dialog). Pair this with `useConsent()` for
+ * reading state — this hook only writes, it does not subscribe to changes.
+ */
 export function useConsentActions(): ConsentActions {
   const runtime = _tryGetCookieYes();
   return useMemo<ConsentActions>(() => {
@@ -41,9 +47,15 @@ export function useConsentActions(): ConsentActions {
       save: () => runtime.manager.savePreferences(),
       updateCategory: (category, value) => runtime.manager.updateCategory(category, value),
       reset: () => runtime.manager.resetConsent(),
-      showPreferences: () => runtime.manager.showPreferences(),
+      showPreferences: () => {
+        rememberFocusBeforeDialog();
+        runtime.manager.showPreferences();
+      },
       hidePreferences: () => runtime.manager.hidePreferences(),
-      showOptOut: () => runtime.showOptOut(),
+      showOptOut: () => {
+        rememberFocusBeforeDialog();
+        runtime.showOptOut();
+      },
       hideOptOut: () => runtime.hideOptOut(),
     };
   }, [runtime]);

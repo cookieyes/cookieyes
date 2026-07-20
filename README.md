@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes Consent SDK" width="820">
+  </picture>
+</p>
+
 # CookieYes Consent SDK
 
 [![CI](https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml/badge.svg)](https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml)
@@ -26,10 +33,17 @@ Open-source, developer-first cookie consent SDK. The same compliance engine that
 
 All business logic lives in `@cookieyes/core`. Framework adapters are thin wrappers — no logic, only wiring.
 
+**Not sure which API reads consent status in your case?** See the
+[decision tree](./docs/which-api-should-i-use.md) — there's one recommended
+path per platform; everything else is a documented low-level option for a
+specific edge case.
+
 ## Quick start
 
-You configure the SDK once with a small builder, then drop in the banner and
-dialog components. Both React and Next.js use the same `createCookieYes()` API.
+You configure the SDK once with a single config object, then drop in the banner
+and dialog components. Every package — core, React, and Next.js — accepts the
+exact same `initCookieYes(config)` shape. Full options are documented in
+[Configuration](./docs/configuration.md).
 
 ### React
 
@@ -45,14 +59,14 @@ import {
   CookieBanner,
   CookiePreferences,
   RecallButton,
-  createCookieYes,
+  initCookieYes,
 } from "@cookieyes/react";
 
-createCookieYes()
-  .mode("offline")        // "offline" (cookie-only) | "self-hosted"
-  .regulation("GDPR")     // "GDPR" | "CCPA"
-  .colorScheme("system")  // "light" | "dark" | "system"
-  .mount();
+initCookieYes({
+  mode: "cookie-only",    // "cookie-only" | "self-hosted"
+  regulation: "GDPR",     // "GDPR" | "CCPA" | "DEFAULT"
+  colorScheme: "system",  // "light" | "dark" | "system"
+});
 
 export function CookieYesRoot() {
   return (

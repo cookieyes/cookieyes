@@ -51,4 +51,10 @@ export const de: TranslationMap = {
     successText: "Ihre Abmeldung wurde gespeichert und wird berücksichtigt.",
     successCountdown: "Das Banner schließt sich in {seconds} s automatisch.",
   },
+  reloadNotice: {
+    message:
+      "Einige Tracking-Dienste auf dieser Seite lassen sich nur durch Neuladen vollständig stoppen. Laden Sie die Seite neu, um Ihre Änderung anzuwenden, oder schließen Sie diesen Hinweis, um weiterzulesen.",
+    reloadButton: "Seite neu laden",
+    dismissButton: "Schließen",
+  },
 };

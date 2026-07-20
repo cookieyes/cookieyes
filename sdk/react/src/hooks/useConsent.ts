@@ -8,6 +8,13 @@ import {
   type CookieYesSnapshot,
 } from "../runtime.js";
 
+/**
+ * The recommended way to read consent state in React. Subscribes to every
+ * change and re-renders on any update (accepted/rejected categories, banner
+ * visibility, etc). For a single category with fewer re-renders, see
+ * `useConsentCategory()`; for actions (accept/reject/save), see
+ * `useConsentActions()`.
+ */
 export function useConsent(): CookieYesSnapshot {
   const runtime = _tryGetCookieYes();
   return useSyncExternalStore(

@@ -82,11 +82,11 @@ beforeEach(() => {
   h.reactProjectPaths.mockReturnValue(REACT_PATHS);
 });
 
-describe("runInit — Next.js (offline, GDPR)", () => {
+describe("runInit — Next.js (cookie-only, GDPR)", () => {
   it("scaffolds the consent-manager and installs the nextjs adapter", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -95,9 +95,10 @@ describe("runInit — Next.js (offline, GDPR)", () => {
     await runInit();
 
     const writes = writtenContents();
-    expect(writes.some((w) => w.includes("createCookieYes"))).toBe(true);
+    expect(writes.some((w) => w.includes("initCookieYes"))).toBe(true);
     expect(writes.some((w) => w.includes("<CookieBanner />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/nextjs"'))).toBe(true);
+    expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(true);
     // App-router layout is generated when one does not already exist.
     expect(writes.some((w) => w.includes("RootLayout"))).toBe(true);
     expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/nextjs", "npm", expect.any(String));
@@ -118,10 +119,12 @@ describe("runInit — React (self-hosted, CCPA, locales, skip install)", () => {
     await runInit();
 
     const writes = writtenContents();
-    expect(writes.some((w) => w.includes(".backend({"))).toBe(true);
+    expect(writes.some((w) => w.includes("backend: {"))).toBe(true);
+    expect(writes.some((w) => w.includes("initCookieYes({"))).toBe(true);
     expect(writes.some((w) => w.includes("<CookieOptOut />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/translations/es"'))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/react"'))).toBe(true);
+    expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(true);
     // Install was declined.
     expect(h.installPackage).not.toHaveBeenCalled();
   });
@@ -142,6 +145,9 @@ describe("runInit — Vanilla (self-hosted, locales, install)", () => {
 
     const writes = writtenContents();
     expect(writes.some((w) => w.includes("getOrCreateConsentRuntime"))).toBe(true);
+    // Regulation is a top-level key now — the deprecated `overrides` wrapper is gone.
+    expect(writes.some((w) => w.includes('regulation: "GDPR"'))).toBe(true);
+    expect(writes.every((w) => !w.includes("overrides"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/translations/de"'))).toBe(true);
     expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/core", "npm", expect.any(String));
     expect(h.installPackage).toHaveBeenCalledWith(
@@ -156,7 +162,7 @@ describe("runInit — patching existing files", () => {
   it("patches an existing Next.js app-router layout", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -175,7 +181,7 @@ describe("runInit — patching existing files", () => {
   it("patches an existing Pages-router _app", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -194,7 +200,7 @@ describe("runInit — patching existing files", () => {
   it("patches an existing React entry and warns when install fails", async () => {
     h.select
       .mockResolvedValueOnce("react")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -212,7 +218,7 @@ describe("runInit — patching existing files", () => {
   it("prints a manual step when a Pages-router _app does not exist", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -223,13 +229,13 @@ describe("runInit — patching existing files", () => {
     await runInit();
 
     // provider + index are still scaffolded
-    expect(writtenContents().some((w) => w.includes("createCookieYes"))).toBe(true);
+    expect(writtenContents().some((w) => w.includes("initCookieYes"))).toBe(true);
   });
 
   it("skips patching when the layout already uses CookieYesRoot", async () => {
     h.select
       .mockResolvedValueOnce("nextjs")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -247,7 +253,7 @@ describe("runInit — patching existing files", () => {
   it("warns when the translations install fails", async () => {
     h.select
       .mockResolvedValueOnce("vanilla")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce(["de"]);
@@ -263,7 +269,7 @@ describe("runInit — patching existing files", () => {
   it("skips the React provider/index when they already exist", async () => {
     h.select
       .mockResolvedValueOnce("react")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);
@@ -279,7 +285,7 @@ describe("runInit — patching existing files", () => {
   it("skips the vanilla consent file when it already exists", async () => {
     h.select
       .mockResolvedValueOnce("vanilla")
-      .mockResolvedValueOnce("offline")
+      .mockResolvedValueOnce("cookie-only")
       .mockResolvedValueOnce("GDPR")
       .mockResolvedValueOnce("light");
     h.multiselect.mockResolvedValueOnce([]);

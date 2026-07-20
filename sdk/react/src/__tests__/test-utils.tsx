@@ -1,14 +1,23 @@
 import type { Regulation } from "@cookieyes/core";
-import { type CookieYesRuntime, createCookieYes, resetCookieYes } from "../runtime.js";
+import { type CookieYesRuntime, initCookieYes, resetCookieYes } from "../runtime.js";
 
 /** Wipes the persisted consent cookie so each test starts fresh. */
 export function clearCookie(): void {
   document.cookie = "cookieyes-consent=; max-age=0; path=/";
 }
 
-/** Mounts an offline runtime for the given regulation and returns it. */
+/**
+ * Mounts a cookie-only runtime for the given regulation and returns it.
+ * @deprecated call sites kept for coverage still use {@link mountOffline} —
+ * both produce an identical runtime.
+ */
 export function mountOffline(regulation: Regulation = "GDPR"): CookieYesRuntime {
-  return createCookieYes().mode("offline").regulation(regulation).mount();
+  return initCookieYes({ mode: "offline", regulation });
+}
+
+/** Mounts a cookie-only runtime for the given regulation and returns it. */
+export function mountCookieOnly(regulation: Regulation = "GDPR"): CookieYesRuntime {
+  return initCookieYes({ mode: "cookie-only", regulation });
 }
 
 /** Standard afterEach: drop the singleton runtime and clear the cookie. */

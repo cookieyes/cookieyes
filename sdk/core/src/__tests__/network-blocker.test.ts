@@ -246,3 +246,40 @@ describe("installNetworkBlocker — XMLHttpRequest", () => {
     expect(sendMock).toHaveBeenCalledOnce();
   });
 });
+
+describe("installNetworkBlocker — navigator.sendBeacon", () => {
+  let beaconMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    beaconMock = vi.fn(() => true);
+    Object.defineProperty(navigator, "sendBeacon", {
+      configurable: true,
+      writable: true,
+      value: beaconMock,
+    });
+  });
+
+  it("blocks sendBeacon (GA4/Meta exit tracking) when the category is denied", () => {
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
+
+    const result = navigator.sendBeacon("https://www.google-analytics.com/collect", "payload");
+
+    // Reports success to the caller, but nothing actually reaches the origin.
+    expect(result).toBe(true);
+    expect(beaconMock).not.toHaveBeenCalled();
+  });
+
+  it("lets a consented sendBeacon through to the original", () => {
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => true);
+
+    navigator.sendBeacon("https://www.google-analytics.com/collect", "payload");
+
+    expect(beaconMock).toHaveBeenCalledOnce();
+  });
+
+  it("restores the original sendBeacon on uninstall", () => {
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
+    uninstallNetworkBlocker();
+    expect(navigator.sendBeacon).toBe(beaconMock);
+  });
+});

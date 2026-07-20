@@ -52,6 +52,11 @@ describe("useTranslations", () => {
           successText: "",
           successCountdown: "",
         },
+        reloadNotice: {
+          message: "",
+          reloadButton: "",
+          dismissButton: "",
+        },
       },
     };
     createCookieYes().mode("offline").i18n({ messages: { fr }, locale: "fr" }).mount();
