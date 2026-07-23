@@ -12,6 +12,7 @@ import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { chain, useBodyPortalRoot } from "../primitives/utils.js";
+import { CY_PART } from "../styles/parts.js";
 
 type Props = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
 
@@ -46,6 +47,7 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
       type="button"
       aria-label="Consent Preferences"
       className={className ?? "cy-widget"}
+      data-cy-part={CY_PART.recall.root}
       data-pos="bottom-left"
       data-tooltip="Consent Preferences"
       onClick={chain(onClick, onActivate)}

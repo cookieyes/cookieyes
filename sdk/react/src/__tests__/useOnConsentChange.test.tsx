@@ -17,7 +17,7 @@ describe("useOnConsentChange", () => {
     renderHook(() => useOnConsentChange("change", fn));
 
     expect(fn).toHaveBeenCalledTimes(1);
-    expect(fn.mock.calls[0][0]).toMatchObject({ isInitial: true, changedCategories: [] });
+    expect(fn.mock.calls[0]?.[0]).toMatchObject({ isInitial: true, changedCategories: [] });
   });
 
   it('"change" fires with changedCategories when the visitor acts', () => {
@@ -28,9 +28,9 @@ describe("useOnConsentChange", () => {
     act(() => rt.manager.acceptAll());
 
     expect(fn).toHaveBeenCalledTimes(2); // initial replay + the change
-    const last = fn.mock.calls[1][0];
-    expect(last.isInitial).toBe(false);
-    expect(last.changedCategories).toContain("analytics");
+    const last = fn.mock.calls[1]?.[0];
+    expect(last?.isInitial).toBe(false);
+    expect(last?.changedCategories).toContain("analytics");
   });
 
   it('"save" fires on a re-confirm even when nothing changed; "change" does not', () => {

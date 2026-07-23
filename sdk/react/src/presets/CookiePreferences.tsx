@@ -1,11 +1,23 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { Preferences } from "../primitives/Preferences.js";
+import { CY_PART, CY_STATE } from "../styles/parts.js";
 
-export function CookiePreferences() {
+/** Styling passthrough — merged onto the visible dialog card, on top of our defaults. */
+export type CookiePreferencesProps = {
+  className?: string;
+  style?: CSSProperties;
+};
+
+export function CookiePreferences({ className, style }: CookiePreferencesProps = {}) {
   return (
     <Preferences.Root className="cy-dialog-overlay">
-      <div className="cy-dialog">
+      <div
+        className={className ? `cy-dialog ${className}` : "cy-dialog"}
+        style={style}
+        data-cy-part={CY_PART.dialog.root}
+      >
         <div className="cy-dialog-header">
           <Preferences.Title className="cy-dialog-title" />
           <Preferences.Close className="cy-dialog-close" />
@@ -22,11 +34,20 @@ export function CookiePreferences() {
                   <div className="cy-accordion-item">
                     <div className="cy-accordion-header-wrapper">
                       <div className="cy-accordion-header">
-                        <span className="cy-accordion-btn">{label}</span>
+                        <span
+                          className="cy-accordion-btn"
+                          data-cy-part={CY_PART.dialog.categoryLabel}
+                        >
+                          {label}
+                        </span>
                         {disabled ? (
                           <span className="cy-always-active">Always Active</span>
                         ) : (
-                          <label className="cy-toggle">
+                          <label
+                            className="cy-toggle"
+                            data-cy-part={CY_PART.dialog.toggle}
+                            data-cy-state={checked ? CY_STATE.on : CY_STATE.off}
+                          >
                             <input
                               type="checkbox"
                               role="switch"
@@ -42,7 +63,7 @@ export function CookiePreferences() {
                         )}
                       </div>
                       <div className="cy-accordion-header-des">
-                        <p>{description}</p>
+                        <p data-cy-part={CY_PART.dialog.categoryDescription}>{description}</p>
                       </div>
                     </div>
                   </div>

@@ -34,10 +34,22 @@ describe("banner footprint + zero layout shift", () => {
     expect(baseRule(".cy-banner")).toContain("max-width: 440px");
   });
 
+  // Extract a full brace-balanced block (handles the nested from/to blocks and
+  // any indentation, e.g. when the sheet is wrapped in a @layer).
+  function block(marker: string): string {
+    const start = sheet.indexOf(marker);
+    if (start === -1) throw new Error(`block not found: ${marker}`);
+    const open = sheet.indexOf("{", start);
+    let depth = 0;
+    for (let i = open; i < sheet.length; i++) {
+      if (sheet[i] === "{") depth++;
+      else if (sheet[i] === "}" && --depth === 0) return sheet.slice(start, i + 1);
+    }
+    throw new Error(`unbalanced block: ${marker}`);
+  }
+
   it("FIX4: the entry animation mutates only transform/opacity (no layout properties)", () => {
-    const match = sheet.match(/@keyframes cy-slide-up \{[\s\S]*?\n\}/);
-    if (!match) throw new Error("cy-slide-up keyframes not found");
-    const kf = match[0];
+    const kf = block("@keyframes cy-slide-up");
     expect(kf).toContain("transform");
     expect(kf).toContain("opacity");
     // None of these layout-affecting properties may animate (they would cause CLS).

@@ -9,12 +9,17 @@ import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { CY_PART } from "../styles/parts.js";
+import { Slot } from "./Slot.js";
 import { chain, useBodyPortalRoot } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type ParagraphProps = ComponentPropsWithoutRef<"p">;
+
+/** Button props plus `asChild` — render your own element and we wire behaviour onto it. */
+type ActionProps = ButtonProps & { asChild?: boolean };
 
 const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(function BannerRoot(
   { children, ...props },
@@ -39,6 +44,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         if (typeof ref === "function") ref(node);
         else if (ref) ref.current = node;
       }}
+      data-cy-part={CY_PART.banner.root}
       {...props}
     >
       {children}
@@ -54,7 +60,7 @@ const Title = forwardRef<HTMLParagraphElement, ParagraphProps>(function BannerTi
 ) {
   const t = useTranslations();
   return (
-    <p ref={ref} {...props}>
+    <p ref={ref} data-cy-part={CY_PART.banner.title} {...props}>
       {children ?? t.bannerTitle}
     </p>
   );
@@ -67,68 +73,111 @@ const Description = forwardRef<HTMLParagraphElement, ParagraphProps>(function Ba
   const t = useTranslations();
   const reg = useRegulation();
   return (
-    <p ref={ref} {...props}>
+    <p ref={ref} data-cy-part={CY_PART.banner.description} {...props}>
       {children ?? (reg === "CCPA" ? t.ccpaDescription : t.bannerDescription)}
     </p>
   );
 });
 
 const Actions = forwardRef<HTMLDivElement, DivProps>(function BannerActions(props, ref) {
-  return <div ref={ref} {...props} />;
+  return <div ref={ref} data-cy-part={CY_PART.banner.actions} {...props} />;
 });
 
-const AcceptAll = forwardRef<HTMLButtonElement, ButtonProps>(function BannerAcceptAll(
-  { children, onClick, ...rest },
+const AcceptAll = forwardRef<HTMLButtonElement, ActionProps>(function BannerAcceptAll(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { acceptAll } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.banner.acceptAll,
+    onClick: chain(onClick, acceptAll),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, acceptAll)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.acceptAll}
     </button>
   );
 });
 
-const RejectAll = forwardRef<HTMLButtonElement, ButtonProps>(function BannerRejectAll(
-  { children, onClick, ...rest },
+const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function BannerRejectAll(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { rejectAll } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.banner.rejectAll,
+    onClick: chain(onClick, rejectAll),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, rejectAll)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.rejectAll}
     </button>
   );
 });
 
-const OpenPreferences = forwardRef<HTMLButtonElement, ButtonProps>(function BannerOpenPreferences(
-  { children, onClick, ...rest },
+const OpenPreferences = forwardRef<HTMLButtonElement, ActionProps>(function BannerOpenPreferences(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { showPreferences } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.banner.customise,
+    onClick: chain(onClick, showPreferences),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, showPreferences)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.managePreferences}
     </button>
   );
 });
 
-const Close = forwardRef<HTMLButtonElement, ButtonProps>(function BannerClose(
-  { children, onClick, "aria-label": ariaLabel, ...rest },
+const Close = forwardRef<HTMLButtonElement, ActionProps>(function BannerClose(
+  { children, onClick, "aria-label": ariaLabel, asChild, ...rest },
   ref,
 ) {
   const { acceptAll } = useConsentActions();
+  const behavior = {
+    "aria-label": ariaLabel ?? "Close",
+    "data-cy-part": CY_PART.banner.close,
+    onClick: chain(onClick, acceptAll),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      aria-label={ariaLabel ?? "Close"}
-      onClick={chain(onClick, acceptAll)}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? (
         <svg
           width="9"
@@ -150,14 +199,26 @@ const Close = forwardRef<HTMLButtonElement, ButtonProps>(function BannerClose(
   );
 });
 
-const DoNotSell = forwardRef<HTMLButtonElement, ButtonProps>(function BannerDoNotSell(
-  { children, onClick, ...rest },
+const DoNotSell = forwardRef<HTMLButtonElement, ActionProps>(function BannerDoNotSell(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { showOptOut } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.banner.doNotSell,
+    onClick: chain(onClick, showOptOut),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, showOptOut)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.doNotSell}
     </button>
   );
@@ -175,6 +236,7 @@ const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function BannerBrand
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t.poweredBy}
+      data-cy-part={CY_PART.banner.branding}
       {...props}
     >
       {children ?? (

@@ -279,6 +279,55 @@ initCookieYes({
 });
 ```
 
+### Custom styling with CSS
+
+For anything beyond theme tokens, write your own CSS. Three things make this easy:
+
+**1. Clean, low-specificity hooks.** Our styles use single-class selectors (specificity `0,1,0`),
+so a `data-cy-part` selector of your own matches that specificity and wins by load order — no
+`!important` gymnastics. Import your overrides after `@cookieyes/react/styles.css`.
+
+**2. Target any part.** Every component labels its pieces with `data-cy-part`, and toggles also
+carry `data-cy-state="on" | "off"`:
+
+```css
+[data-cy-part="accept-all"] { background: #16a34a; }
+[data-cy-part="toggle"][data-cy-state="on"] .cy-toggle-track { background: #16a34a; }
+```
+
+The part names are a stable contract. The full set (also exported as the typed `CY_PART` / `CY_STATE`
+constants):
+
+| Component | `data-cy-part` |
+|---|---|
+| Banner | `banner`, `title`, `description`, `actions`, `accept-all`, `reject-all`, `customise`, `do-not-sell`, `close`, `branding` |
+| Preferences | `overlay`, `dialog`, `title`, `close`, `intro`, `category`, `category-label`, `category-description`, `toggle`, `accept-all`, `reject-all`, `save`, `branding` |
+| Opt-out | `optout`, `title`, `message`, `confirm`, `close` |
+| Recall button | `recall` |
+| Reload notice | `reload-notice`, `reload-message`, `reload-dismiss` |
+
+**3. Restyle a whole preset's box.** Each preset takes `className` / `style`, merged onto its
+visible card on top of our defaults:
+
+```tsx
+<CookieBanner className="my-banner" style={{ maxWidth: 480 }} />
+```
+
+Want to start from our exact look and edit it? Copy `@cookieyes/react/styles.css` (the same file you
+import) into your project as a starting point instead of building from scratch.
+
+**4. Swap in your own element.** Any control primitive takes `asChild` — render *your* element and
+we wire our behaviour (the click action, `data-cy-part`, ref) onto it instead of rendering our own
+button. Your handlers, `className`, and `style` are preserved (event handlers run alongside ours):
+
+```tsx
+<Banner.AcceptAll asChild>
+  <MyButton className="brand-btn" onClick={track}>Accept all</MyButton>
+</Banner.AcceptAll>
+```
+
+Available on the button controls of `Banner`, `Preferences`, and `OptOut`.
+
 ## Accessibility
 
 **Scope of this section:** keyboard operability, focus management, screen-reader

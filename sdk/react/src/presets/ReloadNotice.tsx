@@ -5,6 +5,7 @@ import { useReloadNotice } from "../hooks/useReloadNotice.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { CY_PART } from "../styles/parts.js";
 
 /**
  * Non-intrusive, dismissible notice shown only when a revoked tool has no clean
@@ -25,8 +26,15 @@ export function ReloadNotice() {
   if (!required) return null;
 
   return (
-    <div ref={containerRef} className="cy-reload-notice" role="alert">
-      <span className="cy-reload-notice-text">{t.reloadNotice.message}</span>
+    <div
+      ref={containerRef}
+      className="cy-reload-notice"
+      role="alert"
+      data-cy-part={CY_PART.reloadNotice.root}
+    >
+      <span className="cy-reload-notice-text" data-cy-part={CY_PART.reloadNotice.message}>
+        {t.reloadNotice.message}
+      </span>
       <div className="cy-reload-notice-actions">
         <button
           type="button"
@@ -40,6 +48,7 @@ export function ReloadNotice() {
         <button
           type="button"
           className="cy-btn cy-btn-outline cy-reload-notice-dismiss"
+          data-cy-part={CY_PART.reloadNotice.dismiss}
           onClick={dismiss}
         >
           {t.reloadNotice.dismissButton}

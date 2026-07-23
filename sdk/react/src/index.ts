@@ -70,9 +70,9 @@ export {
 } from "./hooks/index.js";
 
 // Styled presets — drop-in defaults built from the primitives
-export { CookieBanner } from "./presets/CookieBanner.js";
-export { CookieOptOut } from "./presets/CookieOptOut.js";
-export { CookiePreferences } from "./presets/CookiePreferences.js";
+export { CookieBanner, type CookieBannerProps } from "./presets/CookieBanner.js";
+export { CookieOptOut, type CookieOptOutProps } from "./presets/CookieOptOut.js";
+export { CookiePreferences, type CookiePreferencesProps } from "./presets/CookiePreferences.js";
 export { ReloadNotice } from "./presets/ReloadNotice.js";
 // Headless primitives — composable slot namespaces
 export { Banner } from "./primitives/Banner.js";
@@ -92,3 +92,5 @@ export {
   initCookieYes,
   resetCookieYes,
 } from "./runtime.js";
+// Styling contract — part/state hooks for targeting components in CSS
+export { CY_PART, CY_STATE, type CyPart, type CyState } from "./styles/parts.js";
