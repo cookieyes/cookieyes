@@ -9,6 +9,7 @@ import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { CY_PART } from "../styles/parts.js";
 import { chain, useBodyPortalRoot } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
@@ -39,6 +40,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         if (typeof ref === "function") ref(node);
         else if (ref) ref.current = node;
       }}
+      data-cy-part={CY_PART.banner.root}
       {...props}
     >
       {children}
@@ -54,7 +56,7 @@ const Title = forwardRef<HTMLParagraphElement, ParagraphProps>(function BannerTi
 ) {
   const t = useTranslations();
   return (
-    <p ref={ref} {...props}>
+    <p ref={ref} data-cy-part={CY_PART.banner.title} {...props}>
       {children ?? t.bannerTitle}
     </p>
   );
@@ -67,14 +69,14 @@ const Description = forwardRef<HTMLParagraphElement, ParagraphProps>(function Ba
   const t = useTranslations();
   const reg = useRegulation();
   return (
-    <p ref={ref} {...props}>
+    <p ref={ref} data-cy-part={CY_PART.banner.description} {...props}>
       {children ?? (reg === "CCPA" ? t.ccpaDescription : t.bannerDescription)}
     </p>
   );
 });
 
 const Actions = forwardRef<HTMLDivElement, DivProps>(function BannerActions(props, ref) {
-  return <div ref={ref} {...props} />;
+  return <div ref={ref} data-cy-part={CY_PART.banner.actions} {...props} />;
 });
 
 const AcceptAll = forwardRef<HTMLButtonElement, ButtonProps>(function BannerAcceptAll(
@@ -84,7 +86,13 @@ const AcceptAll = forwardRef<HTMLButtonElement, ButtonProps>(function BannerAcce
   const { acceptAll } = useConsentActions();
   const t = useTranslations();
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, acceptAll)} {...rest}>
+    <button
+      ref={ref}
+      type="button"
+      data-cy-part={CY_PART.banner.acceptAll}
+      onClick={chain(onClick, acceptAll)}
+      {...rest}
+    >
       {children ?? t.acceptAll}
     </button>
   );
@@ -97,7 +105,13 @@ const RejectAll = forwardRef<HTMLButtonElement, ButtonProps>(function BannerReje
   const { rejectAll } = useConsentActions();
   const t = useTranslations();
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, rejectAll)} {...rest}>
+    <button
+      ref={ref}
+      type="button"
+      data-cy-part={CY_PART.banner.rejectAll}
+      onClick={chain(onClick, rejectAll)}
+      {...rest}
+    >
       {children ?? t.rejectAll}
     </button>
   );
@@ -110,7 +124,13 @@ const OpenPreferences = forwardRef<HTMLButtonElement, ButtonProps>(function Bann
   const { showPreferences } = useConsentActions();
   const t = useTranslations();
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, showPreferences)} {...rest}>
+    <button
+      ref={ref}
+      type="button"
+      data-cy-part={CY_PART.banner.customise}
+      onClick={chain(onClick, showPreferences)}
+      {...rest}
+    >
       {children ?? t.managePreferences}
     </button>
   );
@@ -126,6 +146,7 @@ const Close = forwardRef<HTMLButtonElement, ButtonProps>(function BannerClose(
       ref={ref}
       type="button"
       aria-label={ariaLabel ?? "Close"}
+      data-cy-part={CY_PART.banner.close}
       onClick={chain(onClick, acceptAll)}
       {...rest}
     >
@@ -157,7 +178,13 @@ const DoNotSell = forwardRef<HTMLButtonElement, ButtonProps>(function BannerDoNo
   const { showOptOut } = useConsentActions();
   const t = useTranslations();
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, showOptOut)} {...rest}>
+    <button
+      ref={ref}
+      type="button"
+      data-cy-part={CY_PART.banner.doNotSell}
+      onClick={chain(onClick, showOptOut)}
+      {...rest}
+    >
       {children ?? t.doNotSell}
     </button>
   );
@@ -175,6 +202,7 @@ const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function BannerBrand
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t.poweredBy}
+      data-cy-part={CY_PART.banner.branding}
       {...props}
     >
       {children ?? (

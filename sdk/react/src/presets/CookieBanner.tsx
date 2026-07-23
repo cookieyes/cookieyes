@@ -1,14 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { Banner } from "../primitives/Banner.js";
+import { CY_PART } from "../styles/parts.js";
 
 const ANNOUNCE_DELAY_MS = 700;
 
-export function CookieBanner() {
+/** Styling passthrough — merged onto the visible banner card, on top of our defaults. */
+export type CookieBannerProps = {
+  className?: string;
+  style?: CSSProperties;
+};
+
+export function CookieBanner({ className, style }: CookieBannerProps = {}) {
   const reg = useRegulation();
   const t = useTranslations();
   const isCCPA = reg === "CCPA";
@@ -55,13 +62,17 @@ export function CookieBanner() {
       >
         {announcement}
       </span>
-      <Banner.Root className="cy-banner-wrap">
+      {/* The wrapper is `display: contents` (not a style target), so suppress
+          its `banner` part here — the visible card below owns it instead. */}
+      <Banner.Root className="cy-banner-wrap" data-cy-part={undefined}>
         {/* Canonical banner element: the visible card carries the stable
           `data-cky-banner` hook + dialog role, and (via `display: contents` on
           the wrapper) is the only measurable banner box. */}
         <div
-          className="cy-banner"
+          className={className ? `cy-banner ${className}` : "cy-banner"}
+          style={style}
           data-cky-banner=""
+          data-cy-part={CY_PART.banner.root}
           role="dialog"
           aria-modal="false"
           aria-live="polite"

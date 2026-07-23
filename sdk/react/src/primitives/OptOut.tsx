@@ -17,6 +17,7 @@ import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { CY_PART } from "../styles/parts.js";
 import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
@@ -105,6 +106,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         aria-modal="true"
         aria-label="Opt-out preferences"
         tabIndex={-1}
+        data-cy-part={CY_PART.optOut.root}
         {...props}
       >
         {children}
@@ -119,7 +121,7 @@ const Title = forwardRef<HTMLHeadingElement, HeadingProps>(function OptOutTitle(
 ) {
   const t = useTranslations();
   return (
-    <h2 ref={ref} {...props}>
+    <h2 ref={ref} data-cy-part={CY_PART.optOut.title} {...props}>
       {children ?? t.optOut.title}
     </h2>
   );
@@ -131,7 +133,7 @@ const Description = forwardRef<HTMLParagraphElement, ParagraphProps>(function Op
 ) {
   const t = useTranslations();
   return (
-    <p ref={ref} {...props}>
+    <p ref={ref} data-cy-part={CY_PART.optOut.message} {...props}>
       {children ?? t.optOut.description}
     </p>
   );
@@ -147,6 +149,7 @@ const Close = forwardRef<HTMLButtonElement, ButtonProps>(function OptOutClose(
       ref={ref}
       type="button"
       aria-label={ariaLabel ?? "Close"}
+      data-cy-part={CY_PART.optOut.close}
       onClick={chain(onClick, hideOptOut)}
       {...rest}
     >
@@ -228,6 +231,7 @@ const Save = forwardRef<HTMLButtonElement, ButtonProps>(function OptOutSave(
     <button
       ref={ref}
       type="button"
+      data-cy-part={CY_PART.optOut.confirm}
       onClick={chain(onClick, () => {
         if (optOut) rejectAll();
         else acceptAll();

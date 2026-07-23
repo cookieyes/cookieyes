@@ -279,6 +279,43 @@ initCookieYes({
 });
 ```
 
+### Custom styling with CSS
+
+For anything beyond theme tokens, write your own CSS. Three things make this easy:
+
+**1. Your CSS just wins.** Our styles ship inside a `@layer cookieyes` cascade layer, and any
+un-layered rule beats a layered one regardless of specificity — so you never need `!important`
+to override us.
+
+**2. Target any part.** Every component labels its pieces with `data-cy-part`, and toggles also
+carry `data-cy-state="on" | "off"`:
+
+```css
+[data-cy-part="accept-all"] { background: #16a34a; }
+[data-cy-part="toggle"][data-cy-state="on"] .cy-toggle-track { background: #16a34a; }
+```
+
+The part names are a stable contract. The full set (also exported as the typed `CY_PART` / `CY_STATE`
+constants):
+
+| Component | `data-cy-part` |
+|---|---|
+| Banner | `banner`, `title`, `description`, `actions`, `accept-all`, `reject-all`, `customise`, `do-not-sell`, `close`, `branding` |
+| Preferences | `overlay`, `dialog`, `title`, `close`, `intro`, `category`, `category-label`, `category-description`, `toggle`, `accept-all`, `reject-all`, `save`, `branding` |
+| Opt-out | `optout`, `title`, `message`, `confirm`, `close` |
+| Recall button | `recall` |
+| Reload notice | `reload-notice`, `reload-message`, `reload-dismiss` |
+
+**3. Restyle a whole preset's box.** Each preset takes `className` / `style`, merged onto its
+visible card on top of our defaults:
+
+```tsx
+<CookieBanner className="my-banner" style={{ maxWidth: 480 }} />
+```
+
+Want to start from our exact look and edit it? Copy `@cookieyes/react/styles.css` (the same file you
+import) into your project as a starting point instead of building from scratch.
+
 ## Accessibility
 
 **Scope of this section:** keyboard operability, focus management, screen-reader

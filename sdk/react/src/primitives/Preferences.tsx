@@ -17,6 +17,7 @@ import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { CY_PART } from "../styles/parts.js";
 import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
@@ -81,6 +82,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
           aria-modal="true"
           aria-label="Cookie preferences"
           tabIndex={-1}
+          data-cy-part={CY_PART.dialog.overlay}
           {...props}
         >
           {children}
@@ -96,7 +98,7 @@ const Title = forwardRef<HTMLHeadingElement, HeadingProps>(function PreferencesT
 ) {
   const t = useTranslations();
   return (
-    <h2 ref={ref} {...props}>
+    <h2 ref={ref} data-cy-part={CY_PART.dialog.title} {...props}>
       {children ?? t.preferencesTitle}
     </h2>
   );
@@ -108,7 +110,7 @@ const Intro = forwardRef<HTMLParagraphElement, ParagraphProps>(function Preferen
 ) {
   const t = useTranslations();
   return (
-    <p ref={ref} {...props}>
+    <p ref={ref} data-cy-part={CY_PART.dialog.intro} {...props}>
       {children ?? t.preferencesIntro}
     </p>
   );
@@ -134,6 +136,7 @@ const Close = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesClo
       ref={ref}
       type="button"
       aria-label={ariaLabel ?? "Close preferences"}
+      data-cy-part={CY_PART.dialog.close}
       onClick={chain(onClick, hidePreferences)}
       {...rest}
     >
@@ -211,7 +214,7 @@ const Category = forwardRef<
   const description = def?.description ?? builtIn?.description ?? "";
 
   return (
-    <div ref={ref} {...props}>
+    <div ref={ref} data-cy-part={CY_PART.dialog.category} {...props}>
       {children({
         category,
         label,
@@ -234,7 +237,13 @@ const AcceptAll = forwardRef<HTMLButtonElement, ButtonProps>(function Preference
   const { acceptAll } = useConsentActions();
   const t = useTranslations();
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, acceptAll)} {...rest}>
+    <button
+      ref={ref}
+      type="button"
+      data-cy-part={CY_PART.dialog.acceptAll}
+      onClick={chain(onClick, acceptAll)}
+      {...rest}
+    >
       {children ?? t.acceptAll}
     </button>
   );
@@ -247,7 +256,13 @@ const RejectAll = forwardRef<HTMLButtonElement, ButtonProps>(function Preference
   const { rejectAll } = useConsentActions();
   const t = useTranslations();
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, rejectAll)} {...rest}>
+    <button
+      ref={ref}
+      type="button"
+      data-cy-part={CY_PART.dialog.rejectAll}
+      onClick={chain(onClick, rejectAll)}
+      {...rest}
+    >
       {children ?? t.rejectAll}
     </button>
   );
@@ -260,7 +275,13 @@ const Save = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesSave
   const { save } = useConsentActions();
   const t = useTranslations();
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, save)} {...rest}>
+    <button
+      ref={ref}
+      type="button"
+      data-cy-part={CY_PART.dialog.save}
+      onClick={chain(onClick, save)}
+      {...rest}
+    >
       {children ?? t.savePreferences}
     </button>
   );
@@ -278,6 +299,7 @@ const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function Preferences
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t.poweredBy}
+      data-cy-part={CY_PART.dialog.branding}
       {...props}
     >
       {children ?? (
