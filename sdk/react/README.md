@@ -283,9 +283,9 @@ initCookieYes({
 
 For anything beyond theme tokens, write your own CSS. Three things make this easy:
 
-**1. Your CSS just wins.** Our styles ship inside a `@layer cookieyes` cascade layer, and any
-un-layered rule beats a layered one regardless of specificity — so you never need `!important`
-to override us.
+**1. Clean, low-specificity hooks.** Our styles use single-class selectors (specificity `0,1,0`),
+so a `data-cy-part` selector of your own matches that specificity and wins by load order — no
+`!important` gymnastics. Import your overrides after `@cookieyes/react/styles.css`.
 
 **2. Target any part.** Every component labels its pieces with `data-cy-part`, and toggles also
 carry `data-cy-state="on" | "off"`:

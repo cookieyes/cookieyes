@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CookieBanner } from "../presets/CookieBanner.js";
@@ -58,13 +56,5 @@ describe("styling — className / style passthrough", () => {
 
     const card = document.querySelector<HTMLElement>('[data-cy-part="banner"]');
     expect(card?.style.zIndex).toBe("42");
-  });
-});
-
-describe("styling — cascade layer", () => {
-  it("ships the stylesheet inside the `cookieyes` @layer so author CSS wins", () => {
-    // Vitest runs with the package root as cwd.
-    const css = readFileSync(resolve(process.cwd(), "src/styles/cookieyes.css"), "utf8");
-    expect(css).toContain("@layer cookieyes {");
   });
 });
