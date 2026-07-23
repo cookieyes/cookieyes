@@ -316,6 +316,18 @@ visible card on top of our defaults:
 Want to start from our exact look and edit it? Copy `@cookieyes/react/styles.css` (the same file you
 import) into your project as a starting point instead of building from scratch.
 
+**4. Swap in your own element.** Any control primitive takes `asChild` — render *your* element and
+we wire our behaviour (the click action, `data-cy-part`, ref) onto it instead of rendering our own
+button. Your handlers, `className`, and `style` are preserved (event handlers run alongside ours):
+
+```tsx
+<Banner.AcceptAll asChild>
+  <MyButton className="brand-btn" onClick={track}>Accept all</MyButton>
+</Banner.AcceptAll>
+```
+
+Available on the button controls of `Banner`, `Preferences`, and `OptOut`.
+
 ## Accessibility
 
 **Scope of this section:** keyboard operability, focus management, screen-reader

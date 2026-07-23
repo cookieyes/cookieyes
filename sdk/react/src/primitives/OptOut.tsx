@@ -18,10 +18,14 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
+import { Slot } from "./Slot.js";
 import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
+
+/** Button props plus `asChild` — render your own element and we wire behaviour onto it. */
+type ActionProps = ButtonProps & { asChild?: boolean };
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type ParagraphProps = ComponentPropsWithoutRef<"p">;
 type HeadingProps = ComponentPropsWithoutRef<"h2">;
@@ -139,20 +143,26 @@ const Description = forwardRef<HTMLParagraphElement, ParagraphProps>(function Op
   );
 });
 
-const Close = forwardRef<HTMLButtonElement, ButtonProps>(function OptOutClose(
-  { children, onClick, "aria-label": ariaLabel, ...rest },
+const Close = forwardRef<HTMLButtonElement, ActionProps>(function OptOutClose(
+  { children, onClick, "aria-label": ariaLabel, asChild, ...rest },
   ref,
 ) {
   const { hideOptOut } = useConsentActions();
+  const behavior = {
+    "aria-label": ariaLabel ?? "Close",
+    "data-cy-part": CY_PART.optOut.close,
+    onClick: chain(onClick, hideOptOut),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      aria-label={ariaLabel ?? "Close"}
-      data-cy-part={CY_PART.optOut.close}
-      onClick={chain(onClick, hideOptOut)}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? (
         <svg
           width="10"
@@ -206,39 +216,53 @@ const CheckboxLabel = forwardRef<HTMLLabelElement, LabelProps>(function OptOutCh
   );
 });
 
-const Cancel = forwardRef<HTMLButtonElement, ButtonProps>(function OptOutCancel(
-  { children, onClick, ...rest },
+const Cancel = forwardRef<HTMLButtonElement, ActionProps>(function OptOutCancel(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { hideOptOut } = useConsentActions();
   const t = useTranslations();
+  const behavior = { onClick: chain(onClick, hideOptOut), ...rest };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, hideOptOut)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.optOut.cancel}
     </button>
   );
 });
 
-const Save = forwardRef<HTMLButtonElement, ButtonProps>(function OptOutSave(
-  { children, onClick, ...rest },
+const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { optOut, setSaved } = useOptOutContext();
   const { acceptAll, rejectAll } = useConsentActions();
   const t = useTranslations();
 
+  const behavior = {
+    "data-cy-part": CY_PART.optOut.confirm,
+    onClick: chain(onClick, () => {
+      if (optOut) rejectAll();
+      else acceptAll();
+      setSaved(true);
+    }),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      data-cy-part={CY_PART.optOut.confirm}
-      onClick={chain(onClick, () => {
-        if (optOut) rejectAll();
-        else acceptAll();
-        setSaved(true);
-      })}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.savePreferences}
     </button>
   );

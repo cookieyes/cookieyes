@@ -18,10 +18,14 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
+import { Slot } from "./Slot.js";
 import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
+
+/** Button props plus `asChild` — render your own element and we wire behaviour onto it. */
+type ActionProps = ButtonProps & { asChild?: boolean };
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type ParagraphProps = ComponentPropsWithoutRef<"p">;
 type HeadingProps = ComponentPropsWithoutRef<"h2">;
@@ -126,20 +130,26 @@ const Description = forwardRef<HTMLParagraphElement, ParagraphProps>(
   },
 );
 
-const Close = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesClose(
-  { children, onClick, "aria-label": ariaLabel, ...rest },
+const Close = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesClose(
+  { children, onClick, "aria-label": ariaLabel, asChild, ...rest },
   ref,
 ) {
   const { hidePreferences } = useConsentActions();
+  const behavior = {
+    "aria-label": ariaLabel ?? "Close preferences",
+    "data-cy-part": CY_PART.dialog.close,
+    onClick: chain(onClick, hidePreferences),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      aria-label={ariaLabel ?? "Close preferences"}
-      data-cy-part={CY_PART.dialog.close}
-      onClick={chain(onClick, hidePreferences)}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? (
         <svg
           width="12"
@@ -230,58 +240,76 @@ const Category = forwardRef<
   );
 });
 
-const AcceptAll = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesAcceptAll(
-  { children, onClick, ...rest },
+const AcceptAll = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesAcceptAll(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { acceptAll } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.dialog.acceptAll,
+    onClick: chain(onClick, acceptAll),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      data-cy-part={CY_PART.dialog.acceptAll}
-      onClick={chain(onClick, acceptAll)}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.acceptAll}
     </button>
   );
 });
 
-const RejectAll = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesRejectAll(
-  { children, onClick, ...rest },
+const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesRejectAll(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { rejectAll } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.dialog.rejectAll,
+    onClick: chain(onClick, rejectAll),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      data-cy-part={CY_PART.dialog.rejectAll}
-      onClick={chain(onClick, rejectAll)}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.rejectAll}
     </button>
   );
 });
 
-const Save = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesSave(
-  { children, onClick, ...rest },
+const Save = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesSave(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { save } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.dialog.save,
+    onClick: chain(onClick, save),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      data-cy-part={CY_PART.dialog.save}
-      onClick={chain(onClick, save)}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.savePreferences}
     </button>
   );
