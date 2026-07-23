@@ -557,6 +557,11 @@ export async function runInit(): Promise<void> {
     }
   }
 
+  note(
+    `${pc.yellow("★")} Enjoying CookieYes? A GitHub star helps a lot:\n${pc.cyan("https://github.com/cookieyes/cookieyes")}`,
+    "Support the project",
+  );
+
   // TODO: switch to https://docs.cookieyes.com once the docs site is live.
   outro(`${pc.green("✓")} Done! Docs: ${pc.cyan("https://github.com/cookieyes/cookieyes#readme")}`);
 }
