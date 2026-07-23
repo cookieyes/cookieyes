@@ -205,6 +205,20 @@ const prefsOpen = usePreferencesOpen();       // boolean
 const optOutOpen = useOptOutOpen();           // boolean
 ```
 
+**React to consent changes** — run your own code when a visitor grants or
+withdraws consent (load a script, sync a pixel, log the decision):
+
+```tsx
+// "change" fires only when a category actually differs; "save" fires on every
+// save. Pass { category } to scope it. Cleans up on unmount; no-op during SSR.
+useOnConsentChange("change", ({ changedCategories }) => {
+  if (changedCategories.includes("analytics")) loadAnalytics();
+});
+```
+
+The listener also fires once on mount with the current state (`isInitial: true`),
+so late-mounting code still learns what the visitor already chose.
+
 #### Low-level hooks
 
 You shouldn't need these for a typical integration — each exists for a

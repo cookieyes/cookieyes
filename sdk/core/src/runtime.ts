@@ -1,5 +1,6 @@
 import { _normalizeConfig } from "./config.js";
 import { _warnOfflineModeDeprecated } from "./deprecations.js";
+import { type ConsentEmitter, createConsentEmitter } from "./events.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
 import type {
@@ -37,6 +38,9 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   const options = _normalizeConfig(config);
   const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
   const userOnConsentUpdate = options.onConsentUpdate;
+  // Assigned right after the manager exists; only ever read from within
+  // onConsentUpdate, which can't fire until the visitor acts (post-init).
+  let emitter: ConsentEmitter;
 
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
@@ -55,11 +59,13 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
 
   cfg.onConsentUpdate = (snap) => {
     userOnConsentUpdate?.(snap);
+    emitter.push(snap.categories);
     const payload = splitCategories(snap.categories);
     for (const fn of changeListeners) fn(payload);
   };
 
   const manager = createConsentManager(cfg);
+  emitter = createConsentEmitter(() => manager.committedCategories);
 
   function activeUI(): ActiveUI {
     if (manager.isPreferencesOpen) return "dialog";
@@ -100,6 +106,7 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   const consentStore: ConsentStore = {
     subscribe: (listener) => manager.subscribe(() => listener(buildState())),
     getState: buildState,
+    on: (type, listener, opts) => emitter.on(type, listener, opts),
   };
 
   if (options.networkBlocker && options.networkBlocker.rules.length > 0) {

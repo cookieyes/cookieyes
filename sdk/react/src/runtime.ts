@@ -7,9 +7,14 @@ import {
   type CategoryDef,
   type ConsentBackend,
   type ConsentConfig,
+  type ConsentEmitter,
+  type ConsentEventListener,
+  type ConsentEventOptions,
+  type ConsentEventType,
   type ConsentManager,
   type ConsentSnapshot,
   type CookieYesConfig,
+  createConsentEmitter,
   createConsentManager,
   type I18nConfig,
   installNetworkBlocker,
@@ -75,6 +80,18 @@ export type CookieYesRuntime = {
   showOptOut: () => void;
   hideOptOut: () => void;
   dismissReloadNotice: () => void;
+  /**
+   * React to consent decisions outside render. `"save"` fires on every save,
+   * `"change"` only when a category actually differs. Fires once immediately
+   * with the current state (`isInitial: true`); pass `{ category }` to hear
+   * about one category. Returns an unsubscribe function. Inside a component,
+   * prefer the `useOnConsentChange` hook.
+   */
+  on: (
+    type: ConsentEventType,
+    listener: ConsentEventListener,
+    options?: ConsentEventOptions,
+  ) => () => void;
 };
 
 /**
@@ -241,9 +258,19 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.customStopHandlers) coreCfg.customStopHandlers = cfg.customStopHandlers;
   if (cfg.categories) coreCfg.categories = cfg.categories;
   if (cfg.onConsentReady) coreCfg.onConsentReady = cfg.onConsentReady;
-  if (cfg.onConsentUpdate) coreCfg.onConsentUpdate = cfg.onConsentUpdate;
+
+  // Feed the event emitter on every save, alongside the user's own callback.
+  // `emitter` is assigned right after the manager exists; onConsentUpdate can't
+  // fire until the visitor acts (post-init), so the forward reference is safe.
+  const userOnConsentUpdate = cfg.onConsentUpdate;
+  let emitter: ConsentEmitter;
+  coreCfg.onConsentUpdate = (state) => {
+    userOnConsentUpdate?.(state);
+    emitter.push(state.categories);
+  };
 
   const manager = createConsentManager(coreCfg);
+  emitter = createConsentEmitter(() => manager.committedCategories);
   // Same resolution the manager uses internally — so the UI iterates exactly
   // the taxonomy that's in effect (custom, or the built-in five fallback).
   const resolved = resolveCategories(cfg.categories);
@@ -328,6 +355,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       notify();
     },
     dismissReloadNotice: () => manager.dismissReloadNotice(),
+    on: (type, listener, opts) => emitter.on(type, listener, opts),
   };
 
   if (_instance && typeof console !== "undefined") {

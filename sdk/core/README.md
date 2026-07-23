@@ -192,16 +192,44 @@ methods (`acceptAll()`, `rejectAll()`, `acceptSelected(cats)`, `updateCategory(c
 > `overrides.regulation` alias still works) and defaults to `"DEFAULT"`. The core engine does not
 > perform IP-based geo-detection.
 
+## Reacting to consent changes
+
+To run your own code when a visitor grants or withdraws consent, use
+`consentStore.on(type, listener, options?)`:
+
+```ts
+const { consentStore } = initCookieYes({ mode: "cookie-only" });
+
+// "change" fires only when a category actually differs — the right place to
+// (re)load a script, so a re-confirm of the same choices doesn't run it again.
+const off = consentStore.on("change", ({ changedCategories }) => {
+  if (changedCategories.includes("analytics")) loadAnalytics();
+});
+
+// "save" fires on every save, even an unchanged re-confirm.
+consentStore.on("save", () => toast("Preferences saved"));
+
+off(); // stop listening when you're done
+```
+
+- The listener fires **once immediately** with the current state
+  (`isInitial: true`), so a late listener isn't blind to earlier choices.
+- Pass `{ category: "analytics" }` to only hear about one category.
+- Payload: `{ categories, changedCategories, isInitial }`.
+
+This is the recommended way to react to consent. The paths below still work but
+aren't the primary one.
+
 ## Low-level / advanced API
 
 You shouldn't need these for a typical integration — each exists for a
-specific narrower situation than `consentStore.subscribe`:
+specific narrower situation than `consentStore.on` / `consentStore.subscribe`:
 
 | API | Use when |
 |---|---|
-| `subscribeToConsentChanges(listener)` (on `consentStore.getState()`) | You only care about *saved* consent decisions (accept/reject/save), not every transient toggle or dialog open/close that `subscribe` also reports. |
+| `subscribeToConsentChanges(listener)` (on `consentStore.getState()`) | Predates `consentStore.on`; fires on saved changes but without the `change`/`save` split, the `isInitial` flag, or per-category filtering. Prefer `on`. |
 | `onConsentReady` (config option) | You need a one-time callback right after the initial state is known — e.g. conditionally loading analytics on first load — rather than an ongoing subscription. |
-| `onConsentUpdate` (config option) | Like `subscribeToConsentChanges`, scoped to saved changes only, but registered once at config time instead of dynamically after mount. Prefer `subscribeToConsentChanges` unless you specifically need a config-time callback. |
+| `onConsentUpdate` (config option) | A saved-changes callback registered once at config time instead of dynamically after mount. Prefer `consentStore.on` unless you specifically need a config-time callback. |
 | `createConsentManager(config)` | Bypasses `consentStore` entirely for direct access to the manager: `acceptAll()`, `rejectAll()`, `acceptSelected(cats)`, `updateCategory(cat, val)`, `savePreferences()`, `resetConsent()`, `showPreferences()`, `hidePreferences()`, `subscribe(fn)`, `registerScript(entry)`. `config` (`ConsentConfig`) accepts `regulation`, `colorScheme`, `theme`, `apiUrl`, `apiKey`, `backend`, `reloadOnRevoke`, `onConsentReady`, `onConsentUpdate`. |
 | `parseCookie` / `serializeCookie` | Reading or writing the raw `cookieyes-consent` cookie directly — e.g. in a Next.js Server Component or route handler, where no live runtime or React hooks are available. |
 
