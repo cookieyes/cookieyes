@@ -12,6 +12,8 @@ export {
   _resetOfflineModeWarning,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
+export type { ConsentEmitter } from "./events.js";
+export { createConsentEmitter } from "./events.js";
 export {
   broadcastGoogleConsent,
   computeGoogleConsent,
@@ -51,6 +53,10 @@ export type {
   ConsentCategory,
   ConsentChangePayload,
   ConsentConfig,
+  ConsentEventListener,
+  ConsentEventOptions,
+  ConsentEventPayload,
+  ConsentEventType,
   ConsentManager,
   ConsentPayload,
   ConsentRuntime,

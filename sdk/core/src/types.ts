@@ -299,6 +299,26 @@ export type ConsentChangePayload = {
   deniedCategories: ConsentCategory[];
 };
 
+/** Which consent event to listen for. See {@link ConsentStore.on}. */
+export type ConsentEventType = "save" | "change";
+
+export type ConsentEventPayload = {
+  /** The full committed consent map in effect when the event fired. */
+  categories: Record<string, boolean>;
+  /** Categories whose value differed from before. Empty on the initial replay. */
+  changedCategories: ConsentCategory[];
+  /**
+   * `true` when this is the one-off replay a listener gets on attach (here's
+   * the current state), `false` when the visitor actually just acted.
+   */
+  isInitial: boolean;
+};
+
+export type ConsentEventListener = (payload: ConsentEventPayload) => void;
+
+/** Restrict a listener to a single category (fires only when it changes). */
+export type ConsentEventOptions = { category?: ConsentCategory };
+
 export type ActiveUI = "banner" | "dialog" | null;
 
 export type ConsentStoreState = ConsentSnapshot & {
@@ -327,6 +347,19 @@ export type ConsentStoreState = ConsentSnapshot & {
 export type ConsentStore = {
   subscribe: (listener: (state: ConsentStoreState) => void) => () => void;
   getState: () => ConsentStoreState;
+  /**
+   * React to consent decisions. `"save"` fires on every save (even an
+   * unchanged re-confirm); `"change"` fires only when a category actually
+   * differs — use it to (re)load a script without re-running on a re-confirm.
+   * The listener fires once immediately with the current state
+   * (`isInitial: true`). Pass `{ category }` to only hear about one category.
+   * Returns an unsubscribe function.
+   */
+  on: (
+    type: ConsentEventType,
+    listener: ConsentEventListener,
+    options?: ConsentEventOptions,
+  ) => () => void;
 };
 
 export type ConsentRuntime = {

@@ -146,6 +146,59 @@ initCookieYes({
 
 ---
 
+## Reacting to consent changes
+
+When you need your own code to run as a visitor grants or withdraws consent —
+load a script after they accept analytics, sync a pixel, log the decision — use
+the event API. It's the recommended way to react to consent; the older
+subscribe/callback paths still work but aren't the primary path.
+
+There are two events:
+
+- **`change`** — fires only when a category's value actually differs. Use it to
+  (re)load a script, so a visitor re-confirming the same choices doesn't run it
+  again.
+- **`save`** — fires on every save, even an unchanged re-confirm (e.g. a "your
+  preferences were saved" toast).
+
+Every listener also fires **once immediately** with the current state, marked
+`isInitial: true` — so code that starts listening late still learns what the
+visitor already chose, instead of missing it.
+
+**React / Next.js** — `useOnConsentChange(type, listener, options?)`:
+
+```tsx
+"use client";
+import { useOnConsentChange } from "@cookieyes/react"; // or "@cookieyes/nextjs"
+
+function Analytics() {
+  useOnConsentChange("change", ({ changedCategories, isInitial }) => {
+    if (changedCategories.includes("analytics")) loadAnalytics();
+  });
+  return null;
+}
+```
+
+Pass `{ category: "analytics" }` to only hear about one category. The hook cleans
+up on unmount and is a no-op during server rendering.
+
+**Core (framework-agnostic)** — `consentStore.on(type, listener, options?)`:
+
+```ts
+const { consentStore } = initCookieYes({ mode: "cookie-only" });
+
+const off = consentStore.on("change", ({ changedCategories }) => {
+  if (changedCategories.includes("analytics")) loadAnalytics();
+});
+// off() when you no longer need it.
+```
+
+The payload is `{ categories, changedCategories, isInitial }`: the full committed
+map, the ids that differed (empty on the initial replay), and whether this is
+that replay or a live action.
+
+---
+
 ## Deprecated aliases
 
 These older keys still work but are deprecated and will be **removed after three
