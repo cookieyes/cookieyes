@@ -3,6 +3,10 @@
 // Re-export core types for convenience
 export type {
   ActiveUI,
+  AnyStopHandler,
+  BuiltInIntegration,
+  CategoryDef,
+  ColorScheme,
   ConsentBackend,
   ConsentCategory,
   ConsentChangePayload,
@@ -15,16 +19,28 @@ export type {
   ConsentSnapshot,
   ConsentStore,
   ConsentStoreState,
+  CookieYesConfig,
+  CookieYesOfflineConfig,
+  CookieYesSelfHostedConfig,
+  GoogleConsentSignal,
   I18nConfig,
   Regulation,
+  ReloadNoticeState,
+  ReloadOnlyHandler,
+  ResolvedCategories,
   ScriptEntry,
+  StopHandler,
   ThemeConfig,
   TranslationMap,
 } from "@cookieyes/core";
 export {
+  DEFAULT_CATEGORIES,
   defaultTranslations,
   getOrCreateConsentRuntime,
+  registerStopHandler,
   resetConsentRuntime,
+  resolveBuiltInIntegration,
+  resolveCategories,
   resolveTranslations,
 } from "@cookieyes/core";
 export { GatedFrame } from "./controls/GatedFrame.js";
@@ -34,7 +50,9 @@ export { RecallButton } from "./controls/RecallButton.js";
 // Hooks
 export {
   type ConsentActions,
+  type UseReloadNoticeResult,
   useBannerVisibility,
+  useCategories,
   useConsent,
   useConsentActions,
   useConsentCategory,
@@ -42,6 +60,7 @@ export {
   useOptOutOpen,
   usePreferencesOpen,
   useRegulation,
+  useReloadNotice,
   useTranslations,
 } from "./hooks/index.js";
 
@@ -49,6 +68,7 @@ export {
 export { CookieBanner } from "./presets/CookieBanner.js";
 export { CookieOptOut } from "./presets/CookieOptOut.js";
 export { CookiePreferences } from "./presets/CookiePreferences.js";
+export { ReloadNotice } from "./presets/ReloadNotice.js";
 // Headless primitives — composable slot namespaces
 export { Banner } from "./primitives/Banner.js";
 export { OptOut } from "./primitives/OptOut.js";
@@ -60,9 +80,10 @@ export type {
   CookieYesSnapshot,
   RuntimeMode,
 } from "./runtime.js";
-// Runtime — builder + module-level registry
+// Runtime — canonical initCookieYes + deprecated builder + module-level registry
 export {
   createCookieYes,
   getCookieYes,
+  initCookieYes,
   resetCookieYes,
 } from "./runtime.js";

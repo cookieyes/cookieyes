@@ -1,8 +1,58 @@
-# @cookieyes/react
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes consent banner rendered in a browser" width="820">
+  </picture>
+</p>
 
-React adapter for the CookieYes consent SDK. A small builder to configure the engine, drop-in banner/dialog components, and hooks for reading and changing consent in any React application.
+<h1 align="center">@cookieyes/react</h1>
 
-## Install
+<p align="center"><strong>The consent SDK React developers actually enjoy using.</strong></p>
+
+<p align="center">Drop-in cookie banner, preferences dialog, and consent hooks for any React app — headless, themeable, and TypeScript-first.</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cookieyes/react"><img src="https://img.shields.io/npm/v/@cookieyes/react" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@cookieyes/react"><img src="https://img.shields.io/npm/dw/@cookieyes/react" alt="npm downloads"></a>
+  <a href="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml"><img src="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@cookieyes/react" alt="license"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#usage">API</a> ·
+  <a href="#troubleshooting">Troubleshooting</a> ·
+  <a href="https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md">Docs</a>
+</p>
+
+---
+
+> **Free-tier note:** the "Powered by CookieYes" attribution in the banner may not be removed
+> on the free tier. Paid plans remove it.
+
+---
+
+## Key features
+
+- **Drop-in components** — banner, preferences dialog, and recall button work out of the box, no wiring required.
+- **Fully themeable** — every color, radius, and font is a token you control, or override with your own CSS.
+- **GDPR & CCPA** — built-in opt-in (GDPR) and "Do Not Sell" opt-out (CCPA) flows.
+- **Headless primitives** — compose your own UI from low-level slots when the presets aren't enough.
+- **Script gating** — block analytics and ad scripts until consent is granted, with one component.
+- **React hooks** — read and change consent state anywhere in your component tree.
+- **Tiny & tree-shakeable** — TypeScript-first, one dependency (`@cookieyes/core`).
+
+## Prerequisites
+
+- **Node.js** ≥ 20
+- **React** ≥ 18 and **React DOM** ≥ 18 (peer dependencies)
+- A browser environment. For the Next.js App Router / Server Components, use [`@cookieyes/nextjs`](https://github.com/cookieyes/cookieyes/tree/main/sdk/nextjs).
+
+## Quick start
+
+Get a working banner in under 5 minutes.
+
+**1. Install the package**
 
 ```bash
 npm install @cookieyes/react
@@ -11,13 +61,9 @@ yarn add @cookieyes/react
 bun add @cookieyes/react
 ```
 
-**Peer dependencies:** React ≥ 18, React DOM ≥ 18
+**2. Configure the runtime and render the components**
 
-## Quick start
-
-Configure the runtime once with `createCookieYes()`, then render the preset
-components. Both the configuration call and the components must live in a
-`"use client"` module.
+Both the `initCookieYes` call and the components must live in a `"use client"` module.
 
 ```tsx
 // components/consent-manager.tsx
@@ -27,14 +73,15 @@ import {
   CookieBanner,
   CookiePreferences,
   RecallButton,
-  createCookieYes,
+  initCookieYes,
 } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
 
-createCookieYes()
-  .mode("offline")        // "offline" (cookie-only) | "self-hosted"
-  .regulation("GDPR")     // "GDPR" | "CCPA"
-  .colorScheme("system")  // "light" | "dark" | "system"
-  .mount();
+initCookieYes({
+  mode: "cookie-only",   // "cookie-only" = no backend needed | "self-hosted"
+  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  colorScheme: "system", // "light" | "dark" | "system"
+});
 
 export function CookieYesRoot() {
   return (
@@ -47,38 +94,69 @@ export function CookieYesRoot() {
 }
 ```
 
-Render `<CookieYesRoot />` once, near the root of your app.
+**3. Render it once near the root of your app** — ideally as the **first element**
+(before your page content), so the banner is early in the DOM: announced first
+by screen readers and painted before the rest of the page.
 
-## The builder — `createCookieYes()`
+The `@cookieyes/react/styles.css` import is required — the banner and
+dialogs ship no inline styling, so without it they render unstyled. Import
+it once per app, wherever your bundler picks up CSS imports.
 
-Chain configuration methods and finish with `.mount()`. `.mode()` is required;
-`self-hosted` additionally requires `.backend()` or `.backendURL()`.
+```tsx
+import { CookieYesRoot } from "./components/consent-manager";
 
-| Method | Purpose |
-|--------|---------|
-| `.mode("offline" \| "self-hosted")` | **Required.** Cookie-only vs. synced to your backend. |
-| `.regulation("GDPR" \| "CCPA" \| "DEFAULT")` | Which regulation applies. |
-| `.colorScheme("light" \| "dark" \| "system")` | Theme mode. |
-| `.theme(themeConfig)` | Color / radius / font tokens. |
-| `.i18n({ messages })` | Provide locale translation maps. |
-| `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
-| `.apiKey(key)` | Optional auth key. |
-| `.blockNetwork(config)` | Block network requests until consent. |
-| `.reloadOnRevoke(true)` | Reload the page when consent is revoked. |
-| `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Lifecycle callbacks. |
-| `.mount()` | Build and register the runtime. |
+function App() {
+  return (
+    <>
+      <CookieYesRoot />
+      <YourApp />
+    </>
+  );
+}
+```
 
-## Components
+**4. Done.** The banner appears on page load until the user acts. If it doesn't, see [Troubleshooting](#troubleshooting).
 
-### Presets (styled, drop-in)
+> Prefer zero manual setup? Run `npx @cookieyes/cli init` and the CLI wires all of this up for you.
 
-- **`<CookieBanner />`** — the consent banner. Shows automatically until the user acts; renders the CCPA "Do Not Sell" variant when `regulation` is `"CCPA"`.
-- **`<CookiePreferences />`** — the per-category preferences dialog (opened from the banner or via `showPreferences()`).
-- **`<CookieOptOut />`** — the CCPA opt-out dialog. Include this when using `regulation("CCPA")`.
+## Which API should I use?
 
-### Controls
+**`useConsent()` is the recommended way to read consent in React.** See the
+[shared decision tree](../../docs/which-api-should-i-use.md) if you're not
+sure which API applies to your situation — this package also exposes a
+handful of lower-level hooks (see [Hooks](#hooks)) for specific edge cases.
 
-- **`<RecallButton />`** — floating button to reopen preferences (or the opt-out dialog under CCPA) after the user has acted.
+## Usage
+
+`initCookieYes(config)` takes the canonical `CookieYesConfig` object — the same shape accepted
+by `@cookieyes/core` and `@cookieyes/nextjs`, copy-pasteable between them with zero edits. The
+full option reference (modes, `theme`, `i18n`, self-hosted persistence, callbacks) lives in
+**[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)**.
+
+| Option | Type | Notes |
+|--------|------|-------|
+| `mode` | `"cookie-only" \| "self-hosted"` | **Required.** `cookie-only` = zero network, consent stored in a cookie. `self-hosted` = sync to your backend. See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
+| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | Which regulation applies. Drives the banner variant. |
+| `colorScheme` | `"light" \| "dark" \| "system"` | Theme mode. |
+| `theme` | `ThemeConfig` | Color / radius / font tokens (see [Theming](#theming)). |
+| `i18n` | `I18nConfig` | Locale translation maps (see [`@cookieyes/translations`](https://github.com/cookieyes/cookieyes/tree/main/sdk/translations)). |
+| `apiUrl` / `backend` | `string` / `ConsentBackend` | Self-hosted persistence (`mode: "self-hosted"`). |
+| `onConsentReady` / `onConsentUpdate` | `(state) => void` | Lifecycle callbacks. |
+
+> Migrating from the deprecated `createCookieYes()` builder? See the
+> [migration guide](https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md).
+
+### Components
+
+**Presets (styled, drop-in)**
+
+- **`<CookieBanner />`** — the consent banner. Shows until the user acts; renders the CCPA "Do Not Sell" variant when `regulation` is `"CCPA"`.
+- **`<CookiePreferences />`** — the per-category preferences dialog.
+- **`<CookieOptOut />`** — the CCPA opt-out dialog. Include it when using `regulation: "CCPA"`.
+
+**Controls**
+
+- **`<RecallButton />`** — floating button to reopen preferences after the user has acted.
 - **`<GatedScript />`** — registers a third-party script that only loads once its category is consented:
 
   ```tsx
@@ -90,54 +168,90 @@ Chain configuration methods and finish with `.mount()`. `.mode()` is required;
   />
   ```
 
-- **`<GatedFrame />`** — blocks an iframe until its category is granted, showing a placeholder otherwise:
+- **`<GatedFrame />`** — blocks an iframe until its category is granted, showing a placeholder otherwise.
 
-  ```tsx
-  <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-    category="analytics"
-    width={560}
-    height={315}
-    placeholder={<div>Enable analytics cookies to watch this video.</div>}
-  />
-  ```
+**Headless primitives**
 
-### Headless primitives
+For fully custom UIs, compose the slot namespaces `Banner`, `Preferences`, and `OptOut`
+(e.g. `Banner.Root`, `Banner.AcceptAll`, `Preferences.Category`). The presets are built from
+exactly these primitives.
 
-For fully custom UIs, compose the slot namespaces `Banner`, `Preferences`, and
-`OptOut` (e.g. `Banner.Root`, `Banner.AcceptAll`, `Preferences.Category`). The
-presets above are built from exactly these primitives.
+### Hooks
 
-## Hooks
+**Read consent state:**
 
 ```tsx
 const snapshot = useConsent();
 // { consentId, hasActed, categories, regulation, lastRenewed, isPreferencesOpen, isOptOutOpen }
+```
 
+**Drive consent (accept/reject/save, open or close dialogs):**
+
+```tsx
 const {
   acceptAll, rejectAll, acceptSelected, save, updateCategory, reset,
   showPreferences, hidePreferences, showOptOut, hideOptOut,
 } = useConsentActions();
-
-const analyticsAllowed = useConsentCategory("analytics"); // boolean
-const regulation = useRegulation();                       // "GDPR" | "CCPA" | "DEFAULT"
-const t = useTranslations();                              // active TranslationMap
-const bannerVisible = useBannerVisibility();              // boolean
-const prefsOpen = usePreferencesOpen();                   // boolean
-const optOutOpen = useOptOutOpen();                       // boolean
 ```
 
-`useConsentRuntime()` returns the underlying runtime if you need direct access.
-
-## Theming
-
-Pass a `theme` to the builder. All values map to CSS custom properties, so you
-can also override them in your own stylesheet:
+**Other hooks** (each reads something `useConsent()` doesn't cover, so these
+aren't alternatives to it):
 
 ```tsx
-createCookieYes()
-  .mode("offline")
-  .theme({
+const regulation = useRegulation();          // "GDPR" | "CCPA" | "DEFAULT"
+const t = useTranslations();                 // active TranslationMap
+const bannerVisible = useBannerVisibility();  // boolean
+const prefsOpen = usePreferencesOpen();       // boolean
+const optOutOpen = useOptOutOpen();           // boolean
+```
+
+#### Low-level hooks
+
+You shouldn't need these for a typical integration — each exists for a
+narrower situation than `useConsent()` / `useConsentActions()`:
+
+| Hook / callback | Use when |
+|---|---|
+| `useConsentCategory(category)` | You're gating one thing (e.g. an embed) and want to re-render only when *that* category changes, not on every consent update. |
+| `useConsentRuntime()` | You need direct access to the underlying runtime (manager, snapshot getters, script registration) — something neither `useConsent()` nor `useConsentActions()` exposes. |
+| `getCookieYes()` | You need imperative, non-hook access outside a component (event handlers, non-component modules). |
+| `.onConsentReady(fn)` (builder) | A one-time callback right after the initial state is known, rather than an ongoing subscription. |
+| `.onConsentUpdate(fn)` (builder) | Fires on every *saved* change only (not transient toggles), registered once at config time. For a dynamic subscribe/unsubscribe instead, use `useConsentRuntime().manager.subscribe` or core's `consentStore.getState().subscribeToConsentChanges`. |
+
+All hooks are SSR-safe — they fall back to a stable snapshot when no runtime is mounted.
+
+### Rendering & selector contract
+
+`<CookieBanner />` is **server-rendered**: its markup is present in the initial
+HTML (first-byte paint) and on every load, before client JavaScript hydrates the
+interactive parts. It uses fixed positioning, so showing it never shifts page
+layout (no CLS), and it issues **no network request on load** (cookie-only mode
+makes zero requests; self-hosted mode only POSTs to your backend when the user
+accepts, rejects, or saves).
+
+The following selectors are a **stable, public contract** — automated tooling and
+your own integrations may rely on them, and they will not change without a
+major-version bump and a regression test:
+
+| Selector | Element |
+|----------|---------|
+| `[data-cky-banner]` | **Canonical** banner element — the visible card. Carries `role="dialog"`. |
+| `.cy-banner` | The visible banner card (same element as above). Its bounding box equals what the user sees. |
+| `.cy-banner-wrap` | A logical grouping wrapper rendered with `display: contents` — it generates **no box** and is never the measured element. |
+
+### Theming
+
+Pass a `theme` to `initCookieYes`. Theme values map to CSS custom properties applied directly to
+the elements (via CSSOM), so custom colors work even under a strict `style-src` CSP with no
+`unsafe-inline`/nonce — **and you can override the same custom properties from your own
+stylesheet**. This is separate from the base component styles, which ship as the external
+`@cookieyes/react/styles.css` you import once (see Quick start). See the theming reference in
+**[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md#theming)**.
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  theme: {
     primaryColor: "#6366F1",
     backgroundColor: "#ffffff",
     textColor: "#111827",
@@ -147,10 +261,179 @@ createCookieYes()
     fontFamily: "'Inter', sans-serif",
     buttonVariant: "filled",        // "filled" | "outlined"
     widgetPosition: "bottom-right", // "bottom-right" | "bottom-left"
-  })
-  .mount();
+  },
+});
 ```
+
+## Accessibility
+
+**Scope of this section:** keyboard operability, focus management, screen-reader
+labelling, and reduced motion for `<CookieBanner />`, `<CookiePreferences />`,
+`<CookieOptOut />`, and `<RecallButton />`. This is **not** a "WCAG 2.1 AA
+compliant" claim — things outside this scope (color contrast, text resizing,
+and anything in your own custom theme/content) aren't covered and shouldn't be
+assumed to be.
+
+### Keyboard behavior
+
+If you're building a custom UI on the headless primitives (`Banner`,
+`Preferences`, `OptOut`), this is the behavior to preserve:
+
+- **Tab order** follows DOM order in every preset — e.g. Preferences goes
+  Close → category toggles → Reject All → Save → Accept All → branding link.
+  The banner is **not modal**, so Tab can leave it into the rest of your page;
+  `<CookiePreferences />` and `<CookieOptOut />` **are** modal and trap focus.
+- **`Esc`** closes `<CookiePreferences />` and `<CookieOptOut />`.
+- **Focus trap**: while a dialog is open, `Tab` / `Shift+Tab` cycle only
+  through its own controls.
+- **Focus management on open/close**: opening a dialog moves focus into it
+  (onto the dialog element itself, which carries its `aria-label`); closing it
+  — via Save, Cancel, or `Esc` — returns focus to whatever control opened it.
+- **Visible focus indicator**: every interactive control has a `:focus-visible`
+  outline; none of this relies on the browser's default styling.
+
+### Reduced motion
+
+All entrance/exit animations (banner slide-in, dialog fade/slide, the recall
+button's pop-in) are removed under `prefers-reduced-motion: reduce` — every
+element still appears and works identically, just without motion.
+
+### Automated testing
+
+`axe-core` runs against `<CookieBanner />`, `<CookiePreferences />`, and
+`<CookieOptOut />` in CI (`src/__tests__/a11y.test.tsx`) and fails the build on
+any violation. **Caveat:** this runs under jsdom, not a real browser — it
+catches structural/ARIA regressions (missing accessible names, wrong roles,
+broken labelling) but can't evaluate layout- or paint-dependent rules like
+color contrast. It's a regression net, not a substitute for manual testing.
+
+### Manual testing
+
+Keyboard and focus-management behavior above was verified by hand across
+desktop/tablet/mobile viewports and light/dark color schemes, and the
+labelling behavior was verified with VoiceOver. If you find something that
+doesn't sound right with your own screen reader, please open an issue.
+
+## The builder — `createCookieYes()`
+
+The `createCookieYes()` builder is **deprecated but still supported** — new code
+should prefer the `initCookieYes(config)` object API above. If you're maintaining
+an existing integration, the builder configures the same runtime:
+
+| Method | Purpose |
+|--------|---------|
+| `.mode("cookie-only" \| "self-hosted")` | **Required.** Cookie-only vs. synced to your backend. See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
+| `.regulation("GDPR" \| "CCPA" \| "DEFAULT")` | Which regulation applies. |
+| `.colorScheme("light" \| "dark" \| "system")` | Theme mode. |
+| `.theme(themeConfig)` | Color / radius / font tokens. |
+| `.i18n({ messages })` | Provide locale translation maps. |
+| `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
+| `.apiKey(key)` | Optional auth key. |
+| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. |
+| `.categories([...])` | Define your own category taxonomy instead of the built-in five. See [core: consent categories](../core/README.md#consent-categories). |
+| `.integrations([...])` | Stop built-in vendors cleanly on revoke — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag Manager are handled automatically via Consent Mode — no entry needed.) See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
+| `.customStopHandlers([...])` | Stop your own scripts on revoke (clean `stop()`, or `needsReload: true`). |
+| `.reloadOnRevoke(true)` | **Legacy, off by default.** Full page reload on revoke — erases what the visitor was doing. Prefer `.integrations(...)`. |
+| `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |
+| `.mount()` | Build and register the runtime. |
+
+**If you use any reload-only integration** (TikTok, LinkedIn, Hotjar, Segment,
+or a `customStopHandlers` entry marked `needsReload`), **you must render
+`<ReloadNotice />`** alongside `<CookieBanner />`. It's the prompt shown when a
+tool that was running is revoked and can be fully stopped only by reloading — a
+dismissible, screen-reader-announced (`role="alert"`) message inviting, never
+forcing, a reload. It appears only on a genuine revoke (a category that was
+granted, then denied — not a first-time reject), renders nothing until then,
+and stays dismissed until a new revoke needs it; wording is customizable via
+`.i18n(...)` (`reloadNotice.*`).
+
+⚠️ Without it, a revoke that needs a reload has no way to tell the visitor —
+and that tool keeps running. (Tools that stop cleanly — Google Analytics/Tag
+Manager via Consent Mode, and Meta — don't need it.) For a fully custom notice,
+read the state with `useReloadNotice()` instead.
+
+### Deprecated: `mode: "offline"`
+
+`"offline"` was renamed to `"cookie-only"` — same behavior, clearer name. It
+still works today and logs a one-time console warning, and will be removed
+3 releases from now.
+
+```diff
+ createCookieYes()
+-  .mode("offline")
++  .mode("cookie-only")
+   .mount();
+```
+
+## Troubleshooting
+
+**The banner doesn't appear.**
+Make sure `initCookieYes(...)` runs inside a `"use client"` module and `<CookieBanner />` is
+rendered near the root. The banner only shows while the user hasn't acted — clear the
+`cookieyes-consent` cookie and reload during testing.
+
+**I get a `"use client"` or hydration-mismatch error.**
+Both the `initCookieYes(...)` call and the components must be in a `"use client"` file. On
+Next.js App Router, use [`@cookieyes/nextjs`](https://github.com/cookieyes/cookieyes/tree/main/sdk/nextjs)
+(pre-marked `"use client"`). The SSR banner carries your configured `regulation` so server and
+client render the same markup — passing different regulations between renders causes a mismatch.
+
+**My consent choice doesn't persist.**
+Consent is stored in the `cookieyes-consent` cookie (`SameSite=Lax`, `path=/`). Check it isn't
+blocked by a browser privacy setting or extension, and that you aren't calling `resetCookieYes()`
+on every render.
+
+Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
+
+## Community & support
+
+- [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
+- Email — [support@cookieyes.com](mailto:support@cookieyes.com).
+- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md) — configuration, migration, examples.
+
+_(A community chat channel is on the roadmap.)_
+
+## Contributing
+
+Contributions are welcome. Read our
+[Contributing Guidelines](https://github.com/cookieyes/cookieyes/blob/main/CONTRIBUTING.md) and
+[Code of Conduct](https://github.com/cookieyes/cookieyes/blob/main/CODE_OF_CONDUCT.md), then fork
+the repo, create a feature branch, and open a pull request.
+
+### Security
+
+If you believe you've found a security vulnerability, **please do not open a public issue**.
+Follow our [Security Policy](https://github.com/cookieyes/cookieyes/blob/main/SECURITY.md) and use
+GitHub's private vulnerability reporting.
+
+## Content Security Policy
+
+The banner, dialogs, and theme colors all work under a strict `style-src`
+policy with no `unsafe-inline` and no nonce — nothing here writes CSS text
+into the page.
+
+- Layout, animations, and everything else in `cookieyes.css` ship as a real
+  stylesheet (`import "@cookieyes/react/styles.css"`), loaded via a `<link>`,
+  not a `<style>` block — `style-src` doesn't restrict where a real
+  stylesheet is fetched from as long as it's same-origin (which it is, once
+  bundled by your own build).
+- `.theme(...)` colors are applied with `element.style.setProperty(...)` —
+  direct CSSOM writes, not a generated `<style>` block — which `style-src`
+  doesn't govern at all, under any policy.
+
+A minimal policy line that works out of the box, with no CookieYes-specific
+allowance needed:
+
+```
+Content-Security-Policy: style-src 'self'
+```
+
+If something unrelated to CookieYes still gets blocked (your own inline
+styles, a third-party script), the SDK listens for the browser's
+`securitypolicyviolation` event and logs a console warning explaining what
+was blocked, rather than failing silently.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The "Powered by CookieYes" attribution in the banner may not be removed on the free tier.
+MIT — see [LICENSE](./LICENSE). The "Powered by CookieYes" attribution in the banner may not be
+removed on the free tier.

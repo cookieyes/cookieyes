@@ -14,8 +14,10 @@ import { CookieYesLogo } from "../components/icons.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
+import { useThemeConfig } from "../hooks/useThemeConfig.js";
+import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { chain, useEscapeKey, useFocusTrap } from "./utils.js";
+import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -57,9 +59,12 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   const [optOut, setOptOut] = useState(isCurrentlyOptedOut);
   const [saved, setSaved] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
+  const { theme, colorScheme } = useThemeConfig();
 
   useEscapeKey(open, hideOptOut);
   useFocusTrap(open, containerRef);
+  useAutoFocusDialog(open, containerRef);
+  useThemeVars(containerRef, theme, colorScheme);
 
   useEffect(() => {
     if (open) {
@@ -99,6 +104,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         role="dialog"
         aria-modal="true"
         aria-label="Opt-out preferences"
+        tabIndex={-1}
         {...props}
       >
         {children}

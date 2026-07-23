@@ -1,1 +1,237 @@
 # @cookieyes/react
+
+## 0.3.0
+
+### Minor Changes
+
+- 18bec21: Make consent categories configurable, and broadcast Google Consent Mode v2 automatically.
+
+  **Configurable categories.** Define your own taxonomy instead of the built-in
+  five via `categories` (core config / `getOrCreateConsentRuntime`) or
+  `.categories([...])` (React builder). Each `CategoryDef` has a stable `id`, an
+  explicit `required` flag (the always-on category is marked here, never inferred
+  from the name `necessary`, so you can rename it freely), optional
+  `label`/`description`, and an optional `gcm` mapping. Omit `categories` entirely
+  and you get the built-in five, unchanged. Invalid config (empty, duplicate ids,
+  ids containing `,`/`:` or colliding with reserved cookie keys, or no `required`
+  category) logs a warning and safely falls back to the five. The preferences UI
+  now renders whatever taxonomy is in effect.
+
+  **Upgrade-safe taxonomy changes.** Consent records are stamped with a taxonomy
+  signature (`taxonomyHash` on the snapshot, `tax:` in the cookie). A returning
+  visitor's consent is reused while the signature is unchanged; if you change the
+  taxonomy the SDK **re-requests** consent rather than silently applying a
+  mismatched record. Legacy cookies with no stamp are honoured as the built-in
+  five, so upgrading the SDK never resets existing visitors.
+
+  **Google Consent Mode v2 broadcast.** When a `dataLayer` is present, the SDK now
+  broadcasts all seven Consent Mode signals — on load and on every consent change,
+  for every visitor — derived from each category's `gcm` mapping. Google Analytics
+  4 and Google Tag Manager are governed by this automatically and **no longer need
+  an `integrations` entry** — the `ga4` and `gtm` built-in integrations have been
+  removed (use the automatic broadcast; set your deny-by-default state in your
+  gtag snippet as before). `meta` and the reload-only vendors are unchanged.
+
+  New exports: `resolveCategories`, `DEFAULT_CATEGORIES`, `broadcastGoogleConsent`,
+  `computeGoogleConsent`, types `CategoryDef` / `ResolvedCategories` /
+  `GoogleConsentSignal` (core, re-exported from React), and the `useCategories()`
+  hook (React). The core README documents configurable categories and Consent Mode
+  v2 mapping.
+
+- 8a9ea78: Fix the banner, dialogs, and theme colors breaking under a strict
+  `style-src` Content Security Policy (e.g. `style-src 'self'`, with no
+  `unsafe-inline` and no nonce):
+
+  - The static stylesheet is now a real file, exposed as
+    `@cookieyes/react/styles.css` — import it once per app. It no longer
+    gets auto-injected as a `<style>` block, which is what a strict CSP
+    blocked.
+  - Theme colors from `.theme(...)` are applied via `element.style.setProperty(...)`
+    instead of a generated `<style>` block, so custom colors and dark/light
+    mode keep working under any `style-src` policy, with no nonce needed.
+  - If some other style on the page is still blocked, a console warning
+    now explains what happened instead of failing silently.
+  - The CLI's scaffolded projects (`react` and `nextjs` flows) now include
+    the required stylesheet import.
+
+  **Action required:** add `import "@cookieyes/react/styles.css";` once in
+  your app (wherever you mount `<CookieYesRoot />`) — without it, the
+  banner and dialogs render unstyled.
+
+- 10c922e: Add `mode: "cookie-only"` as the clearer, self-explanatory replacement for `mode: "offline"`.
+
+  Both values behave identically today. `"offline"` is now marked `@deprecated` in
+  TypeScript (shows as struck-through in editor autocomplete) and logs a one-time,
+  per-page-load console warning pointing to `"cookie-only"`. `"offline"` will be
+  removed 3 releases from now; there is no urgency to migrate today, but new
+  code and docs should use `"cookie-only"`.
+
+  The CLI (`@cookieyes/cli init`) now scaffolds new projects with `"cookie-only"`
+  by default.
+
+  ```diff
+   createCookieYes()
+  -  .mode("offline")
+  +  .mode("cookie-only")
+     .mount();
+  ```
+
+- 8de8b3c: Stop tracking safely when consent is withdrawn — without reloading the page.
+
+  Revoking consent no longer needs a full page reload to take effect (and
+  `reloadOnRevoke` stays off by default). Instead:
+
+  - **`integrations`** — call a vendor's own documented stop API on revoke and
+    resume it on re-accept. Built in: `meta` (`fbq('consent','revoke'|'grant')`)
+    stops cleanly; `tiktok`, `linkedin`, `hotjar`, and `segment` have no
+    confidently-documented runtime stop and are modelled as reload-only (see the
+    vendor audit in the core README). (Google Analytics/Tag Manager are governed
+    by the automatic Google Consent Mode v2 broadcast — no integration entry.)
+  - **`customStopHandlers`** — register stop instructions for your own scripts;
+    a script with no clean stop is marked `needsReload` so revoking it prompts a
+    reload instead of silently continuing to track.
+  - **`navigator.sendBeacon`** is now intercepted by the network blocker, in
+    addition to `fetch`/`XMLHttpRequest` — this is how GA4/Meta fire exit/unload
+    tracking, which was previously missed.
+  - **`<ReloadNotice />`** (React) — a dismissible, `role="alert"` prompt shown
+    only when a revoked tool can be fully stopped only by reloading. It never
+    reloads on its own; wording is translatable (`reloadNotice.*`). Read the
+    state directly with `useReloadNotice()` for a custom notice.
+
+  All additive — existing integrations keep working unchanged.
+
+- 8fdea17: Standardize the configuration API across packages with a single canonical
+  `CookieYesConfig` object and one setup function, `initCookieYes(config)`.
+
+  - **`initCookieYes(config)`** is the new setup entry point in `@cookieyes/core`,
+    `@cookieyes/react`, and `@cookieyes/nextjs`. A config object is copy-pasteable
+    between packages with zero edits.
+  - **`CookieYesConfig`** (exported from core, re-exported everywhere) is a flat,
+    strictly-typed discriminated union on `mode` — backend keys under
+    `mode: "offline"` are now a compile-time error.
+  - **`regulation`** is a top-level key everywhere. The nested
+    `overrides.regulation` still works (deprecated) and maps to it.
+  - **`apiUrl`** replaces `backendURL` as the canonical self-hosted key;
+    `backendURL` still works (deprecated) and maps to it.
+  - The **`createCookieYes()` builder is deprecated** in favour of
+    `initCookieYes`. It keeps working and emits a one-time console warning; it
+    will be removed after three release cycles.
+  - Non-breaking: the builder, `overrides.regulation`, and `backendURL` all keep
+    working through the deprecation window. `ConsentRuntimeOptions` is retained as
+    a deprecated alias of `CookieYesConfig`.
+  - The `@cookieyes/cli` `init` command now scaffolds `initCookieYes({...})` and
+    top-level `regulation`, so fresh projects don't hit the deprecation warnings.
+
+### Patch Changes
+
+- 19fe0ac: Fix keyboard/focus-management and screen-reader gaps in `<CookieBanner />`,
+  `<CookiePreferences />`, and `<CookieOptOut />`:
+
+  - Opening `<CookiePreferences />` or `<CookieOptOut />` now moves focus into
+    the dialog automatically; closing it (Save, Cancel, or `Esc`) now returns
+    focus to whichever control opened it — including when that control was the
+    banner or the recall button, both of which remount when the dialog closes.
+  - The Preferences category toggles (`role="switch"`) now have a real
+    accessible name — previously an `aria-label`-less switch, announced by
+    screen readers with no indication of which category it controlled.
+  - The banner is now announced by screen readers when it first appears, via
+    an `aria-live="assertive"` announcer that's rendered independently of the
+    banner's own mount/hide cycle and populated after a short delay rather
+    than immediately — a live-region update fired right at page-load time
+    commonly gets dropped while the screen reader is still announcing the
+    navigation itself.
+  - The banner now portals to the front of `<body>` once mounted (still
+    server-rendered inline first, so there's no change to first-paint/CLS
+    behavior). Previously it rendered wherever `<CookieYesRoot>` was mounted —
+    after the app's own content, per both the docs and the CLI's scaffold —
+    which put it last in the page's reading order. A screen-reader or
+    keyboard user couldn't reach it without stepping through the entire page
+    first; now it's reachable within the first Tab/swipe.
+  - All entrance/exit animations (banner, dialogs, recall button) now respect
+    `prefers-reduced-motion: reduce` — same end state, no motion.
+  - Adds automated `axe-core` accessibility tests for the banner and both
+    dialogs, and documents the keyboard/focus contract and a scoped
+    accessibility posture statement in the README.
+
+  No public API changes — this is behavior/bug fixes to existing components.
+
+- e43f502: Gate consent-driven content on committed decisions, not live toggles.
+
+  Scripts, embeds, and the network blocker now react only to a saved decision
+  (Accept All / Reject All / Save Preferences), not to an in-progress switch in
+  the open preferences dialog — so nothing loads before the visitor actually
+  consents. Once loaded, gated content stays until the next page load rather than
+  being torn down live on revoke (matching hosted CookieYes).
+
+  - `useConsentCategory` and the store's `has()` now read committed consent; the
+    new `committedConsents` (store) / `committedCategories` (manager) expose it.
+    `consents` / `categories` stay live to drive the dialog checkboxes.
+  - `GatedFrame` latches once shown; an injected `GatedScript` is no longer removed
+    on revoke — re-blocking applies on the next page load.
+
+- 364051f: Overhaul all five package READMEs onto one consistent house template (DEVP-3).
+
+  - **Consistent structure** across core/react/nextjs/translations/cli: hero + tagline, live
+    shields.io badges, key features, prerequisites, numbered quick start (all four package
+    managers), inline API reference, troubleshooting, and a shared community/support/contributing/
+    security footer.
+  - **CLI README rewritten** to best-in-class depth: why-vs-manual, the `init` command, global
+    flags, a step-by-step expected-output transcript, what-happens-next, and a "no telemetry" note.
+  - **Troubleshooting** added to every package (top-3 failure modes each).
+  - **Accuracy fixes:** attribution note moved near the top of react/nextjs; pnpm/yarn/bun install
+    added to translations; core links to the react/nextjs adapters; regulation coverage stated as
+    GDPR + CCPA (the engine does not implement LGPD/TCF); `mode: "offline"` explained in plain
+    English. All setup examples use the canonical `initCookieYes(config)` API.
+  - **CLI:** the post-`init` docs link now points to the GitHub README until the docs site is live.
+
+  Docs and README-facing strings only; no behavioral logic changed.
+
+- 2971d7d: Document one recommended way to read consent per platform — `useConsent()`
+  for React, `consentStore.subscribe` for core/non-React — and move the other
+  seven near-equivalent APIs into a clearly labeled "Low-level / advanced API"
+  section in each README, each documented with the specific situation it's for.
+
+  Adds a shared decision tree (`docs/which-api-should-i-use.md`) referenced by
+  every package's README instead of being copy-pasted, plus short in-editor
+  JSDoc pointers on the low-level exports toward the recommended primary API.
+
+  No behavior change — all existing APIs continue to work exactly as before.
+  This is a documentation and guidance change only.
+
+- Updated dependencies [18bec21]
+- Updated dependencies [e43f502]
+- Updated dependencies [364051f]
+- Updated dependencies [10c922e]
+- Updated dependencies [8de8b3c]
+- Updated dependencies [2971d7d]
+- Updated dependencies [8fdea17]
+  - @cookieyes/core@0.2.0
+
+## 0.2.0
+
+### Minor Changes
+
+- 8a0a8b0: Faster, smaller-footprint, deterministic banner + first-party minified bundles.
+
+  - **Server-rendered banner (first-byte paint):** `<CookieBanner />` is now present in
+    server-rendered HTML and on every load instead of waiting for client hydration. The
+    runtime's server snapshot is regulation-aware so GDPR/CCPA markup hydrates without
+    mismatch.
+  - **Smaller measured footprint:** the full-screen positioning wrapper is now
+    `display: contents` (generates no box); fixed positioning and the canonical
+    `data-cky-banner` + `role="dialog"` move onto the visible `.cy-banner` card, so the
+    banner's reported bounding box equals what the user sees. `Banner.Root` no longer emits
+    a default `role` (pass it via props if needed).
+  - **Stable selector contract:** `[data-cky-banner]`, `.cy-banner`, `.cy-banner-wrap` are
+    now documented, regression-tested public selectors.
+  - **Zero layout shift / no load-time network:** the banner uses fixed positioning with a
+    transform-only entry animation (CLS 0); offline mode makes no network request on load
+    and self-hosted mode only POSTs consent on the user's accept/reject/save.
+  - **Build:** migrated from `tsup` to **Rollup**, emitting minified first-party ESM + CJS +
+    type declarations with no external runtime URLs. Public APIs and the visual design are
+    unchanged.
+
+### Patch Changes
+
+- Updated dependencies [8a0a8b0]
+  - @cookieyes/core@0.1.1

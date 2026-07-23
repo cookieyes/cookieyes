@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { GatedFrame } from "../controls/GatedFrame.js";
 import { clearCookie, mountOffline, teardown } from "./test-utils.js";
@@ -34,12 +34,34 @@ describe("GatedFrame", () => {
     expect(rt.getSnapshot().isPreferencesOpen).toBe(true);
   });
 
-  it("renders the iframe once the category is consented", () => {
+  it("renders the iframe once the category is consented (saved decision)", () => {
     const rt = mountOffline("GDPR");
-    rt.manager.updateCategory("analytics", true);
+    rt.manager.acceptAll();
     const { container } = render(<GatedFrame src={SRC} category="analytics" title="video" />);
     const iframe = container.querySelector("iframe");
     expect(iframe).not.toBeNull();
     expect(iframe?.getAttribute("src")).toBe(SRC);
+  });
+
+  it("does NOT render on a transient toggle — only on a saved decision", () => {
+    const rt = mountOffline("GDPR");
+    const { container } = render(<GatedFrame src={SRC} category="analytics" title="video" />);
+    // Flipping the switch in the (unsaved) dialog must not load the embed.
+    act(() => rt.manager.updateCategory("analytics", true));
+    expect(container.querySelector("iframe")).toBeNull();
+    // Saving commits it → now it loads.
+    act(() => rt.manager.savePreferences());
+    expect(container.querySelector("iframe")).not.toBeNull();
+  });
+
+  it("latches: stays rendered after the category is revoked (reload to re-block)", () => {
+    const rt = mountOffline("GDPR");
+    rt.manager.acceptAll();
+    const { container } = render(<GatedFrame src={SRC} category="analytics" title="video" />);
+    expect(container.querySelector("iframe")).not.toBeNull();
+    // Revoke via a real action — the already-loaded frame must NOT swap back to
+    // the placeholder mid-session.
+    act(() => rt.manager.rejectAll());
+    expect(container.querySelector("iframe")).not.toBeNull();
   });
 });

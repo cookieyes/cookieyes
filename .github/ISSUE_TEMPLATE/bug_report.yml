@@ -1,49 +1,101 @@
-name: Bug report
-description: Report a problem with a @cookieyes/* package
-labels: ["bug", "triage"]
+name: 🐛 Bug Report
+description: Report something that isn't working as expected
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
 body:
   - type: markdown
     attributes:
-      value: Thanks for taking the time to file a bug! Please fill out the details below.
+      value: |
+        Thanks for taking the time to report a bug! Please fill out as much of this as you can — it helps us fix things faster.
+        For security vulnerabilities, please do **not** file a public issue — see [SECURITY.md](../../SECURITY.md) instead.
+
+  - type: checkboxes
+    id: existing-issue-check
+    attributes:
+      label: Is there an existing issue for this?
+      description: Please search existing issues to see if this has already been reported.
+      options:
+        - label: I have searched existing issues and this is not a duplicate.
+          required: true
+
   - type: dropdown
     id: package
     attributes:
       label: Package
-      description: Which package is affected?
+      description: Which package is this bug in?
       options:
         - "@cookieyes/core"
         - "@cookieyes/react"
         - "@cookieyes/nextjs"
-        - "@cookieyes/translations"
         - "@cookieyes/cli"
-        - Not sure
+        - "@cookieyes/translations"
+        - Not sure / other
     validations:
       required: true
+
   - type: input
     id: version
     attributes:
       label: Package version
-      placeholder: e.g. 0.1.0
+      description: Run `pnpm ls <package-name>` (or `npm ls <package-name>`) or check your `package.json`.
+      placeholder: "e.g. 0.2.0"
     validations:
       required: true
+
   - type: textarea
     id: what-happened
     attributes:
       label: What happened?
-      description: A clear description of the bug and what you expected instead.
+      description: A clear description of the bug.
+      placeholder: Tell us what went wrong.
     validations:
       required: true
+
   - type: textarea
-    id: repro
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
     attributes:
       label: Steps to reproduce
-      description: Ideally a minimal reproduction repo or code snippet.
+      description: The minimum steps needed to see the bug. A link to a minimal reproduction (CodeSandbox, StackBlitz, GitHub repo) is very helpful.
+      placeholder: |
+        1. Install `@cookieyes/core@x.x.x`
+        2. Configure with '...'
+        3. Trigger '...'
+        4. See error
     validations:
       required: true
+
   - type: textarea
     id: environment
     attributes:
       label: Environment
-      description: Node version, framework version, browser, OS.
+      description: Browser, OS, Node version, framework version — whatever's relevant.
+      placeholder: |
+        - Browser: Chrome 126
+        - OS: macOS 14
+        - Node: 20.x
+        - Framework: Next.js 14
     validations:
       required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Screenshots, console errors, logs — anything else that helps.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Are you willing to submit a PR to fix this?
+      options:
+        - label: Yes, I'd like to work on this.
+          required: false

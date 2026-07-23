@@ -51,4 +51,10 @@ export const it: TranslationMap = {
     successText: "La tua preferenza di non partecipare è stata registrata e accettata.",
     successCountdown: "Il banner si chiuderà automaticamente tra {seconds} s...",
   },
+  reloadNotice: {
+    message:
+      "Alcuni strumenti di tracciamento in questa pagina possono essere fermati completamente solo ricaricando. Ricarica per applicare la modifica oppure ignora per continuare a navigare.",
+    reloadButton: "Ricarica la pagina",
+    dismissButton: "Ignora",
+  },
 };

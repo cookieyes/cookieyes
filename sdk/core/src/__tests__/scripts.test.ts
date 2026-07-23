@@ -44,13 +44,24 @@ describe("registerScript + applyScripts", () => {
     expect(document.getElementById(id)).toBeNull();
   });
 
-  it("removes a previously-injected script when consent is revoked", () => {
+  it("keeps an injected script after revoke — re-blocking applies on the next load, not live", () => {
     const id = uniqueId();
     registerScript({ id, src: "https://cdn.example.com/c.js", category: "advertisement" });
 
     applyScripts(categories({ advertisement: true }));
     expect(document.getElementById(id)).not.toBeNull();
 
+    // Revoking does NOT tear a running script out of the DOM (that wouldn't undo
+    // what it already did); the block takes effect on the next page load.
+    applyScripts(categories({ advertisement: false }));
+    expect(document.getElementById(id)).not.toBeNull();
+  });
+
+  it("does not inject a script whose category was never committed-granted", () => {
+    const id = uniqueId();
+    registerScript({ id, src: "https://cdn.example.com/c2.js", category: "advertisement" });
+    // Simulates a fresh load where the category is denied — the script that ran
+    // in a *previous* session is gone (fresh DOM) and is not re-injected.
     applyScripts(categories({ advertisement: false }));
     expect(document.getElementById(id)).toBeNull();
   });
@@ -65,7 +76,7 @@ describe("registerScript + applyScripts", () => {
     expect(onLoad).toHaveBeenCalledTimes(1);
   });
 
-  it("with lazyOnce strategy, does not re-inject after a revoke + re-grant", () => {
+  it("injects a script only once and keeps it across a revoke + re-grant (no reload)", () => {
     const id = uniqueId();
     registerScript({
       id,
@@ -77,11 +88,11 @@ describe("registerScript + applyScripts", () => {
     applyScripts(categories({ performance: true }));
     expect(document.getElementById(id)).not.toBeNull();
 
-    applyScripts(categories({ performance: false })); // revoked → removed
-    expect(document.getElementById(id)).toBeNull();
+    applyScripts(categories({ performance: false })); // revoke doesn't remove it
+    expect(document.getElementById(id)).not.toBeNull();
 
-    applyScripts(categories({ performance: true })); // lazyOnce: stays gone
-    expect(document.getElementById(id)).toBeNull();
+    applyScripts(categories({ performance: true })); // re-grant doesn't duplicate it
+    expect(document.querySelectorAll(`#${id}`)).toHaveLength(1);
   });
 
   it("does not double-inject when applied twice while allowed", () => {

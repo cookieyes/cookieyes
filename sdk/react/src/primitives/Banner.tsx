@@ -1,12 +1,15 @@
 "use client";
 
-import { type ComponentPropsWithoutRef, forwardRef, type ReactNode } from "react";
+import { type ComponentPropsWithoutRef, forwardRef, type ReactNode, useRef } from "react";
+import { createPortal } from "react-dom";
 import { CookieYesLogo } from "../components/icons.js";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useRegulation } from "../hooks/useRegulation.js";
+import { useThemeConfig } from "../hooks/useThemeConfig.js";
+import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { chain } from "./utils.js";
+import { chain, useBodyPortalRoot } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -18,12 +21,31 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   ref,
 ) {
   const visible = useBannerVisibility();
+  const portalRoot = useBodyPortalRoot();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { theme, colorScheme } = useThemeConfig();
+  useThemeVars(containerRef, theme, colorScheme);
+
   if (!visible) return null;
-  return (
-    <div ref={ref} role="dialog" aria-modal="false" aria-live="polite" {...props}>
+
+  // Neutral grouping element (the preset gives it `display: contents`). The
+  // dialog role / aria / canonical `data-cky-banner` live on the visible card
+  // so the identified, measurable banner element equals what the user sees.
+  // Callers can still pass `role` and other attributes via props.
+  const content = (
+    <div
+      ref={(node) => {
+        containerRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      }}
+      {...props}
+    >
       {children}
     </div>
   );
+
+  return portalRoot ? createPortal(content, portalRoot) : content;
 });
 
 const Title = forwardRef<HTMLParagraphElement, ParagraphProps>(function BannerTitle(

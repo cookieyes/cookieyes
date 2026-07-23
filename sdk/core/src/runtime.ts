@@ -1,3 +1,5 @@
+import { _normalizeConfig } from "./config.js";
+import { _warnOfflineModeDeprecated } from "./deprecations.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
 import type {
@@ -6,12 +8,12 @@ import type {
   ConsentChangePayload,
   ConsentConfig,
   ConsentRuntime,
-  ConsentRuntimeOptions,
   ConsentStore,
   ConsentStoreState,
+  CookieYesConfig,
 } from "./types.js";
 
-function splitCategories(categories: Record<ConsentCategory, boolean>): ConsentChangePayload {
+function splitCategories(categories: Record<string, boolean>): ConsentChangePayload {
   const allowed: ConsentCategory[] = [];
   const denied: ConsentCategory[] = [];
   for (const cat of Object.keys(categories) as ConsentCategory[]) {
@@ -23,22 +25,32 @@ function splitCategories(categories: Record<ConsentCategory, boolean>): ConsentC
 
 let _runtime: ConsentRuntime | null = null;
 
-export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): ConsentRuntime {
+export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRuntime {
   if (_runtime) return _runtime;
 
+  // `"offline"` is a deprecated alias for `"cookie-only"` — same behavior, one
+  // warning per page load. Checked on the raw config before normalization.
+  if (config.mode === "offline") _warnOfflineModeDeprecated();
+
+  // Collapse deprecated aliases (`overrides.regulation` → `regulation`,
+  // `backendURL` → `apiUrl`) into the one canonical shape both packages share.
+  const options = _normalizeConfig(config);
   const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
   const userOnConsentUpdate = options.onConsentUpdate;
 
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
     if (options.backend) cfg.backend = options.backend;
-    else if (options.backendURL) cfg.apiUrl = options.backendURL;
+    else if (options.apiUrl) cfg.apiUrl = options.apiUrl;
   }
   if (options.apiKey) cfg.apiKey = options.apiKey;
-  if (options.overrides?.regulation) cfg.regulation = options.overrides.regulation;
+  if (options.regulation) cfg.regulation = options.regulation;
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
+  if (options.integrations) cfg.integrations = options.integrations;
+  if (options.customStopHandlers) cfg.customStopHandlers = options.customStopHandlers;
+  if (options.categories) cfg.categories = options.categories;
   if (options.onConsentReady) cfg.onConsentReady = options.onConsentReady;
 
   cfg.onConsentUpdate = (snap) => {
@@ -56,16 +68,20 @@ export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): Conse
   }
 
   function buildState(): ConsentStoreState {
+    // `consents`/`categories` are live (drive checkboxes); `committedConsents`
+    // and `has()` are the consent in effect (gate scripts/embeds on those).
     const categories = manager.categories;
     return {
       consentId: manager.consentId,
       hasActed: manager.hasActed,
       categories,
       consents: categories,
+      committedConsents: manager.committedCategories,
       regulation: manager.regulation,
       lastRenewed: manager.lastRenewed,
+      taxonomyHash: manager.taxonomyHash,
       activeUI: activeUI(),
-      has: (category) => manager.categories[category] ?? false,
+      has: (category) => manager.committedCategories[category] === true,
       saveConsents: async (target) => {
         if (target === "all") manager.acceptAll();
         else if (target === "necessary") manager.rejectAll();
@@ -87,11 +103,24 @@ export function getOrCreateConsentRuntime(options: ConsentRuntimeOptions): Conse
   };
 
   if (options.networkBlocker && options.networkBlocker.rules.length > 0) {
-    installNetworkBlocker(options.networkBlocker, (cat) => manager.categories[cat] === true);
+    installNetworkBlocker(
+      options.networkBlocker,
+      (cat) => manager.committedCategories[cat] === true,
+    );
   }
 
   _runtime = { consentManager: manager, consentStore };
   return _runtime;
+}
+
+/**
+ * Canonical setup entry point. Alias of {@link getOrCreateConsentRuntime} that
+ * accepts the same {@link CookieYesConfig} and returns the same process-wide
+ * singleton — provided so documentation can use one setup name (`initCookieYes`)
+ * across every package.
+ */
+export function initCookieYes(config: CookieYesConfig): ConsentRuntime {
+  return getOrCreateConsentRuntime(config);
 }
 
 export function resetConsentRuntime(): void {

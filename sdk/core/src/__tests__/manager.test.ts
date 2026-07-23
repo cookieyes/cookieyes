@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createConsentManager } from "../manager.js";
+import { _clearStopHandlers } from "../stop-handlers.js";
 
 // Mock browser APIs
 beforeEach(() => {
@@ -187,6 +188,242 @@ describe("createConsentManager", () => {
       mgr.updateCategory("analytics", false);
       mgr.savePreferences();
       expect(reloadSpy).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("stop-handlers + reload notice (no page reload)", () => {
+    beforeEach(() => _clearStopHandlers());
+    afterEach(() => {
+      _clearStopHandlers();
+      (window as unknown as Record<string, unknown>).dataLayer = undefined;
+    });
+
+    it("broadcasts Google Consent Mode updates on consent change when a dataLayer exists", () => {
+      const dataLayer: unknown[] = [];
+      (window as unknown as Record<string, unknown>).dataLayer = dataLayer;
+      const mgr = createConsentManager({ regulation: "GDPR" });
+
+      const lastConsent = () => {
+        const entry = dataLayer[dataLayer.length - 1] as [string, string, Record<string, string>];
+        return entry[2];
+      };
+
+      mgr.acceptAll();
+      expect(lastConsent().analytics_storage).toBe("granted");
+      expect(lastConsent().ad_storage).toBe("granted");
+
+      mgr.rejectAll();
+      expect(lastConsent().analytics_storage).toBe("denied");
+      expect(lastConsent().ad_storage).toBe("denied");
+      // security_storage is always granted; never gated on consent.
+      expect(lastConsent().security_storage).toBe("granted");
+    });
+
+    it("broadcasts stored consent at load — a returning visitor who granted analytics gets granted", () => {
+      // Simulate a returning visitor whose cookie already grants analytics.
+      // No `tax` stamp = legacy cookie on the default taxonomy → reused as-is.
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        "consentid:abc,consent:yes,action:yes,necessary:yes,functional:no,analytics:yes,performance:no,advertisement:no,lastRenewedDate:1",
+      )}`;
+      const dataLayer: unknown[] = [];
+      (window as unknown as Record<string, unknown>).dataLayer = dataLayer;
+
+      // Just constructing the manager should reflect the stored grant — otherwise
+      // GA stays stuck in the page's deny-by-default Consent Mode state.
+      createConsentManager({ regulation: "GDPR" });
+
+      const entry = dataLayer[dataLayer.length - 1] as [string, string, Record<string, string>];
+      expect(entry[2].analytics_storage).toBe("granted");
+    });
+
+    it("surfaces the reload notice when a reload-only integration's category is revoked", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        integrations: [{ vendor: "hotjar" }], // reload-only, category analytics
+      });
+      mgr.acceptAll();
+      expect(mgr.reloadNotice.required).toBe(false);
+
+      mgr.rejectAll();
+      expect(mgr.reloadNotice.required).toBe(true);
+      expect(mgr.reloadNotice.reasons).toContain("hotjar");
+    });
+
+    it("dismissReloadNotice hides it and it stays dismissed until a new revoke", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        integrations: [{ vendor: "hotjar" }],
+      });
+      mgr.acceptAll();
+      mgr.rejectAll();
+      expect(mgr.reloadNotice.required).toBe(true);
+
+      mgr.dismissReloadNotice();
+      expect(mgr.reloadNotice.required).toBe(false);
+
+      // Re-saving the same denied state doesn't resurrect the dismissed notice.
+      mgr.savePreferences();
+      expect(mgr.reloadNotice.required).toBe(false);
+    });
+
+    it("re-accepting clears the reload notice", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        integrations: [{ vendor: "hotjar" }],
+      });
+      mgr.acceptAll();
+      mgr.rejectAll();
+      expect(mgr.reloadNotice.required).toBe(true);
+
+      mgr.acceptAll();
+      expect(mgr.reloadNotice.required).toBe(false);
+    });
+
+    it("a custom stop-handler that throws falls back to the reload notice, no crash", () => {
+      const mgr = createConsentManager({
+        regulation: "GDPR",
+        customStopHandlers: [
+          {
+            id: "custom",
+            category: "analytics",
+            stop: () => {
+              throw new Error("not ready");
+            },
+          },
+        ],
+      });
+      mgr.acceptAll();
+      expect(() => mgr.rejectAll()).not.toThrow();
+      expect(mgr.reloadNotice.required).toBe(true);
+      expect(mgr.reloadNotice.reasons).toContain("custom");
+    });
+  });
+
+  describe("configurable categories", () => {
+    const CUSTOM = [{ id: "essential", required: true }, { id: "marketing" }, { id: "stats" }];
+
+    it("drives state off a custom taxonomy", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(Object.keys(mgr.categories).sort()).toEqual(["essential", "marketing", "stats"]);
+      expect(mgr.categories.essential).toBe(true); // required → on
+      expect(mgr.categories.marketing).toBe(false);
+    });
+
+    it("keeps the required category on through reject/select", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      mgr.rejectAll();
+      expect(mgr.categories.essential).toBe(true);
+      expect(mgr.categories.marketing).toBe(false);
+
+      mgr.acceptSelected(["marketing"]);
+      expect(mgr.categories.essential).toBe(true);
+      expect(mgr.categories.marketing).toBe(true);
+      expect(mgr.categories.stats).toBe(false);
+    });
+
+    it("updateCategory can't toggle a required category off, and ignores unknown ids", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      mgr.updateCategory("essential", false);
+      expect(mgr.categories.essential).toBe(true);
+      mgr.updateCategory("nope", true);
+      expect(mgr.categories.nope).toBeUndefined();
+    });
+
+    it("reuses a returning visitor's consent when the taxonomy is unchanged", () => {
+      const hash = createConsentManager({ regulation: "GDPR", categories: CUSTOM }).taxonomyHash;
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        `consentid:ret,consent:yes,action:yes,tax:${hash},essential:yes,marketing:yes,stats:no,lastRenewedDate:1`,
+      )}`;
+
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(mgr.hasActed).toBe(true); // consent reused
+      expect(mgr.categories.marketing).toBe(true);
+      expect(mgr.categories.stats).toBe(false);
+    });
+
+    it("re-requests consent when the taxonomy changed (AC2: documented outcome)", () => {
+      // Stored consent under the OLD (default five) taxonomy...
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        "consentid:ret,consent:yes,action:yes,tax:oldhash,necessary:yes,analytics:yes,lastRenewedDate:1",
+      )}`;
+
+      // ...but the app now runs a different custom taxonomy → re-prompt.
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(mgr.hasActed).toBe(false); // must act again
+      expect(mgr.categories.essential).toBe(true);
+      expect(mgr.categories.marketing).toBe(false);
+    });
+
+    it("upgrade-safe: a legacy cookie with no tax stamp on the default five is preserved (AC3)", () => {
+      // Pre-feature cookie (no `tax:`) — a returning visitor on the built-in five.
+      document.cookie = `cookieyes-consent=${encodeURIComponent(
+        "consentid:legacy,consent:yes,action:yes,necessary:yes,functional:no,analytics:yes,performance:no,advertisement:no,lastRenewedDate:1",
+      )}`;
+
+      // No custom categories → default five → legacy consent must NOT be reset.
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      expect(mgr.hasActed).toBe(true);
+      expect(mgr.categories.analytics).toBe(true);
+      expect(mgr.consentId).toBe("legacy");
+    });
+
+    it("records the taxonomy hash on the snapshot", () => {
+      const mgr = createConsentManager({ regulation: "GDPR", categories: CUSTOM });
+      expect(typeof mgr.taxonomyHash).toBe("string");
+      expect(mgr.taxonomyHash).toBeTruthy();
+    });
+  });
+
+  describe("committed vs working consent (gating)", () => {
+    it("updateCategory changes the working value but NOT committedCategories", () => {
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.updateCategory("analytics", true);
+      expect(mgr.categories.analytics).toBe(true); // live/working reflects the toggle
+      expect(mgr.committedCategories.analytics).toBe(false); // committed is untouched
+    });
+
+    it("savePreferences commits the working values", () => {
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.updateCategory("analytics", true);
+      expect(mgr.committedCategories.analytics).toBe(false);
+      mgr.savePreferences();
+      expect(mgr.committedCategories.analytics).toBe(true);
+    });
+
+    it("acceptAll / rejectAll set committedCategories", () => {
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.acceptAll();
+      expect(mgr.committedCategories.analytics).toBe(true);
+      mgr.rejectAll();
+      expect(mgr.committedCategories.analytics).toBe(false);
+    });
+
+    it("does NOT load a gated script on a transient toggle — only on save", () => {
+      document.head.innerHTML = "";
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.registerScript({
+        id: "gs-toggle",
+        src: "https://cdn.example.com/g.js",
+        category: "analytics",
+      });
+      mgr.updateCategory("analytics", true);
+      expect(document.getElementById("gs-toggle")).toBeNull(); // toggle didn't load it
+      mgr.savePreferences();
+      expect(document.getElementById("gs-toggle")).not.toBeNull(); // saving did
+    });
+
+    it("keeps a loaded gated script after revoke (reload to re-block)", () => {
+      document.head.innerHTML = "";
+      const mgr = createConsentManager({ regulation: "GDPR" });
+      mgr.registerScript({
+        id: "gs-revoke",
+        src: "https://cdn.example.com/h.js",
+        category: "analytics",
+      });
+      mgr.acceptAll();
+      expect(document.getElementById("gs-revoke")).not.toBeNull();
+      mgr.rejectAll();
+      expect(document.getElementById("gs-revoke")).not.toBeNull(); // stays until reload
     });
   });
 });
