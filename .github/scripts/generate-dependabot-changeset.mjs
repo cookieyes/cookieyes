@@ -8,7 +8,7 @@
 //
 // Uses only Node built-ins and git — it never runs any code from the PR.
 import { execSync } from "node:child_process";
-import { appendFileSync, existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const baseSha = process.env.BASE_SHA;
 const prNumber = process.env.PR_NUMBER || "dependabot";
