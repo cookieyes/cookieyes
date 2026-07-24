@@ -23,12 +23,17 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
 
+      # No registry-url here on purpose: it makes setup-node write an .npmrc
+      # with `_authToken=${NODE_AUTH_TOKEN}`, which is unset under OIDC. That
+      # empty token breaks `changeset publish`'s "is this version already
+      # published?" registry read, making it try to republish existing versions
+      # on no-op pushes. npm defaults to registry.npmjs.org, and OIDC handles
+      # publish auth, so dropping it leaves a clean anonymous read.
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
 
       # Ensure a recent npm for Trusted Publishing/OIDC (needs npm >= 11.5).
       - name: Upgrade npm
