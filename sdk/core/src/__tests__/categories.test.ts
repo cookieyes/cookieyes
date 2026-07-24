@@ -51,32 +51,27 @@ describe("resolveCategories", () => {
     expect(warn.mock.calls[0]?.[0]).toContain("unique");
   });
 
-  it.each([
-    "consent",
-    "tax",
-    "action",
-    "consentid",
-    "lastRenewedDate",
-  ])("falls back (with a warning) when a category id collides with reserved cookie key %s", (reserved) => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const r = resolveCategories([{ id: reserved, required: true }, { id: "analytics" }]);
-    expect(r.isDefault).toBe(true);
-    expect(warn).toHaveBeenCalledOnce();
-    expect(warn.mock.calls[0]?.[0]).toContain("reserved");
-  });
+  it.each(["consent", "tax", "action", "consentid", "lastRenewedDate"])(
+    "falls back (with a warning) when a category id collides with reserved cookie key %s",
+    (reserved) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const r = resolveCategories([{ id: reserved, required: true }, { id: "analytics" }]);
+      expect(r.isDefault).toBe(true);
+      expect(warn).toHaveBeenCalledOnce();
+      expect(warn.mock.calls[0]?.[0]).toContain("reserved");
+    },
+  );
 
-  it.each([
-    "a:b",
-    "a,b",
-    "id:",
-    ",leading",
-  ])("falls back (with a warning) when an id contains a cookie delimiter (%s)", (badId) => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const r = resolveCategories([{ id: badId, required: true }, { id: "ok" }]);
-    expect(r.isDefault).toBe(true);
-    expect(warn).toHaveBeenCalledOnce();
-    expect(warn.mock.calls[0]?.[0]).toMatch(/',' or ':'/);
-  });
+  it.each(["a:b", "a,b", "id:", ",leading"])(
+    "falls back (with a warning) when an id contains a cookie delimiter (%s)",
+    (badId) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const r = resolveCategories([{ id: badId, required: true }, { id: "ok" }]);
+      expect(r.isDefault).toBe(true);
+      expect(warn).toHaveBeenCalledOnce();
+      expect(warn.mock.calls[0]?.[0]).toMatch(/',' or ':'/);
+    },
+  );
 
   it("accepts ids with spaces or unicode (they round-trip through the cookie)", () => {
     const r = resolveCategories([{ id: "café pro", required: true }, { id: "with space" }]);

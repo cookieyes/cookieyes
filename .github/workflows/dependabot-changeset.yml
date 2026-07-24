@@ -1,0 +1,49 @@
+name: Dependabot changeset
+
+# Dependabot PRs carry no changeset, so a bump to a published package's runtime
+# dependency would merge but never publish. This adds a changeset automatically —
+# only for runtime-dependency bumps (dev-deps and github-actions bumps are
+# correctly left alone). See .github/scripts/generate-dependabot-changeset.mjs.
+
+on:
+  pull_request_target:
+    branches: [main]
+
+# pull_request_target runs the workflow from the base branch (main), so a PR
+# cannot alter this workflow to gain write access. The job is gated to the
+# Dependabot actor and never executes any code from the PR head.
+permissions:
+  contents: write
+
+concurrency:
+  group: dependabot-changeset-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  add-changeset:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Generate changeset for runtime dependency bumps
+        id: gen
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/generate-dependabot-changeset.mjs
+
+      - name: Commit & push changeset
+        if: steps.gen.outputs.created == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .changeset
+          git commit -m "chore: add changeset for Dependabot dependency bump [skip ci]"
+          git push
