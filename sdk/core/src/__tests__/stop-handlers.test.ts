@@ -45,15 +45,13 @@ describe("resolveBuiltInIntegration", () => {
     expect(fbq).toHaveBeenCalledWith("consent", "grant");
   });
 
-  it.each([
-    "tiktok",
-    "linkedin",
-    "hotjar",
-    "segment",
-  ] as const)("%s is reload-only (no confident documented runtime stop)", (vendor) => {
-    const h = resolveBuiltInIntegration({ vendor });
-    expect("needsReload" in h && h.needsReload).toBe(true);
-  });
+  it.each(["tiktok", "linkedin", "hotjar", "segment"] as const)(
+    "%s is reload-only (no confident documented runtime stop)",
+    (vendor) => {
+      const h = resolveBuiltInIntegration({ vendor });
+      expect("needsReload" in h && h.needsReload).toBe(true);
+    },
+  );
 
   it("honours a category override", () => {
     const h = resolveBuiltInIntegration({ vendor: "meta", category: "analytics" });
