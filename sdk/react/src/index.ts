@@ -28,12 +28,14 @@ export type {
   CookieYesSelfHostedConfig,
   GoogleConsentSignal,
   I18nConfig,
+  PartialTranslations,
   Regulation,
   ReloadNoticeState,
   ReloadOnlyHandler,
   ResolvedCategories,
   ScriptEntry,
   StopHandler,
+  TextDirection,
   ThemeConfig,
   TranslationMap,
 } from "@cookieyes/core";
@@ -41,6 +43,8 @@ export {
   DEFAULT_CATEGORIES,
   defaultTranslations,
   getOrCreateConsentRuntime,
+  getTextDirection,
+  mergeTranslations,
   registerStopHandler,
   resetConsentRuntime,
   resolveBuiltInIntegration,
@@ -54,6 +58,7 @@ export { RecallButton } from "./controls/RecallButton.js";
 // Hooks
 export {
   type ConsentActions,
+  type UseLanguageResult,
   type UseReloadNoticeResult,
   useBannerVisibility,
   useCategories,
@@ -61,6 +66,7 @@ export {
   useConsentActions,
   useConsentCategory,
   useConsentRuntime,
+  useLanguage,
   useOnConsentChange,
   useOptOutOpen,
   usePreferencesOpen,
@@ -83,6 +89,7 @@ export type {
   ColorSchemePref,
   CookieYesRuntime,
   CookieYesSnapshot,
+  LanguageInfo,
   RuntimeMode,
 } from "./runtime.js";
 // Runtime — canonical initCookieYes + deprecated builder + module-level registry

@@ -23,12 +23,12 @@ import {
   type ReloadNoticeState,
   type ResolvedCategories,
   resolveCategories,
-  resolveTranslations,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
   type TranslationMap,
 } from "@cookieyes/core";
+import { createLanguageController, type LanguageInfo } from "./language.js";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 
 /**
@@ -66,12 +66,18 @@ export type CookieYesSnapshot = ConsentSnapshot & {
   reloadNotice: ReloadNoticeState;
 };
 
+export type { LanguageInfo } from "./language.js";
+
 export type CookieYesRuntime = {
   subscribe: (listener: () => void) => () => void;
   getSnapshot: () => CookieYesSnapshot;
   getServerSnapshot: () => CookieYesSnapshot;
   manager: ConsentManager;
+  /** Text for the active language (English fills any gaps). Reactive — swaps on setLanguage. */
   translations: TranslationMap;
+  getLanguageInfo: () => LanguageInfo;
+  /** Switch language live; loads it via `i18n.loadLanguage` if not already present. */
+  setLanguage: (tag: string) => Promise<void>;
   /** The resolved category taxonomy in effect (built-in five or the customer's). */
   categories: ResolvedCategories;
   theme: ThemeConfig | undefined;
@@ -308,6 +314,9 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
 
   warnOnStyleCspViolations();
 
+  // Owns the active language + live switching; re-renders the UI via notify.
+  const language = createLanguageController(cfg.i18n, notify);
+
   const colorScheme = cfg.colorScheme ?? "system";
 
   // Per-mount SSR snapshot: a fresh-visitor state (banner visible, dialogs
@@ -339,7 +348,11 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     getSnapshot: () => cachedSnapshot,
     getServerSnapshot: () => ssrSnapshot,
     manager,
-    translations: resolveTranslations(cfg.i18n),
+    get translations() {
+      return language.getTranslations();
+    },
+    getLanguageInfo: language.getLanguageInfo,
+    setLanguage: language.setLanguage,
     categories: resolved,
     theme: cfg.theme,
     colorScheme,

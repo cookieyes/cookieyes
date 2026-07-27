@@ -328,6 +328,57 @@ button. Your handlers, `className`, and `style` are preserved (event handlers ru
 
 Available on the button controls of `Banner`, `Preferences`, and `OptOut`.
 
+## Translations (i18n)
+
+Give the SDK your languages via `i18n.messages`. Each language can be **partial** —
+anything you leave out falls back to English:
+
+```tsx
+import { fr } from "@cookieyes/translations/fr";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: "fr",                       // starting language (else the browser's, else English)
+    messages: { fr, de: { acceptAll: "Alle akzeptieren" } }, // full or partial
+  },
+});
+```
+
+Read the text with `useTranslations()` — it re-renders when the language changes:
+
+```tsx
+const t = useTranslations();
+return <h2>{t.bannerTitle}</h2>;
+```
+
+Switch language live (no reload) and read language info with `useLanguage()`:
+
+```tsx
+const { language, direction, languages, setLanguage } = useLanguage();
+// language: "fr" · direction: "ltr" | "rtl" · languages: what's loaded
+<button onClick={() => setLanguage("fr")}>Français</button>
+```
+
+`direction` is handy for laying out a right-to-left language (Arabic, Hebrew) in a custom UI.
+
+**Loading a language on demand** — instead of bundling every language, hand us a loader and
+we'll call it the first time that language is switched to:
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    loadLanguage: (tag) => import(`@cookieyes/translations/${tag}`).then((m) => m[tag]),
+    // or fetch from your own URL: fetch(`/i18n/${tag}.json`).then((r) => r.json())
+  },
+});
+```
+
+Notes: the starting language is decided on each page load (we don't store the visitor's choice —
+persist it yourself if you want it remembered). A missing/failed language logs a developer warning
+and keeps the current one.
+
 ## Accessibility
 
 **Scope of this section:** keyboard operability, focus management, screen-reader

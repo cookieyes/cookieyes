@@ -52,6 +52,13 @@ export type TranslationMap = {
   };
 };
 
+/** A subset of TranslationMap — lets a customer override just a few strings. */
+type DeepPartial<T> = T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T;
+export type PartialTranslations = DeepPartial<TranslationMap>;
+
+/** Reading direction of a language. */
+export type TextDirection = "ltr" | "rtl";
+
 export type ThemeConfig = {
   primaryColor?: string | undefined;
   backgroundColor?: string | undefined;
@@ -73,9 +80,16 @@ export type ScriptEntry = {
 };
 
 export type I18nConfig = {
-  messages?: Record<string, TranslationMap> | undefined;
+  /** Translations per language. Each may be partial — missing text falls back to English. */
+  messages?: Record<string, PartialTranslations> | undefined;
   locale?: string | undefined;
   detectBrowserLanguage?: boolean | undefined;
+  /**
+   * Called when a language is switched to that isn't already in `messages` —
+   * return its translations (fetch them from your own URL, import them, etc.).
+   * Lets you load languages on demand instead of bundling them all upfront.
+   */
+  loadLanguage?: ((tag: string) => PartialTranslations | Promise<PartialTranslations>) | undefined;
 };
 
 export type ConsentConfig = {

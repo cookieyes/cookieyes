@@ -18,7 +18,14 @@ export {
   broadcastGoogleConsent,
   computeGoogleConsent,
 } from "./google-consent-mode.js";
-export { defaultTranslations, resolveTranslations } from "./i18n.js";
+export {
+  defaultTranslations,
+  getTextDirection,
+  mergeTranslations,
+  pickLanguage,
+  primaryOf,
+  resolveTranslations,
+} from "./i18n.js";
 export { createConsentManager } from "./manager.js";
 export type {
   BlockedRequestInfo,
@@ -69,9 +76,11 @@ export type {
   CookieYesOfflineConfig,
   CookieYesSelfHostedConfig,
   I18nConfig,
+  PartialTranslations,
   Regulation,
   ReloadNoticeState,
   ScriptEntry,
+  TextDirection,
   ThemeConfig,
   TranslationMap,
 } from "./types.js";
