@@ -220,6 +220,28 @@ off(); // stop listening when you're done
 This is the recommended way to react to consent. The paths below still work but
 aren't the primary one.
 
+## Translations & language
+
+For a framework-less custom UI, `consentStore` carries the active language and
+lets you switch it live (no reload):
+
+```ts
+const { consentStore } = initCookieYes({
+  mode: "cookie-only",
+  i18n: { messages: { fr } }, // languages you support; each may be partial
+});
+
+consentStore.translations.acceptAll;   // text for the active language
+consentStore.getLanguageInfo();         // { language, direction, languages }
+
+consentStore.subscribe(() => render()); // re-render on consent OR language change
+await consentStore.setLanguage("fr");   // switch live; loads via i18n.loadLanguage if needed
+```
+
+Missing text falls back to English; custom categories translate by id (see the
+[configuration guide](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)).
+In React, use the `useTranslations()` / `useLanguage()` hooks instead.
+
 ## Low-level / advanced API
 
 You shouldn't need these for a typical integration — each exists for a

@@ -26,6 +26,8 @@ export {
   primaryOf,
   resolveTranslations,
 } from "./i18n.js";
+export type { LanguageController } from "./language.js";
+export { createLanguageController } from "./language.js";
 export { createConsentManager } from "./manager.js";
 export type {
   BlockedRequestInfo,
@@ -77,6 +79,7 @@ export type {
   CookieYesOfflineConfig,
   CookieYesSelfHostedConfig,
   I18nConfig,
+  LanguageInfo,
   PartialTranslations,
   Regulation,
   ReloadNoticeState,

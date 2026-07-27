@@ -1,4 +1,4 @@
-import type { CategoryDef } from "./categories.js";
+import type { CategoryDef, ResolvedCategories } from "./categories.js";
 import type { NetworkBlockerConfig } from "./network-blocker.js";
 import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 
@@ -63,6 +63,13 @@ export type PartialTranslations = DeepPartial<TranslationMap>;
 
 /** Reading direction of a language. */
 export type TextDirection = "ltr" | "rtl";
+
+/** The active language, its reading direction, and the languages currently loaded. */
+export type LanguageInfo = {
+  language: string;
+  direction: TextDirection;
+  languages: string[];
+};
 
 export type ThemeConfig = {
   primaryColor?: string | undefined;
@@ -366,6 +373,23 @@ export type ConsentStoreState = ConsentSnapshot & {
 export type ConsentStore = {
   subscribe: (listener: (state: ConsentStoreState) => void) => () => void;
   getState: () => ConsentStoreState;
+  /** Text for the active language (English fills gaps). Swaps on `setLanguage`. */
+  translations: TranslationMap;
+  /** The active language, its reading direction, and the languages loaded. */
+  getLanguageInfo: () => LanguageInfo;
+  /**
+   * Switch language live (no reload) — `subscribe` listeners fire so a custom UI
+   * can re-render. Loads the language via `i18n.loadLanguage` if not bundled.
+   */
+  setLanguage: (tag: string) => Promise<void>;
+  /** Customer-provided text for a category in the active language, if any. */
+  getCategoryText: (id: string) => Partial<CategoryText> | undefined;
+  /**
+   * The category taxonomy in effect (custom list or the built-in five) — its
+   * ids, which are `required`, etc. Use it to render categories in a custom UI
+   * so it follows whatever taxonomy is configured.
+   */
+  categories: ResolvedCategories;
   /**
    * React to consent decisions. `"save"` fires on every save (even an
    * unchanged re-confirm); `"change"` fires only when a category actually

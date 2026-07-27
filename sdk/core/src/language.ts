@@ -1,24 +1,17 @@
-"use client";
-
 import {
-  type CategoryText,
   defaultTranslations,
   getTextDirection,
-  type I18nConfig,
   mergeTranslations,
-  type PartialTranslations,
   pickLanguage,
   primaryOf,
-  type TextDirection,
-  type TranslationMap,
-} from "@cookieyes/core";
-
-/** Current language, its reading direction, and the languages currently loaded. */
-export type LanguageInfo = {
-  language: string;
-  direction: TextDirection;
-  languages: string[];
-};
+} from "./i18n.js";
+import type {
+  CategoryText,
+  I18nConfig,
+  LanguageInfo,
+  PartialTranslations,
+  TranslationMap,
+} from "./types.js";
 
 export type LanguageController = {
   /** Text for the active language (English fills any gaps). */
@@ -38,6 +31,9 @@ export type LanguageController = {
  * Owns the active language: which one is showing, its (English-filled) text,
  * and switching to another — loading it on demand when a loader is provided.
  * `onChange` runs after every switch so the UI can re-render.
+ *
+ * Framework-agnostic: used by both the core and React runtimes, so they behave
+ * identically.
  */
 export function createLanguageController(
   i18n: I18nConfig | undefined,
@@ -104,16 +100,15 @@ export function createLanguageController(
     warnMissing(tag);
     return Promise.resolve();
   }
+  function getCategoryText(id: string): Partial<CategoryText> | undefined {
+    return messagesFor(language)?.categories?.[id];
+  }
 
   // An explicit starting language that isn't bundled but has a loader: fetch it
   // now, so we honour the request (English shows until it lands). Browser-only —
   // never fire a load during server rendering.
   if (loadLanguage && i18n?.locale && !isAvailable(i18n.locale) && typeof window !== "undefined") {
     void setLanguage(i18n.locale);
-  }
-
-  function getCategoryText(id: string): Partial<CategoryText> | undefined {
-    return messagesFor(language)?.categories?.[id];
   }
 
   return {

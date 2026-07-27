@@ -17,8 +17,10 @@ import {
   type CookieYesConfig,
   createConsentEmitter,
   createConsentManager,
+  createLanguageController,
   type I18nConfig,
   installNetworkBlocker,
+  type LanguageInfo,
   type NetworkBlockerConfig,
   type Regulation,
   type ReloadNoticeState,
@@ -29,7 +31,6 @@ import {
   type ThemeConfig,
   type TranslationMap,
 } from "@cookieyes/core";
-import { createLanguageController, type LanguageInfo } from "./language.js";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 
 /**
@@ -67,7 +68,7 @@ export type CookieYesSnapshot = ConsentSnapshot & {
   reloadNotice: ReloadNoticeState;
 };
 
-export type { LanguageInfo } from "./language.js";
+export type { LanguageInfo } from "@cookieyes/core";
 
 export type CookieYesRuntime = {
   subscribe: (listener: () => void) => () => void;
