@@ -8,7 +8,7 @@ Translations for custom UIs, with live language switching.
 
 - `useTranslations()` now re-renders when the language changes (previously fixed at setup).
 - New `useLanguage()` hook: read the active language, its reading direction (`ltr`/`rtl`), the loaded languages, and switch language live with `setLanguage(tag)` — no page reload.
-- Framework-less: `consentStore` now carries `translations`, `getLanguageInfo()`, `setLanguage()`, and `getCategoryText()`, and `subscribe` fires on a language switch — so a vanilla custom UI can switch language too.
+- Framework-less: `consentStore` now carries `translations`, `getLanguageInfo()`, `setLanguage()`, `getCategoryText()`, and `categories` (the resolved taxonomy in effect), and `subscribe` fires on a language switch — so a vanilla custom UI can switch language and follow whatever taxonomy is configured.
 - Languages in `i18n.messages` can be **partial**; any missing text falls back to English.
 - Custom categories are translatable through the same `i18n.messages`, keyed by category id; a translation overrides the category's config label per language.
 - New `i18n.loadLanguage(tag)` to load a language on demand (import it or fetch from your own URL) instead of bundling every language upfront.
