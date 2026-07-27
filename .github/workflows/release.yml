@@ -18,13 +18,41 @@ jobs:
     name: Version & publish
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # fetch-depth: 0 so the "Detect release work" step can diff the push range.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # changeset publish's "already published?" registry check is unreliable in
+      # this CI, so on a no-op push (no changeset, no version bump) it tries to
+      # republish existing versions and fails. Gate the release on real work,
+      # detected without a registry read:
+      #   (a) pending changeset files  -> action opens/updates the Version PR
+      #   (b) a version was bumped in this push (Version-PR merge) -> publish
+      # Otherwise (dependency/CI/workflow merges) skip so the run stays green.
+      - name: Detect release work
+        id: detect
+        run: |
+          work=false
+          if ls .changeset/*.md >/dev/null 2>&1 && [ "$(ls .changeset/*.md | grep -vc 'README')" -gt 0 ]; then
+            echo "Pending changesets present -> will open/update the Version PR"
+            work=true
+          elif git diff "${{ github.event.before }}" "${{ github.sha }}" -- 'sdk/*/package.json' 2>/dev/null \
+               | grep -qE '^\+[[:space:]]*"version":'; then
+            echo "Version bump detected in this push -> will publish"
+            work=true
+          else
+            echo "No changesets and no version bump -> nothing to release; skipping"
+          fi
+          echo "work=$work" >> "$GITHUB_OUTPUT"
 
       - name: Install pnpm
+        if: steps.detect.outputs.work == 'true'
         uses: pnpm/action-setup@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        if: steps.detect.outputs.work == 'true'
+        uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -32,15 +60,19 @@ jobs:
 
       # Ensure a recent npm for Trusted Publishing/OIDC (needs npm >= 11.5).
       - name: Upgrade npm
+        if: steps.detect.outputs.work == 'true'
         run: npm install -g npm@latest
 
       - name: Install dependencies
+        if: steps.detect.outputs.work == 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Build packages
+        if: steps.detect.outputs.work == 'true'
         run: pnpm build
 
       - name: Create release PR or publish to npm
+        if: steps.detect.outputs.work == 'true'
         uses: changesets/action@v1
         with:
           version: pnpm version-packages

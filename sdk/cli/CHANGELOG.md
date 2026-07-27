@@ -1,5 +1,11 @@
 # @cookieyes/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- 9ce2fad: Update runtime dependency `@clack/prompts` from 1.5.0 to 1.7.0.
+
 ## 0.2.0
 
 ### Minor Changes

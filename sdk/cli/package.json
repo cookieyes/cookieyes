@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "CLI for setting up the CookieYes consent SDK",
   "keywords": [
     "cookieyes",
@@ -45,14 +45,14 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@clack/prompts": "^1.4.0",
+    "@clack/prompts": "^1.7.0",
     "execa": "^9.6.1",
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
-    "@types/node": "^24.12.4",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.10"
   }
 }
