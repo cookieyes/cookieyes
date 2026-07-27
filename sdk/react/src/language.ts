@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type CategoryText,
   defaultTranslations,
   getTextDirection,
   type I18nConfig,
@@ -25,6 +26,12 @@ export type LanguageController = {
   getLanguageInfo: () => LanguageInfo;
   /** Switch language live; loads via `i18n.loadLanguage` if not already present. */
   setLanguage: (tag: string) => Promise<void>;
+  /**
+   * The customer's own text for a category in the *active* language, if they
+   * provided it — kept separate from the English defaults so a translation can
+   * win over a category's config label without the English default masking it.
+   */
+  getCategoryText: (id: string) => Partial<CategoryText> | undefined;
 };
 
 /**
@@ -105,9 +112,14 @@ export function createLanguageController(
     void setLanguage(i18n.locale);
   }
 
+  function getCategoryText(id: string): Partial<CategoryText> | undefined {
+    return messagesFor(language)?.categories?.[id];
+  }
+
   return {
     getTranslations: () => translations,
     getLanguageInfo: () => info,
     setLanguage,
+    getCategoryText,
   };
 }

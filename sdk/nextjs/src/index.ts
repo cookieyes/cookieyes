@@ -6,6 +6,7 @@ export type {
   Builder,
   BuiltInIntegration,
   CategoryDef,
+  CategoryText,
   ColorScheme,
   ColorSchemePref,
   ConsentActions,

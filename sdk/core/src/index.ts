@@ -55,6 +55,7 @@ export {
 
 export type {
   ActiveUI,
+  CategoryText,
   ColorScheme,
   ConsentBackend,
   ConsentCategory,

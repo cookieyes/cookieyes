@@ -6,6 +6,7 @@ export type {
   AnyStopHandler,
   BuiltInIntegration,
   CategoryDef,
+  CategoryText,
   ColorScheme,
   ConsentBackend,
   ConsentCategory,

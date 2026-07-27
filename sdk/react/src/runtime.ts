@@ -5,6 +5,7 @@ import {
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
   type CategoryDef,
+  type CategoryText,
   type ConsentBackend,
   type ConsentConfig,
   type ConsentEmitter,
@@ -78,6 +79,8 @@ export type CookieYesRuntime = {
   getLanguageInfo: () => LanguageInfo;
   /** Switch language live; loads it via `i18n.loadLanguage` if not already present. */
   setLanguage: (tag: string) => Promise<void>;
+  /** Customer-provided text for a category in the active language, if any. */
+  getCategoryText: (id: string) => Partial<CategoryText> | undefined;
   /** The resolved category taxonomy in effect (built-in five or the customer's). */
   categories: ResolvedCategories;
   theme: ThemeConfig | undefined;
@@ -353,6 +356,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     },
     getLanguageInfo: language.getLanguageInfo,
     setLanguage: language.setLanguage,
+    getCategoryText: language.getCategoryText,
     categories: resolved,
     theme: cfg.theme,
     colorScheme,

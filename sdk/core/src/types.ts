@@ -18,6 +18,9 @@ export type ConsentCategory =
 
 export type Regulation = "GDPR" | "CCPA" | "DEFAULT";
 
+/** Display text for one consent category. */
+export type CategoryText = { label: string; description: string };
+
 export type TranslationMap = {
   bannerTitle: string;
   bannerDescription: string;
@@ -31,13 +34,15 @@ export type TranslationMap = {
   poweredBy: string;
   preferencesTitle: string;
   preferencesIntro: string;
+  // The built-in five are always present; the index signature lets customers
+  // translate their own custom categories by id, through the same system.
   categories: {
-    necessary: { label: string; description: string };
-    functional: { label: string; description: string };
-    analytics: { label: string; description: string };
-    performance: { label: string; description: string };
-    advertisement: { label: string; description: string };
-  };
+    necessary: CategoryText;
+    functional: CategoryText;
+    analytics: CategoryText;
+    performance: CategoryText;
+    advertisement: CategoryText;
+  } & Record<string, CategoryText>;
   optOut: {
     title: string;
     description: string;

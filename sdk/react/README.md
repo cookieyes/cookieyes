@@ -375,6 +375,17 @@ initCookieYes({
 });
 ```
 
+**Custom categories translate too** — through the same `messages`, keyed by the category's `id`.
+The category's `label`/`description` in config is the default; a translation overrides it per language:
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  categories: [{ id: "insights", label: "Shopping Insights" }], // default text
+  i18n: { messages: { fr: { categories: { insights: { label: "Aperçus" } } } } },
+});
+```
+
 Notes: the starting language is decided on each page load (we don't store the visitor's choice —
 persist it yourself if you want it remembered). A missing/failed language logs a developer warning
 and keeps the current one.
