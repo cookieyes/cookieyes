@@ -35,7 +35,7 @@ describe("createConsentEmitter", () => {
     save({ necessary: true, analytics: true }); // 3: unchanged re-confirm
 
     expect(fn).toHaveBeenCalledTimes(3);
-    expect(fn.mock.calls[2][0]).toMatchObject({ changedCategories: [], isInitial: false });
+    expect(fn.mock.calls[2]?.[0]).toMatchObject({ changedCategories: [], isInitial: false });
   });
 
   it('"change" fires only when a category actually differs', () => {
@@ -47,7 +47,7 @@ describe("createConsentEmitter", () => {
     save({ necessary: true, analytics: false }); // fires (changed back)
 
     expect(fn).toHaveBeenCalledTimes(3);
-    expect(fn.mock.calls[1][0]).toMatchObject({
+    expect(fn.mock.calls[1]?.[0]).toMatchObject({
       changedCategories: ["analytics"],
       isInitial: false,
     });
@@ -61,8 +61,8 @@ describe("createConsentEmitter", () => {
     save({ necessary: true, analytics: true, ads: true }); // ads changed — fires
 
     expect(fn).toHaveBeenCalledTimes(2);
-    expect(fn.mock.calls[0][0].isInitial).toBe(true);
-    expect(fn.mock.calls[1][0]).toMatchObject({ changedCategories: ["ads"], isInitial: false });
+    expect(fn.mock.calls[0]?.[0]?.isInitial).toBe(true);
+    expect(fn.mock.calls[1]?.[0]).toMatchObject({ changedCategories: ["ads"], isInitial: false });
   });
 
   it("stops notifying after unsubscribe", () => {

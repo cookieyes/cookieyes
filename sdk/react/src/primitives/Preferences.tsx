@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConsentCategory, TranslationMap } from "@cookieyes/core";
+import type { ConsentCategory } from "@cookieyes/core";
 import {
   type ComponentPropsWithoutRef,
   createContext,
@@ -17,6 +17,7 @@ import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { _tryGetCookieYes } from "../runtime.js";
 import { CY_PART } from "../styles/parts.js";
 import { Slot } from "./Slot.js";
 import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
@@ -29,20 +30,6 @@ type ActionProps = ButtonProps & { asChild?: boolean };
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type ParagraphProps = ComponentPropsWithoutRef<"p">;
 type HeadingProps = ComponentPropsWithoutRef<"h2">;
-
-// Only the five built-in ids have translation entries. Narrow to that set so
-// we can safely index the translation map; custom ids fall back to the def.
-type BuiltInCategory = keyof TranslationMap["categories"];
-const BUILT_IN: readonly BuiltInCategory[] = [
-  "necessary",
-  "functional",
-  "analytics",
-  "performance",
-  "advertisement",
-];
-function isBuiltIn(id: ConsentCategory): id is BuiltInCategory {
-  return (BUILT_IN as readonly string[]).includes(id);
-}
 
 type PreferencesContextValue = {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -217,11 +204,14 @@ const Category = forwardRef<
   // A required category is always on and can't be toggled.
   const checked = required ? true : snapshot.categories[category] === true;
 
-  // Label/description precedence: explicit def value → built-in translation →
-  // the id itself (a sensible last resort for a custom category with no label).
-  const builtIn = isBuiltIn(category) ? t.categories[category] : undefined;
-  const label = def?.label ?? builtIn?.label ?? category;
-  const description = def?.description ?? builtIn?.description ?? "";
+  // Text precedence: the active language's translation (if the customer gave
+  // one) → the category's config label → the built-in English default → the id.
+  // `getCategoryText` is the customer's own translation, kept apart from the
+  // English defaults so it can win over the config label without English masking it.
+  const translated = _tryGetCookieYes()?.getCategoryText(category);
+  const fallback = t.categories[category];
+  const label = translated?.label ?? def?.label ?? fallback?.label ?? category;
+  const description = translated?.description ?? def?.description ?? fallback?.description ?? "";
 
   return (
     <div ref={ref} data-cy-part={CY_PART.dialog.category} {...props}>

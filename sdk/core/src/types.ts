@@ -1,4 +1,4 @@
-import type { CategoryDef } from "./categories.js";
+import type { CategoryDef, ResolvedCategories } from "./categories.js";
 import type { NetworkBlockerConfig } from "./network-blocker.js";
 import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 
@@ -18,6 +18,9 @@ export type ConsentCategory =
 
 export type Regulation = "GDPR" | "CCPA" | "DEFAULT";
 
+/** Display text for one consent category. */
+export type CategoryText = { label: string; description: string };
+
 export type TranslationMap = {
   bannerTitle: string;
   bannerDescription: string;
@@ -31,13 +34,15 @@ export type TranslationMap = {
   poweredBy: string;
   preferencesTitle: string;
   preferencesIntro: string;
+  // The built-in five are always present; the index signature lets customers
+  // translate their own custom categories by id, through the same system.
   categories: {
-    necessary: { label: string; description: string };
-    functional: { label: string; description: string };
-    analytics: { label: string; description: string };
-    performance: { label: string; description: string };
-    advertisement: { label: string; description: string };
-  };
+    necessary: CategoryText;
+    functional: CategoryText;
+    analytics: CategoryText;
+    performance: CategoryText;
+    advertisement: CategoryText;
+  } & Record<string, CategoryText>;
   optOut: {
     title: string;
     description: string;
@@ -50,6 +55,20 @@ export type TranslationMap = {
     reloadButton: string;
     dismissButton: string;
   };
+};
+
+/** A subset of TranslationMap — lets a customer override just a few strings. */
+type DeepPartial<T> = T extends object ? { [K in keyof T]?: DeepPartial<T[K]> } : T;
+export type PartialTranslations = DeepPartial<TranslationMap>;
+
+/** Reading direction of a language. */
+export type TextDirection = "ltr" | "rtl";
+
+/** The active language, its reading direction, and the languages currently loaded. */
+export type LanguageInfo = {
+  language: string;
+  direction: TextDirection;
+  languages: string[];
 };
 
 export type ThemeConfig = {
@@ -73,9 +92,16 @@ export type ScriptEntry = {
 };
 
 export type I18nConfig = {
-  messages?: Record<string, TranslationMap> | undefined;
+  /** Translations per language. Each may be partial — missing text falls back to English. */
+  messages?: Record<string, PartialTranslations> | undefined;
   locale?: string | undefined;
   detectBrowserLanguage?: boolean | undefined;
+  /**
+   * Called when a language is switched to that isn't already in `messages` —
+   * return its translations (fetch them from your own URL, import them, etc.).
+   * Lets you load languages on demand instead of bundling them all upfront.
+   */
+  loadLanguage?: ((tag: string) => PartialTranslations | Promise<PartialTranslations>) | undefined;
 };
 
 export type ConsentConfig = {
@@ -347,6 +373,23 @@ export type ConsentStoreState = ConsentSnapshot & {
 export type ConsentStore = {
   subscribe: (listener: (state: ConsentStoreState) => void) => () => void;
   getState: () => ConsentStoreState;
+  /** Text for the active language (English fills gaps). Swaps on `setLanguage`. */
+  translations: TranslationMap;
+  /** The active language, its reading direction, and the languages loaded. */
+  getLanguageInfo: () => LanguageInfo;
+  /**
+   * Switch language live (no reload) — `subscribe` listeners fire so a custom UI
+   * can re-render. Loads the language via `i18n.loadLanguage` if not bundled.
+   */
+  setLanguage: (tag: string) => Promise<void>;
+  /** Customer-provided text for a category in the active language, if any. */
+  getCategoryText: (id: string) => Partial<CategoryText> | undefined;
+  /**
+   * The category taxonomy in effect (custom list or the built-in five) — its
+   * ids, which are `required`, etc. Use it to render categories in a custom UI
+   * so it follows whatever taxonomy is configured.
+   */
+  categories: ResolvedCategories;
   /**
    * React to consent decisions. `"save"` fires on every save (even an
    * unchanged re-confirm); `"change"` fires only when a category actually
