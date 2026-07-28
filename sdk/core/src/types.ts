@@ -71,6 +71,32 @@ export type LanguageInfo = {
   languages: string[];
 };
 
+/** Returns the visitor's region synchronously, e.g. "DE" or "US-CA" (or undefined). */
+export type RegionDetector = () => string | undefined;
+
+/** Optional geo-detection: pick the banner's regulation from the visitor's region. */
+export type RegionConfig = {
+  /** Return the visitor's region synchronously — e.g. from a hosting header you read. */
+  detect?: RegionDetector | undefined;
+  /** Which regulation each region maps to (you own this). Matched most-specific first: "US-CA" then "US". */
+  map?: Record<string, Regulation> | undefined;
+  /** Honour the browser's GPC "do not sell/share" signal (a CCPA opt-out). Default `true`. */
+  honorGpc?: boolean | undefined;
+  /** Regulation to apply when the region is unknown or detection fails. Default `"GDPR"`. */
+  strictest?: Regulation | undefined;
+};
+
+/** How the active regulation was decided. */
+export type RegionSource = "manual" | "detected" | "gpc" | "strictest";
+
+/** The outcome of geo-detection — the region seen and the regulation chosen. */
+export type RegionDecision = {
+  region: string | undefined;
+  regulation: Regulation;
+  source: RegionSource;
+  confidence: "high" | "low";
+};
+
 export type ThemeConfig = {
   primaryColor?: string | undefined;
   backgroundColor?: string | undefined;
@@ -133,6 +159,8 @@ export type ConsentConfig = {
    * shows the reload notice rather than silently continuing to track.
    */
   customStopHandlers?: StopHandler[] | undefined;
+  /** Detected region (e.g. "US-CA"), recorded on the consent-log payload. */
+  region?: string | undefined;
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
   onConsentUpdate?: ((state: ConsentSnapshot) => void) | undefined;
 };
@@ -198,6 +226,8 @@ export type ConsentPayload = {
   categories: Record<string, boolean>;
   regulation: Regulation;
   domain: string;
+  /** Detected region when geo-detection is on (e.g. "US-CA"); omitted otherwise. */
+  region?: string | undefined;
 };
 
 /**
@@ -236,6 +266,12 @@ type CookieYesConfigCommon = {
    * nested `overrides.regulation`).
    */
   regulation?: Regulation | undefined;
+  /**
+   * Optional geo-detection: choose the regulation from the visitor's region.
+   * Fully optional — omit it and nothing changes. A manual `regulation` (above)
+   * always wins over detection. See {@link RegionConfig}.
+   */
+  region?: RegionConfig | undefined;
   colorScheme?: ColorScheme | undefined;
   theme?: ThemeConfig | undefined;
   i18n?: I18nConfig | undefined;
@@ -390,6 +426,8 @@ export type ConsentStore = {
    * so it follows whatever taxonomy is configured.
    */
   categories: ResolvedCategories;
+  /** How the active regulation was decided (region, source, confidence). */
+  getRegion: () => RegionDecision;
   /**
    * React to consent decisions. `"save"` fires on every save (even an
    * unchanged re-confirm); `"change"` fires only when a category actually

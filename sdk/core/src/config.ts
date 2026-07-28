@@ -9,6 +9,7 @@ import type {
   ConsentSnapshot,
   CookieYesConfig,
   I18nConfig,
+  RegionConfig,
   Regulation,
   ThemeConfig,
 } from "./types.js";
@@ -24,6 +25,7 @@ import type {
 export type _NormalizedConfig = {
   mode: ConsentRuntimeMode;
   regulation?: Regulation | undefined;
+  region?: RegionConfig | undefined;
   colorScheme?: ColorScheme | undefined;
   theme?: ThemeConfig | undefined;
   i18n?: I18nConfig | undefined;
@@ -78,6 +80,7 @@ export function _normalizeConfig(config: CookieYesConfig): _NormalizedConfig {
     normalized.regulation = nestedRegulation;
   }
 
+  if (config.region !== undefined) normalized.region = config.region;
   if (config.colorScheme !== undefined) normalized.colorScheme = config.colorScheme;
   if (config.theme !== undefined) normalized.theme = config.theme;
   if (config.i18n !== undefined) normalized.i18n = config.i18n;

@@ -149,12 +149,14 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       // Best-effort: swallow both sync throws and async rejections so a
       // broken/missing backend never breaks the consent UX.
       try {
-        Promise.resolve(config.backend.persist(buildConsentPayload(state))).catch(() => undefined);
+        Promise.resolve(config.backend.persist(buildConsentPayload(state, config.region))).catch(
+          () => undefined,
+        );
       } catch {
         // sync throw from .persist itself
       }
     } else if (config.apiUrl) {
-      void pushConsent(config.apiUrl, config.apiKey, state);
+      void pushConsent(config.apiUrl, config.apiKey, state, config.region);
     }
 
     // Detect "revoke" — any category that was previously consented but now isn't.

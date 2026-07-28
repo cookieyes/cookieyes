@@ -390,6 +390,40 @@ Notes: the starting language is decided on each page load (we don't store the vi
 persist it yourself if you want it remembered). A missing/failed language logs a developer warning
 and keeps the current one.
 
+## Region-based regulation (geo-detection)
+
+Optionally choose the banner's regulation from where the visitor is. Fully optional —
+omit `region` and nothing changes; a manual `regulation` always wins.
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  region: {
+    // `detect` is YOUR function — return the visitor's region, however you get it.
+    detect: () => window.__MY_REGION__,     // e.g. a value your server injected; "US-CA" | "DE" | undefined
+    map: { "US-CA": "CCPA", DE: "GDPR" },   // you own the region → law mapping
+    honorGpc: true,                          // default: honour the browser "do not sell" signal
+    strictest: "GDPR",                       // used when unsure (default GDPR)
+  },
+});
+```
+
+Rules: a detected region maps to your regulation; **unknown or failed → the strictest**
+(a required banner is never skipped); **GPC** forces at least the CCPA opt-out regardless of
+region; a **manual `regulation` wins** over detection (with a dev warning).
+
+Inspect the decision:
+```tsx
+const { region, regulation, source, confidence } = useRegion();
+// source: "detected" | "gpc" | "strictest" | "manual"
+```
+
+`detect` runs **synchronously**, so you supply a region you already have on the client (e.g. one
+your server injected into the page). Hosting headers like Cloudflare `CF-IPCountry` or Vercel
+`x-vercel-ip-country-region` only exist server-side — reading those for you is the Next.js
+integration (below). For an async IP lookup, fetch it first, then init. In self-hosted mode the
+detected region is included on the consent-log payload (`region`).
+
 ## Accessibility
 
 **Scope of this section:** keyboard operability, focus management, screen-reader

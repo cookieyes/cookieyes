@@ -10,6 +10,7 @@ export { type UseLanguageResult, useLanguage } from "./useLanguage.js";
 export { useOnConsentChange } from "./useOnConsentChange.js";
 export { useOptOutOpen } from "./useOptOutOpen.js";
 export { usePreferencesOpen } from "./usePreferencesOpen.js";
+export { useRegion } from "./useRegion.js";
 export { useRegulation } from "./useRegulation.js";
 export { type UseReloadNoticeResult, useReloadNotice } from "./useReloadNotice.js";
 export { useTranslations } from "./useTranslations.js";

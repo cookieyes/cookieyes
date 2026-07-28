@@ -1,10 +1,11 @@
+import { resolveCategories } from "./categories.js";
 import { _normalizeConfig } from "./config.js";
 import { _warnOfflineModeDeprecated } from "./deprecations.js";
-import { resolveCategories } from "./categories.js";
 import { type ConsentEmitter, createConsentEmitter } from "./events.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
+import { resolveRegion } from "./region.js";
 import type {
   ActiveUI,
   ConsentCategory,
@@ -14,6 +15,7 @@ import type {
   ConsentStore,
   ConsentStoreState,
   CookieYesConfig,
+  RegionDecision,
 } from "./types.js";
 
 function splitCategories(categories: Record<string, boolean>): ConsentChangePayload {
@@ -44,13 +46,25 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   // onConsentUpdate, which can't fire until the visitor acts (post-init).
   let emitter: ConsentEmitter;
 
+  // Resolve which regulation applies (geo-detection if configured, else the
+  // manual/default). Drives the banner and is recorded on the consent payload.
+  const regionDecision: RegionDecision = options.region
+    ? resolveRegion(options.region, options.regulation)
+    : {
+        region: undefined,
+        regulation: options.regulation ?? "DEFAULT",
+        source: "manual",
+        confidence: "high",
+      };
+
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
     if (options.backend) cfg.backend = options.backend;
     else if (options.apiUrl) cfg.apiUrl = options.apiUrl;
   }
   if (options.apiKey) cfg.apiKey = options.apiKey;
-  if (options.regulation) cfg.regulation = options.regulation;
+  cfg.regulation = regionDecision.regulation;
+  if (regionDecision.region) cfg.region = regionDecision.region;
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
@@ -134,6 +148,7 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
     setLanguage: language.setLanguage,
     getCategoryText: language.getCategoryText,
     categories: resolved,
+    getRegion: () => regionDecision,
   };
 
   if (options.networkBlocker && options.networkBlocker.rules.length > 0) {
