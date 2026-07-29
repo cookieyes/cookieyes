@@ -160,6 +160,53 @@ import { CookieBanner, CookiePreferences, CookieOptOut, RecallButton } from "@co
 </>
 ```
 
+## Region-based regulation (server-detected)
+
+Pick the banner's regulation from the visitor's region. On the server you can read the
+location header your host adds (Cloudflare/Vercel) with `regionFromHeaders`, then hand the
+value to your client `initCookieYes`.
+
+```tsx
+// app/layout.tsx — a Server Component
+import { headers } from "next/headers";
+import { regionFromHeaders } from "@cookieyes/nextjs";
+import { CookieYesRoot } from "./cookieyes-root"; // your "use client" module
+
+export default async function RootLayout({ children }) {
+  const region = regionFromHeaders(await headers()); // "US-CA" | "DE" | undefined
+  return (
+    <html>
+      <body>
+        <CookieYesRoot region={region} />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx
+// cookieyes-root.tsx — "use client"
+"use client";
+import { initCookieYes, CookieBanner /* … */ } from "@cookieyes/nextjs";
+
+export function CookieYesRoot({ region }: { region?: string }) {
+  initCookieYes({
+    mode: "cookie-only",
+    region: { detect: () => region, map: { "US-CA": "CCPA", DE: "GDPR" } },
+  });
+  return <CookieBanner />;
+}
+```
+
+- **What it reads:** by default the well-known Vercel (`x-vercel-ip-country` + `-region`) and
+  Cloudflare (`cf-ipcountry`) headers. Pass `regionFromHeaders(h, { header: "x-your-header" })`
+  to read a custom one.
+- `headers()` is `await`ed on Next.js 15+ and synchronous on 14 — use whichever your version needs.
+- **First paint:** the visitor briefly sees the safe **strict** banner, which then settles to the
+  detected one once the page hydrates. It never shows a weaker banner than required. (True
+  zero-flicker would need per-request server rendering, which the shared runtime doesn't do today.)
+
 ## API
 
 This package re-exports the entire `@cookieyes/react` surface — the setup function

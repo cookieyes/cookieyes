@@ -1,5 +1,39 @@
 import type { RegionConfig, RegionDecision, Regulation } from "./types.js";
 
+/** Anything with a header getter — a `Headers` object, Next's `headers()`, etc. */
+export type HeaderSource = { get(name: string): string | null | undefined };
+
+// Location headers hosting providers add automatically, tried in order.
+const GEO_HEADERS: ReadonlyArray<{ country: string; region?: string }> = [
+  // Vercel — country + region give e.g. "US-CA".
+  { country: "x-vercel-ip-country", region: "x-vercel-ip-country-region" },
+  // Cloudflare — country only by default (a Worker/rule can add a region header).
+  { country: "cf-ipcountry" },
+];
+
+/**
+ * Read the visitor's region from request headers on the server (Next.js, or any
+ * framework). Pass the request's headers and get back a region like "US-CA" or
+ * "DE" (or undefined). By default it reads the well-known Vercel/Cloudflare
+ * headers; pass `{ header }` to read your own instead. Hand the result to
+ * `region.detect` in your client config.
+ */
+export function regionFromHeaders(
+  headers: HeaderSource,
+  options?: { header?: string },
+): string | undefined {
+  if (options?.header) {
+    return headers.get(options.header) || undefined;
+  }
+  for (const { country, region } of GEO_HEADERS) {
+    const countryCode = headers.get(country);
+    if (!countryCode) continue;
+    const regionCode = region ? headers.get(region) : undefined;
+    return regionCode ? `${countryCode}-${regionCode}` : countryCode;
+  }
+  return undefined;
+}
+
 // Strictness order: GDPR (opt-in) > CCPA (opt-out) > DEFAULT (none).
 const RANK: Record<string, number> = { DEFAULT: 0, CCPA: 1, GDPR: 2 };
 function stricter(a: Regulation, b: Regulation): Regulation {

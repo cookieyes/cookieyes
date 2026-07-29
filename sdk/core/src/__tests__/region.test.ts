@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveRegion } from "../region.js";
+import { regionFromHeaders, resolveRegion } from "../region.js";
+
+// Minimal Headers-like source for the tests.
+function h(values: Record<string, string>) {
+  return { get: (name: string) => values[name] ?? null };
+}
 
 const map = { "US-CA": "CCPA", US: "DEFAULT", DE: "GDPR" } as const;
 
@@ -61,5 +66,29 @@ describe("resolveRegion", () => {
         "DEFAULT",
       );
     });
+  });
+});
+
+describe("regionFromHeaders", () => {
+  it("combines Vercel country + region into US-CA", () => {
+    expect(
+      regionFromHeaders(h({ "x-vercel-ip-country": "US", "x-vercel-ip-country-region": "CA" })),
+    ).toBe("US-CA");
+  });
+
+  it("returns just the country when no region header is present", () => {
+    expect(regionFromHeaders(h({ "x-vercel-ip-country": "US" }))).toBe("US");
+  });
+
+  it("reads Cloudflare's country header", () => {
+    expect(regionFromHeaders(h({ "cf-ipcountry": "DE" }))).toBe("DE");
+  });
+
+  it("reads a custom header when asked", () => {
+    expect(regionFromHeaders(h({ "x-geo": "US-NY" }), { header: "x-geo" })).toBe("US-NY");
+  });
+
+  it("returns undefined when nothing matches", () => {
+    expect(regionFromHeaders(h({}))).toBeUndefined();
   });
 });
