@@ -162,9 +162,10 @@ import { CookieBanner, CookiePreferences, CookieOptOut, RecallButton } from "@co
 
 ## Region-based regulation (server-detected)
 
-Pick the banner's regulation from the visitor's region. On the server you can read the
-location header your host adds (Cloudflare/Vercel) with `regionFromHeaders`, then hand the
-value to your client `initCookieYes`.
+Pick the banner's regulation from the visitor's region. On the server you read the location
+header your host adds (Cloudflare/Vercel) with `regionFromHeaders`, pass it to your client
+component, and wrap the banner in `<CookieYesProvider>` — so the **correct banner is
+server-rendered for each visitor**, on the first paint, with no post-hydration flicker.
 
 ```tsx
 // app/layout.tsx — a Server Component
@@ -188,14 +189,19 @@ export default async function RootLayout({ children }) {
 ```tsx
 // cookieyes-root.tsx — "use client"
 "use client";
-import { initCookieYes, CookieBanner /* … */ } from "@cookieyes/nextjs";
+import { initCookieYes, CookieYesProvider, CookieBanner, CookieOptOut } from "@cookieyes/nextjs";
+
+const map = { "US-CA": "CCPA", DE: "GDPR" } as const;
 
 export function CookieYesRoot({ region }: { region?: string }) {
-  initCookieYes({
-    mode: "cookie-only",
-    region: { detect: () => region, map: { "US-CA": "CCPA", DE: "GDPR" } },
-  });
-  return <CookieBanner />;
+  const regionConfig = { detect: () => region, map };
+  initCookieYes({ mode: "cookie-only", region: regionConfig });
+  return (
+    <CookieYesProvider region={regionConfig}>
+      <CookieBanner />
+      <CookieOptOut /> {/* render this too if any region maps to CCPA */}
+    </CookieYesProvider>
+  );
 }
 ```
 
@@ -203,9 +209,16 @@ export function CookieYesRoot({ region }: { region?: string }) {
   Cloudflare (`cf-ipcountry`) headers. Pass `regionFromHeaders(h, { header: "x-your-header" })`
   to read a custom one.
 - `headers()` is `await`ed on Next.js 15+ and synchronous on 14 — use whichever your version needs.
-- **First paint:** the visitor briefly sees the safe **strict** banner, which then settles to the
-  detected one once the page hydrates. It never shows a weaker banner than required. (True
-  zero-flicker would need per-request server rendering, which the shared runtime doesn't do today.)
+- **First paint:** with the provider, the server resolves the region per request and renders the
+  right banner directly into the HTML — a US visitor gets CCPA, an EU visitor gets GDPR, on the
+  first byte. The provider resolves the same value on the client, so there's no hydration mismatch.
+  (Without the provider, the banner still works but is corrected after hydration rather than
+  server-rendered per request.)
+- **GPC:** on a CCPA banner, the browser's "do not sell" signal (`navigator.globalPrivacyControl`)
+  starts the visitor **opted out** — non-required categories denied, so gated scripts/iframes never
+  load — until they choose otherwise. It's read in the browser (the server can't see it), so it
+  applies right after hydration; it never changes *which* banner shows. Set `region.honorGpc: false`
+  to ignore it.
 
 ## API
 

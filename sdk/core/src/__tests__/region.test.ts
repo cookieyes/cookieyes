@@ -48,24 +48,12 @@ describe("resolveRegion", () => {
     expect(warn).toHaveBeenCalled(); // detection + manual set → conflict warning
   });
 
-  describe("GPC", () => {
-    it("upgrades DEFAULT to CCPA when GPC is present", () => {
-      vi.stubGlobal("navigator", { globalPrivacyControl: true });
-      const d = resolveRegion({ detect: () => "US", map });
-      expect(d).toMatchObject({ regulation: "CCPA", source: "gpc" });
-    });
-
-    it("leaves GDPR as-is (already stricter than CCPA)", () => {
-      vi.stubGlobal("navigator", { globalPrivacyControl: true });
-      expect(resolveRegion({ detect: () => "DE", map }).regulation).toBe("GDPR");
-    });
-
-    it("is ignored when honorGpc is false", () => {
-      vi.stubGlobal("navigator", { globalPrivacyControl: true });
-      expect(resolveRegion({ detect: () => "US", map, honorGpc: false }).regulation).toBe(
-        "DEFAULT",
-      );
-    });
+  it("ignores GPC — the regulation is geo only", () => {
+    // GPC never changes which banner shows; it only opts a CCPA visitor out
+    // (handled by the runtime/manager, not here). A US visitor stays DEFAULT.
+    vi.stubGlobal("navigator", { globalPrivacyControl: true });
+    expect(resolveRegion({ detect: () => "US", map }).regulation).toBe("DEFAULT");
+    expect(resolveRegion({ detect: () => "DE", map }).source).toBe("detected");
   });
 });
 

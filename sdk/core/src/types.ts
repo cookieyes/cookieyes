@@ -87,7 +87,7 @@ export type RegionConfig = {
 };
 
 /** How the active regulation was decided. */
-export type RegionSource = "manual" | "detected" | "gpc" | "strictest";
+export type RegionSource = "manual" | "detected" | "strictest";
 
 /** The outcome of geo-detection — the region seen and the regulation chosen. */
 export type RegionDecision = {
@@ -161,6 +161,12 @@ export type ConsentConfig = {
   customStopHandlers?: StopHandler[] | undefined;
   /** Detected region (e.g. "US-CA"), recorded on the consent-log payload. */
   region?: string | undefined;
+  /**
+   * Internal — set by the runtime when a CCPA visitor arrives with the browser's
+   * GPC "do not sell" signal on. Starts them opted out (non-required categories
+   * off) until they explicitly choose otherwise, so nothing is shared first.
+   */
+  gpcOptOut?: boolean | undefined;
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
   onConsentUpdate?: ((state: ConsentSnapshot) => void) | undefined;
 };

@@ -60,6 +60,11 @@ export {
   resolveRegion,
   resolveTranslations,
 } from "@cookieyes/core";
+// Provider — supplies the per-request regulation so SSR banners are correct
+export {
+  CookieYesProvider,
+  type CookieYesProviderProps,
+} from "./context/CookieYesProvider.js";
 export { GatedFrame } from "./controls/GatedFrame.js";
 export { GatedScript } from "./controls/GatedScript.js";
 // Controls — standalone helpers

@@ -408,15 +408,24 @@ initCookieYes({
 });
 ```
 
-Rules: a detected region maps to your regulation; **unknown or failed → the strictest**
-(a required banner is never skipped); **GPC** forces at least the CCPA opt-out regardless of
-region; a **manual `regulation` wins** over detection (with a dev warning).
+Rules: which banner shows is **geo only** — a detected region maps to your regulation;
+**unknown or failed → the strictest** (a required banner is never skipped); a **manual
+`regulation` wins** over detection (with a dev warning).
+
+**GPC** (the browser's "do not sell" signal) never changes *which* banner shows. On a CCPA
+banner it starts the visitor **opted out** — non-required categories denied, so gated
+scripts/iframes don't run — until they choose otherwise. It's read in the browser, so it applies
+right after hydration. Set `honorGpc: false` to ignore it.
 
 Inspect the decision:
 ```tsx
 const { region, regulation, source, confidence } = useRegion();
-// source: "detected" | "gpc" | "strictest" | "manual"
+// source: "detected" | "strictest" | "manual"
 ```
+
+For **server-rendered** correctness (the right banner in the first HTML per visitor, e.g. Next.js
+App Router), wrap your consent UI in `<CookieYesProvider region={regionConfig}>` — see the
+[Next.js README](../nextjs/README.md#region-based-regulation-server-detected).
 
 `detect` runs **synchronously**, so you supply a region you already have on the client (e.g. one
 your server injected into the page). Hosting headers like Cloudflare `CF-IPCountry` or Vercel

@@ -34,12 +34,6 @@ export function regionFromHeaders(
   return undefined;
 }
 
-// Strictness order: GDPR (opt-in) > CCPA (opt-out) > DEFAULT (none).
-const RANK: Record<string, number> = { DEFAULT: 0, CCPA: 1, GDPR: 2 };
-function stricter(a: Regulation, b: Regulation): Regulation {
-  return (RANK[a] ?? 0) >= (RANK[b] ?? 0) ? a : b;
-}
-
 /** True when the browser is sending the GPC "do not sell/share" signal. */
 export function readGpc(): boolean {
   return (
@@ -58,15 +52,19 @@ function mapRegion(
 }
 
 /**
- * Decide which regulation applies. A manual regulation always wins; otherwise
- * the detected region is mapped to a regulation, GPC forces at least the CCPA
- * opt-out, and anything unknown falls back to the strictest regulation — never
- * to the lightest, so a required banner is never skipped.
+ * Decide which regulation applies from the visitor's region alone. A manual
+ * regulation always wins; otherwise the detected region is mapped to a
+ * regulation, and anything unknown falls back to the strictest — never to the
+ * lightest, so a required banner is never skipped.
+ *
+ * GPC is deliberately *not* considered here: it never changes which banner
+ * shows (that is geo only), it only opts a CCPA visitor out client-side. Server
+ * and client therefore resolve the same regulation, with no hydration mismatch.
  */
 export function resolveRegion(config: RegionConfig, manual?: Regulation): RegionDecision {
   const strictest = config.strictest ?? "GDPR";
 
-  // 1. A manual regulation always wins (Story 8).
+  // A manual regulation always wins.
   if (manual) {
     if (config.detect && typeof console !== "undefined") {
       // eslint-disable-next-line no-console
@@ -78,21 +76,12 @@ export function resolveRegion(config: RegionConfig, manual?: Regulation): Region
     return { region: undefined, regulation: manual, source: "manual", confidence: "high" };
   }
 
-  // 2. Detect the region and map it. Unknown/unmapped → strictest (Story 3).
+  // Detect the region and map it. Unknown/unmapped → strictest.
   const region = config.detect?.();
   const mapped = region ? mapRegion(config.map, region) : undefined;
-  let regulation: Regulation = mapped ?? strictest;
-  let source: RegionDecision["source"] = mapped ? "detected" : "strictest";
+  const regulation: Regulation = mapped ?? strictest;
+  const source: RegionDecision["source"] = mapped ? "detected" : "strictest";
   const confidence: RegionDecision["confidence"] = mapped ? "high" : "low";
-
-  // 3. GPC forces at least the CCPA opt-out, whatever the region says (Story 5).
-  if ((config.honorGpc ?? true) && readGpc()) {
-    const upgraded = stricter(regulation, "CCPA");
-    if (upgraded !== regulation || regulation === "CCPA") {
-      regulation = upgraded;
-      source = "gpc";
-    }
-  }
 
   return { region, regulation, source, confidence };
 }

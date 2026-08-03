@@ -27,6 +27,7 @@ import {
   type Regulation,
   type ReloadNoticeState,
   type ResolvedCategories,
+  readGpc,
   resolveCategories,
   resolveRegion,
   type ScriptEntry,
@@ -44,6 +45,11 @@ type DeprecatedOfflineMode = "offline";
 
 export type RuntimeMode = "cookie-only" | "self-hosted" | DeprecatedOfflineMode;
 export type ColorSchemePref = "light" | "dark" | "system";
+
+/** True when a CCPA visitor's browser sends GPC and we're set to honour it. */
+function wantsGpcOptOut(regulation: Regulation, region: RegionConfig | undefined): boolean {
+  return regulation === "CCPA" && (region?.honorGpc ?? true) && readGpc();
+}
 
 type RuntimeConfig = {
   mode?: RuntimeMode;
@@ -280,6 +286,9 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   }
   coreCfg.regulation = regionDecision.regulation;
   if (regionDecision.region) coreCfg.region = regionDecision.region;
+  // GPC "do not sell" on a CCPA banner → start opted out (client only; GPC never
+  // changes which banner shows). See core's manager for how the flag is applied.
+  if (wantsGpcOptOut(regionDecision.regulation, cfg.region)) coreCfg.gpcOptOut = true;
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
