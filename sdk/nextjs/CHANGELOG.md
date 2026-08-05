@@ -1,5 +1,44 @@
 # @cookieyes/nextjs
 
+## 0.4.0
+
+### Minor Changes
+
+- 0989acc: Add a consent event API for reacting to consent changes.
+
+  - Core: `consentStore.on("save" | "change", listener, { category? })` returning an unsubscribe function.
+  - React / Next.js: the `useOnConsentChange(type, listener, options?)` hook (cleans up on unmount, no-op during SSR).
+
+  `change` fires only when a category actually differs; `save` fires on every save. Listeners fire once immediately with the current state (`isInitial: true`), and one throwing listener never blocks the others. Existing `subscribe`/`subscribeToConsentChanges`/`onConsentUpdate` continue to work unchanged.
+
+- 1a7ee5d: Translations for custom UIs, with live language switching.
+
+  - `useTranslations()` now re-renders when the language changes (previously fixed at setup).
+  - New `useLanguage()` hook: read the active language, its reading direction (`ltr`/`rtl`), the loaded languages, and switch language live with `setLanguage(tag)` — no page reload.
+  - Framework-less: `consentStore` now carries `translations`, `getLanguageInfo()`, `setLanguage()`, `getCategoryText()`, and `categories` (the resolved taxonomy in effect), and `subscribe` fires on a language switch — so a vanilla custom UI can switch language and follow whatever taxonomy is configured.
+  - Languages in `i18n.messages` can be **partial**; any missing text falls back to English.
+  - Custom categories are translatable through the same `i18n.messages`, keyed by category id; a translation overrides the category's config label per language.
+  - New `i18n.loadLanguage(tag)` to load a language on demand (import it or fetch from your own URL) instead of bundling every language upfront.
+  - Core helpers `mergeTranslations`, `getTextDirection`, `pickLanguage` are exported for non-React use.
+
+  The starting language is resolved per page load (explicit `locale` → browser → English); the visitor's choice isn't persisted by the SDK.
+
+- 498b067: Make the components easy to restyle.
+
+  - Every component labels its pieces with `data-cy-part` (and toggles with `data-cy-state="on" | "off"`) for precise CSS targeting. The names are also exported as the typed `CY_PART` / `CY_STATE` constants.
+  - The styled presets (`CookieBanner`, `CookiePreferences`, `CookieOptOut`) now accept `className` / `style`, merged onto their visible card on top of the defaults.
+  - Control primitives accept `asChild` — render your own element and the SDK wires its behaviour (click action, `data-cy-part`, ref) onto it, composing with your own handlers/classes.
+
+  Purely additive — existing setups render identically.
+
+### Patch Changes
+
+- Updated dependencies [0989acc]
+- Updated dependencies [1a7ee5d]
+- Updated dependencies [498b067]
+  - @cookieyes/core@0.3.0
+  - @cookieyes/react@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
