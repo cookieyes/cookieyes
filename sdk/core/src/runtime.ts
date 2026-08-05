@@ -1,6 +1,6 @@
+import { resolveCategories } from "./categories.js";
 import { _normalizeConfig } from "./config.js";
 import { _warnOfflineModeDeprecated } from "./deprecations.js";
-import { resolveCategories } from "./categories.js";
 import { type ConsentEmitter, createConsentEmitter } from "./events.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
