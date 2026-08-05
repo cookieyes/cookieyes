@@ -48,6 +48,7 @@ vi.mock("../utils/detect-layout.js", () => ({
   reactProjectPaths: h.reactProjectPaths,
 }));
 
+import { note } from "@clack/prompts";
 import { runInit } from "../commands/init.js";
 
 const NEXT_PATHS = {
@@ -102,6 +103,11 @@ describe("runInit — Next.js (cookie-only, GDPR)", () => {
     // App-router layout is generated when one does not already exist.
     expect(writes.some((w) => w.includes("RootLayout"))).toBe(true);
     expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/nextjs", "npm", expect.any(String));
+    // Every completed run ends with a star-repo nudge before the final outro.
+    expect(note).toHaveBeenCalledWith(
+      expect.stringContaining("github.com/cookieyes/cookieyes"),
+      expect.any(String),
+    );
   });
 });
 
@@ -127,6 +133,11 @@ describe("runInit — React (self-hosted, CCPA, locales, skip install)", () => {
     expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(true);
     // Install was declined.
     expect(h.installPackage).not.toHaveBeenCalled();
+    // The star-repo nudge is emitted even when install is skipped (unconditional).
+    expect(note).toHaveBeenCalledWith(
+      expect.stringContaining("github.com/cookieyes/cookieyes"),
+      expect.any(String),
+    );
   });
 });
 

@@ -205,6 +205,20 @@ const prefsOpen = usePreferencesOpen();       // boolean
 const optOutOpen = useOptOutOpen();           // boolean
 ```
 
+**React to consent changes** — run your own code when a visitor grants or
+withdraws consent (load a script, sync a pixel, log the decision):
+
+```tsx
+// "change" fires only when a category actually differs; "save" fires on every
+// save. Pass { category } to scope it. Cleans up on unmount; no-op during SSR.
+useOnConsentChange("change", ({ changedCategories }) => {
+  if (changedCategories.includes("analytics")) loadAnalytics();
+});
+```
+
+The listener also fires once on mount with the current state (`isInitial: true`),
+so late-mounting code still learns what the visitor already chose.
+
 #### Low-level hooks
 
 You shouldn't need these for a typical integration — each exists for a
@@ -264,6 +278,117 @@ initCookieYes({
   },
 });
 ```
+
+### Custom styling with CSS
+
+For anything beyond theme tokens, write your own CSS. Three things make this easy:
+
+**1. Clean, low-specificity hooks.** Our styles use single-class selectors (specificity `0,1,0`),
+so a `data-cy-part` selector of your own matches that specificity and wins by load order — no
+`!important` gymnastics. Import your overrides after `@cookieyes/react/styles.css`.
+
+**2. Target any part.** Every component labels its pieces with `data-cy-part`, and toggles also
+carry `data-cy-state="on" | "off"`:
+
+```css
+[data-cy-part="accept-all"] { background: #16a34a; }
+[data-cy-part="toggle"][data-cy-state="on"] .cy-toggle-track { background: #16a34a; }
+```
+
+The part names are a stable contract. The full set (also exported as the typed `CY_PART` / `CY_STATE`
+constants):
+
+| Component | `data-cy-part` |
+|---|---|
+| Banner | `banner`, `title`, `description`, `actions`, `accept-all`, `reject-all`, `customise`, `do-not-sell`, `close`, `branding` |
+| Preferences | `overlay`, `dialog`, `title`, `close`, `intro`, `category`, `category-label`, `category-description`, `toggle`, `accept-all`, `reject-all`, `save`, `branding` |
+| Opt-out | `optout`, `title`, `message`, `confirm`, `close` |
+| Recall button | `recall` |
+| Reload notice | `reload-notice`, `reload-message`, `reload-dismiss` |
+
+**3. Restyle a whole preset's box.** Each preset takes `className` / `style`, merged onto its
+visible card on top of our defaults:
+
+```tsx
+<CookieBanner className="my-banner" style={{ maxWidth: 480 }} />
+```
+
+Want to start from our exact look and edit it? Copy `@cookieyes/react/styles.css` (the same file you
+import) into your project as a starting point instead of building from scratch.
+
+**4. Swap in your own element.** Any control primitive takes `asChild` — render *your* element and
+we wire our behaviour (the click action, `data-cy-part`, ref) onto it instead of rendering our own
+button. Your handlers, `className`, and `style` are preserved (event handlers run alongside ours):
+
+```tsx
+<Banner.AcceptAll asChild>
+  <MyButton className="brand-btn" onClick={track}>Accept all</MyButton>
+</Banner.AcceptAll>
+```
+
+Available on the button controls of `Banner`, `Preferences`, and `OptOut`.
+
+## Translations (i18n)
+
+Give the SDK your languages via `i18n.messages`. Each language can be **partial** —
+anything you leave out falls back to English:
+
+```tsx
+import { fr } from "@cookieyes/translations/fr";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: "fr",                       // starting language (else the browser's, else English)
+    messages: { fr, de: { acceptAll: "Alle akzeptieren" } }, // full or partial
+  },
+});
+```
+
+Read the text with `useTranslations()` — it re-renders when the language changes:
+
+```tsx
+const t = useTranslations();
+return <h2>{t.bannerTitle}</h2>;
+```
+
+Switch language live (no reload) and read language info with `useLanguage()`:
+
+```tsx
+const { language, direction, languages, setLanguage } = useLanguage();
+// language: "fr" · direction: "ltr" | "rtl" · languages: what's loaded
+<button onClick={() => setLanguage("fr")}>Français</button>
+```
+
+`direction` is handy for laying out a right-to-left language (Arabic, Hebrew) in a custom UI.
+
+**Loading a language on demand** — instead of bundling every language, hand us a loader and
+we'll call it the first time that language is switched to:
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    loadLanguage: (tag) => import(`@cookieyes/translations/${tag}`).then((m) => m[tag]),
+    // or fetch from your own URL: fetch(`/i18n/${tag}.json`).then((r) => r.json())
+  },
+});
+```
+
+**Custom categories translate too** — through the same `messages`, keyed by the category's `id`.
+The category's `label`/`description` in config is the default; a translation overrides it per language:
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  categories: [{ id: "insights", label: "Shopping Insights" }], // default text
+  i18n: { messages: { fr: { categories: { insights: { label: "Aperçus" } } } } },
+});
+```
+
+Notes: the starting language is decided on each page load (we don't store the visitor's choice —
+persist it yourself if you want it remembered). A missing/failed language logs a developer warning
+and keeps the current one.
 
 ## Accessibility
 

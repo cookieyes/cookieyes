@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConsentCategory, TranslationMap } from "@cookieyes/core";
+import type { ConsentCategory } from "@cookieyes/core";
 import {
   type ComponentPropsWithoutRef,
   createContext,
@@ -17,27 +17,19 @@ import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { _tryGetCookieYes } from "../runtime.js";
+import { CY_PART } from "../styles/parts.js";
+import { Slot } from "./Slot.js";
 import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
+
+/** Button props plus `asChild` — render your own element and we wire behaviour onto it. */
+type ActionProps = ButtonProps & { asChild?: boolean };
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type ParagraphProps = ComponentPropsWithoutRef<"p">;
 type HeadingProps = ComponentPropsWithoutRef<"h2">;
-
-// Only the five built-in ids have translation entries. Narrow to that set so
-// we can safely index the translation map; custom ids fall back to the def.
-type BuiltInCategory = keyof TranslationMap["categories"];
-const BUILT_IN: readonly BuiltInCategory[] = [
-  "necessary",
-  "functional",
-  "analytics",
-  "performance",
-  "advertisement",
-];
-function isBuiltIn(id: ConsentCategory): id is BuiltInCategory {
-  return (BUILT_IN as readonly string[]).includes(id);
-}
 
 type PreferencesContextValue = {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -81,6 +73,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
           aria-modal="true"
           aria-label="Cookie preferences"
           tabIndex={-1}
+          data-cy-part={CY_PART.dialog.overlay}
           {...props}
         >
           {children}
@@ -96,7 +89,7 @@ const Title = forwardRef<HTMLHeadingElement, HeadingProps>(function PreferencesT
 ) {
   const t = useTranslations();
   return (
-    <h2 ref={ref} {...props}>
+    <h2 ref={ref} data-cy-part={CY_PART.dialog.title} {...props}>
       {children ?? t.preferencesTitle}
     </h2>
   );
@@ -108,7 +101,7 @@ const Intro = forwardRef<HTMLParagraphElement, ParagraphProps>(function Preferen
 ) {
   const t = useTranslations();
   return (
-    <p ref={ref} {...props}>
+    <p ref={ref} data-cy-part={CY_PART.dialog.intro} {...props}>
       {children ?? t.preferencesIntro}
     </p>
   );
@@ -124,19 +117,26 @@ const Description = forwardRef<HTMLParagraphElement, ParagraphProps>(
   },
 );
 
-const Close = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesClose(
-  { children, onClick, "aria-label": ariaLabel, ...rest },
+const Close = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesClose(
+  { children, onClick, "aria-label": ariaLabel, asChild, ...rest },
   ref,
 ) {
   const { hidePreferences } = useConsentActions();
+  const behavior = {
+    "aria-label": ariaLabel ?? "Close preferences",
+    "data-cy-part": CY_PART.dialog.close,
+    onClick: chain(onClick, hidePreferences),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button
-      ref={ref}
-      type="button"
-      aria-label={ariaLabel ?? "Close preferences"}
-      onClick={chain(onClick, hidePreferences)}
-      {...rest}
-    >
+    <button ref={ref} type="button" {...behavior}>
       {children ?? (
         <svg
           width="12"
@@ -204,14 +204,17 @@ const Category = forwardRef<
   // A required category is always on and can't be toggled.
   const checked = required ? true : snapshot.categories[category] === true;
 
-  // Label/description precedence: explicit def value → built-in translation →
-  // the id itself (a sensible last resort for a custom category with no label).
-  const builtIn = isBuiltIn(category) ? t.categories[category] : undefined;
-  const label = def?.label ?? builtIn?.label ?? category;
-  const description = def?.description ?? builtIn?.description ?? "";
+  // Text precedence: the active language's translation (if the customer gave
+  // one) → the category's config label → the built-in English default → the id.
+  // `getCategoryText` is the customer's own translation, kept apart from the
+  // English defaults so it can win over the config label without English masking it.
+  const translated = _tryGetCookieYes()?.getCategoryText(category);
+  const fallback = t.categories[category];
+  const label = translated?.label ?? def?.label ?? fallback?.label ?? category;
+  const description = translated?.description ?? def?.description ?? fallback?.description ?? "";
 
   return (
-    <div ref={ref} {...props}>
+    <div ref={ref} data-cy-part={CY_PART.dialog.category} {...props}>
       {children({
         category,
         label,
@@ -227,40 +230,76 @@ const Category = forwardRef<
   );
 });
 
-const AcceptAll = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesAcceptAll(
-  { children, onClick, ...rest },
+const AcceptAll = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesAcceptAll(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { acceptAll } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.dialog.acceptAll,
+    onClick: chain(onClick, acceptAll),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, acceptAll)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.acceptAll}
     </button>
   );
 });
 
-const RejectAll = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesRejectAll(
-  { children, onClick, ...rest },
+const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesRejectAll(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { rejectAll } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.dialog.rejectAll,
+    onClick: chain(onClick, rejectAll),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, rejectAll)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.rejectAll}
     </button>
   );
 });
 
-const Save = forwardRef<HTMLButtonElement, ButtonProps>(function PreferencesSave(
-  { children, onClick, ...rest },
+const Save = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesSave(
+  { children, onClick, asChild, ...rest },
   ref,
 ) {
   const { save } = useConsentActions();
   const t = useTranslations();
+  const behavior = {
+    "data-cy-part": CY_PART.dialog.save,
+    onClick: chain(onClick, save),
+    ...rest,
+  };
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
   return (
-    <button ref={ref} type="button" onClick={chain(onClick, save)} {...rest}>
+    <button ref={ref} type="button" {...behavior}>
       {children ?? t.savePreferences}
     </button>
   );
@@ -278,6 +317,7 @@ const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function Preferences
       target="_blank"
       rel="noopener noreferrer"
       aria-label={t.poweredBy}
+      data-cy-part={CY_PART.dialog.branding}
       {...props}
     >
       {children ?? (

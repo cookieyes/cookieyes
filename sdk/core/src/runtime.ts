@@ -1,5 +1,8 @@
+import { resolveCategories } from "./categories.js";
 import { _normalizeConfig } from "./config.js";
 import { _warnOfflineModeDeprecated } from "./deprecations.js";
+import { type ConsentEmitter, createConsentEmitter } from "./events.js";
+import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
 import type {
@@ -37,6 +40,9 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   const options = _normalizeConfig(config);
   const changeListeners = new Set<(payload: ConsentChangePayload) => void>();
   const userOnConsentUpdate = options.onConsentUpdate;
+  // Assigned right after the manager exists; only ever read from within
+  // onConsentUpdate, which can't fire until the visitor acts (post-init).
+  let emitter: ConsentEmitter;
 
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
@@ -55,11 +61,26 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
 
   cfg.onConsentUpdate = (snap) => {
     userOnConsentUpdate?.(snap);
+    emitter.push(snap.categories);
     const payload = splitCategories(snap.categories);
     for (const fn of changeListeners) fn(payload);
   };
 
   const manager = createConsentManager(cfg);
+  emitter = createConsentEmitter(() => manager.committedCategories);
+  // Same resolution the manager uses internally — exposed so a custom UI can
+  // iterate the taxonomy actually in effect (custom list or built-in five).
+  const resolved = resolveCategories(options.categories);
+
+  // One listener set drives `consentStore.subscribe`, fed by both consent
+  // changes and language switches, so a custom UI re-renders on either.
+  const stateListeners = new Set<(state: ConsentStoreState) => void>();
+  function notifyState(): void {
+    const state = buildState();
+    for (const fn of stateListeners) fn(state);
+  }
+  manager.subscribe(notifyState);
+  const language = createLanguageController(options.i18n, notifyState);
 
   function activeUI(): ActiveUI {
     if (manager.isPreferencesOpen) return "dialog";
@@ -98,8 +119,21 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   }
 
   const consentStore: ConsentStore = {
-    subscribe: (listener) => manager.subscribe(() => listener(buildState())),
+    subscribe: (listener) => {
+      stateListeners.add(listener);
+      return () => {
+        stateListeners.delete(listener);
+      };
+    },
     getState: buildState,
+    on: (type, listener, opts) => emitter.on(type, listener, opts),
+    get translations() {
+      return language.getTranslations();
+    },
+    getLanguageInfo: language.getLanguageInfo,
+    setLanguage: language.setLanguage,
+    getCategoryText: language.getCategoryText,
+    categories: resolved,
   };
 
   if (options.networkBlocker && options.networkBlocker.rules.length > 0) {

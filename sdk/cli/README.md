@@ -115,6 +115,10 @@ $ npx @cookieyes/cli init
 ◒  Installing @cookieyes/nextjs...
 ✔  Installed @cookieyes/nextjs
 
+●  Support the project
+│  ★ Enjoying CookieYes? A GitHub star helps a lot:
+│  https://github.com/cookieyes/cookieyes
+
 ✓ Done! Docs: https://github.com/cookieyes/cookieyes#readme
 ```
 

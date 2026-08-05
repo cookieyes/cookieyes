@@ -1,11 +1,23 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { OptOut } from "../primitives/OptOut.js";
 
-export function CookieOptOut() {
+/** Styling passthrough — merged onto the visible opt-out card, on top of our defaults. */
+export type CookieOptOutProps = {
+  className?: string;
+  style?: CSSProperties;
+};
+
+export function CookieOptOut({ className, style }: CookieOptOutProps = {}) {
   return (
     <OptOut.Root className="cy-dialog-overlay">
-      <div className="cy-dialog cy-optout-dialog">
+      <div
+        className={
+          className ? `cy-dialog cy-optout-dialog ${className}` : "cy-dialog cy-optout-dialog"
+        }
+        style={style}
+      >
         <div className="cy-dialog-header">
           <OptOut.Title className="cy-dialog-title" />
           <OptOut.Close className="cy-dialog-close" />

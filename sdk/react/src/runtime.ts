@@ -5,20 +5,27 @@ import {
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
   type CategoryDef,
+  type CategoryText,
   type ConsentBackend,
   type ConsentConfig,
+  type ConsentEmitter,
+  type ConsentEventListener,
+  type ConsentEventOptions,
+  type ConsentEventType,
   type ConsentManager,
   type ConsentSnapshot,
   type CookieYesConfig,
+  createConsentEmitter,
   createConsentManager,
+  createLanguageController,
   type I18nConfig,
   installNetworkBlocker,
+  type LanguageInfo,
   type NetworkBlockerConfig,
   type Regulation,
   type ReloadNoticeState,
   type ResolvedCategories,
   resolveCategories,
-  resolveTranslations,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
@@ -61,12 +68,20 @@ export type CookieYesSnapshot = ConsentSnapshot & {
   reloadNotice: ReloadNoticeState;
 };
 
+export type { LanguageInfo } from "@cookieyes/core";
+
 export type CookieYesRuntime = {
   subscribe: (listener: () => void) => () => void;
   getSnapshot: () => CookieYesSnapshot;
   getServerSnapshot: () => CookieYesSnapshot;
   manager: ConsentManager;
+  /** Text for the active language (English fills any gaps). Reactive — swaps on setLanguage. */
   translations: TranslationMap;
+  getLanguageInfo: () => LanguageInfo;
+  /** Switch language live; loads it via `i18n.loadLanguage` if not already present. */
+  setLanguage: (tag: string) => Promise<void>;
+  /** Customer-provided text for a category in the active language, if any. */
+  getCategoryText: (id: string) => Partial<CategoryText> | undefined;
   /** The resolved category taxonomy in effect (built-in five or the customer's). */
   categories: ResolvedCategories;
   theme: ThemeConfig | undefined;
@@ -75,6 +90,18 @@ export type CookieYesRuntime = {
   showOptOut: () => void;
   hideOptOut: () => void;
   dismissReloadNotice: () => void;
+  /**
+   * React to consent decisions outside render. `"save"` fires on every save,
+   * `"change"` only when a category actually differs. Fires once immediately
+   * with the current state (`isInitial: true`); pass `{ category }` to hear
+   * about one category. Returns an unsubscribe function. Inside a component,
+   * prefer the `useOnConsentChange` hook.
+   */
+  on: (
+    type: ConsentEventType,
+    listener: ConsentEventListener,
+    options?: ConsentEventOptions,
+  ) => () => void;
 };
 
 /**
@@ -241,9 +268,19 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.customStopHandlers) coreCfg.customStopHandlers = cfg.customStopHandlers;
   if (cfg.categories) coreCfg.categories = cfg.categories;
   if (cfg.onConsentReady) coreCfg.onConsentReady = cfg.onConsentReady;
-  if (cfg.onConsentUpdate) coreCfg.onConsentUpdate = cfg.onConsentUpdate;
+
+  // Feed the event emitter on every save, alongside the user's own callback.
+  // `emitter` is assigned right after the manager exists; onConsentUpdate can't
+  // fire until the visitor acts (post-init), so the forward reference is safe.
+  const userOnConsentUpdate = cfg.onConsentUpdate;
+  let emitter: ConsentEmitter;
+  coreCfg.onConsentUpdate = (state) => {
+    userOnConsentUpdate?.(state);
+    emitter.push(state.categories);
+  };
 
   const manager = createConsentManager(coreCfg);
+  emitter = createConsentEmitter(() => manager.committedCategories);
   // Same resolution the manager uses internally — so the UI iterates exactly
   // the taxonomy that's in effect (custom, or the built-in five fallback).
   const resolved = resolveCategories(cfg.categories);
@@ -281,6 +318,9 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
 
   warnOnStyleCspViolations();
 
+  // Owns the active language + live switching; re-renders the UI via notify.
+  const language = createLanguageController(cfg.i18n, notify);
+
   const colorScheme = cfg.colorScheme ?? "system";
 
   // Per-mount SSR snapshot: a fresh-visitor state (banner visible, dialogs
@@ -312,7 +352,12 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     getSnapshot: () => cachedSnapshot,
     getServerSnapshot: () => ssrSnapshot,
     manager,
-    translations: resolveTranslations(cfg.i18n),
+    get translations() {
+      return language.getTranslations();
+    },
+    getLanguageInfo: language.getLanguageInfo,
+    setLanguage: language.setLanguage,
+    getCategoryText: language.getCategoryText,
     categories: resolved,
     theme: cfg.theme,
     colorScheme,
@@ -328,6 +373,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       notify();
     },
     dismissReloadNotice: () => manager.dismissReloadNotice(),
+    on: (type, listener, opts) => emitter.on(type, listener, opts),
   };
 
   if (_instance && typeof console !== "undefined") {

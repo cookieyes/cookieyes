@@ -12,11 +12,22 @@ export {
   _resetOfflineModeWarning,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
+export type { ConsentEmitter } from "./events.js";
+export { createConsentEmitter } from "./events.js";
 export {
   broadcastGoogleConsent,
   computeGoogleConsent,
 } from "./google-consent-mode.js";
-export { defaultTranslations, resolveTranslations } from "./i18n.js";
+export {
+  defaultTranslations,
+  getTextDirection,
+  mergeTranslations,
+  pickLanguage,
+  primaryOf,
+  resolveTranslations,
+} from "./i18n.js";
+export type { LanguageController } from "./language.js";
+export { createLanguageController } from "./language.js";
 export { createConsentManager } from "./manager.js";
 export type {
   BlockedRequestInfo,
@@ -46,11 +57,16 @@ export {
 
 export type {
   ActiveUI,
+  CategoryText,
   ColorScheme,
   ConsentBackend,
   ConsentCategory,
   ConsentChangePayload,
   ConsentConfig,
+  ConsentEventListener,
+  ConsentEventOptions,
+  ConsentEventPayload,
+  ConsentEventType,
   ConsentManager,
   ConsentPayload,
   ConsentRuntime,
@@ -63,9 +79,12 @@ export type {
   CookieYesOfflineConfig,
   CookieYesSelfHostedConfig,
   I18nConfig,
+  LanguageInfo,
+  PartialTranslations,
   Regulation,
   ReloadNoticeState,
   ScriptEntry,
+  TextDirection,
   ThemeConfig,
   TranslationMap,
 } from "./types.js";
