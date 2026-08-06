@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/nextjs",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Next.js App Router adapter for the CookieYes consent SDK",
   "keywords": [
     "cookie consent",
@@ -71,7 +71,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^4.1.10",
-    "next": "^16.2.10",
+    "next": "^16.2.11",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "typescript": "^6.0.3",

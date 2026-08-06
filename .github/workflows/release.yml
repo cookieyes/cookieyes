@@ -48,7 +48,7 @@ jobs:
 
       - name: Install pnpm
         if: steps.detect.outputs.work == 'true'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node
         if: steps.detect.outputs.work == 'true'
