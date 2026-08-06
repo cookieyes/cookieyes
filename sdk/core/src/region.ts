@@ -85,3 +85,19 @@ export function resolveRegion(config: RegionConfig, manual?: Regulation): Region
 
   return { region, regulation, source, confidence };
 }
+
+/**
+ * @internal Dev aid for `region.debug`: print how the regulation was decided,
+ * plus whether GPC started the visitor opted out. Shared by both runtimes.
+ */
+export function _logRegionDecision(decision: RegionDecision, gpcOptOut: boolean): void {
+  if (typeof console === "undefined") return;
+  // eslint-disable-next-line no-console
+  console.info("[cookieyes] region detection", {
+    region: decision.region,
+    regulation: decision.regulation,
+    source: decision.source,
+    confidence: decision.confidence,
+    gpcOptOut,
+  });
+}

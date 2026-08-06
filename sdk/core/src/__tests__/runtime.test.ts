@@ -161,6 +161,23 @@ describe("GPC opt-out on a CCPA banner", () => {
   });
 });
 
+describe("region.debug", () => {
+  it("logs the decision when on", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", region: { ...ccpaRegion, debug: true } });
+    expect(info).toHaveBeenCalledWith(
+      "[cookieyes] region detection",
+      expect.objectContaining({ regulation: "CCPA", source: "detected" }),
+    );
+  });
+
+  it("stays quiet when off", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", region: ccpaRegion });
+    expect(info).not.toHaveBeenCalled();
+  });
+});
+
 describe("self-hosted backend wiring", () => {
   it("forwards the payload to a custom backend adapter on save", () => {
     let captured: ConsentPayload | undefined;

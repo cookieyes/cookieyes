@@ -84,6 +84,8 @@ export type RegionConfig = {
   honorGpc?: boolean | undefined;
   /** Regulation to apply when the region is unknown or detection fails. Default `"GDPR"`. */
   strictest?: Regulation | undefined;
+  /** Log the region decision to the console at setup (for local debugging). Default `false`. */
+  debug?: boolean | undefined;
 };
 
 /** How the active regulation was decided. */

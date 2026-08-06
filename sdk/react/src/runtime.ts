@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  _logRegionDecision,
   _normalizeConfig,
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
@@ -288,7 +289,9 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (regionDecision.region) coreCfg.region = regionDecision.region;
   // GPC "do not sell" on a CCPA banner → start opted out (client only; GPC never
   // changes which banner shows). See core's manager for how the flag is applied.
-  if (wantsGpcOptOut(regionDecision.regulation, cfg.region)) coreCfg.gpcOptOut = true;
+  const gpcOptOut = wantsGpcOptOut(regionDecision.regulation, cfg.region);
+  if (gpcOptOut) coreCfg.gpcOptOut = true;
+  if (cfg.region?.debug) _logRegionDecision(regionDecision, gpcOptOut);
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;

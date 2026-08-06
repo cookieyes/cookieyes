@@ -404,6 +404,7 @@ initCookieYes({
     map: { "US-CA": "CCPA", DE: "GDPR" },   // you own the region → law mapping
     honorGpc: true,                          // default: honour the browser "do not sell" signal
     strictest: "GDPR",                       // used when unsure (default GDPR)
+    debug: true,                             // log the decision to the console (local debugging)
   },
 });
 ```
@@ -422,15 +423,24 @@ Inspect the decision:
 const { region, regulation, source, confidence } = useRegion();
 // source: "detected" | "strictest" | "manual"
 ```
+Or set `region.debug: true` to print the same decision to the console at setup — a quick check
+without writing any component code.
 
 For **server-rendered** correctness (the right banner in the first HTML per visitor, e.g. Next.js
 App Router), wrap your consent UI in `<CookieYesProvider region={regionConfig}>` — see the
 [Next.js README](../nextjs/README.md#region-based-regulation-server-detected).
 
-`detect` runs **synchronously**, so you supply a region you already have on the client (e.g. one
-your server injected into the page). Hosting headers like Cloudflare `CF-IPCountry` or Vercel
-`x-vercel-ip-country-region` only exist server-side — reading those for you is the Next.js
-integration (below). For an async IP lookup, fetch it first, then init. In self-hosted mode the
+**`detect` must be synchronous.** It returns a string, not a Promise — so you **cannot `await`
+inside it**. You pass a region you already have (e.g. one your server injected into the page).
+For an async IP lookup, fetch it **first**, then init:
+
+```tsx
+const region = await fetch("/my-geo").then((r) => r.text()); // resolve it first
+initCookieYes({ mode: "cookie-only", region: { detect: () => region, map } });
+```
+
+Hosting headers like Cloudflare `CF-IPCountry` or Vercel `x-vercel-ip-country-region` only exist
+server-side — reading those for you is the Next.js integration (below). In self-hosted mode the
 detected region is included on the consent-log payload (`region`).
 
 ## Accessibility

@@ -5,7 +5,7 @@ import { type ConsentEmitter, createConsentEmitter } from "./events.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
-import { readGpc, resolveRegion } from "./region.js";
+import { _logRegionDecision, readGpc, resolveRegion } from "./region.js";
 import type {
   ActiveUI,
   ConsentCategory,
@@ -74,7 +74,9 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   if (regionDecision.region) cfg.region = regionDecision.region;
   // Honour the browser's GPC "do not sell" signal on a CCPA banner: start the
   // visitor opted out. GPC never changes the regulation (that's geo only).
-  if (wantsGpcOptOut(regionDecision.regulation, options.region)) cfg.gpcOptOut = true;
+  const gpcOptOut = wantsGpcOptOut(regionDecision.regulation, options.region);
+  if (gpcOptOut) cfg.gpcOptOut = true;
+  if (options.region?.debug) _logRegionDecision(regionDecision, gpcOptOut);
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
