@@ -242,6 +242,30 @@ Missing text falls back to English; custom categories translate by id (see the
 [configuration guide](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)).
 In React, use the `useTranslations()` / `useLanguage()` hooks instead.
 
+## Region-based regulation (geo-detection)
+
+Optionally pick the regulation from the visitor's region. Fully optional; a manual
+`regulation` always wins.
+
+```ts
+const { consentStore } = initCookieYes({
+  mode: "cookie-only",
+  region: {
+    // `detect` is YOUR function — return the visitor's region, however you get it (sync).
+    detect: () => myRegion,                 // "US-CA" | "DE" | undefined
+    map: { "US-CA": "CCPA", DE: "GDPR" },   // you own the mapping
+    honorGpc: true,                          // default; browser "do not sell" signal → CCPA
+  },
+});
+
+consentStore.getRegion(); // { region, regulation, source, confidence }
+```
+
+`detect` runs synchronously — you return a region you already have (server-injected value, your
+own lookup done beforehand, etc.). Unknown/failed detection → the strictest regulation
+(default `GDPR`), never a skipped banner. In self-hosted mode the detected region is included on
+the consent-log payload.
+
 ## Low-level / advanced API
 
 You shouldn't need these for a typical integration — each exists for a

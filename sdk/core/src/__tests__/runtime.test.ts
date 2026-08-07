@@ -11,7 +11,10 @@ afterEach(() => {
   resetConsentRuntime();
   clearCookie();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
+
+const ccpaRegion = { detect: () => "US", map: { US: "CCPA" } } as const;
 
 describe("getOrCreateConsentRuntime", () => {
   it("returns a singleton until reset", () => {
@@ -112,6 +115,66 @@ describe("consentStore state machine", () => {
     expect(changes).toHaveBeenCalledTimes(1);
     expect(payload?.allowedCategories).toContain("analytics");
     expect(payload?.deniedCategories).toEqual([]);
+  });
+});
+
+describe("GPC opt-out on a CCPA banner", () => {
+  it("keeps the CCPA opt-out default (granted) when GPC is off", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: false });
+    const { consentStore } = getOrCreateConsentRuntime({ mode: "cookie-only", region: ccpaRegion });
+    const state = consentStore.getState();
+    expect(state.regulation).toBe("CCPA");
+    // Opt-out model: non-required categories start on until the visitor opts out.
+    expect(state.has("analytics")).toBe(true);
+    expect(state.has("advertisement")).toBe(true);
+  });
+
+  it("starts the visitor opted out (non-required denied) when GPC is on", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: true });
+    const { consentStore } = getOrCreateConsentRuntime({ mode: "cookie-only", region: ccpaRegion });
+    const state = consentStore.getState();
+    expect(state.regulation).toBe("CCPA"); // GPC does NOT change the banner
+    expect(state.has("necessary")).toBe(true);
+    expect(state.has("analytics")).toBe(false);
+    expect(state.has("advertisement")).toBe(false);
+  });
+
+  it("ignores GPC when honorGpc is false", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: true });
+    const { consentStore } = getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      region: { ...ccpaRegion, honorGpc: false },
+    });
+    expect(consentStore.getState().has("analytics")).toBe(true);
+  });
+
+  it("does not opt out a GDPR visitor even with GPC on", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: true });
+    const { consentStore } = getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      region: { detect: () => "DE", map: { DE: "GDPR" } },
+    });
+    const state = consentStore.getState();
+    expect(state.regulation).toBe("GDPR");
+    // GDPR is deny-by-default regardless; the point is the regulation is unchanged.
+    expect(state.has("analytics")).toBe(false);
+  });
+});
+
+describe("region.debug", () => {
+  it("logs the decision when on", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", region: { ...ccpaRegion, debug: true } });
+    expect(info).toHaveBeenCalledWith(
+      "[cookieyes] region detection",
+      expect.objectContaining({ regulation: "CCPA", source: "detected" }),
+    );
+  });
+
+  it("stays quiet when off", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", region: ccpaRegion });
+    expect(info).not.toHaveBeenCalled();
   });
 });
 

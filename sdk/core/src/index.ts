@@ -38,6 +38,8 @@ export {
   installNetworkBlocker,
   uninstallNetworkBlocker,
 } from "./network-blocker.js";
+export type { HeaderSource } from "./region.js";
+export { _logRegionDecision, readGpc, regionFromHeaders, resolveRegion } from "./region.js";
 export {
   getOrCreateConsentRuntime,
   initCookieYes,
@@ -81,6 +83,10 @@ export type {
   I18nConfig,
   LanguageInfo,
   PartialTranslations,
+  RegionConfig,
+  RegionDecision,
+  RegionDetector,
+  RegionSource,
   Regulation,
   ReloadNoticeState,
   ScriptEntry,

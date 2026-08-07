@@ -99,6 +99,16 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   // The state's taxonomy is always the resolved one — stamp it so cookies
   // written from here on carry the current signature (upgrades legacy cookies).
   state = { ...state, taxonomyHash: resolved.taxonomyHash };
+
+  // GPC "do not sell": until the visitor explicitly acts, an incoming CCPA
+  // opt-out signal starts them opted out — non-required categories off — so no
+  // gated script or embed runs before they choose. An explicit choice
+  // (hasActed) always wins over the signal. `gpcOptOut` is only set for CCPA,
+  // where the cookie is written at load, so re-write it to carry the opt-out.
+  if (config.gpcOptOut && !state.hasActed) {
+    state = { ...state, categories: buildCategories(() => false) };
+    writeConsentCookie(state);
+  }
   lastPersistedCategories = { ...state.categories };
   committedCategories = { ...state.categories };
 
@@ -149,12 +159,14 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       // Best-effort: swallow both sync throws and async rejections so a
       // broken/missing backend never breaks the consent UX.
       try {
-        Promise.resolve(config.backend.persist(buildConsentPayload(state))).catch(() => undefined);
+        Promise.resolve(config.backend.persist(buildConsentPayload(state, config.region))).catch(
+          () => undefined,
+        );
       } catch {
         // sync throw from .persist itself
       }
     } else if (config.apiUrl) {
-      void pushConsent(config.apiUrl, config.apiKey, state);
+      void pushConsent(config.apiUrl, config.apiKey, state, config.region);
     }
 
     // Detect "revoke" — any category that was previously consented but now isn't.

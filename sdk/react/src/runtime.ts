@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  _logRegionDecision,
   _normalizeConfig,
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
@@ -22,10 +23,14 @@ import {
   installNetworkBlocker,
   type LanguageInfo,
   type NetworkBlockerConfig,
+  type RegionConfig,
+  type RegionDecision,
   type Regulation,
   type ReloadNoticeState,
   type ResolvedCategories,
+  readGpc,
   resolveCategories,
+  resolveRegion,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
@@ -42,9 +47,15 @@ type DeprecatedOfflineMode = "offline";
 export type RuntimeMode = "cookie-only" | "self-hosted" | DeprecatedOfflineMode;
 export type ColorSchemePref = "light" | "dark" | "system";
 
+/** True when a CCPA visitor's browser sends GPC and we're set to honour it. */
+function wantsGpcOptOut(regulation: Regulation, region: RegionConfig | undefined): boolean {
+  return regulation === "CCPA" && (region?.honorGpc ?? true) && readGpc();
+}
+
 type RuntimeConfig = {
   mode?: RuntimeMode;
   regulation?: Regulation;
+  region?: RegionConfig;
   i18n?: I18nConfig;
   theme?: ThemeConfig;
   colorScheme?: ColorSchemePref;
@@ -82,6 +93,8 @@ export type CookieYesRuntime = {
   setLanguage: (tag: string) => Promise<void>;
   /** Customer-provided text for a category in the active language, if any. */
   getCategoryText: (id: string) => Partial<CategoryText> | undefined;
+  /** How the active regulation was decided (region, source, confidence). */
+  getRegion: () => RegionDecision;
   /** The resolved category taxonomy in effect (built-in five or the customer's). */
   categories: ResolvedCategories;
   theme: ThemeConfig | undefined;
@@ -199,6 +212,7 @@ export function initCookieYes(config: CookieYesConfig): CookieYesRuntime {
   const n = _normalizeConfig(config);
   const cfg: RuntimeConfig = { mode: n.mode };
   if (n.regulation !== undefined) cfg.regulation = n.regulation;
+  if (n.region !== undefined) cfg.region = n.region;
   if (n.i18n !== undefined) cfg.i18n = n.i18n;
   if (n.theme !== undefined) cfg.theme = n.theme;
   if (n.colorScheme !== undefined) cfg.colorScheme = n.colorScheme;
@@ -254,13 +268,30 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     );
   }
 
+  // Geo-detection if configured, else the manual/default regulation. Drives the
+  // banner and the SSR snapshot so the first paint matches.
+  const regionDecision: RegionDecision = cfg.region
+    ? resolveRegion(cfg.region, cfg.regulation)
+    : {
+        region: undefined,
+        regulation: cfg.regulation ?? "DEFAULT",
+        source: "manual",
+        confidence: "high",
+      };
+
   const coreCfg: ConsentConfig = {};
   if (cfg.mode === "self-hosted") {
     if (cfg.backend) coreCfg.backend = cfg.backend;
     else if (cfg.backendURL) coreCfg.apiUrl = cfg.backendURL;
     if (cfg.apiKey) coreCfg.apiKey = cfg.apiKey;
   }
-  if (cfg.regulation) coreCfg.regulation = cfg.regulation;
+  coreCfg.regulation = regionDecision.regulation;
+  if (regionDecision.region) coreCfg.region = regionDecision.region;
+  // GPC "do not sell" on a CCPA banner → start opted out (client only; GPC never
+  // changes which banner shows). See core's manager for how the flag is applied.
+  const gpcOptOut = wantsGpcOptOut(regionDecision.regulation, cfg.region);
+  if (gpcOptOut) coreCfg.gpcOptOut = true;
+  if (cfg.region?.debug) _logRegionDecision(regionDecision, gpcOptOut);
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
@@ -329,7 +360,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   // hydration render (no regulation or category-shape mismatch), including for
   // custom taxonomies. CCPA is opt-out (everything on); otherwise only the
   // required category(ies) start on. Mirrors core's defaultSnapshot.
-  const ssrRegulation = (cfg.regulation ?? "DEFAULT") as Regulation;
+  const ssrRegulation = regionDecision.regulation;
   const ssrOptOut = ssrRegulation === "CCPA";
   const ssrCategories: Record<string, boolean> = {};
   for (const id of resolved.ids) {
@@ -359,6 +390,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     setLanguage: language.setLanguage,
     getCategoryText: language.getCategoryText,
     categories: resolved,
+    getRegion: () => regionDecision,
     theme: cfg.theme,
     colorScheme,
     registerScript: (entry) => manager.registerScript(entry),

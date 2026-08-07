@@ -390,6 +390,59 @@ Notes: the starting language is decided on each page load (we don't store the vi
 persist it yourself if you want it remembered). A missing/failed language logs a developer warning
 and keeps the current one.
 
+## Region-based regulation (geo-detection)
+
+Optionally choose the banner's regulation from where the visitor is. Fully optional —
+omit `region` and nothing changes; a manual `regulation` always wins.
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  region: {
+    // `detect` is YOUR function — return the visitor's region, however you get it.
+    detect: () => window.__MY_REGION__,     // e.g. a value your server injected; "US-CA" | "DE" | undefined
+    map: { "US-CA": "CCPA", DE: "GDPR" },   // you own the region → law mapping
+    honorGpc: true,                          // default: honour the browser "do not sell" signal
+    strictest: "GDPR",                       // used when unsure (default GDPR)
+    debug: true,                             // log the decision to the console (local debugging)
+  },
+});
+```
+
+Rules: which banner shows is **geo only** — a detected region maps to your regulation;
+**unknown or failed → the strictest** (a required banner is never skipped); a **manual
+`regulation` wins** over detection (with a dev warning).
+
+**GPC** (the browser's "do not sell" signal) never changes *which* banner shows. On a CCPA
+banner it starts the visitor **opted out** — non-required categories denied, so gated
+scripts/iframes don't run — until they choose otherwise. It's read in the browser, so it applies
+right after hydration. Set `honorGpc: false` to ignore it.
+
+Inspect the decision:
+```tsx
+const { region, regulation, source, confidence } = useRegion();
+// source: "detected" | "strictest" | "manual"
+```
+Or set `region.debug: true` to print the same decision to the console at setup — a quick check
+without writing any component code.
+
+For **server-rendered** correctness (the right banner in the first HTML per visitor, e.g. Next.js
+App Router), wrap your consent UI in `<CookieYesProvider region={regionConfig}>` — see the
+[Next.js README](../nextjs/README.md#region-based-regulation-server-detected).
+
+**`detect` must be synchronous.** It returns a string, not a Promise — so you **cannot `await`
+inside it**. You pass a region you already have (e.g. one your server injected into the page).
+For an async IP lookup, fetch it **first**, then init:
+
+```tsx
+const region = await fetch("/my-geo").then((r) => r.text()); // resolve it first
+initCookieYes({ mode: "cookie-only", region: { detect: () => region, map } });
+```
+
+Hosting headers like Cloudflare `CF-IPCountry` or Vercel `x-vercel-ip-country-region` only exist
+server-side — reading those for you is the Next.js integration (below). In self-hosted mode the
+detected region is included on the consent-log payload (`region`).
+
 ## Accessibility
 
 **Scope of this section:** keyboard operability, focus management, screen-reader

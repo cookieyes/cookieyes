@@ -5,6 +5,7 @@ import { type ConsentEmitter, createConsentEmitter } from "./events.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
+import { _logRegionDecision, readGpc, resolveRegion } from "./region.js";
 import type {
   ActiveUI,
   ConsentCategory,
@@ -14,7 +15,15 @@ import type {
   ConsentStore,
   ConsentStoreState,
   CookieYesConfig,
+  RegionConfig,
+  RegionDecision,
+  Regulation,
 } from "./types.js";
+
+/** True when a CCPA visitor's browser sends GPC and we're set to honour it. */
+function wantsGpcOptOut(regulation: Regulation, region: RegionConfig | undefined): boolean {
+  return regulation === "CCPA" && (region?.honorGpc ?? true) && readGpc();
+}
 
 function splitCategories(categories: Record<string, boolean>): ConsentChangePayload {
   const allowed: ConsentCategory[] = [];
@@ -44,13 +53,30 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   // onConsentUpdate, which can't fire until the visitor acts (post-init).
   let emitter: ConsentEmitter;
 
+  // Resolve which regulation applies (geo-detection if configured, else the
+  // manual/default). Drives the banner and is recorded on the consent payload.
+  const regionDecision: RegionDecision = options.region
+    ? resolveRegion(options.region, options.regulation)
+    : {
+        region: undefined,
+        regulation: options.regulation ?? "DEFAULT",
+        source: "manual",
+        confidence: "high",
+      };
+
   const cfg: ConsentConfig = {};
   if (options.mode === "self-hosted") {
     if (options.backend) cfg.backend = options.backend;
     else if (options.apiUrl) cfg.apiUrl = options.apiUrl;
   }
   if (options.apiKey) cfg.apiKey = options.apiKey;
-  if (options.regulation) cfg.regulation = options.regulation;
+  cfg.regulation = regionDecision.regulation;
+  if (regionDecision.region) cfg.region = regionDecision.region;
+  // Honour the browser's GPC "do not sell" signal on a CCPA banner: start the
+  // visitor opted out. GPC never changes the regulation (that's geo only).
+  const gpcOptOut = wantsGpcOptOut(regionDecision.regulation, options.region);
+  if (gpcOptOut) cfg.gpcOptOut = true;
+  if (options.region?.debug) _logRegionDecision(regionDecision, gpcOptOut);
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
@@ -134,6 +160,7 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
     setLanguage: language.setLanguage,
     getCategoryText: language.getCategoryText,
     categories: resolved,
+    getRegion: () => regionDecision,
   };
 
   if (options.networkBlocker && options.networkBlocker.rules.length > 0) {
