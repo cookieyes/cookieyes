@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { applyScripts, registerScript } from "../scripts.js";
+import { _clearScriptRegistry, applyScripts, registerScript } from "../scripts.js";
 import type { ConsentCategory } from "../types.js";
 
 function categories(overrides: Partial<Record<ConsentCategory, boolean>> = {}) {
@@ -101,5 +101,50 @@ describe("registerScript + applyScripts", () => {
     applyScripts(categories({ analytics: true }));
     applyScripts(categories({ analytics: true }));
     expect(document.querySelectorAll(`#${id}`).length).toBe(1);
+  });
+});
+
+// Declared last on purpose: this suite empties the module-level registry the
+// suites above share, so it must not run before them.
+describe("_clearScriptRegistry", () => {
+  it("removes injected elements and forgets the registration", () => {
+    const id = uniqueId();
+    registerScript({ id, src: "https://cdn.example.com/g.js", category: "analytics" });
+    applyScripts(categories({ analytics: true }));
+    expect(document.getElementById(id)).not.toBeNull();
+
+    _clearScriptRegistry();
+    expect(document.getElementById(id)).toBeNull();
+
+    // Forgotten, so a later apply must not resurrect it.
+    applyScripts(categories({ analytics: true }));
+    expect(document.getElementById(id)).toBeNull();
+  });
+
+  it("lets the same id be registered again afterwards", () => {
+    const id = uniqueId();
+    registerScript({ id, src: "https://cdn.example.com/h.js", category: "functional" });
+    applyScripts(categories({ functional: true }));
+    _clearScriptRegistry();
+
+    registerScript({ id, src: "https://cdn.example.com/h2.js", category: "functional" });
+    applyScripts(categories({ functional: true }));
+    const el = document.getElementById(id) as HTMLScriptElement | null;
+    expect(el?.src).toBe("https://cdn.example.com/h2.js");
+  });
+
+  it("is a safe no-op with nothing registered", () => {
+    _clearScriptRegistry();
+    expect(() => _clearScriptRegistry()).not.toThrow();
+  });
+
+  it("does not throw when there is no document", () => {
+    registerScript({ id: uniqueId(), src: "https://cdn.example.com/i.js", category: "analytics" });
+    vi.stubGlobal("document", undefined);
+    try {
+      expect(() => _clearScriptRegistry()).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

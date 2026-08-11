@@ -45,6 +45,8 @@ export {
   initCookieYes,
   resetConsentRuntime,
 } from "./runtime.js";
+/** @internal — test-only registry reset consumed by `@cookieyes/test`. */
+export { _clearScriptRegistry } from "./scripts.js";
 export type {
   AnyStopHandler,
   BuiltInIntegration,
@@ -56,7 +58,6 @@ export {
   registerStopHandler,
   resolveBuiltInIntegration,
 } from "./stop-handlers.js";
-
 export type {
   ActiveUI,
   CategoryText,
@@ -94,3 +95,4 @@ export type {
   ThemeConfig,
   TranslationMap,
 } from "./types.js";
+export { CORE_VERSION } from "./version.js";

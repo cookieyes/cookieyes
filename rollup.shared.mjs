@@ -37,6 +37,26 @@ function tsJsResolve() {
   };
 }
 
+/**
+ * Replace the `CORE_VERSION` sentinel with the real package version.
+ *
+ * Only `@cookieyes/core`'s `version.ts` contains the sentinel, so this is a no-op
+ * for every other package that shares this config. An empty sourcemap is returned
+ * deliberately: the change is a single string literal in a one-line module, and
+ * claiming "unknown mappings" is honest and silences Rollup's (correct) warning
+ * about a transform without a map.
+ */
+function injectPkgVersion(version) {
+  const SENTINEL = "0.0.0-dev";
+  return {
+    name: "inject-pkg-version",
+    transform(code) {
+      if (!code.includes(SENTINEL)) return null;
+      return { code: code.replaceAll(SENTINEL, version), map: { mappings: "" } };
+    },
+  };
+}
+
 /** Prepend the React Server Components `"use client"` directive AFTER minification. */
 function useClientBanner() {
   return {
@@ -105,6 +125,7 @@ export function createLibConfig({
       external: isExternal,
       plugins: [
         tsJsResolve(),
+        injectPkgVersion(pkg.version),
         nodeResolve({ extensions: [".ts", ".tsx", ".mjs", ".js", ".json"] }),
         commonjs(),
         esbuild({ target, jsx: "automatic", sourceMap: sourcemap }),
