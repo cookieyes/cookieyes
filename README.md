@@ -22,6 +22,7 @@ Open-source, developer-first cookie consent SDK. The same compliance engine that
 | [`@cookieyes/nextjs`](./sdk/nextjs) | Next.js App Router adapter | [![npm](https://img.shields.io/npm/v/@cookieyes/nextjs)](https://www.npmjs.com/package/@cookieyes/nextjs) |
 | [`@cookieyes/translations`](./sdk/translations) | Curated, per-locale translation catalog | [![npm](https://img.shields.io/npm/v/@cookieyes/translations)](https://www.npmjs.com/package/@cookieyes/translations) |
 | [`@cookieyes/cli`](./sdk/cli) | Scaffolder — wire the SDK into an existing app | [![npm](https://img.shields.io/npm/v/@cookieyes/cli)](https://www.npmjs.com/package/@cookieyes/cli) |
+| [`@cookieyes/test`](./sdk/test) | Headless test double (+ `/react`) — unit-test consent code with no browser | [![npm](https://img.shields.io/npm/v/@cookieyes/test)](https://www.npmjs.com/package/@cookieyes/test) |
 
 ## Architecture
 
@@ -124,6 +125,7 @@ sdk/
   nextjs/        @cookieyes/nextjs       Next.js App Router adapter
   translations/  @cookieyes/translations per-locale catalog
   cli/           @cookieyes/cli          scaffolder
+  test/          @cookieyes/test         headless test double (+ /react)
 ```
 
 ## Local development

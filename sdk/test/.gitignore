@@ -1,0 +1,3 @@
+# Local-only runnable examples — kept out of the repo and out of the
+# published tarball (see the "files" field in package.json).
+examples/
