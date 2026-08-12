@@ -1,6 +1,12 @@
 "use client";
 
-import { type ComponentPropsWithoutRef, forwardRef, type ReactNode, useRef } from "react";
+import {
+  type ComponentPropsWithoutRef,
+  forwardRef,
+  type ReactNode,
+  useEffect,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
 import { CookieYesLogo } from "../components/icons.js";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
@@ -31,6 +37,31 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   const { theme, colorScheme } = useThemeConfig();
   useThemeVars(containerRef, theme, colorScheme);
 
+  // Was the banner already on screen the last time we rendered?
+  //
+  // This exists because the banner's DOM node is replaced once, shortly after
+  // hydration: it is server-rendered inline (React cannot server-render a
+  // portal), then `useBodyPortalRoot` resolves and React re-renders through
+  // `createPortal`, discarding the original node and building a fresh one under
+  // <body>. The replacement re-runs the CSS entry animation, so the banner fades
+  // in a second time — invisible on a fast machine, where the swap lands inside
+  // the 200ms fade, but plainly visible on a slow device, where hydration can
+  // land a second later and the visitor sees an already-visible banner disappear
+  // and fade back in.
+  //
+  // The swap itself is harmless; re-animating is the defect. So: animate when the
+  // banner genuinely *appears*, and skip the entry animation when this mount is
+  // only the re-parent of a banner that was already visible. The ref survives the
+  // re-render because it belongs to this component instance, which never
+  // unmounts — only its host element changes. Resetting it whenever the banner
+  // hides means a later reappearance (e.g. after `resetConsent`) animates
+  // normally.
+  const wasVisible = useRef(false);
+  const isReparent = visible && wasVisible.current;
+  useEffect(() => {
+    wasVisible.current = visible;
+  }, [visible]);
+
   if (!visible) return null;
 
   // Neutral grouping element (the preset gives it `display: contents`). The
@@ -45,6 +76,8 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         else if (ref) ref.current = node;
       }}
       data-cy-part={CY_PART.banner.root}
+      // Suppresses the entry animation on the card below — see `wasVisible`.
+      {...(isReparent ? { "data-cy-entered": "" } : {})}
       {...props}
     >
       {children}
