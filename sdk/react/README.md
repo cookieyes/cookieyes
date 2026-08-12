@@ -583,7 +583,7 @@ an existing integration, the builder configures the same runtime:
 | `.i18n({ messages })` | Provide locale translation maps. |
 | `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
 | `.apiKey(key)` | Optional auth key. |
-| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. |
+| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. See **[how script blocking works and what it costs](https://github.com/cookieyes/cookieyes/blob/main/docs/script-blocking.md)**. |
 | `.categories([...])` | Define your own category taxonomy instead of the built-in five. See [core: consent categories](../core/README.md#consent-categories). |
 | `.integrations([...])` | Stop built-in vendors cleanly on revoke — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag Manager are handled automatically via Consent Mode — no entry needed.) See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
 | `.customStopHandlers([...])` | Stop your own scripts on revoke (clean `stop()`, or `needsReload: true`). |
