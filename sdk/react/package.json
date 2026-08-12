@@ -1,7 +1,7 @@
 {
   "name": "@cookieyes/react",
   "version": "0.4.0",
-  "description": "React adapter for the CookieYes consent SDK — components and hooks",
+  "description": "React adapter for the CookieYes consent SDK \u2014 components and hooks",
   "keywords": [
     "cookie consent",
     "GDPR",
@@ -34,7 +34,8 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": "./dist/styles.css",
+    "./critical.css": "./dist/critical.css"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -52,7 +53,8 @@
     "provenance": true
   },
   "scripts": {
-    "build": "rm -rf dist && rollup -c && cp src/styles/cookieyes.css dist/styles.css",
+    "build": "rm -rf dist && rollup -c && node scripts/minify-css.mjs",
+    "build:critical-css": "node scripts/build-critical-css.mjs",
     "dev": "rollup -c -w",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
