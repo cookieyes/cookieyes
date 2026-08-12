@@ -115,6 +115,44 @@ function App() {
 }
 ```
 
+### Optional: inline the banner's CSS, defer the rest
+
+`styles.css` is about 25 KB and styles everything — banner, preferences dialog,
+opt-out flow, toggles, the revisit widget. If your bundler puts it in the
+critical path (the usual case for an app-root `import`), the banner is already
+styled on the first paint and you need nothing more.
+
+If instead you want to keep that 25 KB off the critical path, there is a
+paint-critical subset containing only the rules needed to render the banner:
+
+```
+@cookieyes/react/critical.css
+```
+
+Inline it in `<head>` and load the full sheet without blocking render. The
+banner is then correctly styled in the first frame, and the dialog styles arrive
+before the visitor can open the dialog:
+
+```html
+<head>
+  <style>/* contents of @cookieyes/react/critical.css */</style>
+  <link rel="stylesheet" href="/path/to/styles.css" media="print" onload="this.media='all'">
+</head>
+```
+
+It is roughly 1.6 KB gzipped, and every rule in it is byte-identical to the same
+rule in `styles.css`, so the two never disagree about how the banner looks. Load
+`styles.css` as well — `critical.css` intentionally has no dialog, opt-out,
+toggle or widget styling.
+
+> **Content Security Policy:** inlining CSS in a `<style>` block requires
+> `style-src` to allow it — a hash, a nonce, or `'unsafe-inline'`. If you serve a
+> strict `style-src 'self'`, either add the block's hash to your policy or skip
+> `critical.css` and keep loading `styles.css` as an external stylesheet, which
+> needs no `style-src` exception at all. This SDK's own runtime theming works
+> under `style-src 'self'` either way — it writes theme values through the CSSOM,
+> never as inline style text.
+
 **4. Done.** The banner appears on page load until the user acts. If it doesn't, see [Troubleshooting](#troubleshooting).
 
 > Prefer zero manual setup? Run `npx @cookieyes/cli init` and the CLI wires all of this up for you.
@@ -442,6 +480,44 @@ initCookieYes({ mode: "cookie-only", region: { detect: () => region, map } });
 Hosting headers like Cloudflare `CF-IPCountry` or Vercel `x-vercel-ip-country-region` only exist
 server-side — reading those for you is the Next.js integration (below). In self-hosted mode the
 detected region is included on the consent-log payload (`region`).
+
+## Returning visitors — no banner flash (SSR)
+
+If you server-render, the server has no idea whether a visitor already chose, so it renders the
+banner for everyone and the client removes it after hydration. A returning visitor **sees the
+banner appear and then vanish**.
+
+Read their decision from the request and hand it to the provider — then the banner is never in
+their HTML at all:
+
+```tsx
+// On the server, wherever you have the request:
+import { readServerConsent } from "@cookieyes/react";
+
+const initialConsent = readServerConsent(request.headers.get("cookie") ?? "", {
+  regulation: "GDPR",
+});
+```
+
+```tsx
+// Pass it into the tree:
+<CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+  <CookieBanner />
+</CookieYesProvider>
+```
+
+- `readServerConsent` touches no browser API, so it's safe in any server runtime. **Next.js App
+  Router users** get a wrapper that reads `cookies()` for them — `getServerConsent()` from
+  [`@cookieyes/nextjs/server`](https://github.com/cookieyes/cookieyes/tree/main/sdk/nextjs#readme).
+- **Returns `null` when the banner should show:** a first-time visitor, a cookie recording no choice
+  yet, a corrupt cookie, or one written against a different category taxonomy (which the client
+  re-requests too). Passing `null` renders exactly as it did before, so adding this is safe.
+- **`initialConsent` is a provider prop, never an `initCookieYes` option.** The consent runtime is a
+  module-level singleton shared across concurrent server requests, so per-visitor state stored there
+  would leak between visitors. The same is true of `region`/`regulation` — that's why the provider
+  exists.
+- The server render and the first hydration render read the same value, so there's no hydration
+  mismatch; the real cookie is read on the client after commit and agrees.
 
 ## Accessibility
 
