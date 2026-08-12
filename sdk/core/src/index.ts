@@ -7,7 +7,7 @@ export { DEFAULT_CATEGORIES, resolveCategories } from "./categories.js";
 /** @internal — shared config normalizer consumed by framework adapters. */
 export type { _NormalizedConfig } from "./config.js";
 export { _normalizeConfig } from "./config.js";
-export { generateConsentId, parseCookie, serializeCookie } from "./cookie.js";
+export { generateConsentId, parseCookie, parseCookieHeader, serializeCookie } from "./cookie.js";
 export {
   _resetOfflineModeWarning,
   _warnOfflineModeDeprecated,
@@ -47,6 +47,8 @@ export {
 } from "./runtime.js";
 /** @internal — test-only registry reset consumed by `@cookieyes/test`. */
 export { _clearScriptRegistry } from "./scripts.js";
+export type { ServerConsentOptions } from "./server-consent.js";
+export { readServerConsent } from "./server-consent.js";
 export type {
   AnyStopHandler,
   BuiltInIntegration,

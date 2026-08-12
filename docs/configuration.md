@@ -144,6 +144,86 @@ initCookieYes({
 });
 ```
 
+Theme values are applied to the elements via the CSSOM, which beats the
+stylesheet's own defaults — so a `theme` override always wins, and it keeps
+working under a strict `style-src` CSP with no `unsafe-inline` or nonce.
+
+---
+
+## Server-side rendering: returning visitors
+
+If you server-render, the server does not know whether a visitor has already
+chosen — so by default it sends banner markup to everyone and the client removes
+it after hydration. A returning visitor sees the banner appear and then vanish.
+
+Read the decision from the request and pass it to the provider, and the banner is
+never rendered for them at all:
+
+```tsx
+// Next.js App Router — app/layout.tsx
+import { CookieYesProvider } from "@cookieyes/nextjs";
+import { getServerConsent } from "@cookieyes/nextjs/server";
+
+export default async function RootLayout({ children }) {
+  const initialConsent = await getServerConsent({ regulation: "GDPR" });
+  return (
+    <html lang="en">
+      <body>
+        <CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+          {children}
+        </CookieYesProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+Any other SSR framework — pass the request's `Cookie` header to core directly:
+
+```ts
+import { readServerConsent } from "@cookieyes/core";
+
+const initialConsent = readServerConsent(request.headers.get("cookie") ?? "", {
+  regulation: "GDPR",
+});
+```
+
+`readServerConsent` returns `null` — "show the banner" — for a first-time visitor,
+a cookie recording no choice yet, a corrupt cookie, or one written against a
+different category taxonomy (which the client also re-requests). It touches no
+browser API, so it is safe in any server runtime.
+
+Two things to know:
+
+- **`initialConsent` is a provider prop, never an `initCookieYes` option.** The
+  consent runtime is a module-level singleton shared across concurrent server
+  requests, so per-visitor state there would leak between visitors. The same
+  applies to `region`/`regulation`, which is why the provider exists.
+- `getServerConsent` reads `cookies()`, which opts the route into dynamic
+  rendering as any `cookies()` call does. A statically rendered route has no
+  request to read, so there the banner is server-rendered for everyone and hidden
+  on the client as before.
+
+---
+
+## Stylesheets
+
+| Import | Contents | When |
+|---|---|---|
+| `@cookieyes/react/styles.css` | Everything — banner, preferences dialog, opt-out, toggles, revisit widget, reload notice (~25 KB) | **Required.** Import once per app. |
+| `@cookieyes/react/critical.css` | Only the rules needed to paint the banner (~1.6 KB gzipped) | Optional. Inline in `<head>` when you want to keep the full sheet off the critical path. |
+
+The banner ships no inline styling, so `styles.css` is required — without it the
+banner and dialogs render unstyled.
+
+`critical.css` is an exact subset: every rule in it is byte-identical to the same
+rule in `styles.css`, enforced by a test, so the two can never disagree about how
+the banner looks. It exists for one case — inlining the banner's CSS in the
+document head and deferring the rest — and is unnecessary if your bundler already
+puts `styles.css` in the critical path, which an app-root `import` normally does.
+It is a supplement, never a replacement: always load `styles.css` too, or the
+preferences dialog will be unstyled when a visitor opens it.
+
 ---
 
 ## Reacting to consent changes

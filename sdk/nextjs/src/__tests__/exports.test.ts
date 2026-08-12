@@ -45,6 +45,8 @@ describe("@cookieyes/nextjs barrel", () => {
     "resetConsentRuntime",
     "resolveCategories",
     "DEFAULT_CATEGORIES",
+    "readServerConsent",
+    "CookieYesProvider",
   ] as const;
 
   it.each(EXPECTED)("re-exports %s and it is defined", (name) => {
@@ -66,5 +68,19 @@ describe("@cookieyes/nextjs barrel", () => {
     for (const name of Object.keys(nextjs)) {
       expect(react).toHaveProperty(name);
     }
+  });
+});
+
+describe("@cookieyes/nextjs/server entry", () => {
+  it("exports getServerConsent", async () => {
+    const server = await import("../server.js");
+    expect(server).toHaveProperty("getServerConsent");
+    expect(typeof server.getServerConsent).toBe("function");
+  });
+
+  it("is a separate entry from the client barrel", () => {
+    // `getServerConsent` reads next/headers and must stay out of the "use client"
+    // barrel — a client component importing it would break the build.
+    expect(nextjs).not.toHaveProperty("getServerConsent");
   });
 });

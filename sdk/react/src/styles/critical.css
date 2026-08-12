@@ -1,0 +1,342 @@
+/* ── CookieYes — paint-critical banner CSS ─────────────────────────── */
+/* GENERATED — do not edit. Run:                                            */
+/*   pnpm --filter @cookieyes/react build:critical-css                       */
+/*                                                                          */
+/* An exact SUBSET of cookieyes.css: only the rules needed to paint the      */
+/* consent banner correctly. Everything else — the preferences dialog, the   */
+/* opt-out flow, toggles, the revisit widget, the reload notice — lives only */
+/* in the full sheet.                                                       */
+/*                                                                          */
+/* Use this when you want to inline the banner's CSS in <head> and defer the */
+/* full stylesheet, so the banner is styled at first paint without making    */
+/* ~25 KB render-blocking. If you already import "@cookieyes/react/styles.css" */
+/* at your app root, your bundler puts it in the critical path and you don't */
+/* need this file.                                                          */
+
+:root {
+  --cy-primary: #1863dc;
+  --cy-primary-hover: color-mix(in srgb, var(--cy-primary) 85%, black);
+  --cy-bg: #ffffff;
+  --cy-text: #212121;
+  --cy-muted: #6b7280;
+  --cy-border: #f4f4f4;
+  --cy-widget-bg: #0056a7;
+  --cy-radius: 6px;
+  --cy-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cy-bg: #161b27;
+    --cy-text: #f3f4f6;
+    --cy-muted: #9ca3af;
+    --cy-border: #2d3748;
+  }
+}
+.cy-banner-wrap,
+.cy-dialog-overlay,
+.cy-widget,
+.cy-reload-notice,
+.cy-frame-placeholder {
+  font-family: var(--cy-font);
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  text-decoration: none;
+  text-indent: 0;
+  text-shadow: none;
+  color: var(--cy-text);
+  direction: ltr;
+  white-space: normal;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-reload-notice, .cy-frame-placeholder) *,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-reload-notice, .cy-frame-placeholder)
+  *::before,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-widget, .cy-reload-notice, .cy-frame-placeholder)
+  *::after {
+  box-sizing: border-box;
+}
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) button,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) input,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) label,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) select,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  margin: 0;
+}
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) a {
+  color: inherit;
+  text-decoration: none;
+  background: transparent;
+}
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) p,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) h1,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) h2,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) h3,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) h4,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) ul,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) ol,
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) li {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+:where(.cy-banner-wrap, .cy-dialog-overlay, .cy-frame-placeholder) svg {
+  display: inline-block;
+  vertical-align: middle;
+}
+.cy-banner-wrap {
+  /* Pure logical grouping — generates no box (display: contents), so the only
+     measurable banner element is the visible .cy-banner card below. Inheritable
+     typography set on this element (above) still flows to the card. */
+  display: contents;
+}
+.cy-banner {
+  /* Canonical, measurable banner element. Fixed positioning lives here (moved
+     off the old full-screen wrapper) so the reported bounding box equals the
+     visible card (~13% of 1280×720) and showing the banner never reflows page
+     content (CLS 0). Width matches the previous wrapper-padding layout. */
+  position: fixed;
+  left: 40px;
+  bottom: 40px;
+  right: auto;
+  z-index: 9999999;
+  pointer-events: all;
+  background: var(--cy-bg);
+  color: var(--cy-text);
+  border-radius: var(--cy-radius);
+  box-shadow: 0 -1px 10px 0 rgba(172, 171, 171, 0.3);
+  border: 1px solid var(--cy-border);
+  max-width: 440px;
+  width: min(440px, calc(100vw - 80px));
+  padding: 24px 24px 12px;
+  box-sizing: border-box;
+  /* Opacity-only fade, deliberately short. The previous entry animation
+     slid up 40px over 0.5s from opacity 0, which meant the banner was
+     effectively invisible for the first half-second after the page painted —
+     and the translate nudged nothing itself (the card is `position: fixed`,
+     out of flow) but read as content moving. Fading only, over 0.2s, keeps
+     the banner present and laid out in the very first frame. */
+  animation: cy-fade-in 0.2s ease-out both;
+}
+.cy-banner[data-leaving] {
+  animation: cy-fade-out 0.2s ease forwards;
+}
+.cy-banner-wrap[data-cy-entered] .cy-banner:not([data-leaving]) {
+  animation: none;
+}
+@keyframes cy-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes cy-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.cy-banner-text {
+  margin-bottom: 0;
+}
+.cy-banner-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  margin: 0 0 12px;
+  color: var(--cy-text);
+  word-break: break-word;
+}
+.cy-banner-description {
+  font-size: 14px;
+  line-height: 24px;
+  color: var(--cy-text);
+  margin: 0;
+  word-break: break-word;
+}
+.cy-banner-description a {
+  color: var(--cy-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cy-banner-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+.cy-btn {
+  flex: auto;
+  max-width: 100%;
+  cursor: pointer;
+  font-family: var(--cy-font);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 2px;
+  padding: 8px;
+  line-height: 24px;
+  transition: opacity 0.15s;
+  text-decoration: none;
+  text-align: center;
+  overflow-wrap: break-word;
+  border: none;
+}
+.cy-btn:hover {
+  opacity: 0.8;
+}
+.cy-btn:focus-visible {
+  outline: 2px solid var(--cy-primary);
+  outline-offset: 2px;
+}
+.cy-btn-primary {
+  background: var(--cy-primary);
+  color: #fff;
+  border: 2px solid var(--cy-primary);
+}
+.cy-btn-outline {
+  background: transparent;
+  color: var(--cy-primary);
+  border: 2px solid var(--cy-primary);
+}
+.cy-btn-do-not-sell {
+  flex: 1 0 100%;
+  width: 100%;
+  font-size: 14px;
+  line-height: 24px;
+  padding: 6px 0;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  font-family: var(--cy-font);
+  color: var(--cy-primary);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-align: left;
+  word-break: break-word;
+}
+.cy-btn-do-not-sell:hover {
+  opacity: 0.75;
+}
+.cy-banner-close {
+  position: absolute;
+  right: 9px;
+  top: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  height: 24px;
+  width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  color: #000;
+}
+.cy-banner-close:hover {
+  opacity: 0.6;
+}
+.cy-banner-close:focus-visible {
+  outline: 2px solid var(--cy-primary);
+  outline-offset: 2px;
+}
+.cy-banner-footer {
+  padding: 20px 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.cy-banner-footer--ccpa {
+  border-top: 1px solid lightgray;
+  margin: 12px -24px 0;
+  padding: 8px 0 0;
+}
+.cy-branding {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 20px;
+  color: var(--cy-text);
+  text-decoration: none;
+  opacity: 0.7;
+}
+.cy-branding:hover {
+  opacity: 1;
+}
+.cy-branding svg {
+  line-height: 0;
+  color: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cy-banner,
+  .cy-banner[data-leaving],
+  .cy-dialog-overlay,
+  .cy-dialog,
+  .cy-widget,
+  .cy-reload-notice {
+    animation: none;
+  }
+}
+@media (max-width: 440px) {
+  .cy-banner {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+  }
+  .cy-banner-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .cy-banner-actions .cy-btn {
+    width: 100%;
+  }
+  /* Order: Accept All first, Customise second, Reject All third */
+  .cy-banner-actions .cy-btn:nth-child(1) {
+    order: 2;
+  }
+  .cy-banner-actions .cy-btn:nth-child(2) {
+    order: 3;
+  }
+  .cy-banner-actions .cy-btn:nth-child(3) {
+    order: 1;
+  }
+  .cy-banner-description {
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+}
+@media (max-height: 480px) {
+  .cy-banner {
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+  .cy-banner-description {
+    max-height: unset;
+    overflow-y: unset;
+  }
+}
