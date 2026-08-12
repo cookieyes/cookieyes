@@ -23,6 +23,20 @@ export function applyScripts(categories: Record<string, boolean>): void {
   }
 }
 
+/**
+ * @internal Test-only — empty the script registry and forget what was injected.
+ * Mirrors {@link _clearStopHandlers}. When a `document` is present the injected
+ * `<script>` elements are removed from it too, so one test can never leave a
+ * gated script behind for the next one. Safe to call with nothing registered.
+ */
+export function _clearScriptRegistry(): void {
+  if (typeof document !== "undefined") {
+    for (const el of injected.values()) el.remove();
+  }
+  registry.clear();
+  injected.clear();
+}
+
 function injectScript(id: string, entry: ScriptEntry): void {
   const existing = document.getElementById(id);
   if (existing) return;

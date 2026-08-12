@@ -1,0 +1,19 @@
+---
+"@cookieyes/test": minor
+---
+
+New package: `@cookieyes/test` — a headless test double for unit-testing consent-dependent code.
+
+Install it as a dev dependency and you get a pretend visitor whose consent behaves exactly like a real one, in a plain Node test — no browser, no real cookies, no network, and no test-runner lock-in (Vitest, Jest, `node:test` and Mocha all work; the package imports none of them).
+
+It is not a mock. It runs `@cookieyes/core`'s own engine, so category rules, required-category enforcement, CCPA opt-out defaults, taxonomy invalidation, cookie serialization, and the `save`/`change` event split are inherited rather than reimplemented — they cannot drift out of step with production.
+
+- `createConsentTest({ initialConsent })` — seed what the visitor already agreed to (brand-new, partial, or everything), then `grant`/`deny`/`acceptAll`/`rejectAll`/`acceptOnly`/`withdrawAll` mid-test to check what happens when they change their mind. `toggle()`/`save()` model the preferences dialog's uncommitted-checkbox state.
+- Misspelled category ids are a **compile error**, and a descriptive runtime throw listing the valid ids if one slips past the type checker — stricter than production, where an unknown id is deliberately ignored.
+- `events()`, `snapshots()`, `backendCalls()`, `on()`, `subscribe()` and `whenReady()` expose every signal the SDK sends, not just "a choice changed". Self-hosted mode captures the `ConsentPayload` that would have been POSTed instead of sending it, so no `fetch` stubbing is needed.
+- Every run starts completely clean: `resetConsentTestState()` returns the runtime and all five module-level registries to their pristine state in dependency order, and `createConsentTest()` runs it on entry so a forgotten teardown elsewhere can't leak.
+- **`@cookieyes/test/react`** brings the identical harness to React components. `@cookieyes/react` registers its own engine rather than consuming core's singleton, so `createReactConsentTest()` drives *that* runtime — meaning `useConsent()`, `<CookieBanner />` and every hook read the state you seed. It adds `runtime`, `showPreferences()`/`hidePreferences()`, `showOptOut()`/`hideOptOut()` and `dismissReloadNotice()`, and reports `isPreferencesOpen`/`isOptOutOpen`/`reloadNotice` on `snapshot()`. Mutations are wrapped in `act()` for you, so a mounted component has re-rendered before the next assertion. `react` and `@cookieyes/react` are optional peers and the main entry imports neither, so nothing changes for consumers who don't use React.
+- **Google Consent Mode is testable.** `googleConsentMode: true` makes core's real Consent Mode broadcast observable through `googleConsent()` — the load-time signal plus one per decision, with signals derived from each category's `gcm` mapping (custom taxonomies included). It is off by default because capturing it requires a minimal `window`, which also changes `payload.domain`; both are documented. `googleConsent()` throws when the option is off rather than returning an empty array that would read like "nothing was broadcast".
+- `seedConsentCookie()` is also exported from both entries for seeding without a harness.
+- **Version mismatches are caught at runtime, not only at install time.** The harness compares the installed `@cookieyes/core` version against the range it was built for and warns once, naming both versions and the consequence. A `peerDependencies` range only helps if the install respected it — a forced install or a hoisted duplicate copy slips past it. Silent on an unparseable version and on a source-linked core, so it never becomes noise. `coreVersionWarning()` and `SUPPORTED_CORE_RANGE` are exported for asserting on the rule directly.
+- The README documents the exact fidelity of every behaviour, including what is *not* simulated (script injection, network blocker, `reloadOnRevoke`, Google Consent Mode, React rendering), and the `@cookieyes/core` version each release pairs with.

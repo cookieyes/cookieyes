@@ -19,6 +19,8 @@ describe("@cookieyes/core public exports", () => {
     "DEFAULT_CATEGORIES",
     "broadcastGoogleConsent",
     "computeGoogleConsent",
+    "_clearScriptRegistry",
+    "CORE_VERSION",
   ] as const;
 
   it.each(EXPECTED)("exports %s", (name) => {

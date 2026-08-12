@@ -1,0 +1,91 @@
+{
+  "name": "@cookieyes/test",
+  "version": "0.1.0",
+  "description": "Headless test double for the CookieYes consent SDK \u2014 wraps the real engine, no browser, cookies, or network",
+  "keywords": [
+    "cookie consent",
+    "GDPR",
+    "CCPA",
+    "consent management",
+    "testing",
+    "test double",
+    "vitest",
+    "jest",
+    "TypeScript",
+    "open source"
+  ],
+  "homepage": "https://github.com/cookieyes/cookieyes/tree/main/sdk/test#readme",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/test"
+  },
+  "license": "MIT",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js",
+      "require": "./dist/react.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && rollup -c",
+    "dev": "rollup -c -w",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run --coverage"
+  },
+  "peerDependencies": {
+    "@cookieyes/core": ">=0.3.0 <1.0.0",
+    "@cookieyes/react": ">=0.4.0 <1.0.0",
+    "react": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@cookieyes/core": "workspace:*",
+    "@cookieyes/react": "workspace:*",
+    "@testing-library/react": "^16.1.0",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "peerDependenciesMeta": {
+    "@cookieyes/react": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  }
+}
