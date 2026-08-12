@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type ConsentSnapshot,
   type RegionConfig,
   type RegionDecision,
   type Regulation,
@@ -8,6 +9,7 @@ import {
 } from "@cookieyes/core";
 import { type ReactNode, useMemo } from "react";
 import { RegionContext } from "./region-context.js";
+import { SsrConsentContext } from "./ssr-consent-context.js";
 
 export type CookieYesProviderProps = {
   /**
@@ -24,6 +26,18 @@ export type CookieYesProviderProps = {
    * `initCookieYes`).
    */
   regulation?: Regulation;
+  /**
+   * A returning visitor's stored consent, read from the request on the server
+   * with `readServerConsent()` (or `getServerConsent()` in `@cookieyes/nextjs`).
+   * Pass it and the banner is never rendered for them — not rendered and then
+   * removed after hydration, which looks like a flicker. `null`/omitted means
+   * "no decision on record", so the banner renders as usual.
+   *
+   * This is a prop rather than an `initCookieYes` option on purpose: the runtime
+   * is a module-level singleton shared across concurrent server requests, so
+   * per-visitor consent stored there would leak between visitors.
+   */
+  initialConsent?: ConsentSnapshot | null;
   children: ReactNode;
 };
 
@@ -48,9 +62,18 @@ function decide(
  * `region` config you give `initCookieYes`. Without it, the hooks read the
  * runtime as before — the provider is optional and additive.
  */
-export function CookieYesProvider({ region, regulation, children }: CookieYesProviderProps) {
+export function CookieYesProvider({
+  region,
+  regulation,
+  initialConsent = null,
+  children,
+}: CookieYesProviderProps) {
   // Resolved from the inputs and memoised on them, so the context value keeps a
   // stable identity across re-renders (consumers don't re-render needlessly).
   const value = useMemo(() => decide(region, regulation), [region, regulation]);
-  return <RegionContext.Provider value={value}>{children}</RegionContext.Provider>;
+  return (
+    <RegionContext.Provider value={value}>
+      <SsrConsentContext.Provider value={initialConsent}>{children}</SsrConsentContext.Provider>
+    </RegionContext.Provider>
+  );
 }

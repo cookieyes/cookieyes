@@ -57,12 +57,20 @@ function injectPkgVersion(version) {
   };
 }
 
-/** Prepend the React Server Components `"use client"` directive AFTER minification. */
-function useClientBanner() {
+/**
+ * Prepend the React Server Components `"use client"` directive AFTER minification.
+ *
+ * `exclude` names entries that must NOT get it — a server-only entry point (one
+ * that reads request state, e.g. `next/headers`) is the opposite of a client
+ * module, and marking it `"use client"` would make importing it from a Server
+ * Component fail.
+ */
+function useClientBanner(exclude = []) {
   return {
     name: "use-client-banner",
     renderChunk(code, chunk) {
       if (!chunk.isEntry) return null;
+      if (exclude.includes(chunk.name)) return null;
       return { code: `"use client";\n${code}`, map: null };
     },
   };
@@ -73,6 +81,7 @@ function useClientBanner() {
  * @param {object} opts.pkg            the package's package.json (for externals)
  * @param {Record<string,string>} [opts.entries]  entry map (default { index: "src/index.ts" })
  * @param {boolean} [opts.useClient]   prepend the "use client" directive (react/nextjs)
+ * @param {string[]} [opts.useClientExclude] entry names that must stay server-only
  * @param {string[]} [opts.formats]    ["esm","cjs"] by default
  * @param {boolean} [opts.dtsBuild]    emit .d.ts (default true)
  * @param {boolean} [opts.sourcemap]   default true
@@ -83,6 +92,7 @@ export function createLibConfig({
   pkg,
   entries = { index: "src/index.ts" },
   useClient = false,
+  useClientExclude = [],
   formats = ["esm", "cjs"],
   dtsBuild = true,
   sourcemap = true,
@@ -130,7 +140,7 @@ export function createLibConfig({
         commonjs(),
         esbuild({ target, jsx: "automatic", sourceMap: sourcemap }),
         terser({ format: { comments: false } }),
-        useClient ? useClientBanner() : null,
+        useClient ? useClientBanner(useClientExclude) : null,
       ].filter(Boolean),
       output: outputs,
     },
