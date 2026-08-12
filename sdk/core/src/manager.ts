@@ -138,7 +138,8 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     };
   }
 
-  function setReloadReasons(reasons: string[]): void {
+  /** Returns whether the reasons actually changed, so callers know to re-notify. */
+  function setReloadReasons(reasons: string[]): boolean {
     const changed =
       reasons.length !== reloadReasons.length || reasons.some((r, i) => r !== reloadReasons[i]);
     if (changed) {
@@ -146,18 +147,59 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       // A genuinely new set of blocked tools → allow the notice to show again.
       reloadDismissed = false;
     }
+    return changed;
   }
 
+  /**
+   * Commit a decision, then run its side effects.
+   *
+   * Order matters, and not for the reason you might expect. Reordering work
+   * inside one synchronous task cannot make the browser paint sooner — it can't
+   * paint mid-task — so this is not a latency optimisation (measured: ~11ms
+   * click-to-response either way). What it buys is that the visible response no
+   * longer depends on third-party code succeeding.
+   *
+   * Previously every side effect ran *before* `notify()`: gated-script injection,
+   * integration stop handlers, and the Google Consent Mode broadcast. Two of
+   * those can throw for reasons outside our control — `injectScript` touches the
+   * DOM, and `broadcastGoogleConsent` calls `dataLayer.push`, which GTM replaces
+   * with its own function that runs customer-authored templates. A throw there
+   * meant `notify()` never ran: the cookie said "accepted" but the banner stayed
+   * on screen until reload. The visitor's click appeared to do nothing.
+   *
+   * So: commit the decision and tell the UI first, then run each side effect in
+   * isolation, so no single failure can strand the banner or block the others.
+   */
   function persist(): void {
     state = {
       ...state,
       hasActed: true,
       lastRenewed: Date.now(),
     };
+    // Durability first: the decision must survive even if everything below fails.
     writeConsentCookie(state);
+
+    // Detect "revoke" — any category that was previously consented but now isn't.
+    // Computed before `lastPersistedCategories` is overwritten below.
+    let didRevoke = false;
+    for (const id of resolved.ids) {
+      if (lastPersistedCategories[id] && !state.categories[id]) {
+        didRevoke = true;
+        break;
+      }
+    }
+    lastPersistedCategories = { ...state.categories };
+    // This is a real decision → commit it.
+    committedCategories = { ...state.categories };
+
+    // The visible response: the banner closes from here. Everything after this
+    // point is a side effect that must not be able to prevent it.
+    notify();
+    config.onConsentUpdate?.(state);
+
+    // Best-effort: swallow both sync throws and async rejections so a
+    // broken/missing backend never breaks the consent UX.
     if (config.backend) {
-      // Best-effort: swallow both sync throws and async rejections so a
-      // broken/missing backend never breaks the consent UX.
       try {
         Promise.resolve(config.backend.persist(buildConsentPayload(state, config.region))).catch(
           () => undefined,
@@ -169,31 +211,38 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       void pushConsent(config.apiUrl, config.apiKey, state, config.region);
     }
 
-    // Detect "revoke" — any category that was previously consented but now isn't.
-    let didRevoke = false;
-    for (const id of resolved.ids) {
-      if (lastPersistedCategories[id] && !state.categories[id]) {
-        didRevoke = true;
-        break;
-      }
+    // Apply script gating from the committed consent. Isolated: a DOM failure
+    // here must not stop the integrations below from being told about the change.
+    try {
+      applyCommittedScripts();
+    } catch {
+      // Injection is best-effort; consent is already committed and broadcast.
     }
-    lastPersistedCategories = { ...state.categories };
-    // This is a real decision → commit it, and (re)apply script gating from it.
-    committedCategories = { ...state.categories };
-    applyCommittedScripts();
 
     // Stop (or resume) integrations to match the new consent state — without a
     // reload. Anything with no clean runtime stop comes back in reloadRequiredBy
     // and surfaces the reload notice instead of silently continuing to track.
-    const { reloadRequiredBy } = applyStopHandlers(committedCategories);
-    setReloadReasons(reloadRequiredBy);
+    let reasonsChanged = false;
+    try {
+      const { reloadRequiredBy } = applyStopHandlers(committedCategories);
+      reasonsChanged = setReloadReasons(reloadRequiredBy);
+    } catch {
+      // Individual handlers already fail safe; this guards the loop itself.
+    }
 
     // Broadcast Google Consent Mode signals for the new state (no-op unless a
     // dataLayer is present). Derived from the category → GCM-signal mapping.
-    broadcastGoogleConsent(resolved, committedCategories);
+    // Still in the same task as the click, so tags see the update immediately.
+    try {
+      broadcastGoogleConsent(resolved, committedCategories);
+    } catch {
+      // A hostile or broken `dataLayer.push` (GTM replaces it) must not strand
+      // the banner — the case this whole ordering exists to prevent.
+    }
 
-    notify();
-    config.onConsentUpdate?.(state);
+    // The reload notice is derived above, i.e. after the notify() that closed the
+    // banner, so it needs its own notification to reach the UI.
+    if (reasonsChanged) notify();
 
     // Legacy opt-in hard reload (off by default). The stop-handlers above are
     // the safe path; this remains only for customers who explicitly want it.
@@ -323,12 +372,27 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   // Mode `update: granted`), instead of being stuck in the page's
   // deny-by-default state. No reload notice at load (that's only for live
   // revokes). Live changes after this go through applyStopHandlers.
-  initStopHandlers(state.categories);
+  // Both of the following are best-effort and individually isolated, for the
+  // same reason as in persist() — but the stakes at load are higher. These run
+  // inside createConsentManager, so an uncaught throw propagates out of
+  // initCookieYes and the SDK never mounts: no banner, no consent prompt at
+  // all. `dataLayer.push` is the realistic culprit (GTM replaces it with a
+  // function that runs customer-authored templates), and a broken third-party
+  // tag must not be able to take the consent banner down with it.
+  try {
+    initStopHandlers(state.categories);
+  } catch {
+    // Integrations start in the page's deny-by-default state; consent is intact.
+  }
 
   // Broadcast the initial Consent Mode state on load (no-op unless a Google
   // dataLayer is present), so Google tags see the returning visitor's choice
   // — or the deny-by-default for a first-time visitor — from first paint.
-  broadcastGoogleConsent(resolved, state.categories);
+  try {
+    broadcastGoogleConsent(resolved, state.categories);
+  } catch {
+    // Google tags keep whatever default the page set; the banner still works.
+  }
 
   return manager;
 }
