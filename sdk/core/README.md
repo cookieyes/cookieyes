@@ -283,23 +283,35 @@ specific narrower situation than `consentStore.on` / `consentStore.subscribe`:
 
 When a visitor revokes consent, the SDK stops tracking **without reloading the
 page** — nothing they were doing (form input, scroll position, an open dialog)
-is lost. There are three layers:
+is lost.
+
+> **Gating vs. stopping.** The cleanest way to handle a third-party script is to
+> **gate** it — never load it until its category is granted — with the
+> `integrations` option and a preset from
+> [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts).
+> The layers below are for scripts that are *already loaded* (first-party
+> vendors, your own tags) and need to be stopped when consent is withdrawn.
+
+There are three layers:
 
 1. **Network blocking** (`networkBlocker` / `blockNetwork`) — intercepts
    `fetch`, `XMLHttpRequest`, **and `navigator.sendBeacon`** to blocked domains,
    in real time, for as long as the page is open. `sendBeacon` matters because
    GA4/Meta use it for exit/unload tracking that fetch/XHR interception misses.
-2. **Integration stop-handlers** (`integrations`) — call a vendor's own
+2. **Built-in stop-handlers** (`builtInIntegrations`) — call a vendor's own
    documented "stop" API on revoke, and resume it on re-accept:
 
    ```ts
    getOrCreateConsentRuntime({
      mode: "cookie-only",
-     integrations: [
+     builtInIntegrations: [
        { vendor: "meta" },  // fbq('consent','revoke'|'grant')
      ],
    });
    ```
+
+   > `builtInIntegrations` was previously called `integrations`; that name now
+   > refers to the gated presets from `@cookieyes/scripts` (see the note above).
 
    > **Google Analytics & Tag Manager are handled automatically** — you don't
    > list them here. The SDK broadcasts Google Consent Mode v2 whenever a
@@ -321,7 +333,7 @@ is lost. There are three layers:
 
 | Vendor | Runtime stop | How |
 |--------|-------------|-----|
-| **Google Analytics 4 / Tag Manager** | ✅ automatic | Consent Mode v2 broadcast — no `integrations` entry needed (see [below](#google-consent-mode-v2)). |
+| **Google Analytics 4 / Tag Manager** | ✅ automatic | Consent Mode v2 broadcast — no `builtInIntegrations` entry needed (see [below](#google-consent-mode-v2)). |
 | **Meta Pixel** | ✅ clean | `fbq('consent', 'revoke')` / `'grant'` |
 | TikTok Pixel | ⚠️ reload | No runtime stop we could confidently verify; modelled as reload-only. |
 | LinkedIn Insight Tag | ⚠️ reload | No documented runtime opt-out after load. |
@@ -331,6 +343,11 @@ is lost. There are three layers:
 "Reload" vendors surface the reload notice (below) on a genuine revoke — the SDK
 never continues tracking them silently. Any of them can be upgraded to a clean
 stop later (in `resolveBuiltInIntegration`) once a real runtime API is confirmed.
+
+> Better still, **gate** the vendor instead of stopping it after the fact:
+> [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts)
+> ships a Segment preset (`segment()`) that never loads until consent and is
+> removed on revoke — so there's nothing to reload.
 
 ### Reload notice
 
@@ -422,7 +439,7 @@ visitor actually agreed to.
 If a Google `dataLayer` is present on the page, the SDK **broadcasts** all seven
 Consent Mode v2 signals — on load and on every consent change — for every
 visitor. This is what governs Google Analytics 4 and Tag Manager; you do **not**
-register them under `integrations`.
+register them under `builtInIntegrations`.
 
 Each signal is `granted` when any granted category maps to it (via its `gcm`
 field), otherwise `denied`. `security_storage` is always `granted`. The built-in
