@@ -3,6 +3,7 @@
 import {
   _logRegionDecision,
   _normalizeConfig,
+  _warnBuiltInIntegrationsDeprecated,
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
   type CategoryDef,
@@ -20,6 +21,8 @@ import {
   createConsentManager,
   createLanguageController,
   type I18nConfig,
+  type Integration,
+  type IntegrationRunner,
   installNetworkBlocker,
   type LanguageInfo,
   type NetworkBlockerConfig,
@@ -31,10 +34,12 @@ import {
   readGpc,
   resolveCategories,
   resolveRegion,
+  runIntegrations,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
   type TranslationMap,
+  warnOverlappingVendors,
 } from "@cookieyes/core";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 
@@ -64,7 +69,8 @@ type RuntimeConfig = {
   apiKey?: string;
   networkBlocker?: NetworkBlockerConfig;
   reloadOnRevoke?: boolean;
-  integrations?: BuiltInIntegration[];
+  integrations?: Integration[];
+  builtInIntegrations?: BuiltInIntegration[];
   customStopHandlers?: StopHandler[];
   categories?: CategoryDef[];
   onConsentReady?: (state: ConsentSnapshot) => void;
@@ -162,7 +168,7 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
     apiKey: (key) => next({ apiKey: key }),
     blockNetwork: (config) => next({ networkBlocker: config }),
     reloadOnRevoke: (value = true) => next({ reloadOnRevoke: value }),
-    integrations: (list) => next({ integrations: list }),
+    integrations: (list) => next({ builtInIntegrations: list }),
     customStopHandlers: (list) => next({ customStopHandlers: list }),
     categories: (list) => next({ categories: list }),
     onConsentReady: (fn) => next({ onConsentReady: fn }),
@@ -222,6 +228,7 @@ export function initCookieYes(config: CookieYesConfig): CookieYesRuntime {
   if (n.networkBlocker !== undefined) cfg.networkBlocker = n.networkBlocker;
   if (n.reloadOnRevoke !== undefined) cfg.reloadOnRevoke = n.reloadOnRevoke;
   if (n.integrations !== undefined) cfg.integrations = n.integrations;
+  if (n.builtInIntegrations !== undefined) cfg.builtInIntegrations = n.builtInIntegrations;
   if (n.customStopHandlers !== undefined) cfg.customStopHandlers = n.customStopHandlers;
   if (n.categories !== undefined) cfg.categories = n.categories;
   if (n.onConsentReady !== undefined) cfg.onConsentReady = n.onConsentReady;
@@ -253,6 +260,7 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
 }) as CookieYesSnapshot;
 
 let _instance: CookieYesRuntime | null = null;
+let _integrationRunner: IntegrationRunner | null = null;
 
 function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (!cfg.mode) {
@@ -295,7 +303,10 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
-  if (cfg.integrations) coreCfg.integrations = cfg.integrations;
+  if (cfg.builtInIntegrations && cfg.builtInIntegrations.length > 0) {
+    _warnBuiltInIntegrationsDeprecated();
+    coreCfg.integrations = cfg.builtInIntegrations;
+  }
   if (cfg.customStopHandlers) coreCfg.customStopHandlers = cfg.customStopHandlers;
   if (cfg.categories) coreCfg.categories = cfg.categories;
   if (cfg.onConsentReady) coreCfg.onConsentReady = cfg.onConsentReady;
@@ -415,6 +426,22 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
         "Replacing the previous runtime.",
     );
   }
+  // Run the configured script integrations (Segment, Google, Meta, …) against
+  // the committed consent. A re-mount replaces the previous runner.
+  _integrationRunner?.stop();
+  _integrationRunner = null;
+  if (cfg.integrations && cfg.integrations.length > 0) {
+    warnOverlappingVendors(
+      cfg.integrations.map((i) => i.id),
+      (cfg.builtInIntegrations ?? []).map((b) => b.vendor),
+    );
+    _integrationRunner = runIntegrations(cfg.integrations, {
+      granted: (category) => manager.committedCategories[category] === true,
+      subscribe: (fn) => manager.subscribe(() => fn()),
+      region: regionDecision,
+    });
+  }
+
   _instance = runtime;
   return runtime;
 }
@@ -446,6 +473,8 @@ export { SSR_SNAPSHOT as _SSR_SNAPSHOT };
 export const _noopSubscribe = (): (() => void) => () => undefined;
 
 export function resetCookieYes(): void {
+  _integrationRunner?.stop();
+  _integrationRunner = null;
   _instance = null;
   _builderDeprecationWarned = false;
 }

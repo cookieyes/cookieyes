@@ -1,0 +1,70 @@
+{
+  "name": "@cookieyes/scripts",
+  "version": "0.1.0",
+  "description": "Ready-made, consent-gated third-party integrations for CookieYes (Segment, Google, Meta, and more)",
+  "keywords": [
+    "cookie consent",
+    "consent management",
+    "GDPR",
+    "CCPA",
+    "script gating",
+    "Google Consent Mode",
+    "Segment",
+    "Meta Pixel",
+    "analytics",
+    "TypeScript",
+    "open source"
+  ],
+  "homepage": "https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts#readme",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/scripts"
+  },
+  "license": "MIT",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && rollup -c",
+    "dev": "rollup -c -w",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "test": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@cookieyes/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

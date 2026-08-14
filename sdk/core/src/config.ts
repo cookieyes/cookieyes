@@ -1,4 +1,5 @@
 import type { CategoryDef } from "./categories.js";
+import type { Integration } from "./integrations.js";
 import type { NetworkBlockerConfig } from "./network-blocker.js";
 import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 import type {
@@ -33,7 +34,9 @@ export type _NormalizedConfig = {
   categories?: CategoryDef[] | undefined;
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
-  integrations?: BuiltInIntegration[] | undefined;
+  integrations?: Integration[] | undefined;
+  /** @deprecated Renamed from `integrations`; use `integrations` with a `@cookieyes/scripts` preset. */
+  builtInIntegrations?: BuiltInIntegration[] | undefined;
   customStopHandlers?: StopHandler[] | undefined;
   onConsentReady?: ((state: ConsentSnapshot) => void) | undefined;
   onConsentUpdate?: ((state: ConsentSnapshot) => void) | undefined;
@@ -90,6 +93,8 @@ export function _normalizeConfig(config: CookieYesConfig): _NormalizedConfig {
   if (config.networkBlocker !== undefined) normalized.networkBlocker = config.networkBlocker;
   if (config.reloadOnRevoke !== undefined) normalized.reloadOnRevoke = config.reloadOnRevoke;
   if (config.integrations !== undefined) normalized.integrations = config.integrations;
+  if (config.builtInIntegrations !== undefined)
+    normalized.builtInIntegrations = config.builtInIntegrations;
   if (config.customStopHandlers !== undefined)
     normalized.customStopHandlers = config.customStopHandlers;
   if (config.onConsentReady !== undefined) normalized.onConsentReady = config.onConsentReady;

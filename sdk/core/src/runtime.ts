@@ -1,7 +1,8 @@
 import { resolveCategories } from "./categories.js";
 import { _normalizeConfig } from "./config.js";
-import { _warnOfflineModeDeprecated } from "./deprecations.js";
+import { _warnBuiltInIntegrationsDeprecated, _warnOfflineModeDeprecated } from "./deprecations.js";
 import { type ConsentEmitter, createConsentEmitter } from "./events.js";
+import { type IntegrationRunner, runIntegrations, warnOverlappingVendors } from "./integrations.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
@@ -36,6 +37,7 @@ function splitCategories(categories: Record<string, boolean>): ConsentChangePayl
 }
 
 let _runtime: ConsentRuntime | null = null;
+let _integrationRunner: IntegrationRunner | null = null;
 
 export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRuntime {
   if (_runtime) return _runtime;
@@ -80,7 +82,10 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
-  if (options.integrations) cfg.integrations = options.integrations;
+  if (options.builtInIntegrations && options.builtInIntegrations.length > 0) {
+    _warnBuiltInIntegrationsDeprecated();
+    cfg.integrations = options.builtInIntegrations;
+  }
   if (options.customStopHandlers) cfg.customStopHandlers = options.customStopHandlers;
   if (options.categories) cfg.categories = options.categories;
   if (options.onConsentReady) cfg.onConsentReady = options.onConsentReady;
@@ -170,6 +175,20 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
     );
   }
 
+  // Run the configured script integrations (Segment, Google, Meta, …) against
+  // the committed consent. Reconciles on every consent change; torn down on reset.
+  if (options.integrations && options.integrations.length > 0) {
+    warnOverlappingVendors(
+      options.integrations.map((i) => i.id),
+      (options.builtInIntegrations ?? []).map((b) => b.vendor),
+    );
+    _integrationRunner = runIntegrations(options.integrations, {
+      granted: (category) => manager.committedCategories[category] === true,
+      subscribe: (fn) => manager.subscribe(() => fn()),
+      region: regionDecision,
+    });
+  }
+
   _runtime = { consentManager: manager, consentStore };
   return _runtime;
 }
@@ -185,5 +204,7 @@ export function initCookieYes(config: CookieYesConfig): ConsentRuntime {
 }
 
 export function resetConsentRuntime(): void {
+  _integrationRunner?.stop();
+  _integrationRunner = null;
   _runtime = null;
 }
