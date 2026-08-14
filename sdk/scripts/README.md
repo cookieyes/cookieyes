@@ -34,11 +34,12 @@ already use.
 | Export | What it's for |
 |---|---|
 | `segment(config)` | Segment (`analytics.js`), gated behind consent. |
+| `metaPixel(config)` | Meta Pixel (`fbq`), gated behind consent. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
-> Google and Meta presets are on the way. Until then, `customScript` +
-> `createQueue` cover any vendor.
+> A Google preset is on the way. Until then, `customScript` + `createQueue`
+> cover any vendor.
 
 ## How an integration behaves
 
@@ -80,6 +81,25 @@ segment({
 - **Expected:** each re-grant starts a fresh Segment session, so Segment sends a
   new page view. That's normal Segment behaviour, not a double-count of your own
   tracked events.
+
+### `metaPixel(config)`
+
+```ts
+metaPixel({
+  pixelId: "123456789",       // required — your Meta Pixel ID
+  category: "advertisement",  // optional — the category that gates it (default "advertisement")
+  id: "meta",                 // optional — only needed if you run more than one
+});
+```
+
+- **`onRevoke: "silence"`** — on withdrawal we call Meta's own
+  `fbq('consent', 'revoke')` rather than removing the script, and clear Meta's
+  `_fbp` / `_fbc` cookies (Meta's own revoke leaves them). A re-grant calls
+  `fbq('consent', 'grant')`, so tracking resumes without re-downloading
+  `fbevents.js`.
+- Track events with `fbq(...)` as usual. Calls made after a revoke are held by
+  Meta's consent mechanism and delivered if consent is re-granted — not dropped.
+  (That's Meta's own behaviour, not a buffer of ours.)
 
 ### `customScript(config)`
 
