@@ -69,7 +69,8 @@
   },
   "dependencies": {
     "@cookieyes/core": "workspace:*",
-    "@cookieyes/react": "workspace:*"
+    "@cookieyes/react": "workspace:*",
+    "@cookieyes/scripts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

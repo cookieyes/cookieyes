@@ -1,4 +1,11 @@
 export { type CustomScriptConfig, customScript } from "./custom-script.js";
+export {
+  bootstrapGoogleConsentMode,
+  type ConsentModeOptions,
+  ga4,
+  type Ga4Config,
+  googleConsentModeSnippet,
+} from "./google.js";
 export { type MetaPixelConfig, metaPixel } from "./meta.js";
 export { createQueue, flushQueue, type QueueStub } from "./queue.js";
 export { type SegmentConfig, segment } from "./segment.js";

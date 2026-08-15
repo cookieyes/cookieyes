@@ -96,6 +96,9 @@ importers:
       '@cookieyes/react':
         specifier: workspace:*
         version: link:../react
+      '@cookieyes/scripts':
+        specifier: workspace:*
+        version: link:../scripts
     devDependencies:
       '@types/node':
         specifier: ^26.1.1
