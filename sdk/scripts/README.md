@@ -35,11 +35,9 @@ already use.
 |---|---|
 | `segment(config)` | Segment (`analytics.js`), gated behind consent. |
 | `metaPixel(config)` | Meta Pixel (`fbq`), gated behind consent. |
+| `ga4()` / `googleAds()` / `googleTagManager()` | Google via Consent Mode (GA4, Ads, GTM). |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
-
-> A Google preset is on the way. Until then, `customScript` + `createQueue`
-> cover any vendor.
 
 ## How an integration behaves
 
@@ -100,6 +98,61 @@ metaPixel({
 - Track events with `fbq(...)` as usual. Calls made after a revoke are held by
   Meta's consent mechanism and delivered if consent is re-granted — not dropped.
   (That's Meta's own behaviour, not a buffer of ours.)
+
+### Google — `ga4()`, `googleAds()`, `googleTagManager()`
+
+Google works through **Consent Mode**, which is different from a gated script.
+Every Google tag shares one `dataLayer`, and consent must **deny by default
+before any tag runs and before `initCookieYes`** — then the SDK broadcasts the
+visitor's real choice on top. That default belongs in the page `<head>`:
+
+```tsx
+// Next.js — app/layout.tsx
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+<body><GoogleConsentMode />{children}</body>
+```
+
+For a non-Next app, paste the snippet in `<head>`, or call the runtime form
+before `initCookieYes`:
+
+```ts
+import { googleConsentModeSnippet, bootstrapGoogleConsentMode } from "@cookieyes/scripts";
+
+// (a) inline in <head>:  <script>${googleConsentModeSnippet()}</script>
+// (b) or, before initCookieYes:
+bootstrapGoogleConsentMode();
+```
+
+> **Why before init:** the SDK broadcasts the consent *update* once at startup.
+> If the `dataLayer` and its deny-default aren't set yet, a returning visitor who
+> consented last time would be stuck denied until they act again. The head
+> snippet is what prevents that. If you skip it, the preset falls back to a
+> deny-default and warns.
+
+Then load the tags on the client — they're `load: "immediately"`,
+`onRevoke: "keep"` (Consent Mode governs the gating, and the SDK broadcasts every
+change):
+
+```ts
+import { ga4, googleAds, googleTagManager } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [
+    ga4({ measurementId: "G-XXXXXXX" }),   // GA4
+    googleAds({ conversionId: "AW-XXXXXXX" }), // Google Ads
+    // or, if you manage tags through a container instead:
+    // googleTagManager({ containerId: "GTM-XXXXXXX" }),
+  ],
+});
+```
+
+- **GA4 and Ads share one `gtag.js`** — loaded once, configured per product, so
+  running both doesn't load the library twice.
+- **GTM** loads the container; the tags inside it (GA4, Ads, …) are governed by
+  the same Consent Mode signals — so use `googleTagManager()` *instead of*
+  `ga4()`/`googleAds()` when those products live in your container.
+- Each takes an optional `category` and `id` override.
 
 ### `customScript(config)`
 

@@ -268,6 +268,34 @@ export default async function RootLayout({ children }) {
   `@cookieyes/core` takes the raw `Cookie` header, for Pages Router `getServerSideProps`,
   middleware, or any other SSR setup.
 
+## Google Consent Mode (GA4, Ads, GTM)
+
+Google tags need a Consent Mode **deny-by-default** set before any tag runs and
+before the SDK boots — so a returning visitor's saved choice applies from first
+paint. Render `<GoogleConsentMode />` high in your root layout:
+
+```tsx
+// app/layout.tsx
+import { CookieYesProvider } from "@cookieyes/nextjs";
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        <CookieYesProvider regulation="GDPR">{children}</CookieYesProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+Then load the tags on the client with a preset from
+[`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts)
+— `ga4()`, `googleAds()`, or `googleTagManager()`. The SDK broadcasts each
+consent change to Google as a Consent Mode `update`; you don't wire that up.
+
 ## API
 
 This package re-exports the entire `@cookieyes/react` surface — the setup function
@@ -275,11 +303,12 @@ This package re-exports the entire `@cookieyes/react` surface — the setup func
 `RecallButton`, `GatedScript`, `GatedFrame`), headless primitives (`Banner`, `Preferences`,
 `OptOut`), and all hooks (`useConsent`, `useConsentActions`, …).
 
-It also adds one **server-only** export on its own subpath, kept out of the `"use client"` barrel:
+It also adds **server-only** exports on their own subpath, kept out of the `"use client"` barrel:
 
 | Import | Export | Purpose |
 |---|---|---|
 | `@cookieyes/nextjs/server` | `getServerConsent(options?)` | Reads the request's cookies and returns a returning visitor's stored decision (or `null`), for `<CookieYesProvider initialConsent>` |
+| `@cookieyes/nextjs/server` | `<GoogleConsentMode />` | Renders the Google Consent Mode deny-by-default into the page `<head>` (see below) |
 
 - Full option reference: **[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)**.
 - Component/hook reference: the **[`@cookieyes/react` README](https://github.com/cookieyes/cookieyes/tree/main/sdk/react#readme)**.
