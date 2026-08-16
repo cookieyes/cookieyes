@@ -161,6 +161,9 @@ initCookieYes({
   the same Consent Mode signals — so use `googleTagManager()` *instead of*
   `ga4()`/`googleAds()` when those products live in your container.
 - Each takes an optional `category` and `id` override.
+- If a **custom taxonomy** maps more than one category to the same Google signal,
+  set `googleConsentMatch: "all"` on `initCookieYes` to grant the signal only when
+  *all* of them are granted (default is `"any"` — grant if any one is).
 
 ### `customScript(config)`
 

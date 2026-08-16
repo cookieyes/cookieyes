@@ -70,6 +70,7 @@ type RuntimeConfig = {
   apiKey?: string;
   networkBlocker?: NetworkBlockerConfig;
   reloadOnRevoke?: boolean;
+  googleConsentMatch?: "all" | "any";
   integrations?: Integration[];
   builtInIntegrations?: BuiltInIntegration[];
   customStopHandlers?: StopHandler[];
@@ -228,6 +229,7 @@ export function initCookieYes(config: CookieYesConfig): CookieYesRuntime {
   if (n.apiKey !== undefined) cfg.apiKey = n.apiKey;
   if (n.networkBlocker !== undefined) cfg.networkBlocker = n.networkBlocker;
   if (n.reloadOnRevoke !== undefined) cfg.reloadOnRevoke = n.reloadOnRevoke;
+  if (n.googleConsentMatch !== undefined) cfg.googleConsentMatch = n.googleConsentMatch;
   if (n.integrations !== undefined) cfg.integrations = n.integrations;
   if (n.builtInIntegrations !== undefined) cfg.builtInIntegrations = n.builtInIntegrations;
   if (n.customStopHandlers !== undefined) cfg.customStopHandlers = n.customStopHandlers;
@@ -304,6 +306,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
+  if (cfg.googleConsentMatch) coreCfg.googleConsentMatch = cfg.googleConsentMatch;
   if (cfg.builtInIntegrations && cfg.builtInIntegrations.length > 0) {
     _warnBuiltInIntegrationsDeprecated();
     coreCfg.integrations = cfg.builtInIntegrations;

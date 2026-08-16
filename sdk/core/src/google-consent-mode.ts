@@ -35,28 +35,34 @@ function hasDataLayer(): boolean {
  * Compute the granted/denied value for every GCM signal from the current
  * category consent, using each category's `gcm` mapping.
  *
- * - A signal is `granted` if *any* granted category maps to it.
- * - `security_storage` is always `granted` (it's strictly necessary and not
- *   consentable — this mirrors production's behaviour).
- * - A signal that no category maps to defaults to `denied`.
+ * - When several categories map to the same signal, `match` decides: `"any"`
+ *   (default) grants it if *any* mapping category is granted; `"all"` requires
+ *   *every* mapping category to be granted. For the built-in five (one category
+ *   per signal) the two are identical — `match` only matters for custom overlaps.
+ * - `security_storage` is always `granted` (strictly necessary, not consentable).
+ * - A signal that no category maps to stays `denied`.
  */
 export function computeGoogleConsent(
   resolved: ResolvedCategories,
   categories: Record<string, boolean>,
+  match: "all" | "any" = "any",
 ): Record<GoogleConsentSignal, GcmValue> {
   const result = {} as Record<GoogleConsentSignal, GcmValue>;
   for (const signal of ALL_SIGNALS) {
-    result[signal] = "denied";
-  }
-  // security_storage is never gated on consent.
-  result.security_storage = "granted";
-
-  for (const def of resolved.list) {
-    if (!def.gcm || def.gcm.length === 0) continue;
-    if (!categories[def.id]) continue;
-    for (const signal of def.gcm) {
-      result[signal] = "granted";
+    if (signal === "security_storage") {
+      result[signal] = "granted"; // never gated on consent
+      continue;
     }
+    const mappers = resolved.list.filter((def) => def.gcm?.includes(signal));
+    if (mappers.length === 0) {
+      result[signal] = "denied"; // nothing maps to it
+      continue;
+    }
+    const granted =
+      match === "all"
+        ? mappers.every((def) => categories[def.id] === true)
+        : mappers.some((def) => categories[def.id] === true);
+    result[signal] = granted ? "granted" : "denied";
   }
   return result;
 }
@@ -73,10 +79,11 @@ export function computeGoogleConsent(
 export function broadcastGoogleConsent(
   resolved: ResolvedCategories,
   categories: Record<string, boolean>,
+  match: "all" | "any" = "any",
 ): void {
   if (!hasDataLayer()) return;
 
-  const consent = computeGoogleConsent(resolved, categories);
+  const consent = computeGoogleConsent(resolved, categories, match);
   const dataLayer = (window as WindowWithDataLayer).dataLayer;
   if (!dataLayer) return;
 

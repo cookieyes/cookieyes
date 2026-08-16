@@ -32,6 +32,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   // validated fallback to the five). Everything below is driven by this.
   const resolved = resolveCategories(config.categories);
 
+  // How to combine multiple categories mapping to the same Google signal.
+  const gcmMatch = config.googleConsentMatch ?? "any";
+
   let state: ConsentSnapshot;
   let isPreferencesOpen = false;
   let lastPersistedCategories: Record<string, boolean>;
@@ -234,7 +237,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     // dataLayer is present). Derived from the category → GCM-signal mapping.
     // Still in the same task as the click, so tags see the update immediately.
     try {
-      broadcastGoogleConsent(resolved, committedCategories);
+      broadcastGoogleConsent(resolved, committedCategories, gcmMatch);
     } catch {
       // A hostile or broken `dataLayer.push` (GTM replaces it) must not strand
       // the banner — the case this whole ordering exists to prevent.
@@ -323,7 +326,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       // Realign clean-stop flags with the reset state; clear any reload notice
       // (a reset re-prompts, so a stale "reload to apply" message is wrong).
       applyStopHandlers(committedCategories);
-      broadcastGoogleConsent(resolved, committedCategories);
+      broadcastGoogleConsent(resolved, committedCategories, gcmMatch);
       reloadReasons = [];
       reloadDismissed = false;
       notify();
@@ -389,7 +392,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   // dataLayer is present), so Google tags see the returning visitor's choice
   // — or the deny-by-default for a first-time visitor — from first paint.
   try {
-    broadcastGoogleConsent(resolved, state.categories);
+    broadcastGoogleConsent(resolved, state.categories, gcmMatch);
   } catch {
     // Google tags keep whatever default the page set; the banner still works.
   }

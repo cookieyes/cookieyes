@@ -149,6 +149,12 @@ export type ConsentConfig = {
   colorScheme?: ColorScheme | undefined;
   reloadOnRevoke?: boolean | undefined;
   /**
+   * How to combine multiple categories that map to the same Google Consent Mode
+   * signal: `"any"` (default) grants the signal if any maps-and-granted; `"all"`
+   * requires every mapping category. Only affects custom overlapping mappings.
+   */
+  googleConsentMatch?: "all" | "any" | undefined;
+  /**
    * Built-in, first-party integrations to stop cleanly (no reload) when their
    * category is revoked — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag
    * Manager are handled automatically via the Consent Mode broadcast — no entry
@@ -294,6 +300,12 @@ type CookieYesConfigCommon = {
   categories?: CategoryDef[] | undefined;
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
+  /**
+   * How to combine multiple categories that map to the same Google Consent Mode
+   * signal: `"any"` (default) or `"all"`. Only matters for a custom taxonomy
+   * where more than one category maps to the same signal.
+   */
+  googleConsentMatch?: "all" | "any" | undefined;
   /**
    * Ready-made third-party integrations to gate behind consent — Segment, Meta,
    * Google, and more — using a preset from `@cookieyes/scripts`. Each preset

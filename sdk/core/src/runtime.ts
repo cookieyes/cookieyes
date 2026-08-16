@@ -87,6 +87,7 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
   if (options.colorScheme) cfg.colorScheme = options.colorScheme;
   if (options.theme) cfg.theme = options.theme;
   if (options.reloadOnRevoke) cfg.reloadOnRevoke = options.reloadOnRevoke;
+  if (options.googleConsentMatch) cfg.googleConsentMatch = options.googleConsentMatch;
   if (options.builtInIntegrations && options.builtInIntegrations.length > 0) {
     _warnBuiltInIntegrationsDeprecated();
     cfg.integrations = options.builtInIntegrations;

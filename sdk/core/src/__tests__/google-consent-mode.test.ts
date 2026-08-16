@@ -65,6 +65,35 @@ describe("computeGoogleConsent", () => {
     expect(c.ad_storage).toBe("granted");
     expect(c.analytics_storage).toBe("denied"); // no category maps to it
   });
+
+  describe("when two categories map to the same signal", () => {
+    const overlap = resolveCategories([
+      { id: "essential", required: true },
+      { id: "product_stats", gcm: ["analytics_storage"] },
+      { id: "marketing_stats", gcm: ["analytics_storage"] },
+    ]);
+
+    it("match 'any' (default): granted if either maps-and-granted", () => {
+      const c = computeGoogleConsent(overlap, { product_stats: true, marketing_stats: false });
+      expect(c.analytics_storage).toBe("granted");
+    });
+
+    it("match 'all': granted only when every mapping category is granted", () => {
+      const partial = computeGoogleConsent(
+        overlap,
+        { product_stats: true, marketing_stats: false },
+        "all",
+      );
+      expect(partial.analytics_storage).toBe("denied"); // one missing → denied
+
+      const full = computeGoogleConsent(
+        overlap,
+        { product_stats: true, marketing_stats: true },
+        "all",
+      );
+      expect(full.analytics_storage).toBe("granted"); // both granted → granted
+    });
+  });
 });
 
 describe("broadcastGoogleConsent", () => {
