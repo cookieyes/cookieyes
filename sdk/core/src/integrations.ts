@@ -34,7 +34,16 @@ export type SetupCtx = {
 
 type Base = {
   id: string;
-  category: ConsentCategory;
+  /**
+   * The consent category (or categories) that gate this integration. Pass an
+   * array to require more than one — combined with {@link Base.match}.
+   */
+  category: ConsentCategory | ConsentCategory[];
+  /**
+   * How to combine multiple categories: `"all"` (default) needs every one
+   * granted; `"any"` needs at least one. Ignored for a single category.
+   */
+  match?: "all" | "any";
   /** Format version; an unknown version is refused (see {@link runIntegrations}). */
   version: number;
   /**
@@ -161,6 +170,18 @@ function warn(message: string, err?: unknown): void {
 }
 
 /**
+ * Is this integration's category requirement met? One category → just that one.
+ * Several → `match: "all"` (default) needs every one granted, `"any"` needs one.
+ */
+function isGranted(integration: Integration, host: IntegrationHost): boolean {
+  const cats = Array.isArray(integration.category) ? integration.category : [integration.category];
+  if (cats.length === 0) return false;
+  return integration.match === "any"
+    ? cats.some((c) => host.granted(c))
+    : cats.every((c) => host.granted(c));
+}
+
+/**
  * Run a set of integrations against the consent runtime. Reconciles each one on
  * load and on every committed-consent change:
  * - not loaded → load it (immediately, or once its category is granted)
@@ -221,7 +242,7 @@ export function runIntegrations(
 
   function ctxFor(entry: Entry): SetupCtx {
     return {
-      granted: () => host.granted(entry.integration.category),
+      granted: () => isGranted(entry.integration, host),
       onConsentChange: (fn) => {
         // Track the vendor's listener so it's released on teardown — otherwise a
         // removed or stopped vendor keeps listening forever.
@@ -302,7 +323,7 @@ export function runIntegrations(
 
   function reconcile(entry: Entry): void {
     const { integration } = entry;
-    const granted = host.granted(integration.category);
+    const granted = isGranted(integration, host);
     // Record a grant even while the script is still loading — otherwise a
     // grant-then-withdraw during the load window is lost, and a `remove` vendor
     // would never be removed afterward.

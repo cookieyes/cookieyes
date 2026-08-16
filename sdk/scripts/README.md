@@ -170,7 +170,7 @@ Gate any one-off third-party script behind consent.
 customScript({
   id: "widget",                        // unique id (used for de-dup + the debug view)
   src: "https://example.com/w.js",     // script URL, loaded once consent is granted
-  category: "functional",              // the category that gates it
+  category: "functional",              // the category that gates it (or an array — see below)
   onRevoke: "remove",                  // "remove" (default) or "keep"
   attrs: { "data-id": "abc" },         // optional extra <script> attributes (e.g. nonce)
   stub: { global: "myTag", methods: ["track"] }, // optional queue stub (see below)
@@ -183,6 +183,9 @@ customScript({
   [raw integration](#writing-your-own-integration).
 - `onRevoke: "remove"` (default) takes the script off the page on withdrawal;
   `"keep"` leaves it. Only choose `"keep"` if the script manages its own consent.
+- `category` can be an **array** to require more than one — e.g.
+  `category: ["functional", "analytics"]`. Combine with `match: "all"` (default,
+  needs every one) or `match: "any"` (needs at least one).
 - `attrs` are set on the `<script>` before it's added — so `nonce` works for a
   strict CSP.
 

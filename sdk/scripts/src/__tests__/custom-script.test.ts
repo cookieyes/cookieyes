@@ -58,6 +58,17 @@ describe("customScript()", () => {
     expect(runner.status().widget).toBe("removed");
   });
 
+  it("gates on multiple categories (match 'all' by default)", async () => {
+    const { host, set } = makeHost();
+    runIntegrations([customScript({ ...base, category: ["functional", "analytics"] })], host);
+    set("functional", true);
+    await flush();
+    expect(el()).toBeNull(); // only one granted → not loaded
+    set("analytics", true);
+    await flush();
+    expect(el()).not.toBeNull(); // both granted → loaded
+  });
+
   it("keeps the script on revoke when onRevoke is 'keep'", async () => {
     const { host, set } = makeHost();
     runIntegrations([customScript({ ...base, onRevoke: "keep" })], host);

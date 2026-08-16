@@ -6,8 +6,10 @@ export type CustomScriptConfig = {
   id: string;
   /** Script URL to load once consent is granted. */
   src: string;
-  /** Consent category that gates it. */
-  category: string;
+  /** Consent category (or categories) that gate it. Pass an array to require more than one. */
+  category: string | string[];
+  /** How to combine multiple categories: `"all"` (default) or `"any"`. Ignored for a single category. */
+  match?: "all" | "any";
   /**
    * What to do on withdrawal. `"remove"` (default) takes the script off the page;
    * `"keep"` leaves it. Only choose `"keep"` if the script manages its own
@@ -37,7 +39,12 @@ export type CustomScriptConfig = {
  */
 export function customScript(config: CustomScriptConfig): Integration {
   const elId = `cky-script-${config.id}`;
-  const base = { id: config.id, category: config.category, version: 1 } as const;
+  const base = {
+    id: config.id,
+    category: config.category,
+    version: 1,
+    ...(config.match ? { match: config.match } : {}),
+  };
 
   const inject = (): Promise<HTMLScriptElement | null> =>
     new Promise((resolve, reject) => {

@@ -138,6 +138,33 @@ describe("runIntegrations", () => {
     expect(runner.status().gtag).toBe("active");
   });
 
+  it("multiple categories default to match 'all' — loads only when every one is granted", async () => {
+    const { host, set } = makeHost();
+    const runner = runIntegrations(
+      [anIntegration({ id: "multi", category: ["analytics", "advertisement"] })],
+      host,
+    );
+    set("analytics", true);
+    await flush();
+    expect(runner.status().multi).toBe("idle"); // only one granted → not loaded
+    set("advertisement", true);
+    await flush();
+    expect(runner.status().multi).toBe("active"); // both granted → loaded
+    set("analytics", false);
+    expect(runner.status().multi).toBe("removed"); // one withdrawn → AND no longer met
+  });
+
+  it("multiple categories with match 'any' — loads when at least one is granted", async () => {
+    const { host, set } = makeHost();
+    const runner = runIntegrations(
+      [anIntegration({ id: "multi", category: ["analytics", "advertisement"], match: "any" })],
+      host,
+    );
+    set("advertisement", true);
+    await flush();
+    expect(runner.status().multi).toBe("active"); // one granted is enough
+  });
+
   it("keep vendors can subscribe to consent changes via the ctx", async () => {
     const onChange = vi.fn();
     const integration: Integration = {
