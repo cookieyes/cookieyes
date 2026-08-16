@@ -107,7 +107,15 @@ export function warnUnknownCategories(integrations: Integration[], knownCategory
   for (const integration of integrations) {
     if (integration.load !== "afterConsent") continue;
     const raw = integration.category as ConsentCategory | ConsentCategory[];
-    for (const category of Array.isArray(raw) ? raw : [raw]) {
+    const cats = Array.isArray(raw) ? raw : [raw];
+    if (cats.length === 0) {
+      warn(
+        `integration "${integration.id}" has an empty category list — it will never load. ` +
+          "Give it at least one category that exists in your taxonomy.",
+      );
+      continue;
+    }
+    for (const category of cats) {
       if (!known.has(category)) {
         warn(
           `integration "${integration.id}" is gated on category "${category}", which isn't in ` +

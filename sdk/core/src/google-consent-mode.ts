@@ -32,6 +32,33 @@ function hasDataLayer(): boolean {
 }
 
 /**
+ * Warn when more than one category maps to the same Consent Mode signal. Google
+ * has a single on/off per signal, so this mapping is lossy — `googleConsentMatch`
+ * decides which way it fails (`"any"` grants if either is granted, `"all"`
+ * requires both). Surfacing it lets the customer choose deliberately instead of
+ * discovering it in an audit. The built-in five don't overlap, so this is quiet
+ * unless a custom taxonomy creates it.
+ */
+export function warnOverlappingGcm(resolved: ResolvedCategories): void {
+  const perSignal = new Map<GoogleConsentSignal, string[]>();
+  for (const def of resolved.list) {
+    for (const signal of def.gcm ?? []) {
+      perSignal.set(signal, [...(perSignal.get(signal) ?? []), def.id]);
+    }
+  }
+  for (const [signal, ids] of perSignal) {
+    if (ids.length > 1 && typeof console !== "undefined") {
+      console.warn(
+        `[cookieyes] categories ${ids.map((id) => JSON.stringify(id)).join(", ")} all map to the Google ` +
+          `signal "${signal}", which is a single on/off — this mapping is lossy. Set ` +
+          '`googleConsentMatch: "all"` to grant it only when all are granted, or "any" ' +
+          "(default) to grant it when any is.",
+      );
+    }
+  }
+}
+
+/**
  * Compute the granted/denied value for every GCM signal from the current
  * category consent, using each category's `gcm` mapping.
  *

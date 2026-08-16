@@ -7,7 +7,7 @@ import {
   readConsentCookie,
   writeConsentCookie,
 } from "./cookie.js";
-import { broadcastGoogleConsent } from "./google-consent-mode.js";
+import { broadcastGoogleConsent, warnOverlappingGcm } from "./google-consent-mode.js";
 import { applyScripts, registerScript } from "./scripts.js";
 import {
   applyStopHandlers,
@@ -34,6 +34,8 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
   // How to combine multiple categories mapping to the same Google signal.
   const gcmMatch = config.googleConsentMatch ?? "any";
+  // If the taxonomy has a lossy overlap and the customer hasn't chosen a mode, warn.
+  if (config.googleConsentMatch === undefined) warnOverlappingGcm(resolved);
 
   let state: ConsentSnapshot;
   let isPreferencesOpen = false;

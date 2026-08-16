@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cookieDomains, deleteCookie } from "../cookies.js";
+import { cookieDomains, cookieExpiries, deleteCookie } from "../cookies.js";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -15,16 +15,28 @@ describe("cookieDomains()", () => {
   });
 });
 
+describe("cookieExpiries()", () => {
+  it("expires host-only, then on each parent domain", () => {
+    expect(cookieExpiries("_fbp", "www.shop.example.com")).toEqual([
+      "_fbp=; max-age=0; path=/",
+      "_fbp=; max-age=0; path=/; domain=.www.shop.example.com",
+      "_fbp=; max-age=0; path=/; domain=.shop.example.com",
+      "_fbp=; max-age=0; path=/; domain=.example.com",
+    ]);
+  });
+
+  it("writes only the host-only expiry when there is no parent domain", () => {
+    expect(cookieExpiries("_fbp", "localhost")).toEqual(["_fbp=; max-age=0; path=/"]);
+  });
+});
+
 describe("deleteCookie()", () => {
-  it("expires the cookie host-only, then on each parent domain from the host", () => {
+  it("writes every expiry string to document.cookie", () => {
     const writes: string[] = [];
     vi.spyOn(document, "cookie", "set").mockImplementation((v: string) => writes.push(v));
-
     deleteCookie("_fbp");
-
-    // Host-only expiry always goes out first; parent-domain expiries follow (the
-    // exact domains depend on the host and are covered by cookieDomains() above).
-    expect(writes[0]).toBe("_fbp=; max-age=0; path=/");
-    expect(writes.every((w) => w.startsWith("_fbp=; max-age=0; path=/"))).toBe(true);
+    // In jsdom the host is localhost, so this is the host-only expiry; the full
+    // domain list is asserted by cookieExpiries() above.
+    expect(writes).toEqual(cookieExpiries("_fbp", location.hostname));
   });
 });

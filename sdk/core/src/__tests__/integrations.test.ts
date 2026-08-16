@@ -501,6 +501,12 @@ describe("warnUnknownCategories()", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
+  it("warns on an empty category array (would never load)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnUnknownCategories([anIntegration({ id: "widget", category: [] })], ["stats"]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("empty category list"));
+  });
+
   it("does not warn for an immediately-loaded integration (category doesn't gate it)", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     warnUnknownCategories(

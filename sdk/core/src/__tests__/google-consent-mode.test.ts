@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveCategories } from "../categories.js";
-import { broadcastGoogleConsent, computeGoogleConsent } from "../google-consent-mode.js";
+import {
+  broadcastGoogleConsent,
+  computeGoogleConsent,
+  warnOverlappingGcm,
+} from "../google-consent-mode.js";
 
 const resolved = resolveCategories(); // built-in five
 
@@ -123,5 +127,27 @@ describe("broadcastGoogleConsent", () => {
     expect(payload.analytics_storage).toBe("granted");
     expect(payload.ad_storage).toBe("denied");
     expect(payload.security_storage).toBe("granted");
+  });
+});
+
+describe("warnOverlappingGcm", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("warns when two categories map to the same signal", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnOverlappingGcm(
+      resolveCategories([
+        { id: "essential", required: true },
+        { id: "product_stats", gcm: ["analytics_storage"] },
+        { id: "marketing_stats", gcm: ["analytics_storage"] },
+      ]),
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('map to the Google signal "analytics_storage"'));
+  });
+
+  it("stays quiet for the built-in five (no overlap)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnOverlappingGcm(resolveCategories(undefined));
+    expect(warn).not.toHaveBeenCalled();
   });
 });

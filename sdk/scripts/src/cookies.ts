@@ -17,12 +17,18 @@ export function cookieDomains(hostname: string): string[] {
   return domains;
 }
 
+/** The `document.cookie` strings that expire `name` host-only and on each parent domain of `hostname`. */
+export function cookieExpiries(name: string, hostname: string): string[] {
+  const out = [`${name}=; max-age=0; path=/`]; // host-only
+  for (const domain of cookieDomains(hostname)) {
+    out.push(`${name}=; max-age=0; path=/; domain=.${domain}`);
+  }
+  return out;
+}
+
 /** Expire a cookie host-only and on each parent domain, so a domain-scoped cookie is really removed. */
 export function deleteCookie(name: string): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${name}=; max-age=0; path=/`; // host-only
   const host = typeof location !== "undefined" ? location.hostname : "";
-  for (const domain of cookieDomains(host)) {
-    document.cookie = `${name}=; max-age=0; path=/; domain=.${domain}`;
-  }
+  for (const expiry of cookieExpiries(name, host)) document.cookie = expiry;
 }
