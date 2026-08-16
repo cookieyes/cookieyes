@@ -150,4 +150,15 @@ describe("warnOverlappingGcm", () => {
     warnOverlappingGcm(resolveCategories(undefined));
     expect(warn).not.toHaveBeenCalled();
   });
+
+  it("does not treat one category listing a signal twice as an overlap", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnOverlappingGcm(
+      resolveCategories([
+        { id: "essential", required: true },
+        { id: "stats", gcm: ["analytics_storage", "analytics_storage"] },
+      ]),
+    );
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

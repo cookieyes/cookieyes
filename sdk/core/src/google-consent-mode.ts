@@ -1,5 +1,9 @@
 import type { GoogleConsentSignal, ResolvedCategories } from "./categories.js";
 
+function warn(message: string): void {
+  if (typeof console !== "undefined") console.warn(`[cookieyes] ${message}`);
+}
+
 /**
  * The full set of Google Consent Mode v2 signals. We always broadcast all
  * seven so any Google tag (GA4, Ads, GTM-managed tags) sees a complete picture,
@@ -40,21 +44,26 @@ function hasDataLayer(): boolean {
  * unless a custom taxonomy creates it.
  */
 export function warnOverlappingGcm(resolved: ResolvedCategories): void {
-  const perSignal = new Map<GoogleConsentSignal, string[]>();
+  const perSignal = new Map<GoogleConsentSignal, Set<string>>();
   for (const def of resolved.list) {
     for (const signal of def.gcm ?? []) {
-      perSignal.set(signal, [...(perSignal.get(signal) ?? []), def.id]);
+      let ids = perSignal.get(signal);
+      if (!ids) {
+        ids = new Set();
+        perSignal.set(signal, ids);
+      }
+      ids.add(def.id);
     }
   }
-  for (const [signal, ids] of perSignal) {
-    if (ids.length > 1 && typeof console !== "undefined") {
-      console.warn(
-        `[cookieyes] categories ${ids.map((id) => JSON.stringify(id)).join(", ")} all map to the Google ` +
-          `signal "${signal}", which is a single on/off — this mapping is lossy. Set ` +
-          '`googleConsentMatch: "all"` to grant it only when all are granted, or "any" ' +
-          "(default) to grant it when any is.",
-      );
-    }
+  for (const [signal, idSet] of perSignal) {
+    // >1 distinct category → a genuine overlap (a category mapping a signal twice isn't one).
+    if (idSet.size <= 1) continue;
+    const ids = [...idSet].map((id) => JSON.stringify(id)).join(", ");
+    warn(
+      `categories ${ids} all map to the Google signal "${signal}", which is a single ` +
+        "on/off — this mapping is lossy. Set `googleConsentMatch: \"all\"` to grant it only " +
+        'when all are granted, or "any" (default) to grant it when any is.',
+    );
   }
 }
 
