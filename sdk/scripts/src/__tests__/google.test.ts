@@ -141,6 +141,18 @@ describe("ga4()", () => {
     expect(el()).not.toBeNull();
   });
 
+  it("marks error when gtag.js fails to load, and removes it for retry", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    const runner = runIntegrations([ga4({ measurementId: "G-TEST" })], host);
+    await flush();
+    el()?.dispatchEvent(new Event("error")); // e.g. an ad blocker
+    await flush();
+    expect(runner.status().ga4).toBe("error"); // truthful, not "active"
+    expect(el()).toBeNull();
+  });
+
   it("allows an id override", () => {
     expect(ga4({ measurementId: "G-X" }).id).toBe("ga4");
     expect(ga4({ measurementId: "G-X", id: "g2" }).id).toBe("g2");
@@ -168,6 +180,18 @@ describe("googleAds()", () => {
     expect(ads.id).toBe("google-ads");
     expect(ads.category).toBe("advertisement");
     expect(googleAds({ conversionId: "AW-X", id: "ads2" }).id).toBe("ads2");
+  });
+
+  it("configures a given id only once, even if two integrations request it", async () => {
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    runIntegrations(
+      [ga4({ measurementId: "G-DUP" }), ga4({ measurementId: "G-DUP", id: "ga4b" })],
+      host,
+    );
+    await flush();
+    const configs = commands().filter((c) => c[0] === "config" && c[1] === "G-DUP");
+    expect(configs).toHaveLength(1);
   });
 });
 
@@ -199,5 +223,23 @@ describe("googleTagManager()", () => {
     expect(document.querySelectorAll(`#${GTM}`)).toHaveLength(1);
     expect(document.getElementById(GTM)).not.toBeNull();
     expect(googleTagManager({ containerId: "GTM-X" }).id).toBe("gtm");
+  });
+
+  it("errors on container load failure, retries without pushing gtm.start twice", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    bootstrapGoogleConsentMode();
+    const { host, set } = makeHost();
+    const runner = runIntegrations([googleTagManager({ containerId: "GTM-R" })], host);
+    await flush();
+    document.getElementById(GTM)?.dispatchEvent(new Event("error"));
+    await flush();
+    expect(runner.status().gtm).toBe("error");
+    set("analytics", true); // triggers a retry → re-injects the container
+    await flush();
+    expect(document.getElementById(GTM)).not.toBeNull();
+    const starts = (win().dataLayer ?? []).filter(
+      (c) => (c as unknown as { event?: string }).event === "gtm.js",
+    );
+    expect(starts).toHaveLength(1); // gtm.start pushed once, not per retry
   });
 });

@@ -129,9 +129,18 @@ function ensureGtagLibrary(firstId: string): HTMLScriptElement | null {
   return script;
 }
 
-/** Register one Google product on the shared gtag (idempotent per id). */
+/** Has a matching command already been pushed to the dataLayer? (keeps retries idempotent) */
+function dataLayerHas(predicate: (cmd: unknown) => boolean): boolean {
+  return ((window as WindowWithGtag).dataLayer ?? []).some(predicate);
+}
+
+/** Register one Google product on the shared gtag — once per id, even across retries. */
 function configureGtag(id: string): void {
-  (window as WindowWithGtag).gtag?.("config", id);
+  const already = dataLayerHas((cmd) => {
+    const c = cmd as Record<number, unknown>;
+    return c[0] === "config" && c[1] === id;
+  });
+  if (!already) (window as WindowWithGtag).gtag?.("config", id);
 }
 
 /** Ensure the GTM container script is on the page (injected once). */
@@ -142,7 +151,9 @@ function ensureGtm(containerId: string): HTMLScriptElement | null {
   if (existing) return existing;
   const w = window as WindowWithGtag;
   const dataLayer = (w.dataLayer = w.dataLayer ?? []);
-  dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+  if (!dataLayerHas((cmd) => (cmd as { event?: string }).event === "gtm.js")) {
+    dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+  }
   const script = document.createElement("script");
   script.id = GTM_SCRIPT_ID;
   script.async = true;
@@ -155,6 +166,11 @@ function ensureGtm(containerId: string): HTMLScriptElement | null {
  * A load-immediately, keep-on-revoke integration: run `ensure` (idempotent
  * script injection) and resolve when its script loads. Consent updates are
  * handled by core's Consent Mode broadcast, so there's nothing to do on revoke.
+ *
+ * A load failure (e.g. an ad blocker) rejects, so the status is truthful
+ * (`error`, not `active`) and the debug view tells the truth; the engine retries
+ * on the next consent change. `config`/`gtm.start` are guarded, so a retry never
+ * double-registers.
  */
 function keepLoadIntegration(
   base: { id: string; category: string },
@@ -166,7 +182,7 @@ function keepLoadIntegration(
     load: "immediately",
     onRevoke: "keep",
     setup: () =>
-      new Promise<void>((resolve) => {
+      new Promise<void>((resolve, reject) => {
         const script = ensure();
         if (!script || script.dataset.ckyLoaded === "true") {
           resolve();
@@ -180,8 +196,14 @@ function keepLoadIntegration(
           },
           { once: true },
         );
-        // keep: a failed load is non-fatal — the deny-default is already set.
-        script.addEventListener("error", () => resolve(), { once: true });
+        script.addEventListener(
+          "error",
+          () => {
+            script.remove(); // remove so a retry can re-inject
+            reject(new Error(`Google script for "${base.id}" failed to load`));
+          },
+          { once: true },
+        );
       }),
   };
 }
