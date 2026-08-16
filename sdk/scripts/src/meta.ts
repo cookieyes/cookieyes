@@ -1,4 +1,5 @@
 import type { Integration, SilenceControl } from "@cookieyes/core";
+import { deleteCookie } from "./cookies.js";
 
 export type MetaPixelConfig = {
   /** Your Meta Pixel ID (the numeric id from Events Manager). */
@@ -121,9 +122,7 @@ function ensureMeta(pixelId: string): HTMLScriptElement | null {
 function silenceMeta(): void {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   (window as WindowWithFbq).fbq?.("consent", "revoke");
-  for (const name of ["_fbp", "_fbc"]) {
-    document.cookie = `${name}=; max-age=0; path=/`;
-  }
+  for (const name of ["_fbp", "_fbc"]) deleteCookie(name);
 }
 
 /** Tell Meta it may resume tracking. */

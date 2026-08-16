@@ -1,4 +1,5 @@
 import type { Cleanup, Integration } from "@cookieyes/core";
+import { deleteCookie } from "./cookies.js";
 
 export type SegmentConfig = {
   /** Your Segment source write key. Public by design — safe in browser code. */
@@ -150,7 +151,7 @@ function removeSegment(): void {
   (window as Window & { analytics?: AnalyticsStub | undefined }).analytics = undefined;
   // Clear Segment's own identifiers so nothing keeps tracking after withdrawal.
   for (const name of ["ajs_anonymous_id", "ajs_user_id"]) {
-    document.cookie = `${name}=; max-age=0; path=/`;
+    deleteCookie(name);
     try {
       window.localStorage?.removeItem(name);
     } catch {
