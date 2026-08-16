@@ -58,6 +58,14 @@ depends on how each vendor behaves, not on your app — so `segment()` locks it 
 and you can't pick the wrong one. Only `customScript` lets you choose, because
 only you know how your own script behaves.
 
+### Custom categories
+
+Every preset accepts a `category` to match your taxonomy. If you use a **custom
+`categories` list** (not the built-in five), pass the matching id — e.g.
+`segment({ writeKey, category: "stats" })`. A preset left on a default category
+that doesn't exist in your taxonomy would wait for consent that never comes and
+silently never load — so the SDK **warns** when it detects this.
+
 ## Presets
 
 ### `segment(config)`

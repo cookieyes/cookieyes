@@ -35,6 +35,7 @@ import {
   resolveCategories,
   resolveRegion,
   runIntegrations,
+  warnUnknownCategories,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
@@ -435,6 +436,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       cfg.integrations.map((i) => i.id),
       (cfg.builtInIntegrations ?? []).map((b) => b.vendor),
     );
+    warnUnknownCategories(cfg.integrations, Object.keys(manager.committedCategories));
     _integrationRunner = runIntegrations(cfg.integrations, {
       granted: (category) => manager.committedCategories[category] === true,
       subscribe: (fn) => manager.subscribe(() => fn()),

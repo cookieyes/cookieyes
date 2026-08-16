@@ -86,6 +86,30 @@ export function warnOverlappingVendors(integrationIds: string[], builtInVendors:
   }
 }
 
+/**
+ * Warn when an `afterConsent` integration is gated on a category that isn't in
+ * the configured taxonomy — otherwise it waits for consent that can never be
+ * granted and silently never loads. A common trap with a custom `categories`
+ * list plus a preset left on its default category (e.g. `segment()` → "analytics").
+ * `immediately` integrations aren't gated by category, so they're not checked.
+ */
+export function warnUnknownCategories(integrations: Integration[], knownCategoryIds: string[]): void {
+  const known = new Set(knownCategoryIds);
+  for (const integration of integrations) {
+    if (integration.load !== "afterConsent") continue;
+    const raw = integration.category as ConsentCategory | ConsentCategory[];
+    for (const category of Array.isArray(raw) ? raw : [raw]) {
+      if (!known.has(category)) {
+        warn(
+          `integration "${integration.id}" is gated on category "${category}", which isn't in ` +
+            "your configured categories — it will never load. Pass a category that exists " +
+            "(e.g. segment({ category: \"…\" })), or add it to your taxonomy.",
+        );
+      }
+    }
+  }
+}
+
 /** Live status of one integration — read by the debug/self-check view. */
 export type IntegrationStatus =
   | "idle" // afterConsent, waiting for consent

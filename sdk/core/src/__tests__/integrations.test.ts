@@ -1,6 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type Integration, type IntegrationHost, runIntegrations } from "../integrations.js";
+import {
+  type Integration,
+  type IntegrationHost,
+  runIntegrations,
+  warnUnknownCategories,
+} from "../integrations.js";
 import type { RegionDecision } from "../types.js";
+
+const anIntegration = (over: Partial<Integration>): Integration =>
+  ({
+    id: "x",
+    category: "analytics",
+    version: 1,
+    load: "afterConsent",
+    onRevoke: "remove",
+    setup: () => () => {},
+    ...over,
+  }) as Integration;
 
 const REGION: RegionDecision = {
   region: undefined,
@@ -440,5 +456,30 @@ describe("runIntegrations", () => {
     // A grant did happen, so the withdrawal is a real revoke → remove fires.
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(runner.status().x).toBe("removed");
+  });
+});
+
+describe("warnUnknownCategories()", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("warns when an afterConsent integration is gated on a category not in the taxonomy", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnUnknownCategories([anIntegration({ id: "segment", category: "analytics" })], ["stats", "marketing"]);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('gated on category "analytics"'));
+  });
+
+  it("does not warn when the category exists in the taxonomy", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnUnknownCategories([anIntegration({ id: "segment", category: "stats" })], ["stats"]);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("does not warn for an immediately-loaded integration (category doesn't gate it)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnUnknownCategories(
+      [anIntegration({ id: "ga4", category: "analytics", load: "immediately", onRevoke: "keep", setup: () => {} })],
+      ["stats"],
+    );
+    expect(warn).not.toHaveBeenCalled();
   });
 });

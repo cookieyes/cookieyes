@@ -41,6 +41,7 @@ export {
   INTEGRATION_FORMAT_VERSION,
   runIntegrations,
   warnOverlappingVendors,
+  warnUnknownCategories,
 } from "./integrations.js";
 export type { LanguageController } from "./language.js";
 export { createLanguageController } from "./language.js";

@@ -2,7 +2,12 @@ import { resolveCategories } from "./categories.js";
 import { _normalizeConfig } from "./config.js";
 import { _warnBuiltInIntegrationsDeprecated, _warnOfflineModeDeprecated } from "./deprecations.js";
 import { type ConsentEmitter, createConsentEmitter } from "./events.js";
-import { type IntegrationRunner, runIntegrations, warnOverlappingVendors } from "./integrations.js";
+import {
+  type IntegrationRunner,
+  runIntegrations,
+  warnOverlappingVendors,
+  warnUnknownCategories,
+} from "./integrations.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker } from "./network-blocker.js";
@@ -182,6 +187,7 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
       options.integrations.map((i) => i.id),
       (options.builtInIntegrations ?? []).map((b) => b.vendor),
     );
+    warnUnknownCategories(options.integrations, resolved.ids);
     _integrationRunner = runIntegrations(options.integrations, {
       granted: (category) => manager.committedCategories[category] === true,
       subscribe: (fn) => manager.subscribe(() => fn()),
