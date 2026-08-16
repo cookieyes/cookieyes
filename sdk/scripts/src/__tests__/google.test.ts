@@ -1,6 +1,12 @@
 import { type IntegrationHost, type RegionDecision, runIntegrations } from "@cookieyes/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { bootstrapGoogleConsentMode, ga4, googleConsentModeSnippet } from "../google.js";
+import {
+  bootstrapGoogleConsentMode,
+  ga4,
+  googleAds,
+  googleConsentModeSnippet,
+  googleTagManager,
+} from "../google.js";
 
 const REGION: RegionDecision = {
   region: undefined,
@@ -138,5 +144,60 @@ describe("ga4()", () => {
   it("allows an id override", () => {
     expect(ga4({ measurementId: "G-X" }).id).toBe("ga4");
     expect(ga4({ measurementId: "G-X", id: "g2" }).id).toBe("g2");
+  });
+});
+
+describe("googleAds()", () => {
+  it("shares gtag.js with GA4 (one library, both configs) — the multi-tracker case", async () => {
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    runIntegrations(
+      [ga4({ measurementId: "G-AAA" }), googleAds({ conversionId: "AW-BBB" })],
+      host,
+    );
+    await flush();
+    expect(document.querySelectorAll(`#${GTAG}`)).toHaveLength(1); // single shared gtag.js
+    const configs = commands()
+      .filter((c) => c[0] === "config")
+      .map((c) => c[1]);
+    expect(configs).toEqual(expect.arrayContaining(["G-AAA", "AW-BBB"]));
+  });
+
+  it("defaults to the advertisement category and id 'google-ads'", () => {
+    const ads = googleAds({ conversionId: "AW-X" });
+    expect(ads.id).toBe("google-ads");
+    expect(ads.category).toBe("advertisement");
+    expect(googleAds({ conversionId: "AW-X", id: "ads2" }).id).toBe("ads2");
+  });
+});
+
+describe("googleTagManager()", () => {
+  const GTM = "cky-google-gtm";
+
+  it("loads the container and pushes gtm.start", async () => {
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    const runner = runIntegrations([googleTagManager({ containerId: "GTM-XYZ" })], host);
+    await flush();
+    const gtm = document.getElementById(GTM) as HTMLScriptElement | null;
+    expect(gtm?.src).toContain("gtm.js?id=GTM-XYZ");
+    // gtm.start is pushed as a plain object (not a consent arguments array).
+    const dl = win().dataLayer ?? [];
+    expect(dl.some((c) => (c as unknown as { event?: string }).event === "gtm.js")).toBe(true);
+    expect(runner.status().gtm).toBe("loading");
+    gtm?.dispatchEvent(new Event("load"));
+    await flush();
+    expect(runner.status().gtm).toBe("active");
+  });
+
+  it("loads once and stays on revoke (keep); default id 'gtm'", async () => {
+    bootstrapGoogleConsentMode();
+    const { host, set } = makeHost({ analytics: true });
+    runIntegrations([googleTagManager({ containerId: "GTM-XYZ" })], host);
+    await flush();
+    set("analytics", false);
+    expect(document.querySelectorAll(`#${GTM}`)).toHaveLength(1);
+    expect(document.getElementById(GTM)).not.toBeNull();
+    expect(googleTagManager({ containerId: "GTM-X" }).id).toBe("gtm");
   });
 });

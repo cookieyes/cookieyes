@@ -96,23 +96,29 @@ export function bootstrapGoogleConsentMode(options?: ConsentModeOptions): void {
 
 const GTAG_SRC = "https://www.googletagmanager.com/gtag/js";
 const GTAG_SCRIPT_ID = "cky-google-gtag";
+const GTM_SRC = "https://www.googletagmanager.com/gtm.js";
+const GTM_SCRIPT_ID = "cky-google-gtm";
 
 function warn(message: string): void {
   if (typeof console !== "undefined") console.warn(`[cookieyes] ${message}`);
 }
 
+/** Warn (once per call site) and fall back to a deny-default if the head snippet was skipped. */
+function ensureConsentModeReady(): void {
+  if (typeof window === "undefined") return;
+  if ((window as WindowWithGtag).__ckyGcmReady) return;
+  warn(
+    "Google Consent Mode default was not set before init — add the <head> snippet " +
+      "(googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. " +
+      "Falling back to a deny-by-default now.",
+  );
+  bootstrapGoogleConsentMode();
+}
+
 /** Ensure the shared `gtag.js` library is on the page (injected once). */
 function ensureGtagLibrary(firstId: string): HTMLScriptElement | null {
-  if (typeof window === "undefined" || typeof document === "undefined") return null;
-  const w = window as WindowWithGtag;
-  if (!w.__ckyGcmReady) {
-    warn(
-      "Google Consent Mode default was not set before init — add the <head> snippet " +
-        "(googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. " +
-        "Falling back to a deny-by-default now.",
-    );
-    bootstrapGoogleConsentMode();
-  }
+  if (typeof document === "undefined") return null;
+  ensureConsentModeReady();
   const existing = document.getElementById(GTAG_SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) return existing;
   const script = document.createElement("script");
@@ -128,8 +134,32 @@ function configureGtag(id: string): void {
   (window as WindowWithGtag).gtag?.("config", id);
 }
 
-/** Shared loader for the gtag-based products (GA4, Google Ads). */
-function gtagIntegration(targetId: string, base: { id: string; category: string }): Integration {
+/** Ensure the GTM container script is on the page (injected once). */
+function ensureGtm(containerId: string): HTMLScriptElement | null {
+  if (typeof document === "undefined") return null;
+  ensureConsentModeReady();
+  const existing = document.getElementById(GTM_SCRIPT_ID) as HTMLScriptElement | null;
+  if (existing) return existing;
+  const w = window as WindowWithGtag;
+  const dataLayer = (w.dataLayer = w.dataLayer ?? []);
+  dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });
+  const script = document.createElement("script");
+  script.id = GTM_SCRIPT_ID;
+  script.async = true;
+  script.src = `${GTM_SRC}?id=${encodeURIComponent(containerId)}`;
+  document.head.appendChild(script);
+  return script;
+}
+
+/**
+ * A load-immediately, keep-on-revoke integration: run `ensure` (idempotent
+ * script injection) and resolve when its script loads. Consent updates are
+ * handled by core's Consent Mode broadcast, so there's nothing to do on revoke.
+ */
+function keepLoadIntegration(
+  base: { id: string; category: string },
+  ensure: () => HTMLScriptElement | null,
+): Integration {
   return {
     ...base,
     version: 1,
@@ -137,8 +167,7 @@ function gtagIntegration(targetId: string, base: { id: string; category: string 
     onRevoke: "keep",
     setup: () =>
       new Promise<void>((resolve) => {
-        const script = ensureGtagLibrary(targetId);
-        configureGtag(targetId);
+        const script = ensure();
         if (!script || script.dataset.ckyLoaded === "true") {
           resolve();
           return;
@@ -151,7 +180,7 @@ function gtagIntegration(targetId: string, base: { id: string; category: string 
           },
           { once: true },
         );
-        // keep: a failed gtag.js load is non-fatal — the deny-default is already set.
+        // keep: a failed load is non-fatal — the deny-default is already set.
         script.addEventListener("error", () => resolve(), { once: true });
       }),
   };
@@ -175,8 +204,66 @@ export type Ga4Config = {
  * initCookieYes({ mode: "cookie-only", integrations: [ga4({ measurementId: "G-XXXX" })] });
  */
 export function ga4(config: Ga4Config): Integration {
-  return gtagIntegration(config.measurementId, {
-    id: config.id ?? "ga4",
-    category: config.category ?? "analytics",
-  });
+  return keepLoadIntegration(
+    { id: config.id ?? "ga4", category: config.category ?? "analytics" },
+    () => {
+      const script = ensureGtagLibrary(config.measurementId);
+      configureGtag(config.measurementId);
+      return script;
+    },
+  );
+}
+
+export type GoogleAdsConfig = {
+  /** Google Ads id, e.g. `"AW-XXXXXXXXX"`. */
+  conversionId: string;
+  /** Consent category. Default `"advertisement"`. (Consent Mode governs the actual gating.) */
+  category?: string;
+  /** Override the integration id. Default `"google-ads"`. */
+  id?: string;
+};
+
+/**
+ * Google Ads, via Consent Mode. Shares the same `gtag.js` as {@link ga4} (loaded
+ * once) and registers the conversion id. Requires the Consent Mode default in
+ * the `<head>` — see {@link googleConsentModeSnippet}.
+ *
+ * @example
+ * initCookieYes({ mode: "cookie-only", integrations: [googleAds({ conversionId: "AW-XXXX" })] });
+ */
+export function googleAds(config: GoogleAdsConfig): Integration {
+  return keepLoadIntegration(
+    { id: config.id ?? "google-ads", category: config.category ?? "advertisement" },
+    () => {
+      const script = ensureGtagLibrary(config.conversionId);
+      configureGtag(config.conversionId);
+      return script;
+    },
+  );
+}
+
+export type GoogleTagManagerConfig = {
+  /** GTM container id, e.g. `"GTM-XXXXXXX"`. */
+  containerId: string;
+  /** Consent category. Default `"analytics"`. (The tags inside the container are governed by Consent Mode, not this.) */
+  category?: string;
+  /** Override the integration id. Default `"gtm"`. */
+  id?: string;
+};
+
+/**
+ * Google Tag Manager, via Consent Mode. Loads the container (`gtm.js`); the tags
+ * you configure inside it (GA4, Ads, others) are governed by the Consent Mode
+ * signals the SDK broadcasts. Requires the Consent Mode default in the `<head>`
+ * — see {@link googleConsentModeSnippet}. Use this instead of `ga4()`/`googleAds()`
+ * when those products are managed *through* your container.
+ *
+ * @example
+ * initCookieYes({ mode: "cookie-only", integrations: [googleTagManager({ containerId: "GTM-XXXX" })] });
+ */
+export function googleTagManager(config: GoogleTagManagerConfig): Integration {
+  return keepLoadIntegration(
+    { id: config.id ?? "gtm", category: config.category ?? "analytics" },
+    () => ensureGtm(config.containerId),
+  );
 }
