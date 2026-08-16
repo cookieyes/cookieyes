@@ -211,6 +211,20 @@ describe("runIntegrations", () => {
     expect(runner.status().future).toBeUndefined();
   });
 
+  it("guides an old { vendor } entry to builtInIntegrations (targeted warning, skipped)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    // The pre-rename shape a JS caller might still pass to `integrations`.
+    const legacy = { vendor: "meta", category: "advertisement" } as unknown as Integration;
+    const { host } = makeHost();
+    const runner = runIntegrations([legacy], host);
+    await flush();
+    expect(runner.status()).toEqual({}); // not run
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('looks like the old built-in format ({ vendor: "meta" })'),
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("builtInIntegrations"));
+  });
+
   it("stop() unsubscribes — no more reconciling", async () => {
     const setup = vi.fn(() => vi.fn());
     const integration: Integration = {

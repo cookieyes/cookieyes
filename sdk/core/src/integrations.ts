@@ -157,6 +157,18 @@ export function runIntegrations(
   let stopped = false;
 
   for (const integration of integrations) {
+    // A leftover from the old API — `integrations: [{ vendor: "meta" }]`. That
+    // field was renamed to `builtInIntegrations`, so guide the developer here
+    // instead of skipping it with a confusing "unknown version" warning.
+    const legacy = integration as unknown as { vendor?: unknown; setup?: unknown };
+    if (typeof legacy.vendor === "string" && typeof legacy.setup !== "function") {
+      warn(
+        `an entry in "integrations" looks like the old built-in format ` +
+          `({ vendor: "${legacy.vendor}" }). That moved to "builtInIntegrations" — move it ` +
+          `there, or use a preset from "@cookieyes/scripts" in "integrations". Skipping it.`,
+      );
+      continue;
+    }
     if (integration.version !== INTEGRATION_FORMAT_VERSION) {
       // Unknown format version → refuse to run it, don't guess (Story 5).
       warn(
