@@ -9,7 +9,7 @@ const REGION: RegionDecision = {
   confidence: "high",
 };
 
-function makeHost(initial: Record<string, boolean> = {}) {
+function makeHost(initial: Record<string, boolean> = {}, region: RegionDecision = REGION) {
   const consent: Record<string, boolean> = { ...initial };
   const subs = new Set<() => void>();
   const host: IntegrationHost = {
@@ -18,7 +18,7 @@ function makeHost(initial: Record<string, boolean> = {}) {
       subs.add(fn);
       return () => subs.delete(fn);
     },
-    region: REGION,
+    region,
   };
   return {
     host,
@@ -29,6 +29,11 @@ function makeHost(initial: Record<string, boolean> = {}) {
   };
 }
 
+const CCPA_REGION: RegionDecision = { ...REGION, regulation: "CCPA", region: "US-CA" };
+const queue = () => (fbq() as unknown as { queue: unknown[][] } | undefined)?.queue ?? [];
+const hasCall = (a: unknown[]) =>
+  queue().some((c) => c.length === a.length && c.every((v, i) => JSON.stringify(v) === JSON.stringify(a[i])));
+
 const flush = () => new Promise((r) => setTimeout(r, 0));
 const SCRIPT = "cky-meta-pixel";
 const el = () => document.getElementById(SCRIPT) as HTMLScriptElement | null;
@@ -36,8 +41,10 @@ const fbq = () => (window as unknown as { fbq?: (...a: unknown[]) => void }).fbq
 const fireLoad = () => el()?.dispatchEvent(new Event("load"));
 const fireError = () => el()?.dispatchEvent(new Event("error"));
 const clearWindow = () => {
-  (window as unknown as { fbq?: unknown; _fbq?: unknown }).fbq = undefined;
-  (window as unknown as { fbq?: unknown; _fbq?: unknown })._fbq = undefined;
+  const w = window as unknown as { fbq?: unknown; _fbq?: unknown; __ckyFbqInit?: unknown };
+  w.fbq = undefined;
+  w._fbq = undefined;
+  w.__ckyFbqInit = undefined;
 };
 
 beforeEach(() => {
@@ -144,6 +151,59 @@ describe("metaPixel()", () => {
     await flush();
     expect(runner.status().meta).toBe("active"); // resolved without waiting for load
     expect((window as unknown as { fbq: unknown }).fbq).toBe(existingFbq); // reused, not recreated
+  });
+
+  it("queues init + PageView only once, even after a failed-load retry (no double count)", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { host, set } = makeHost();
+    runIntegrations([metaPixel({ pixelId: "123" })], host);
+    set("advertisement", true);
+    await flush();
+    fireError(); // fbevents.js fails → engine will retry
+    await flush();
+    set("advertisement", false);
+    set("advertisement", true); // retry: re-injects the script
+    await flush();
+    expect(el()).not.toBeNull();
+    // init + PageView must appear exactly once across both attempts.
+    expect(queue().filter((c) => c[0] === "init").length).toBe(1);
+    expect(queue().filter((c) => c[0] === "track" && c[1] === "PageView").length).toBe(1);
+  });
+
+  it("skips the automatic PageView when autoPageView is false", async () => {
+    const { host, set } = makeHost();
+    runIntegrations([metaPixel({ pixelId: "123", autoPageView: false })], host);
+    set("advertisement", true);
+    await flush();
+    expect(hasCall(["init", "123"])).toBe(true);
+    expect(hasCall(["track", "PageView"])).toBe(false);
+  });
+
+  it("enables Limited Data Use automatically for a CCPA visitor (before init)", async () => {
+    const { host, set } = makeHost({}, CCPA_REGION);
+    runIntegrations([metaPixel({ pixelId: "123" })], host);
+    set("advertisement", true);
+    await flush();
+    expect(hasCall(["dataProcessingOptions", ["LDU"], 0, 0])).toBe(true);
+    // and it's queued before init.
+    const q = queue();
+    const ldu = q.findIndex((c) => c[0] === "dataProcessingOptions");
+    const init = q.findIndex((c) => c[0] === "init");
+    expect(ldu).toBeLessThan(init);
+  });
+
+  it("does not enable LDU for a non-US visitor, and an explicit false wins", async () => {
+    const a = makeHost({}, REGION); // DEFAULT
+    runIntegrations([metaPixel({ pixelId: "123" })], a.host);
+    a.set("advertisement", true);
+    await flush();
+    expect(hasCall(["dataProcessingOptions", ["LDU"], 0, 0])).toBe(false);
+    clearWindow();
+    const b = makeHost({}, CCPA_REGION);
+    runIntegrations([metaPixel({ pixelId: "123", limitedDataUse: false })], b.host);
+    b.set("advertisement", true);
+    await flush();
+    expect(hasCall(["dataProcessingOptions", ["LDU"], 0, 0])).toBe(false);
   });
 
   it("allows an id override", () => {

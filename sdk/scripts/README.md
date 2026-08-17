@@ -81,12 +81,31 @@ segment({
 - **`onRevoke: "remove"`** — on withdrawal the script and Segment's own
   identifiers (`ajs_anonymous_id`, `ajs_user_id`) are removed. Withdrawal really
   means "stop and wipe."
-- Send events through `window.analytics` as usual (`analytics.track(...)`,
-  `analytics.identify(...)`). Segment's snippet queues calls until the real
-  library has loaded, so a call made right after consent isn't lost.
+- Send events through `window.analytics` (`analytics.track(...)`,
+  `analytics.identify(...)`); the snippet queues calls until the library loads.
+  **But because `remove` deletes `window.analytics` on withdrawal, a later
+  `analytics.track(...)` throws.** Use `safeCall` to call from anywhere without
+  guarding — it's a no-op when Segment is gone (i.e. no consent), so it never
+  throws and never tracks without consent:
+
+  ```ts
+  import { safeCall } from "@cookieyes/scripts";
+  safeCall("analytics", "track", "Signup", { plan: "pro" });
+  ```
 - **Expected:** each re-grant starts a fresh Segment session, so Segment sends a
   new page view. That's normal Segment behaviour, not a double-count of your own
   tracked events.
+- **Attach the consent choice to the profile** (if you want it in Segment): do it
+  yourself on a consent change — `getCookieYes().manager.subscribe(...)` then
+  `analytics.identify(id, { consent: {...} })`. We don't do it for you, so you
+  control the traits and timing.
+- **Account setting:** turn Segment's own consent/Consent-Management features
+  **off** — this preset is the gate. Two consent layers fighting each other is the
+  usual cause of "events don't show up."
+- **Server-side boundary:** this is a browser package. It stops *client* tracking
+  and clears client ids. It **cannot** delete data already sent to Segment —
+  that's Segment's server-side deletion/suppression API (a secret key, your
+  backend), out of scope here.
 
 ### `metaPixel(config)`
 
@@ -95,6 +114,8 @@ metaPixel({
   pixelId: "123456789",       // required — your Meta Pixel ID
   category: "advertisement",  // optional — the category that gates it (default "advertisement")
   id: "meta",                 // optional — only needed if you run more than one
+  autoPageView: true,         // optional — send the first-page PageView (default true; false for SPAs)
+  limitedDataUse: undefined,  // optional — omit to auto-enable for US opt-out (CCPA); true/false forces it
 });
 ```
 
@@ -105,7 +126,15 @@ metaPixel({
   `fbevents.js`.
 - Track events with `fbq(...)` as usual. Calls made after a revoke are held by
   Meta's consent mechanism and delivered if consent is re-granted — not dropped.
-  (That's Meta's own behaviour, not a buffer of ours.)
+  To call before it has loaded, guard it: `window.fbq?.("track", "Purchase")`.
+- **`autoPageView: false`** — turn off the automatic first-page `PageView` and
+  send page views yourself (single-page apps).
+- **`limitedDataUse`** — Meta's US privacy flag. Omit it and it's enabled
+  automatically for a US opt-out (CCPA) visitor via the detected region; pass
+  `true`/`false` to force it. It's sent before `init`, as Meta requires.
+- **Server-side boundary:** browser-side event **deduplication with the
+  Conversions API** (a shared `event_id` between the pixel and your server) needs
+  a server sending matching events — out of scope for this browser package.
 
 ### Google — `ga4()`, `googleAds()`, `googleTagManager()`
 

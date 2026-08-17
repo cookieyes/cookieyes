@@ -53,11 +53,6 @@ type Base = {
    * snippet's job, not the engine's.
    */
   load: "immediately" | "afterConsent";
-  /**
-   * Reserved for a later slice: queue calls made before the first load and
-   * replay them once loaded. Off by default. Not yet acted on by the engine.
-   */
-  replayAfterConsent?: boolean;
 };
 
 export type Integration = Base &

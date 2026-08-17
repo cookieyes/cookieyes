@@ -8,6 +8,13 @@ export type MetaPixelConfig = {
   category?: string;
   /** Override the integration id (only needed if you run more than one). Default `"meta"`. */
   id?: string;
+  /** Send the automatic first-page `PageView`. Default `true`; set `false` to track pages yourself (SPAs). */
+  autoPageView?: boolean;
+  /**
+   * Meta Limited Data Use (US privacy). Leave unset to enable it automatically
+   * for a US opt-out visitor (CCPA); `true`/`false` forces it on/off.
+   */
+  limitedDataUse?: boolean;
 };
 
 /**
@@ -23,9 +30,9 @@ export type MetaPixelConfig = {
  * fails), so the engine's status is truthful: `loading` → `active`, `silenced`,
  * or `error` (retried on the next consent change).
  *
- * Note on events sent while silenced: `fbq` calls made after a revoke are held
- * by Meta's consent mechanism and delivered if consent is re-granted — they are
- * not dropped. (This is Meta's behaviour, not our own buffer.)
+ * Events sent while silenced are held by Meta's own consent mechanism and
+ * delivered if consent is re-granted — not dropped. To call `fbq` before it has
+ * loaded (or after a revoke), guard it: `window.fbq?.("track", "Purchase")`.
  *
  * @example
  * initCookieYes({ mode: "cookie-only", integrations: [metaPixel({ pixelId: "123" })] });
@@ -37,10 +44,15 @@ export function metaPixel(config: MetaPixelConfig): Integration {
     version: 1,
     load: "afterConsent",
     onRevoke: "silence",
-    setup: () =>
+    setup: (ctx) =>
       new Promise<SilenceControl>((resolve, reject) => {
         const control: SilenceControl = { silence: silenceMeta, resume: resumeMeta };
-        const script = ensureMeta(config.pixelId);
+        // Limited Data Use: explicit config wins; otherwise on for a US opt-out (CCPA) visitor.
+        const ldu = config.limitedDataUse ?? ctx.region.regulation === "CCPA";
+        const script = ensureMeta(config.pixelId, {
+          autoPageView: config.autoPageView ?? true,
+          limitedDataUse: ldu,
+        });
         if (!script) {
           resolve(control); // no DOM (SSR) — nothing to wait for
           return;
@@ -81,14 +93,20 @@ type FbqStub = ((...args: unknown[]) => void) & {
   loaded: boolean;
   version: string;
 };
-type WindowWithFbq = Window & typeof globalThis & { fbq?: FbqStub; _fbq?: FbqStub };
+type WindowWithFbq = Window &
+  typeof globalThis & { fbq?: FbqStub; _fbq?: FbqStub; __ckyFbqInit?: Set<string> };
 
 /**
- * Ensure the `window.fbq` stub exists (idempotent), init the pixel + queue the
- * first `PageView`, and put `fbevents.js` on the page. Returns the `<script>`
- * element (or `null` in SSR). Re-injects the script if a prior load failed.
+ * Ensure the `window.fbq` stub exists (idempotent), init the pixel once (with
+ * Limited Data Use + the first `PageView` if enabled), and put `fbevents.js` on
+ * the page. Returns the `<script>` element (or `null` in SSR). Re-injects the
+ * script if a prior load failed — without re-queuing `init`/`PageView`, so a
+ * retry never double-counts.
  */
-function ensureMeta(pixelId: string): HTMLScriptElement | null {
+function ensureMeta(
+  pixelId: string,
+  opts: { autoPageView: boolean; limitedDataUse: boolean },
+): HTMLScriptElement | null {
   if (typeof window === "undefined" || typeof document === "undefined") return null;
   const w = window as WindowWithFbq;
 
@@ -105,8 +123,15 @@ function ensureMeta(pixelId: string): HTMLScriptElement | null {
     if (!w._fbq) w._fbq = fbq;
   }
 
-  w.fbq("init", pixelId);
-  w.fbq("track", "PageView");
+  // Init once per pixel. A retry after a failed load re-injects the script below,
+  // but must not re-queue init/PageView (that was the double-PageView bug).
+  const inited = (w.__ckyFbqInit ??= new Set<string>());
+  if (!inited.has(pixelId)) {
+    inited.add(pixelId);
+    if (opts.limitedDataUse) w.fbq("dataProcessingOptions", ["LDU"], 0, 0);
+    w.fbq("init", pixelId);
+    if (opts.autoPageView) w.fbq("track", "PageView");
+  }
 
   const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) return existing;
