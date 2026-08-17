@@ -9,7 +9,9 @@ export type { _NormalizedConfig } from "./config.js";
 export { _normalizeConfig } from "./config.js";
 export { generateConsentId, parseCookie, parseCookieHeader, serializeCookie } from "./cookie.js";
 export {
+  _resetBuiltInIntegrationsWarning,
   _resetOfflineModeWarning,
+  _warnBuiltInIntegrationsDeprecated,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
 export type { ConsentEmitter } from "./events.js";
@@ -26,6 +28,22 @@ export {
   primaryOf,
   resolveTranslations,
 } from "./i18n.js";
+export type {
+  Cleanup,
+  Integration,
+  IntegrationDebugInfo,
+  IntegrationHost,
+  IntegrationRunner,
+  IntegrationStatus,
+  SetupCtx,
+  SilenceControl,
+} from "./integrations.js";
+export {
+  INTEGRATION_FORMAT_VERSION,
+  runIntegrations,
+  warnOverlappingVendors,
+  warnUnknownCategories,
+} from "./integrations.js";
 export type { LanguageController } from "./language.js";
 export { createLanguageController } from "./language.js";
 export { createConsentManager } from "./manager.js";

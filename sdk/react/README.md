@@ -179,6 +179,7 @@ full option reference (modes, `theme`, `i18n`, self-hosted persistence, callback
 | `theme` | `ThemeConfig` | Color / radius / font tokens (see [Theming](#theming)). |
 | `i18n` | `I18nConfig` | Locale translation maps (see [`@cookieyes/translations`](https://github.com/cookieyes/cookieyes/tree/main/sdk/translations)). |
 | `apiUrl` / `backend` | `string` / `ConsentBackend` | Self-hosted persistence (`mode: "self-hosted"`). |
+| `integrations` | `Integration[]` | Consent-gated third-party scripts (Segment, custom scripts, …) via presets from [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts). |
 | `onConsentReady` / `onConsentUpdate` | `(state) => void` | Lifecycle callbacks. |
 
 > Migrating from the deprecated `createCookieYes()` builder? See the
@@ -585,7 +586,7 @@ an existing integration, the builder configures the same runtime:
 | `.apiKey(key)` | Optional auth key. |
 | `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. See **[how script blocking works and what it costs](https://github.com/cookieyes/cookieyes/blob/main/docs/script-blocking.md)**. |
 | `.categories([...])` | Define your own category taxonomy instead of the built-in five. See [core: consent categories](../core/README.md#consent-categories). |
-| `.integrations([...])` | Stop built-in vendors cleanly on revoke — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag Manager are handled automatically via Consent Mode — no entry needed.) See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
+| `.integrations([...])` | Built-in vendor stop-handlers — e.g. `{ vendor: "meta" }` — the deprecated `builtInIntegrations` path. For new consent-gated scripts, pass `integrations` to `initCookieYes(config)` with a preset from [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts). See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
 | `.customStopHandlers([...])` | Stop your own scripts on revoke (clean `stop()`, or `needsReload: true`). |
 | `.reloadOnRevoke(true)` | **Legacy, off by default.** Full page reload on revoke — erases what the visitor was doing. Prefer `.integrations(...)`. |
 | `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |

@@ -1,6 +1,10 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveCategories } from "../categories.js";
-import { broadcastGoogleConsent, computeGoogleConsent } from "../google-consent-mode.js";
+import {
+  broadcastGoogleConsent,
+  computeGoogleConsent,
+  warnOverlappingGcm,
+} from "../google-consent-mode.js";
 
 const resolved = resolveCategories(); // built-in five
 
@@ -65,6 +69,35 @@ describe("computeGoogleConsent", () => {
     expect(c.ad_storage).toBe("granted");
     expect(c.analytics_storage).toBe("denied"); // no category maps to it
   });
+
+  describe("when two categories map to the same signal", () => {
+    const overlap = resolveCategories([
+      { id: "essential", required: true },
+      { id: "product_stats", gcm: ["analytics_storage"] },
+      { id: "marketing_stats", gcm: ["analytics_storage"] },
+    ]);
+
+    it("match 'any' (default): granted if either maps-and-granted", () => {
+      const c = computeGoogleConsent(overlap, { product_stats: true, marketing_stats: false });
+      expect(c.analytics_storage).toBe("granted");
+    });
+
+    it("match 'all': granted only when every mapping category is granted", () => {
+      const partial = computeGoogleConsent(
+        overlap,
+        { product_stats: true, marketing_stats: false },
+        "all",
+      );
+      expect(partial.analytics_storage).toBe("denied"); // one missing → denied
+
+      const full = computeGoogleConsent(
+        overlap,
+        { product_stats: true, marketing_stats: true },
+        "all",
+      );
+      expect(full.analytics_storage).toBe("granted"); // both granted → granted
+    });
+  });
 });
 
 describe("broadcastGoogleConsent", () => {
@@ -94,5 +127,38 @@ describe("broadcastGoogleConsent", () => {
     expect(payload.analytics_storage).toBe("granted");
     expect(payload.ad_storage).toBe("denied");
     expect(payload.security_storage).toBe("granted");
+  });
+});
+
+describe("warnOverlappingGcm", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("warns when two categories map to the same signal", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnOverlappingGcm(
+      resolveCategories([
+        { id: "essential", required: true },
+        { id: "product_stats", gcm: ["analytics_storage"] },
+        { id: "marketing_stats", gcm: ["analytics_storage"] },
+      ]),
+    );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('map to the Google signal "analytics_storage"'));
+  });
+
+  it("stays quiet for the built-in five (no overlap)", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnOverlappingGcm(resolveCategories(undefined));
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("does not treat one category listing a signal twice as an overlap", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    warnOverlappingGcm(
+      resolveCategories([
+        { id: "essential", required: true },
+        { id: "stats", gcm: ["analytics_storage", "analytics_storage"] },
+      ]),
+    );
+    expect(warn).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import type { CategoryDef, ResolvedCategories } from "./categories.js";
+import type { Integration, IntegrationDebugInfo } from "./integrations.js";
 import type { NetworkBlockerConfig } from "./network-blocker.js";
 import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 
@@ -148,6 +149,12 @@ export type ConsentConfig = {
   colorScheme?: ColorScheme | undefined;
   reloadOnRevoke?: boolean | undefined;
   /**
+   * How to combine multiple categories that map to the same Google Consent Mode
+   * signal: `"any"` (default) grants the signal if any maps-and-granted; `"all"`
+   * requires every mapping category. Only affects custom overlapping mappings.
+   */
+  googleConsentMatch?: "all" | "any" | undefined;
+  /**
    * Built-in, first-party integrations to stop cleanly (no reload) when their
    * category is revoked — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag
    * Manager are handled automatically via the Consent Mode broadcast — no entry
@@ -294,12 +301,29 @@ type CookieYesConfigCommon = {
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
   /**
-   * Built-in, first-party integrations to stop cleanly (no reload) when their
-   * category is revoked — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag
-   * Manager are handled automatically via the Consent Mode broadcast — no entry
-   * needed.) Integrations with no clean runtime stop fall back to the reload notice.
+   * How to combine multiple categories that map to the same Google Consent Mode
+   * signal: `"any"` (default) or `"all"`. Only matters for a custom taxonomy
+   * where more than one category maps to the same signal.
    */
-  integrations?: BuiltInIntegration[] | undefined;
+  googleConsentMatch?: "all" | "any" | undefined;
+  /**
+   * Ready-made third-party integrations to gate behind consent — Segment, Meta,
+   * Google, and more — using a preset from `@cookieyes/scripts`. Each preset
+   * returns an {@link Integration}: it loads only once its category is granted
+   * (or, for Google Consent Mode, loads immediately and denies by default), and
+   * is removed or silenced on withdrawal.
+   *
+   * @example integrations: [segment({ writeKey: "..." })]
+   */
+  integrations?: Integration[] | undefined;
+  /**
+   * @deprecated Renamed from `integrations`. Built-in stop-handlers for a few
+   * first-party vendors — e.g. `{ vendor: "meta" }` — stopped cleanly (no
+   * reload) when their category is revoked. Prefer the new `integrations` field
+   * with a preset from `@cookieyes/scripts`; this will be removed in a future
+   * release.
+   */
+  builtInIntegrations?: BuiltInIntegration[] | undefined;
   /**
    * Your own scripts' stop instructions, for anything without a built-in
    * integration. A handler that can stop cleanly provides `stop()`; one that
@@ -454,4 +478,6 @@ export type ConsentStore = {
 export type ConsentRuntime = {
   consentManager: ConsentManager;
   consentStore: ConsentStore;
+  /** Config + live status for each script integration — data for a debug view. */
+  getIntegrations: () => IntegrationDebugInfo[];
 };

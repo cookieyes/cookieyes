@@ -19,6 +19,7 @@ Open-source, developer-first cookie consent SDK. The same compliance engine that
 |---------|-------------|---------|
 | [`@cookieyes/core`](./sdk/core) | Headless consent engine — zero UI, zero deps | [![npm](https://img.shields.io/npm/v/@cookieyes/core)](https://www.npmjs.com/package/@cookieyes/core) |
 | [`@cookieyes/react`](./sdk/react) | React adapter — components and hooks | [![npm](https://img.shields.io/npm/v/@cookieyes/react)](https://www.npmjs.com/package/@cookieyes/react) |
+| [`@cookieyes/scripts`](./sdk/scripts) | Ready-made, consent-gated third-party integrations (Segment, custom scripts, …) | [![npm](https://img.shields.io/npm/v/@cookieyes/scripts)](https://www.npmjs.com/package/@cookieyes/scripts) |
 | [`@cookieyes/nextjs`](./sdk/nextjs) | Next.js App Router adapter | [![npm](https://img.shields.io/npm/v/@cookieyes/nextjs)](https://www.npmjs.com/package/@cookieyes/nextjs) |
 | [`@cookieyes/translations`](./sdk/translations) | Curated, per-locale translation catalog | [![npm](https://img.shields.io/npm/v/@cookieyes/translations)](https://www.npmjs.com/package/@cookieyes/translations) |
 | [`@cookieyes/cli`](./sdk/cli) | Scaffolder — wire the SDK into an existing app | [![npm](https://img.shields.io/npm/v/@cookieyes/cli)](https://www.npmjs.com/package/@cookieyes/cli) |
@@ -122,6 +123,7 @@ npx @cookieyes/cli init
 sdk/
   core/          @cookieyes/core         headless engine
   react/         @cookieyes/react        React components + hooks
+  scripts/       @cookieyes/scripts      consent-gated third-party integrations
   nextjs/        @cookieyes/nextjs       Next.js App Router adapter
   translations/  @cookieyes/translations per-locale catalog
   cli/           @cookieyes/cli          scaffolder

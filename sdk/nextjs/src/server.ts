@@ -4,6 +4,8 @@ import {
   type ServerConsentOptions,
 } from "@cookieyes/core";
 
+export { GoogleConsentMode } from "./google-consent-mode.js";
+
 /**
  * Read a returning visitor's stored consent from the incoming request, in a
  * Server Component, Route Handler or middleware.

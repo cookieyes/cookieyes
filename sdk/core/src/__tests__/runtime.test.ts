@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { _resetBuiltInIntegrationsWarning } from "../deprecations.js";
+import type { Integration } from "../integrations.js";
 import { getOrCreateConsentRuntime, resetConsentRuntime } from "../runtime.js";
 import type { ConsentChangePayload, ConsentPayload } from "../types.js";
 
@@ -6,7 +8,12 @@ function clearCookie(): void {
   document.cookie = "cookieyes-consent=; max-age=0; path=/";
 }
 
-beforeEach(clearCookie);
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+beforeEach(() => {
+  clearCookie();
+  _resetBuiltInIntegrationsWarning();
+});
 afterEach(() => {
   resetConsentRuntime();
   clearCookie();
@@ -15,6 +22,61 @@ afterEach(() => {
 });
 
 const ccpaRegion = { detect: () => "US", map: { US: "CCPA" } } as const;
+
+describe("integrations wiring", () => {
+  it("runs a script integration and reacts to committed consent", async () => {
+    const cleanup = vi.fn();
+    const setup = vi.fn(() => cleanup);
+    const integration: Integration = {
+      id: "x",
+      category: "analytics",
+      version: 1,
+      load: "afterConsent",
+      onRevoke: "remove",
+      setup,
+    };
+    const { consentStore } = getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      integrations: [integration],
+    });
+    await flush();
+    expect(setup).not.toHaveBeenCalled(); // analytics denied initially
+
+    consentStore.getState().saveConsents("all");
+    await flush();
+    expect(setup).toHaveBeenCalledTimes(1);
+
+    consentStore.getState().saveConsents("necessary"); // revoke analytics
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it("warns when the same vendor is on both integrations and builtInIntegrations", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      integrations: [
+        {
+          id: "segment",
+          category: "analytics",
+          version: 1,
+          load: "afterConsent",
+          onRevoke: "remove",
+          setup: () => () => {},
+        },
+      ],
+      builtInIntegrations: [{ vendor: "segment" }],
+    });
+    expect(warn.mock.calls.some((c) => /"segment" is configured as both/.test(String(c[0])))).toBe(
+      true,
+    );
+  });
+
+  it("warns that builtInIntegrations is deprecated", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", builtInIntegrations: [{ vendor: "hotjar" }] });
+    expect(warn.mock.calls.some((c) => /builtInIntegrations/.test(String(c[0])))).toBe(true);
+  });
+});
 
 describe("getOrCreateConsentRuntime", () => {
   it("returns a singleton until reset", () => {

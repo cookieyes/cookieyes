@@ -106,16 +106,16 @@ describe("_normalizeConfig — custom taxonomy & stop handlers pass-through", ()
       { id: "necessary", label: "Necessary", description: "", required: true },
       { id: "marketing", label: "Marketing", description: "" },
     ];
-    const integrations = [{ vendor: "hotjar" as const }];
+    const builtInIntegrations = [{ vendor: "hotjar" as const }];
     const customStopHandlers = [{ id: "my-widget", category: "marketing", stop: () => {} }];
     const n = _normalizeConfig({
       mode: "cookie-only",
       categories,
-      integrations,
+      builtInIntegrations,
       customStopHandlers,
     });
     expect(n.categories).toBe(categories);
-    expect(n.integrations).toBe(integrations);
+    expect(n.builtInIntegrations).toBe(builtInIntegrations);
     expect(n.customStopHandlers).toBe(customStopHandlers);
   });
 });
