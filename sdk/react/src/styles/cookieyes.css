@@ -1,3 +1,47 @@
+/* ── Theme token defaults — REQUIRED for correct first paint ───────── */
+/* Every `var(--cy-*)` below resolves against these. Without them the      */
+/* server-rendered banner paints transparent and unstyled until hydration */
+/* runs `useThemeVars`, which is the delay this block exists to remove:    */
+/* the values are here, in a real stylesheet, so they apply on the very    */
+/* first paint with no JavaScript involved.                                */
+/*                                                                         */
+/* `useThemeVars` still writes the *same* properties onto each component   */
+/* container via `element.style.setProperty` — an inline style declaration */
+/* beats a `:root` rule, so a customer `theme` override continues to win,  */
+/* and the CSSOM path (not a generated <style> block) keeps working under  */
+/* a strict `style-src` CSP. This block only supplies the starting values. */
+/*                                                                         */
+/* These MUST stay byte-identical to `computeThemeVars(undefined, false)`  */
+/* and `DARK_OVERRIDES` in `styles/tokens.ts` — that file is the single    */
+/* source of truth, and `__tests__/styles-parity.test.ts` fails if the two */
+/* drift. They silently drifted once before (the defaults were lost when   */
+/* the sheet moved out of `tokens.ts`), which is what the parity test now  */
+/* prevents.                                                               */
+:root {
+  --cy-primary: #1863dc;
+  --cy-primary-hover: color-mix(in srgb, var(--cy-primary) 85%, black);
+  --cy-bg: #ffffff;
+  --cy-text: #212121;
+  --cy-muted: #6b7280;
+  --cy-border: #f4f4f4;
+  --cy-widget-bg: #0056a7;
+  --cy-radius: 6px;
+  --cy-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+/* `colorScheme` defaults to "system", so matching the OS preference here is */
+/* right for the default configuration. An explicit `colorScheme: "light"`   */
+/* on a dark-preference device gets these for the first paint only, until    */
+/* `useThemeVars` applies the configured light values — still a large        */
+/* improvement on painting with no colors at all.                            */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cy-bg: #161b27;
+    --cy-text: #f3f4f6;
+    --cy-muted: #9ca3af;
+    --cy-border: #2d3748;
+  }
+}
+
 /* ── Style boundary — isolate our widget from host-app CSS ────────── */
 /* Inheritable typography is set explicitly at every root container so   */
 /* host stylesheets (Next's Geist font, Vite resets, Tailwind, etc.)     */
@@ -97,30 +141,49 @@
   width: min(440px, calc(100vw - 80px));
   padding: 24px 24px 12px;
   box-sizing: border-box;
-  animation: cy-slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Opacity-only fade, deliberately short. The previous entry animation
+     slid up 40px over 0.5s from opacity 0, which meant the banner was
+     effectively invisible for the first half-second after the page painted —
+     and the translate nudged nothing itself (the card is `position: fixed`,
+     out of flow) but read as content moving. Fading only, over 0.2s, keeps
+     the banner present and laid out in the very first frame. */
+  animation: cy-fade-in 0.2s ease-out both;
 }
 .cy-banner[data-leaving] {
   animation: cy-fade-out 0.2s ease forwards;
 }
+/* The banner's DOM node is replaced once, just after hydration, when it moves
+   into its <body> portal. That replacement would re-run the entry animation and
+   fade an already-visible banner in a second time — barely noticeable on a fast
+   machine, but a visible disappear-and-return on a slow device, where hydration
+   can land long after the first fade has finished. `Banner.Root` marks that
+   re-parent with `data-cy-entered`, and the banner simply stays visible.
 
-@keyframes cy-slide-up {
+   `:not([data-leaving])` matters: without it this rule would out-specify the
+   exit animation above and the banner would vanish instantly instead of fading
+   out. */
+.cy-banner-wrap[data-cy-entered] .cy-banner:not([data-leaving]) {
+  animation: none;
+}
+
+/* Both keyframe sets animate `opacity` and nothing else. No layout property
+   and no `transform` may be added here: a transform would reintroduce the
+   apparent motion this replaced, and a layout property would cost real
+   CLS. Asserted in `__tests__/banner-footprint.test.ts`. */
+@keyframes cy-fade-in {
   from {
     opacity: 0;
-    transform: translateY(40px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 @keyframes cy-fade-out {
   from {
     opacity: 1;
-    transform: translateY(0);
   }
   to {
     opacity: 0;
-    transform: translateY(10px);
   }
 }
 

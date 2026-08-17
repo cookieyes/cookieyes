@@ -7,6 +7,75 @@ import { computeThemeVars } from "../styles/tokens.js";
 const sheet = readFileSync(join(process.cwd(), "src/styles/cookieyes.css"), "utf8");
 const vars = computeThemeVars(undefined, false);
 
+/**
+ * The stylesheet's `:root` defaults are what make the server-rendered
+ * banner paint correctly before hydration. They duplicate values that
+ * `computeThemeVars` owns, so they can drift; these tests are the guard that
+ * they don't. The defaults were lost entirely once before, when the sheet moved
+ * out of `tokens.ts` and left every `var(--cy-*)` reference undeclared.
+ */
+describe("theme token defaults are declared and match tokens.ts", () => {
+  // Declarations are compared after normalising the things CSS treats as
+  // equivalent but a string compare does not: hex case (`#6B7280` vs
+  // `#6b7280`, since Biome lowercases CSS hex) and quote style (`'Segoe UI'`
+  // vs `"Segoe UI"`, since Biome prefers double quotes in CSS).
+  function normalise(value: string): string {
+    return value.replace(/['"]/g, '"').replace(/\s+/g, " ").trim().toLowerCase();
+  }
+
+  /** The declarations inside a `:root { … }` rule, as a name → value map. */
+  function rootVars(from: string): Record<string, string> {
+    const open = from.indexOf(":root {");
+    if (open === -1) throw new Error("no :root rule found");
+    const body = from.slice(open + ":root {".length, from.indexOf("}", open));
+    const out: Record<string, string> = {};
+    for (const line of body.split(";")) {
+      const [name, ...rest] = line.split(":");
+      if (!name || rest.length === 0) continue;
+      out[name.trim()] = rest.join(":").trim();
+    }
+    return out;
+  }
+
+  const lightVars = rootVars(sheet);
+  const darkBlockStart = sheet.indexOf("@media (prefers-color-scheme: dark)");
+  const darkVars = rootVars(sheet.slice(darkBlockStart));
+
+  it("declares every --cy-* token computeThemeVars produces", () => {
+    for (const name of Object.keys(vars)) {
+      expect(Object.keys(lightVars)).toContain(name);
+    }
+  });
+
+  it("every declared light value equals computeThemeVars(undefined, false)", () => {
+    for (const [name, expected] of Object.entries(vars)) {
+      expect(normalise(lightVars[name] ?? "")).toBe(normalise(expected));
+    }
+  });
+
+  it("the prefers-color-scheme: dark block matches computeThemeVars(undefined, true)", () => {
+    const dark = computeThemeVars(undefined, true);
+    // Only the four tokens that actually differ in dark mode are overridden —
+    // re-declaring the rest would be dead weight in a render-blocking sheet.
+    for (const [name, value] of Object.entries(darkVars)) {
+      expect(normalise(value)).toBe(normalise(dark[name as keyof typeof dark]));
+    }
+    for (const name of ["--cy-bg", "--cy-text", "--cy-muted", "--cy-border"]) {
+      expect(Object.keys(darkVars)).toContain(name);
+    }
+  });
+
+  it("no var(--cy-*) reference in the sheet lacks a declaration", () => {
+    // The exact failure mode of the July regression: references kept, values gone.
+    const referenced = new Set(
+      [...sheet.matchAll(/var\((--cy-[a-z-]+)/g)].map((m) => m[1] as string),
+    );
+    for (const name of referenced) {
+      expect(Object.keys(lightVars)).toContain(name);
+    }
+  });
+});
+
 describe("styles-parity", () => {
   describe("D1: floating revisit widget background token", () => {
     it("D1: computeThemeVars includes --cy-widget-bg defaulting to #0056a7", () => {

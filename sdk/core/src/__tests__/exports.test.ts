@@ -10,7 +10,9 @@ describe("@cookieyes/core public exports", () => {
     "createConsentManager",
     "generateConsentId",
     "parseCookie",
+    "parseCookieHeader",
     "serializeCookie",
+    "readServerConsent",
     "defaultTranslations",
     "resolveTranslations",
     "installNetworkBlocker",
@@ -19,6 +21,8 @@ describe("@cookieyes/core public exports", () => {
     "DEFAULT_CATEGORIES",
     "broadcastGoogleConsent",
     "computeGoogleConsent",
+    "_clearScriptRegistry",
+    "CORE_VERSION",
   ] as const;
 
   it.each(EXPECTED)("exports %s", (name) => {

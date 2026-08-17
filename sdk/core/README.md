@@ -242,6 +242,30 @@ Missing text falls back to English; custom categories translate by id (see the
 [configuration guide](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)).
 In React, use the `useTranslations()` / `useLanguage()` hooks instead.
 
+## Region-based regulation (geo-detection)
+
+Optionally pick the regulation from the visitor's region. Fully optional; a manual
+`regulation` always wins.
+
+```ts
+const { consentStore } = initCookieYes({
+  mode: "cookie-only",
+  region: {
+    // `detect` is YOUR function — return the visitor's region, however you get it (sync).
+    detect: () => myRegion,                 // "US-CA" | "DE" | undefined
+    map: { "US-CA": "CCPA", DE: "GDPR" },   // you own the mapping
+    honorGpc: true,                          // default; browser "do not sell" signal → CCPA
+  },
+});
+
+consentStore.getRegion(); // { region, regulation, source, confidence }
+```
+
+`detect` runs synchronously — you return a region you already have (server-injected value, your
+own lookup done beforehand, etc.). Unknown/failed detection → the strictest regulation
+(default `GDPR`), never a skipped banner. In self-hosted mode the detected region is included on
+the consent-log payload.
+
 ## Low-level / advanced API
 
 You shouldn't need these for a typical integration — each exists for a
@@ -259,23 +283,35 @@ specific narrower situation than `consentStore.on` / `consentStore.subscribe`:
 
 When a visitor revokes consent, the SDK stops tracking **without reloading the
 page** — nothing they were doing (form input, scroll position, an open dialog)
-is lost. There are three layers:
+is lost.
+
+> **Gating vs. stopping.** The cleanest way to handle a third-party script is to
+> **gate** it — never load it until its category is granted — with the
+> `integrations` option and a preset from
+> [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts).
+> The layers below are for scripts that are *already loaded* (first-party
+> vendors, your own tags) and need to be stopped when consent is withdrawn.
+
+There are three layers:
 
 1. **Network blocking** (`networkBlocker` / `blockNetwork`) — intercepts
    `fetch`, `XMLHttpRequest`, **and `navigator.sendBeacon`** to blocked domains,
    in real time, for as long as the page is open. `sendBeacon` matters because
    GA4/Meta use it for exit/unload tracking that fetch/XHR interception misses.
-2. **Integration stop-handlers** (`integrations`) — call a vendor's own
+2. **Built-in stop-handlers** (`builtInIntegrations`) — call a vendor's own
    documented "stop" API on revoke, and resume it on re-accept:
 
    ```ts
    getOrCreateConsentRuntime({
      mode: "cookie-only",
-     integrations: [
+     builtInIntegrations: [
        { vendor: "meta" },  // fbq('consent','revoke'|'grant')
      ],
    });
    ```
+
+   > `builtInIntegrations` was previously called `integrations`; that name now
+   > refers to the gated presets from `@cookieyes/scripts` (see the note above).
 
    > **Google Analytics & Tag Manager are handled automatically** — you don't
    > list them here. The SDK broadcasts Google Consent Mode v2 whenever a
@@ -297,7 +333,7 @@ is lost. There are three layers:
 
 | Vendor | Runtime stop | How |
 |--------|-------------|-----|
-| **Google Analytics 4 / Tag Manager** | ✅ automatic | Consent Mode v2 broadcast — no `integrations` entry needed (see [below](#google-consent-mode-v2)). |
+| **Google Analytics 4 / Tag Manager** | ✅ automatic | Consent Mode v2 broadcast — no `builtInIntegrations` entry needed (see [below](#google-consent-mode-v2)). |
 | **Meta Pixel** | ✅ clean | `fbq('consent', 'revoke')` / `'grant'` |
 | TikTok Pixel | ⚠️ reload | No runtime stop we could confidently verify; modelled as reload-only. |
 | LinkedIn Insight Tag | ⚠️ reload | No documented runtime opt-out after load. |
@@ -307,6 +343,11 @@ is lost. There are three layers:
 "Reload" vendors surface the reload notice (below) on a genuine revoke — the SDK
 never continues tracking them silently. Any of them can be upgraded to a clean
 stop later (in `resolveBuiltInIntegration`) once a real runtime API is confirmed.
+
+> Better still, **gate** the vendor instead of stopping it after the fact:
+> [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts)
+> ships a Segment preset (`segment()`) that never loads until consent and is
+> removed on revoke — so there's nothing to reload.
 
 ### Reload notice
 
@@ -398,7 +439,7 @@ visitor actually agreed to.
 If a Google `dataLayer` is present on the page, the SDK **broadcasts** all seven
 Consent Mode v2 signals — on load and on every consent change — for every
 visitor. This is what governs Google Analytics 4 and Tag Manager; you do **not**
-register them under `integrations`.
+register them under `builtInIntegrations`.
 
 Each signal is `granted` when any granted category maps to it (via its `gcm`
 field), otherwise `denied`. `security_storage` is always `granted`. The built-in

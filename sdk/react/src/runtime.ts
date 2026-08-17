@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  _logRegionDecision,
   _normalizeConfig,
+  _warnBuiltInIntegrationsDeprecated,
   _warnOfflineModeDeprecated,
   type BuiltInIntegration,
   type CategoryDef,
@@ -19,17 +21,27 @@ import {
   createConsentManager,
   createLanguageController,
   type I18nConfig,
+  type Integration,
+  type IntegrationDebugInfo,
+  type IntegrationRunner,
   installNetworkBlocker,
   type LanguageInfo,
   type NetworkBlockerConfig,
+  type RegionConfig,
+  type RegionDecision,
   type Regulation,
   type ReloadNoticeState,
   type ResolvedCategories,
+  readGpc,
   resolveCategories,
+  resolveRegion,
+  runIntegrations,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
   type TranslationMap,
+  warnOverlappingVendors,
+  warnUnknownCategories,
 } from "@cookieyes/core";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 
@@ -42,9 +54,15 @@ type DeprecatedOfflineMode = "offline";
 export type RuntimeMode = "cookie-only" | "self-hosted" | DeprecatedOfflineMode;
 export type ColorSchemePref = "light" | "dark" | "system";
 
+/** True when a CCPA visitor's browser sends GPC and we're set to honour it. */
+function wantsGpcOptOut(regulation: Regulation, region: RegionConfig | undefined): boolean {
+  return regulation === "CCPA" && (region?.honorGpc ?? true) && readGpc();
+}
+
 type RuntimeConfig = {
   mode?: RuntimeMode;
   regulation?: Regulation;
+  region?: RegionConfig;
   i18n?: I18nConfig;
   theme?: ThemeConfig;
   colorScheme?: ColorSchemePref;
@@ -53,7 +71,9 @@ type RuntimeConfig = {
   apiKey?: string;
   networkBlocker?: NetworkBlockerConfig;
   reloadOnRevoke?: boolean;
-  integrations?: BuiltInIntegration[];
+  googleConsentMatch?: "all" | "any";
+  integrations?: Integration[];
+  builtInIntegrations?: BuiltInIntegration[];
   customStopHandlers?: StopHandler[];
   categories?: CategoryDef[];
   onConsentReady?: (state: ConsentSnapshot) => void;
@@ -75,6 +95,8 @@ export type CookieYesRuntime = {
   getSnapshot: () => CookieYesSnapshot;
   getServerSnapshot: () => CookieYesSnapshot;
   manager: ConsentManager;
+  /** Config + live status for each script integration — data for a debug view. */
+  getIntegrations: () => IntegrationDebugInfo[];
   /** Text for the active language (English fills any gaps). Reactive — swaps on setLanguage. */
   translations: TranslationMap;
   getLanguageInfo: () => LanguageInfo;
@@ -82,6 +104,8 @@ export type CookieYesRuntime = {
   setLanguage: (tag: string) => Promise<void>;
   /** Customer-provided text for a category in the active language, if any. */
   getCategoryText: (id: string) => Partial<CategoryText> | undefined;
+  /** How the active regulation was decided (region, source, confidence). */
+  getRegion: () => RegionDecision;
   /** The resolved category taxonomy in effect (built-in five or the customer's). */
   categories: ResolvedCategories;
   theme: ThemeConfig | undefined;
@@ -149,7 +173,7 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
     apiKey: (key) => next({ apiKey: key }),
     blockNetwork: (config) => next({ networkBlocker: config }),
     reloadOnRevoke: (value = true) => next({ reloadOnRevoke: value }),
-    integrations: (list) => next({ integrations: list }),
+    integrations: (list) => next({ builtInIntegrations: list }),
     customStopHandlers: (list) => next({ customStopHandlers: list }),
     categories: (list) => next({ categories: list }),
     onConsentReady: (fn) => next({ onConsentReady: fn }),
@@ -199,6 +223,7 @@ export function initCookieYes(config: CookieYesConfig): CookieYesRuntime {
   const n = _normalizeConfig(config);
   const cfg: RuntimeConfig = { mode: n.mode };
   if (n.regulation !== undefined) cfg.regulation = n.regulation;
+  if (n.region !== undefined) cfg.region = n.region;
   if (n.i18n !== undefined) cfg.i18n = n.i18n;
   if (n.theme !== undefined) cfg.theme = n.theme;
   if (n.colorScheme !== undefined) cfg.colorScheme = n.colorScheme;
@@ -207,7 +232,9 @@ export function initCookieYes(config: CookieYesConfig): CookieYesRuntime {
   if (n.apiKey !== undefined) cfg.apiKey = n.apiKey;
   if (n.networkBlocker !== undefined) cfg.networkBlocker = n.networkBlocker;
   if (n.reloadOnRevoke !== undefined) cfg.reloadOnRevoke = n.reloadOnRevoke;
+  if (n.googleConsentMatch !== undefined) cfg.googleConsentMatch = n.googleConsentMatch;
   if (n.integrations !== undefined) cfg.integrations = n.integrations;
+  if (n.builtInIntegrations !== undefined) cfg.builtInIntegrations = n.builtInIntegrations;
   if (n.customStopHandlers !== undefined) cfg.customStopHandlers = n.customStopHandlers;
   if (n.categories !== undefined) cfg.categories = n.categories;
   if (n.onConsentReady !== undefined) cfg.onConsentReady = n.onConsentReady;
@@ -239,6 +266,7 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
 }) as CookieYesSnapshot;
 
 let _instance: CookieYesRuntime | null = null;
+let _integrationRunner: IntegrationRunner | null = null;
 
 function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (!cfg.mode) {
@@ -254,17 +282,38 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     );
   }
 
+  // Geo-detection if configured, else the manual/default regulation. Drives the
+  // banner and the SSR snapshot so the first paint matches.
+  const regionDecision: RegionDecision = cfg.region
+    ? resolveRegion(cfg.region, cfg.regulation)
+    : {
+        region: undefined,
+        regulation: cfg.regulation ?? "DEFAULT",
+        source: "manual",
+        confidence: "high",
+      };
+
   const coreCfg: ConsentConfig = {};
   if (cfg.mode === "self-hosted") {
     if (cfg.backend) coreCfg.backend = cfg.backend;
     else if (cfg.backendURL) coreCfg.apiUrl = cfg.backendURL;
     if (cfg.apiKey) coreCfg.apiKey = cfg.apiKey;
   }
-  if (cfg.regulation) coreCfg.regulation = cfg.regulation;
+  coreCfg.regulation = regionDecision.regulation;
+  if (regionDecision.region) coreCfg.region = regionDecision.region;
+  // GPC "do not sell" on a CCPA banner → start opted out (client only; GPC never
+  // changes which banner shows). See core's manager for how the flag is applied.
+  const gpcOptOut = wantsGpcOptOut(regionDecision.regulation, cfg.region);
+  if (gpcOptOut) coreCfg.gpcOptOut = true;
+  if (cfg.region?.debug) _logRegionDecision(regionDecision, gpcOptOut);
   if (cfg.theme) coreCfg.theme = cfg.theme;
   if (cfg.colorScheme) coreCfg.colorScheme = cfg.colorScheme;
   if (cfg.reloadOnRevoke) coreCfg.reloadOnRevoke = cfg.reloadOnRevoke;
-  if (cfg.integrations) coreCfg.integrations = cfg.integrations;
+  if (cfg.googleConsentMatch) coreCfg.googleConsentMatch = cfg.googleConsentMatch;
+  if (cfg.builtInIntegrations && cfg.builtInIntegrations.length > 0) {
+    _warnBuiltInIntegrationsDeprecated();
+    coreCfg.integrations = cfg.builtInIntegrations;
+  }
   if (cfg.customStopHandlers) coreCfg.customStopHandlers = cfg.customStopHandlers;
   if (cfg.categories) coreCfg.categories = cfg.categories;
   if (cfg.onConsentReady) coreCfg.onConsentReady = cfg.onConsentReady;
@@ -329,7 +378,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   // hydration render (no regulation or category-shape mismatch), including for
   // custom taxonomies. CCPA is opt-out (everything on); otherwise only the
   // required category(ies) start on. Mirrors core's defaultSnapshot.
-  const ssrRegulation = (cfg.regulation ?? "DEFAULT") as Regulation;
+  const ssrRegulation = regionDecision.regulation;
   const ssrOptOut = ssrRegulation === "CCPA";
   const ssrCategories: Record<string, boolean> = {};
   for (const id of resolved.ids) {
@@ -352,6 +401,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     getSnapshot: () => cachedSnapshot,
     getServerSnapshot: () => ssrSnapshot,
     manager,
+    getIntegrations: () => _integrationRunner?.list() ?? [],
     get translations() {
       return language.getTranslations();
     },
@@ -359,6 +409,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     setLanguage: language.setLanguage,
     getCategoryText: language.getCategoryText,
     categories: resolved,
+    getRegion: () => regionDecision,
     theme: cfg.theme,
     colorScheme,
     registerScript: (entry) => manager.registerScript(entry),
@@ -383,6 +434,23 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
         "Replacing the previous runtime.",
     );
   }
+  // Run the configured script integrations (Segment, Google, Meta, …) against
+  // the committed consent. A re-mount replaces the previous runner.
+  _integrationRunner?.stop();
+  _integrationRunner = null;
+  if (cfg.integrations && cfg.integrations.length > 0) {
+    warnOverlappingVendors(
+      cfg.integrations.map((i) => i.id),
+      (cfg.builtInIntegrations ?? []).map((b) => b.vendor),
+    );
+    warnUnknownCategories(cfg.integrations, Object.keys(manager.committedCategories));
+    _integrationRunner = runIntegrations(cfg.integrations, {
+      granted: (category) => manager.committedCategories[category] === true,
+      subscribe: (fn) => manager.subscribe(() => fn()),
+      region: regionDecision,
+    });
+  }
+
   _instance = runtime;
   return runtime;
 }
@@ -414,6 +482,8 @@ export { SSR_SNAPSHOT as _SSR_SNAPSHOT };
 export const _noopSubscribe = (): (() => void) => () => undefined;
 
 export function resetCookieYes(): void {
+  _integrationRunner?.stop();
+  _integrationRunner = null;
   _instance = null;
   _builderDeprecationWarned = false;
 }

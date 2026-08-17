@@ -160,12 +160,155 @@ import { CookieBanner, CookiePreferences, CookieOptOut, RecallButton } from "@co
 </>
 ```
 
+## Region-based regulation (server-detected)
+
+Pick the banner's regulation from the visitor's region. On the server you read the location
+header your host adds (Cloudflare/Vercel) with `regionFromHeaders`, pass it to your client
+component, and wrap the banner in `<CookieYesProvider>` — so the **correct banner is
+server-rendered for each visitor**, on the first paint, with no post-hydration flicker.
+
+```tsx
+// app/layout.tsx — a Server Component
+import { headers } from "next/headers";
+import { regionFromHeaders } from "@cookieyes/nextjs";
+import { CookieYesRoot } from "./cookieyes-root"; // your "use client" module
+
+export default async function RootLayout({ children }) {
+  const region = regionFromHeaders(await headers()); // "US-CA" | "DE" | undefined
+  return (
+    <html>
+      <body>
+        <CookieYesRoot region={region} />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx
+// cookieyes-root.tsx — "use client"
+"use client";
+import { initCookieYes, CookieYesProvider, CookieBanner, CookieOptOut } from "@cookieyes/nextjs";
+
+const map = { "US-CA": "CCPA", DE: "GDPR" } as const;
+
+export function CookieYesRoot({ region }: { region?: string }) {
+  const regionConfig = { detect: () => region, map };
+  initCookieYes({ mode: "cookie-only", region: regionConfig });
+  return (
+    <CookieYesProvider region={regionConfig}>
+      <CookieBanner />
+      <CookieOptOut /> {/* render this too if any region maps to CCPA */}
+    </CookieYesProvider>
+  );
+}
+```
+
+- **What it reads:** by default the well-known Vercel (`x-vercel-ip-country` + `-region`) and
+  Cloudflare (`cf-ipcountry`) headers. Pass `regionFromHeaders(h, { header: "x-your-header" })`
+  to read a custom one.
+- `headers()` is `await`ed on Next.js 15+ and synchronous on 14 — use whichever your version needs.
+- **First paint:** with the provider, the server resolves the region per request and renders the
+  right banner directly into the HTML — a US visitor gets CCPA, an EU visitor gets GDPR, on the
+  first byte. The provider resolves the same value on the client, so there's no hydration mismatch.
+  (Without the provider, the banner still works but is corrected after hydration rather than
+  server-rendered per request.)
+- **GPC:** on a CCPA banner, the browser's "do not sell" signal (`navigator.globalPrivacyControl`)
+  starts the visitor **opted out** — non-required categories denied, so gated scripts/iframes never
+  load — until they choose otherwise. It's read in the browser (the server can't see it), so it
+  applies right after hydration; it never changes *which* banner shows. Set `region.honorGpc: false`
+  to ignore it.
+
+## Returning visitors — no banner flash
+
+By default the server doesn't know whether a visitor has already chosen, so it renders the
+banner for everyone and the client removes it after hydration. A returning visitor **sees the
+banner appear and then vanish**, which reads as a bug rather than as a remembered choice.
+
+Read their decision from the request and pass it to the provider, and the banner is never in
+their HTML at all — nothing to hide, so nothing flashes:
+
+```tsx
+// app/layout.tsx — a Server Component
+import { CookieYesProvider } from "@cookieyes/nextjs";
+import { getServerConsent } from "@cookieyes/nextjs/server";
+import { CookieYesRoot } from "./cookieyes-root";
+
+export default async function RootLayout({ children }) {
+  const initialConsent = await getServerConsent({ regulation: "GDPR" });
+  return (
+    <html lang="en">
+      <body>
+        <CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+          <CookieYesRoot />
+        </CookieYesProvider>
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+- **Import from `@cookieyes/nextjs/server`,** not the main entry. It reads `next/headers` and is
+  server-only; the main entry is `"use client"`.
+- **Returns `null` when the banner should show** — a first-time visitor, a cookie recording no
+  choice yet, a corrupt cookie, or one written against a different category taxonomy (which the
+  client re-requests too). Passing `null` renders exactly as before, so this is safe to add
+  everywhere.
+- **`initialConsent` is a provider prop, never an `initCookieYes` option.** The consent runtime is
+  a module-level singleton shared across concurrent requests, so per-visitor state there would leak
+  between visitors — the same reason `region`/`regulation` go through the provider.
+- Combine it with `region` from the section above; both are per-request and both belong on the
+  provider.
+- `getServerConsent()` calls `cookies()`, which opts the route into **dynamic rendering**, as any
+  `cookies()` call does. On a statically rendered route there's no request to read, so the banner
+  is server-rendered for everyone and hidden on the client as before.
+- Framework-agnostic alternative: `readServerConsent(cookieHeader, options)` from
+  `@cookieyes/core` takes the raw `Cookie` header, for Pages Router `getServerSideProps`,
+  middleware, or any other SSR setup.
+
+## Google Consent Mode (GA4, Ads, GTM)
+
+Google tags need a Consent Mode **deny-by-default** set before any tag runs and
+before the SDK boots — so a returning visitor's saved choice applies from first
+paint. Render `<GoogleConsentMode />` high in your root layout:
+
+```tsx
+// app/layout.tsx
+import { CookieYesProvider } from "@cookieyes/nextjs";
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        <CookieYesProvider regulation="GDPR">{children}</CookieYesProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+Then load the tags on the client with a preset from
+[`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts)
+— `ga4()`, `googleAds()`, or `googleTagManager()`. The SDK broadcasts each
+consent change to Google as a Consent Mode `update`; you don't wire that up.
+
 ## API
 
 This package re-exports the entire `@cookieyes/react` surface — the setup function
 (`initCookieYes`), components (`CookieBanner`, `CookiePreferences`, `CookieOptOut`,
 `RecallButton`, `GatedScript`, `GatedFrame`), headless primitives (`Banner`, `Preferences`,
 `OptOut`), and all hooks (`useConsent`, `useConsentActions`, …).
+
+It also adds **server-only** exports on their own subpath, kept out of the `"use client"` barrel:
+
+| Import | Export | Purpose |
+|---|---|---|
+| `@cookieyes/nextjs/server` | `getServerConsent(options?)` | Reads the request's cookies and returns a returning visitor's stored decision (or `null`), for `<CookieYesProvider initialConsent>` |
+| `@cookieyes/nextjs/server` | `<GoogleConsentMode />` | Renders the Google Consent Mode deny-by-default into the page `<head>` (see below) |
 
 - Full option reference: **[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)**.
 - Component/hook reference: the **[`@cookieyes/react` README](https://github.com/cookieyes/cookieyes/tree/main/sdk/react#readme)**.

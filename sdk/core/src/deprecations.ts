@@ -21,3 +21,27 @@ export function _warnOfflineModeDeprecated(): void {
 export function _resetOfflineModeWarning(): void {
   warnedOfflineMode = false;
 }
+
+let warnedBuiltInIntegrations = false;
+
+/**
+ * One-time-per-page-load console warning for the deprecated `builtInIntegrations`
+ * config field (formerly `integrations`). Both packages call this so the wording
+ * and the "once" behavior stay identical.
+ */
+export function _warnBuiltInIntegrationsDeprecated(): void {
+  if (warnedBuiltInIntegrations) return;
+  warnedBuiltInIntegrations = true;
+  if (typeof console === "undefined") return;
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[cookieyes] `builtInIntegrations` (formerly the `integrations` field) is deprecated " +
+      "and will be removed in a future release. Use the `integrations` field with a preset " +
+      "from `@cookieyes/scripts` instead.",
+  );
+}
+
+/** @internal test-only — resets the one-time warning guard between test cases. */
+export function _resetBuiltInIntegrationsWarning(): void {
+  warnedBuiltInIntegrations = false;
+}

@@ -55,7 +55,16 @@ packages live under `sdk/*`.
 - **Keep adapters thin.** All business logic belongs in `@cookieyes/core`; framework
   packages (`react`, `nextjs`) should only wire the engine to the framework.
 - **Tests** live next to source in `__tests__/` and run on jsdom via Vitest. Add or
-  update tests for any behavioral change.
+  update tests for any behavioral change. (`@cookieyes/test` runs on **node** on
+  purpose — that's the proof its harness needs no browser.)
+- **Changing consent behaviour? Update `@cookieyes/test` in the same PR.**
+  `@cookieyes/test` is the test double our users' own test suites assert against. It
+  wraps the real engine rather than copying it, so most changes flow through
+  automatically — but if you change what a category rule means, what a signal fires
+  on, or anything listed in that package's **Fidelity & limitations** table, update
+  the table and its tests alongside your change and call it out in the changeset.
+  A silently drifted test double is worse than none: it tells our users their code
+  is covered when it isn't.
 - **Commit messages** follow [Conventional Commits](https://www.conventionalcommits.org):
   `fix:`, `feat:`, `docs:`, `chore:`, `refactor:`, `test:`. Example:
   `fix(core): stop tracking scripts without a full page reload`. Keep commits focused —

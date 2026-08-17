@@ -33,6 +33,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js",
+      "require": "./dist/server.cjs"
     }
   },
   "main": "./dist/index.cjs",
@@ -64,7 +69,8 @@
   },
   "dependencies": {
     "@cookieyes/core": "workspace:*",
-    "@cookieyes/react": "workspace:*"
+    "@cookieyes/react": "workspace:*",
+    "@cookieyes/scripts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

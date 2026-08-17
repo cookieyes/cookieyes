@@ -115,6 +115,44 @@ function App() {
 }
 ```
 
+### Optional: inline the banner's CSS, defer the rest
+
+`styles.css` is about 25 KB and styles everything — banner, preferences dialog,
+opt-out flow, toggles, the revisit widget. If your bundler puts it in the
+critical path (the usual case for an app-root `import`), the banner is already
+styled on the first paint and you need nothing more.
+
+If instead you want to keep that 25 KB off the critical path, there is a
+paint-critical subset containing only the rules needed to render the banner:
+
+```
+@cookieyes/react/critical.css
+```
+
+Inline it in `<head>` and load the full sheet without blocking render. The
+banner is then correctly styled in the first frame, and the dialog styles arrive
+before the visitor can open the dialog:
+
+```html
+<head>
+  <style>/* contents of @cookieyes/react/critical.css */</style>
+  <link rel="stylesheet" href="/path/to/styles.css" media="print" onload="this.media='all'">
+</head>
+```
+
+It is roughly 1.6 KB gzipped, and every rule in it is byte-identical to the same
+rule in `styles.css`, so the two never disagree about how the banner looks. Load
+`styles.css` as well — `critical.css` intentionally has no dialog, opt-out,
+toggle or widget styling.
+
+> **Content Security Policy:** inlining CSS in a `<style>` block requires
+> `style-src` to allow it — a hash, a nonce, or `'unsafe-inline'`. If you serve a
+> strict `style-src 'self'`, either add the block's hash to your policy or skip
+> `critical.css` and keep loading `styles.css` as an external stylesheet, which
+> needs no `style-src` exception at all. This SDK's own runtime theming works
+> under `style-src 'self'` either way — it writes theme values through the CSSOM,
+> never as inline style text.
+
 **4. Done.** The banner appears on page load until the user acts. If it doesn't, see [Troubleshooting](#troubleshooting).
 
 > Prefer zero manual setup? Run `npx @cookieyes/cli init` and the CLI wires all of this up for you.
@@ -141,6 +179,7 @@ full option reference (modes, `theme`, `i18n`, self-hosted persistence, callback
 | `theme` | `ThemeConfig` | Color / radius / font tokens (see [Theming](#theming)). |
 | `i18n` | `I18nConfig` | Locale translation maps (see [`@cookieyes/translations`](https://github.com/cookieyes/cookieyes/tree/main/sdk/translations)). |
 | `apiUrl` / `backend` | `string` / `ConsentBackend` | Self-hosted persistence (`mode: "self-hosted"`). |
+| `integrations` | `Integration[]` | Consent-gated third-party scripts (Segment, custom scripts, …) via presets from [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts). |
 | `onConsentReady` / `onConsentUpdate` | `(state) => void` | Lifecycle callbacks. |
 
 > Migrating from the deprecated `createCookieYes()` builder? See the
@@ -390,6 +429,97 @@ Notes: the starting language is decided on each page load (we don't store the vi
 persist it yourself if you want it remembered). A missing/failed language logs a developer warning
 and keeps the current one.
 
+## Region-based regulation (geo-detection)
+
+Optionally choose the banner's regulation from where the visitor is. Fully optional —
+omit `region` and nothing changes; a manual `regulation` always wins.
+
+```tsx
+initCookieYes({
+  mode: "cookie-only",
+  region: {
+    // `detect` is YOUR function — return the visitor's region, however you get it.
+    detect: () => window.__MY_REGION__,     // e.g. a value your server injected; "US-CA" | "DE" | undefined
+    map: { "US-CA": "CCPA", DE: "GDPR" },   // you own the region → law mapping
+    honorGpc: true,                          // default: honour the browser "do not sell" signal
+    strictest: "GDPR",                       // used when unsure (default GDPR)
+    debug: true,                             // log the decision to the console (local debugging)
+  },
+});
+```
+
+Rules: which banner shows is **geo only** — a detected region maps to your regulation;
+**unknown or failed → the strictest** (a required banner is never skipped); a **manual
+`regulation` wins** over detection (with a dev warning).
+
+**GPC** (the browser's "do not sell" signal) never changes *which* banner shows. On a CCPA
+banner it starts the visitor **opted out** — non-required categories denied, so gated
+scripts/iframes don't run — until they choose otherwise. It's read in the browser, so it applies
+right after hydration. Set `honorGpc: false` to ignore it.
+
+Inspect the decision:
+```tsx
+const { region, regulation, source, confidence } = useRegion();
+// source: "detected" | "strictest" | "manual"
+```
+Or set `region.debug: true` to print the same decision to the console at setup — a quick check
+without writing any component code.
+
+For **server-rendered** correctness (the right banner in the first HTML per visitor, e.g. Next.js
+App Router), wrap your consent UI in `<CookieYesProvider region={regionConfig}>` — see the
+[Next.js README](../nextjs/README.md#region-based-regulation-server-detected).
+
+**`detect` must be synchronous.** It returns a string, not a Promise — so you **cannot `await`
+inside it**. You pass a region you already have (e.g. one your server injected into the page).
+For an async IP lookup, fetch it **first**, then init:
+
+```tsx
+const region = await fetch("/my-geo").then((r) => r.text()); // resolve it first
+initCookieYes({ mode: "cookie-only", region: { detect: () => region, map } });
+```
+
+Hosting headers like Cloudflare `CF-IPCountry` or Vercel `x-vercel-ip-country-region` only exist
+server-side — reading those for you is the Next.js integration (below). In self-hosted mode the
+detected region is included on the consent-log payload (`region`).
+
+## Returning visitors — no banner flash (SSR)
+
+If you server-render, the server has no idea whether a visitor already chose, so it renders the
+banner for everyone and the client removes it after hydration. A returning visitor **sees the
+banner appear and then vanish**.
+
+Read their decision from the request and hand it to the provider — then the banner is never in
+their HTML at all:
+
+```tsx
+// On the server, wherever you have the request:
+import { readServerConsent } from "@cookieyes/react";
+
+const initialConsent = readServerConsent(request.headers.get("cookie") ?? "", {
+  regulation: "GDPR",
+});
+```
+
+```tsx
+// Pass it into the tree:
+<CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+  <CookieBanner />
+</CookieYesProvider>
+```
+
+- `readServerConsent` touches no browser API, so it's safe in any server runtime. **Next.js App
+  Router users** get a wrapper that reads `cookies()` for them — `getServerConsent()` from
+  [`@cookieyes/nextjs/server`](https://github.com/cookieyes/cookieyes/tree/main/sdk/nextjs#readme).
+- **Returns `null` when the banner should show:** a first-time visitor, a cookie recording no choice
+  yet, a corrupt cookie, or one written against a different category taxonomy (which the client
+  re-requests too). Passing `null` renders exactly as it did before, so adding this is safe.
+- **`initialConsent` is a provider prop, never an `initCookieYes` option.** The consent runtime is a
+  module-level singleton shared across concurrent server requests, so per-visitor state stored there
+  would leak between visitors. The same is true of `region`/`regulation` — that's why the provider
+  exists.
+- The server render and the first hydration render read the same value, so there's no hydration
+  mismatch; the real cookie is read on the client after commit and agrees.
+
 ## Accessibility
 
 **Scope of this section:** keyboard operability, focus management, screen-reader
@@ -454,9 +584,9 @@ an existing integration, the builder configures the same runtime:
 | `.i18n({ messages })` | Provide locale translation maps. |
 | `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
 | `.apiKey(key)` | Optional auth key. |
-| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. |
+| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. See **[how script blocking works and what it costs](https://github.com/cookieyes/cookieyes/blob/main/docs/script-blocking.md)**. |
 | `.categories([...])` | Define your own category taxonomy instead of the built-in five. See [core: consent categories](../core/README.md#consent-categories). |
-| `.integrations([...])` | Stop built-in vendors cleanly on revoke — e.g. `{ vendor: "meta" }`. (Google Analytics/Tag Manager are handled automatically via Consent Mode — no entry needed.) See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
+| `.integrations([...])` | Built-in vendor stop-handlers — e.g. `{ vendor: "meta" }` — the deprecated `builtInIntegrations` path. For new consent-gated scripts, pass `integrations` to `initCookieYes(config)` with a preset from [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts). See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
 | `.customStopHandlers([...])` | Stop your own scripts on revoke (clean `stop()`, or `needsReload: true`). |
 | `.reloadOnRevoke(true)` | **Legacy, off by default.** Full page reload on revoke — erases what the visitor was doing. Prefer `.integrations(...)`. |
 | `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |

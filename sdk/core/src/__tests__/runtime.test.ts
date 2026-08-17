@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { _resetBuiltInIntegrationsWarning } from "../deprecations.js";
+import type { Integration } from "../integrations.js";
 import { getOrCreateConsentRuntime, resetConsentRuntime } from "../runtime.js";
 import type { ConsentChangePayload, ConsentPayload } from "../types.js";
 
@@ -6,11 +8,74 @@ function clearCookie(): void {
   document.cookie = "cookieyes-consent=; max-age=0; path=/";
 }
 
-beforeEach(clearCookie);
+const flush = () => new Promise((r) => setTimeout(r, 0));
+
+beforeEach(() => {
+  clearCookie();
+  _resetBuiltInIntegrationsWarning();
+});
 afterEach(() => {
   resetConsentRuntime();
   clearCookie();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
+
+const ccpaRegion = { detect: () => "US", map: { US: "CCPA" } } as const;
+
+describe("integrations wiring", () => {
+  it("runs a script integration and reacts to committed consent", async () => {
+    const cleanup = vi.fn();
+    const setup = vi.fn(() => cleanup);
+    const integration: Integration = {
+      id: "x",
+      category: "analytics",
+      version: 1,
+      load: "afterConsent",
+      onRevoke: "remove",
+      setup,
+    };
+    const { consentStore } = getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      integrations: [integration],
+    });
+    await flush();
+    expect(setup).not.toHaveBeenCalled(); // analytics denied initially
+
+    consentStore.getState().saveConsents("all");
+    await flush();
+    expect(setup).toHaveBeenCalledTimes(1);
+
+    consentStore.getState().saveConsents("necessary"); // revoke analytics
+    expect(cleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it("warns when the same vendor is on both integrations and builtInIntegrations", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      integrations: [
+        {
+          id: "segment",
+          category: "analytics",
+          version: 1,
+          load: "afterConsent",
+          onRevoke: "remove",
+          setup: () => () => {},
+        },
+      ],
+      builtInIntegrations: [{ vendor: "segment" }],
+    });
+    expect(warn.mock.calls.some((c) => /"segment" is configured as both/.test(String(c[0])))).toBe(
+      true,
+    );
+  });
+
+  it("warns that builtInIntegrations is deprecated", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", builtInIntegrations: [{ vendor: "hotjar" }] });
+    expect(warn.mock.calls.some((c) => /builtInIntegrations/.test(String(c[0])))).toBe(true);
+  });
 });
 
 describe("getOrCreateConsentRuntime", () => {
@@ -112,6 +177,66 @@ describe("consentStore state machine", () => {
     expect(changes).toHaveBeenCalledTimes(1);
     expect(payload?.allowedCategories).toContain("analytics");
     expect(payload?.deniedCategories).toEqual([]);
+  });
+});
+
+describe("GPC opt-out on a CCPA banner", () => {
+  it("keeps the CCPA opt-out default (granted) when GPC is off", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: false });
+    const { consentStore } = getOrCreateConsentRuntime({ mode: "cookie-only", region: ccpaRegion });
+    const state = consentStore.getState();
+    expect(state.regulation).toBe("CCPA");
+    // Opt-out model: non-required categories start on until the visitor opts out.
+    expect(state.has("analytics")).toBe(true);
+    expect(state.has("advertisement")).toBe(true);
+  });
+
+  it("starts the visitor opted out (non-required denied) when GPC is on", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: true });
+    const { consentStore } = getOrCreateConsentRuntime({ mode: "cookie-only", region: ccpaRegion });
+    const state = consentStore.getState();
+    expect(state.regulation).toBe("CCPA"); // GPC does NOT change the banner
+    expect(state.has("necessary")).toBe(true);
+    expect(state.has("analytics")).toBe(false);
+    expect(state.has("advertisement")).toBe(false);
+  });
+
+  it("ignores GPC when honorGpc is false", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: true });
+    const { consentStore } = getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      region: { ...ccpaRegion, honorGpc: false },
+    });
+    expect(consentStore.getState().has("analytics")).toBe(true);
+  });
+
+  it("does not opt out a GDPR visitor even with GPC on", () => {
+    vi.stubGlobal("navigator", { globalPrivacyControl: true });
+    const { consentStore } = getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      region: { detect: () => "DE", map: { DE: "GDPR" } },
+    });
+    const state = consentStore.getState();
+    expect(state.regulation).toBe("GDPR");
+    // GDPR is deny-by-default regardless; the point is the regulation is unchanged.
+    expect(state.has("analytics")).toBe(false);
+  });
+});
+
+describe("region.debug", () => {
+  it("logs the decision when on", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", region: { ...ccpaRegion, debug: true } });
+    expect(info).toHaveBeenCalledWith(
+      "[cookieyes] region detection",
+      expect.objectContaining({ regulation: "CCPA", source: "detected" }),
+    );
+  });
+
+  it("stays quiet when off", () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    getOrCreateConsentRuntime({ mode: "cookie-only", region: ccpaRegion });
+    expect(info).not.toHaveBeenCalled();
   });
 });
 

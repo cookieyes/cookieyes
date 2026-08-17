@@ -7,9 +7,11 @@ export { DEFAULT_CATEGORIES, resolveCategories } from "./categories.js";
 /** @internal — shared config normalizer consumed by framework adapters. */
 export type { _NormalizedConfig } from "./config.js";
 export { _normalizeConfig } from "./config.js";
-export { generateConsentId, parseCookie, serializeCookie } from "./cookie.js";
+export { generateConsentId, parseCookie, parseCookieHeader, serializeCookie } from "./cookie.js";
 export {
+  _resetBuiltInIntegrationsWarning,
   _resetOfflineModeWarning,
+  _warnBuiltInIntegrationsDeprecated,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
 export type { ConsentEmitter } from "./events.js";
@@ -26,6 +28,22 @@ export {
   primaryOf,
   resolveTranslations,
 } from "./i18n.js";
+export type {
+  Cleanup,
+  Integration,
+  IntegrationDebugInfo,
+  IntegrationHost,
+  IntegrationRunner,
+  IntegrationStatus,
+  SetupCtx,
+  SilenceControl,
+} from "./integrations.js";
+export {
+  INTEGRATION_FORMAT_VERSION,
+  runIntegrations,
+  warnOverlappingVendors,
+  warnUnknownCategories,
+} from "./integrations.js";
 export type { LanguageController } from "./language.js";
 export { createLanguageController } from "./language.js";
 export { createConsentManager } from "./manager.js";
@@ -38,11 +56,17 @@ export {
   installNetworkBlocker,
   uninstallNetworkBlocker,
 } from "./network-blocker.js";
+export type { HeaderSource } from "./region.js";
+export { _logRegionDecision, readGpc, regionFromHeaders, resolveRegion } from "./region.js";
 export {
   getOrCreateConsentRuntime,
   initCookieYes,
   resetConsentRuntime,
 } from "./runtime.js";
+/** @internal — test-only registry reset consumed by `@cookieyes/test`. */
+export { _clearScriptRegistry } from "./scripts.js";
+export type { ServerConsentOptions } from "./server-consent.js";
+export { readServerConsent } from "./server-consent.js";
 export type {
   AnyStopHandler,
   BuiltInIntegration,
@@ -54,7 +78,6 @@ export {
   registerStopHandler,
   resolveBuiltInIntegration,
 } from "./stop-handlers.js";
-
 export type {
   ActiveUI,
   CategoryText,
@@ -81,6 +104,10 @@ export type {
   I18nConfig,
   LanguageInfo,
   PartialTranslations,
+  RegionConfig,
+  RegionDecision,
+  RegionDetector,
+  RegionSource,
   Regulation,
   ReloadNoticeState,
   ScriptEntry,
@@ -88,3 +115,4 @@ export type {
   ThemeConfig,
   TranslationMap,
 } from "./types.js";
+export { CORE_VERSION } from "./version.js";

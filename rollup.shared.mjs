@@ -37,12 +37,40 @@ function tsJsResolve() {
   };
 }
 
-/** Prepend the React Server Components `"use client"` directive AFTER minification. */
-function useClientBanner() {
+/**
+ * Replace the `CORE_VERSION` sentinel with the real package version.
+ *
+ * Only `@cookieyes/core`'s `version.ts` contains the sentinel, so this is a no-op
+ * for every other package that shares this config. An empty sourcemap is returned
+ * deliberately: the change is a single string literal in a one-line module, and
+ * claiming "unknown mappings" is honest and silences Rollup's (correct) warning
+ * about a transform without a map.
+ */
+function injectPkgVersion(version) {
+  const SENTINEL = "0.0.0-dev";
+  return {
+    name: "inject-pkg-version",
+    transform(code) {
+      if (!code.includes(SENTINEL)) return null;
+      return { code: code.replaceAll(SENTINEL, version), map: { mappings: "" } };
+    },
+  };
+}
+
+/**
+ * Prepend the React Server Components `"use client"` directive AFTER minification.
+ *
+ * `exclude` names entries that must NOT get it — a server-only entry point (one
+ * that reads request state, e.g. `next/headers`) is the opposite of a client
+ * module, and marking it `"use client"` would make importing it from a Server
+ * Component fail.
+ */
+function useClientBanner(exclude = []) {
   return {
     name: "use-client-banner",
     renderChunk(code, chunk) {
       if (!chunk.isEntry) return null;
+      if (exclude.includes(chunk.name)) return null;
       return { code: `"use client";\n${code}`, map: null };
     },
   };
@@ -53,6 +81,7 @@ function useClientBanner() {
  * @param {object} opts.pkg            the package's package.json (for externals)
  * @param {Record<string,string>} [opts.entries]  entry map (default { index: "src/index.ts" })
  * @param {boolean} [opts.useClient]   prepend the "use client" directive (react/nextjs)
+ * @param {string[]} [opts.useClientExclude] entry names that must stay server-only
  * @param {string[]} [opts.formats]    ["esm","cjs"] by default
  * @param {boolean} [opts.dtsBuild]    emit .d.ts (default true)
  * @param {boolean} [opts.sourcemap]   default true
@@ -63,6 +92,7 @@ export function createLibConfig({
   pkg,
   entries = { index: "src/index.ts" },
   useClient = false,
+  useClientExclude = [],
   formats = ["esm", "cjs"],
   dtsBuild = true,
   sourcemap = true,
@@ -105,11 +135,12 @@ export function createLibConfig({
       external: isExternal,
       plugins: [
         tsJsResolve(),
+        injectPkgVersion(pkg.version),
         nodeResolve({ extensions: [".ts", ".tsx", ".mjs", ".js", ".json"] }),
         commonjs(),
         esbuild({ target, jsx: "automatic", sourceMap: sourcemap }),
         terser({ format: { comments: false } }),
-        useClient ? useClientBanner() : null,
+        useClient ? useClientBanner(useClientExclude) : null,
       ].filter(Boolean),
       output: outputs,
     },
