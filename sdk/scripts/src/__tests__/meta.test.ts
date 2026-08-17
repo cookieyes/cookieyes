@@ -32,7 +32,9 @@ function makeHost(initial: Record<string, boolean> = {}, region: RegionDecision 
 const CCPA_REGION: RegionDecision = { ...REGION, regulation: "CCPA", region: "US-CA" };
 const queue = () => (fbq() as unknown as { queue: unknown[][] } | undefined)?.queue ?? [];
 const hasCall = (a: unknown[]) =>
-  queue().some((c) => c.length === a.length && c.every((v, i) => JSON.stringify(v) === JSON.stringify(a[i])));
+  queue().some(
+    (c) => c.length === a.length && c.every((v, i) => JSON.stringify(v) === JSON.stringify(a[i])),
+  );
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 const SCRIPT = "cky-meta-pixel";

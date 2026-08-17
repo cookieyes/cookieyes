@@ -2,14 +2,14 @@ export { type CustomScriptConfig, customScript } from "./custom-script.js";
 export {
   bootstrapGoogleConsentMode,
   type ConsentModeOptions,
-  ga4,
   type Ga4Config,
-  googleAds,
   type GoogleAdsConfig,
-  googleConsentModeSnippet,
   type GoogleConsentModeStrategy,
-  googleTagManager,
   type GoogleTagManagerConfig,
+  ga4,
+  googleAds,
+  googleConsentModeSnippet,
+  googleTagManager,
 } from "./google.js";
 export { type MetaPixelConfig, metaPixel } from "./meta.js";
 export { createQueue, flushQueue, type QueueStub } from "./queue.js";

@@ -61,7 +61,7 @@ export function warnOverlappingGcm(resolved: ResolvedCategories): void {
     const ids = [...idSet].map((id) => JSON.stringify(id)).join(", ");
     warn(
       `categories ${ids} all map to the Google signal "${signal}", which is a single ` +
-        "on/off — this mapping is lossy. Set `googleConsentMatch: \"all\"` to grant it only " +
+        'on/off — this mapping is lossy. Set `googleConsentMatch: "all"` to grant it only ' +
         'when all are granted, or "any" (default) to grant it when any is.',
     );
   }

@@ -395,7 +395,8 @@ export function googleAds(config: GoogleAdsConfig): Integration {
         const c = cmd as Record<number, unknown>;
         return c[0] === "set" && c[1] === "restricted_data_processing";
       });
-      if (rdp && !rdpSet) (window as WindowWithGtag).gtag?.("set", "restricted_data_processing", true);
+      if (rdp && !rdpSet)
+        (window as WindowWithGtag).gtag?.("set", "restricted_data_processing", true);
       configureGtag(config.conversionId, config.params);
       return script;
     },

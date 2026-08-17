@@ -120,14 +120,32 @@ describe("runIntegrations", () => {
     const runner = runIntegrations(
       [
         anIntegration({ id: "seg", category: "analytics" }),
-        anIntegration({ id: "gtag", category: "analytics", load: "immediately", onRevoke: "keep", setup: () => {} }),
+        anIntegration({
+          id: "gtag",
+          category: "analytics",
+          load: "immediately",
+          onRevoke: "keep",
+          setup: () => {},
+        }),
       ],
       host,
     );
     await flush();
     expect(runner.list()).toEqual([
-      { id: "seg", category: "analytics", load: "afterConsent", onRevoke: "remove", status: "idle" },
-      { id: "gtag", category: "analytics", load: "immediately", onRevoke: "keep", status: "active" },
+      {
+        id: "seg",
+        category: "analytics",
+        load: "afterConsent",
+        onRevoke: "remove",
+        status: "idle",
+      },
+      {
+        id: "gtag",
+        category: "analytics",
+        load: "immediately",
+        onRevoke: "keep",
+        status: "active",
+      },
     ]);
     set("analytics", true);
     await flush();
@@ -510,7 +528,10 @@ describe("warnUnknownCategories()", () => {
 
   it("warns when an afterConsent integration is gated on a category not in the taxonomy", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    warnUnknownCategories([anIntegration({ id: "segment", category: "analytics" })], ["stats", "marketing"]);
+    warnUnknownCategories(
+      [anIntegration({ id: "segment", category: "analytics" })],
+      ["stats", "marketing"],
+    );
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('gated on category "analytics"'));
   });
 
@@ -529,7 +550,15 @@ describe("warnUnknownCategories()", () => {
   it("does not warn for an immediately-loaded integration (category doesn't gate it)", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     warnUnknownCategories(
-      [anIntegration({ id: "ga4", category: "analytics", load: "immediately", onRevoke: "keep", setup: () => {} })],
+      [
+        anIntegration({
+          id: "ga4",
+          category: "analytics",
+          load: "immediately",
+          onRevoke: "keep",
+          setup: () => {},
+        }),
+      ],
       ["stats"],
     );
     expect(warn).not.toHaveBeenCalled();

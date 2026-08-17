@@ -14,7 +14,10 @@ describe("GoogleConsentMode", () => {
   });
 
   it("passes Consent Mode options through", () => {
-    const el = GoogleConsentMode({ defaults: { analytics_storage: "granted" }, waitForUpdate: 1000 });
+    const el = GoogleConsentMode({
+      defaults: { analytics_storage: "granted" },
+      waitForUpdate: 1000,
+    });
     expect(html(el)).toContain('"analytics_storage":"granted"');
     expect(html(el)).toContain('"wait_for_update":1000');
   });

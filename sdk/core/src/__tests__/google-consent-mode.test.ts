@@ -142,7 +142,9 @@ describe("warnOverlappingGcm", () => {
         { id: "marketing_stats", gcm: ["analytics_storage"] },
       ]),
     );
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('map to the Google signal "analytics_storage"'));
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('map to the Google signal "analytics_storage"'),
+    );
   });
 
   it("stays quiet for the built-in five (no overlap)", () => {

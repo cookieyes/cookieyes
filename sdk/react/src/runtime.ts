@@ -36,12 +36,12 @@ import {
   resolveCategories,
   resolveRegion,
   runIntegrations,
-  warnUnknownCategories,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
   type TranslationMap,
   warnOverlappingVendors,
+  warnUnknownCategories,
 } from "@cookieyes/core";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 

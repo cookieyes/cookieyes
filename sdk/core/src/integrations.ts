@@ -97,7 +97,10 @@ export function warnOverlappingVendors(integrationIds: string[], builtInVendors:
  * list plus a preset left on its default category (e.g. `segment()` → "analytics").
  * `immediately` integrations aren't gated by category, so they're not checked.
  */
-export function warnUnknownCategories(integrations: Integration[], knownCategoryIds: string[]): void {
+export function warnUnknownCategories(
+  integrations: Integration[],
+  knownCategoryIds: string[],
+): void {
   const known = new Set(knownCategoryIds);
   for (const integration of integrations) {
     if (integration.load !== "afterConsent") continue;
@@ -115,7 +118,7 @@ export function warnUnknownCategories(integrations: Integration[], knownCategory
         warn(
           `integration "${integration.id}" is gated on category "${category}", which isn't in ` +
             "your configured categories — it will never load. Pass a category that exists " +
-            "(e.g. segment({ category: \"…\" })), or add it to your taxonomy.",
+            '(e.g. segment({ category: "…" })), or add it to your taxonomy.',
         );
       }
     }

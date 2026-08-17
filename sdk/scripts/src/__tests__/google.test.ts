@@ -72,7 +72,10 @@ describe("googleConsentModeSnippet()", () => {
   });
 
   it("honours default + waitForUpdate overrides", () => {
-    const s = googleConsentModeSnippet({ defaults: { analytics_storage: "granted" }, waitForUpdate: 1000 });
+    const s = googleConsentModeSnippet({
+      defaults: { analytics_storage: "granted" },
+      waitForUpdate: 1000,
+    });
     expect(s).toContain('"analytics_storage":"granted"');
     expect(s).toContain('"wait_for_update":1000');
   });
@@ -233,10 +236,7 @@ describe("googleAds()", () => {
   it("shares gtag.js with GA4 (one library, both configs) — the multi-tracker case", async () => {
     bootstrapGoogleConsentMode();
     const { host } = makeHost();
-    runIntegrations(
-      [ga4({ measurementId: "G-AAA" }), googleAds({ conversionId: "AW-BBB" })],
-      host,
-    );
+    runIntegrations([ga4({ measurementId: "G-AAA" }), googleAds({ conversionId: "AW-BBB" })], host);
     await flush();
     expect(document.querySelectorAll(`#${GTAG}`)).toHaveLength(1); // single shared gtag.js
     const configs = commands()
@@ -257,7 +257,11 @@ describe("googleAds()", () => {
     const a = makeHost({}, CCPA_REGION);
     runIntegrations([googleAds({ conversionId: "AW-R" })], a.host);
     await flush();
-    expect(commands().some((c) => c[0] === "set" && c[1] === "restricted_data_processing" && c[2] === true)).toBe(true);
+    expect(
+      commands().some(
+        (c) => c[0] === "set" && c[1] === "restricted_data_processing" && c[2] === true,
+      ),
+    ).toBe(true);
 
     win().dataLayer = undefined;
     win().gtag = undefined;
@@ -267,7 +271,9 @@ describe("googleAds()", () => {
     const b = makeHost({}, CCPA_REGION);
     runIntegrations([googleAds({ conversionId: "AW-R", restrictedDataProcessing: false })], b.host);
     await flush();
-    expect(commands().some((c) => c[0] === "set" && c[1] === "restricted_data_processing")).toBe(false);
+    expect(commands().some((c) => c[0] === "set" && c[1] === "restricted_data_processing")).toBe(
+      false,
+    );
   });
 
   it("configures a given id only once, even if two integrations request it", async () => {
@@ -337,7 +343,10 @@ describe("Google container/tag overlap warning", () => {
     const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
     bootstrapGoogleConsentMode();
     const { host } = makeHost();
-    runIntegrations([googleTagManager({ containerId: "GTM-X" }), ga4({ measurementId: "G-X" })], host);
+    runIntegrations(
+      [googleTagManager({ containerId: "GTM-X" }), ga4({ measurementId: "G-X" })],
+      host,
+    );
     await flush();
     const overlap = spy.mock.calls.filter((c) => String(c[0]).includes("fire twice"));
     expect(overlap).toHaveLength(1);
@@ -357,7 +366,10 @@ describe("Google container/tag overlap warning", () => {
     bootstrapGoogleConsentMode();
     const { host } = makeHost();
     runIntegrations(
-      [googleTagManager({ containerId: "GTM-X", consentMode: "basic" }), ga4({ measurementId: "G-X" })],
+      [
+        googleTagManager({ containerId: "GTM-X", consentMode: "basic" }),
+        ga4({ measurementId: "G-X" }),
+      ],
       host,
     );
     await flush();
