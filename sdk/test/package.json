@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/test",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "Headless test double for the CookieYes consent SDK \u2014 wraps the real engine, no browser, cookies, or network",
   "keywords": [
     "cookie consent",
