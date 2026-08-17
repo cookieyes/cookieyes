@@ -7,6 +7,7 @@ export {
   googleAds,
   type GoogleAdsConfig,
   googleConsentModeSnippet,
+  type GoogleConsentModeStrategy,
   googleTagManager,
   type GoogleTagManagerConfig,
 } from "./google.js";

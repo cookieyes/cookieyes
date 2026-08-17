@@ -193,9 +193,20 @@ initCookieYes({
 - **`params`** on `ga4()`/`googleAds()` passes extra `gtag('config', …)` options —
   e.g. `ga4({ measurementId, params: { send_page_view: false } })` for a single-page
   app, or `{ debug_mode: true }` for DebugView.
+- **`consentMode: "basic"`** loads the tag **only after** consent and **removes it
+  on withdrawal** — so no tag and no cookieless pings whenever consent isn't given.
+  Default `"advanced"` loads immediately and lets Google send cookieless pings
+  while denied. (Basic removes the shared `gtag.js`, so use it for a single Google
+  product per page; for several, prefer `"advanced"`.)
+- **`restrictedDataProcessing`** on `googleAds()` — Google's US/California flag,
+  the Ads counterpart of Meta's LDU. Omit it and it's on automatically for a US
+  opt-out (CCPA) visitor; `true`/`false` forces it.
 - **`urlPassthrough` / `adsDataRedaction`** on the Consent Mode options
   (`googleConsentModeSnippet` / `bootstrapGoogleConsentMode`) turn on Google's
   recommended ad-performance behaviour while `ad_storage` is denied. Off by default.
+- **Don't run the same product twice:** if you load GA4/Ads *inside* your GTM
+  container, use `googleTagManager()` alone — not also `ga4()`/`googleAds()` for
+  the same id. The SDK **warns** if it sees a container and a standalone tag together.
 - If a **custom taxonomy** maps more than one category to the same Google signal,
   set `googleConsentMatch: "all"` on `initCookieYes` to grant the signal only when
   *all* of them are granted (default is `"any"` — grant if any one is).
@@ -302,6 +313,16 @@ The engine also flags common mistakes with a console warning: an unknown format
 `version`, a duplicate `id`, the same vendor in both `integrations` and
 `builtInIntegrations`, an old `{ vendor }` entry, and a category that isn't in
 your taxonomy (or an empty one).
+
+### Sending events safely (the three vendors compared)
+
+Whether you must guard a vendor call depends on what the preset does on revoke:
+
+| Vendor | Global | Calling it directly |
+|---|---|---|
+| **Segment** | `window.analytics` | **Always guard** — `remove` deletes it on revoke, so a bare `.track()` throws. Use `safeCall("analytics", "track", …)`. |
+| **Meta** | `window.fbq` | Guard **before it loads** — `window.fbq?.("track", …)`. After load it persists (`silence` keeps it), and calls while denied are held by Meta. |
+| **Google** | `window.gtag` | **Safe** — `gtag` pushes to the `dataLayer`, which persists, so a direct call never throws. |
 
 ### Testing your integration
 

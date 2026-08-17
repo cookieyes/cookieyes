@@ -1,4 +1,5 @@
-import type { Integration } from "@cookieyes/core";
+import type { Cleanup, Integration, SetupCtx } from "@cookieyes/core";
+import { deleteCookie } from "./cookies.js";
 
 /**
  * Google Consent Mode + tag loaders (GA4, Google Ads, GTM).
@@ -55,6 +56,8 @@ type WindowWithGtag = Window &
     dataLayer?: unknown[];
     gtag?: (...args: unknown[]) => void;
     __ckyGcmReady?: boolean;
+    __ckyGoogleOverlapWarned?: boolean;
+    __ckyGtagProducts?: Set<string>;
   };
 
 /**
@@ -123,6 +126,41 @@ function ensureConsentModeReady(): void {
   bootstrapGoogleConsentMode();
 }
 
+/**
+ * Warn (once) when both a GTM container and a standalone gtag product (GA4/Ads)
+ * are **configured** — checked when the presets are created, not when they load,
+ * so a `basic` or blocked tag can't hide the clash. If the container also loads
+ * GA4/Ads, they fire twice; we can't see inside the container, so this is a
+ * heads-up. Detection is by which preset was called, so custom ids don't matter.
+ */
+let sawGoogleContainer = false;
+let sawGoogleTag = false;
+let overlapCheckScheduled = false;
+function noteGoogleProduct(kind: "container" | "tag"): void {
+  if (kind === "container") sawGoogleContainer = true;
+  else sawGoogleTag = true;
+  if (overlapCheckScheduled || typeof queueMicrotask === "undefined") return;
+  overlapCheckScheduled = true;
+  // Batch across one config build (the integrations array is created in one tick).
+  queueMicrotask(() => {
+    if (sawGoogleContainer && sawGoogleTag) warnGoogleOverlap();
+    sawGoogleContainer = false;
+    sawGoogleTag = false;
+    overlapCheckScheduled = false;
+  });
+}
+
+function warnGoogleOverlap(): void {
+  const scope = (typeof window !== "undefined" ? window : globalThis) as WindowWithGtag;
+  if (scope.__ckyGoogleOverlapWarned) return;
+  scope.__ckyGoogleOverlapWarned = true;
+  warn(
+    "both Google Tag Manager and a gtag product (GA4/Ads) are configured. If your " +
+      "container also loads GA4/Ads, they will fire twice — use googleTagManager() OR " +
+      "ga4()/googleAds() for the same product, not both.",
+  );
+}
+
 /** Ensure the shared `gtag.js` library is on the page (injected once). */
 function ensureGtagLibrary(firstId: string): HTMLScriptElement | null {
   if (typeof document === "undefined") return null;
@@ -174,49 +212,107 @@ function ensureGtm(containerId: string): HTMLScriptElement | null {
 }
 
 /**
- * A load-immediately, keep-on-revoke integration: run `ensure` (idempotent
- * script injection) and resolve when its script loads. Consent updates are
- * handled by core's Consent Mode broadcast, so there's nothing to do on revoke.
- *
- * A load failure (e.g. an ad blocker) rejects, so the status is truthful
- * (`error`, not `active`) and the debug view tells the truth; the engine retries
- * on the next consent change. `config`/`gtm.start` are guarded, so a retry never
- * double-registers.
+ * Wait for an injected script to load; resolve via `onLoaded`, reject on error
+ * (so status is truthful `error` — the engine retries; `config`/`gtm.start` are
+ * guarded so a retry never double-registers). A load failure removes the script
+ * so a retry can re-inject.
  */
-function keepLoadIntegration(
+function awaitScript(
+  script: HTMLScriptElement | null,
+  id: string,
+  onLoaded: () => void,
+  reject: (err: Error) => void,
+): void {
+  if (!script || script.dataset.ckyLoaded === "true") {
+    onLoaded();
+    return;
+  }
+  script.addEventListener(
+    "load",
+    () => {
+      script.dataset.ckyLoaded = "true";
+      onLoaded();
+    },
+    { once: true },
+  );
+  script.addEventListener(
+    "error",
+    () => {
+      script.remove();
+      reject(new Error(`Google script for "${id}" failed to load`));
+    },
+    { once: true },
+  );
+}
+
+/**
+ * A Google integration. `"advanced"` loads immediately and keeps the tag on
+ * revoke (Consent Mode sends cookieless pings — handled by core's broadcast).
+ * `"basic"` loads only after consent and **removes** the tag on revoke (running
+ * `teardown`), so nothing — not even a cookieless ping — happens once withdrawn.
+ */
+function googleIntegration(
   base: { id: string; category: string },
-  ensure: () => HTMLScriptElement | null,
+  strategy: GoogleConsentModeStrategy,
+  ensure: (ctx: SetupCtx) => HTMLScriptElement | null,
+  teardown: () => void,
 ): Integration {
+  if (strategy === "basic") {
+    return {
+      ...base,
+      version: 1,
+      load: "afterConsent",
+      onRevoke: "remove",
+      setup: (ctx) =>
+        new Promise<Cleanup>((resolve, reject) => {
+          awaitScript(ensure(ctx), base.id, () => resolve(teardown), reject);
+        }),
+    };
+  }
   return {
     ...base,
     version: 1,
     load: "immediately",
     onRevoke: "keep",
-    setup: () =>
+    setup: (ctx) =>
       new Promise<void>((resolve, reject) => {
-        const script = ensure();
-        if (!script || script.dataset.ckyLoaded === "true") {
-          resolve();
-          return;
-        }
-        script.addEventListener(
-          "load",
-          () => {
-            script.dataset.ckyLoaded = "true";
-            resolve();
-          },
-          { once: true },
-        );
-        script.addEventListener(
-          "error",
-          () => {
-            script.remove(); // remove so a retry can re-inject
-            reject(new Error(`Google script for "${base.id}" failed to load`));
-          },
-          { once: true },
-        );
+        awaitScript(ensure(ctx), base.id, resolve, reject);
       }),
   };
+}
+
+/**
+ * Consent Mode strategy. `"advanced"` (default) loads `gtag.js` immediately and
+ * sends cookieless pings while consent is denied (Google's modelling). `"basic"`
+ * loads the tag **only after** the category is granted — nothing is sent, and no
+ * cookieless pings, until the visitor consents.
+ */
+export type GoogleConsentModeStrategy = "advanced" | "basic";
+
+/** The gtag products currently loaded (by integration id) — so a Basic teardown only removes the shared library when it's the last one. */
+function gtagProducts(): Set<string> {
+  const scope = (typeof window !== "undefined" ? window : globalThis) as WindowWithGtag;
+  scope.__ckyGtagProducts ??= new Set<string>();
+  return scope.__ckyGtagProducts;
+}
+
+/**
+ * Basic-mode teardown for a gtag product: clear **only this product's** cookies
+ * (so revoking analytics doesn't wipe Ads' cookies, or vice versa), and remove
+ * the shared `gtag.js` only when no other gtag product is still active.
+ */
+function teardownGtagProduct(id: string, cookies: string[]): void {
+  if (typeof document === "undefined") return;
+  const products = gtagProducts();
+  products.delete(id);
+  for (const name of cookies) deleteCookie(name);
+  if (products.size === 0) document.getElementById(GTAG_SCRIPT_ID)?.remove();
+}
+
+/** Basic-mode teardown for GTM: remove the container script (its own, not shared). */
+function removeGtm(): void {
+  if (typeof document === "undefined") return;
+  document.getElementById(GTM_SCRIPT_ID)?.remove();
 }
 
 export type Ga4Config = {
@@ -228,6 +324,8 @@ export type Ga4Config = {
   id?: string;
   /** Extra `gtag('config', …)` params, e.g. `{ send_page_view: false }` (SPAs) or `{ debug_mode: true }`. */
   params?: Record<string, unknown>;
+  /** Consent Mode strategy — `"advanced"` (default) or `"basic"`. See {@link GoogleConsentModeStrategy}. */
+  consentMode?: GoogleConsentModeStrategy;
 };
 
 /**
@@ -239,13 +337,20 @@ export type Ga4Config = {
  * initCookieYes({ mode: "cookie-only", integrations: [ga4({ measurementId: "G-XXXX" })] });
  */
 export function ga4(config: Ga4Config): Integration {
-  return keepLoadIntegration(
-    { id: config.id ?? "ga4", category: config.category ?? "analytics" },
+  noteGoogleProduct("tag");
+  const id = config.id ?? "ga4";
+  // GA4's own cookies: `_ga`, `_gid`, `_gat`, and per-property `_ga_<id without G->`.
+  const cookies = ["_ga", "_gid", "_gat", `_ga_${config.measurementId.replace(/^G-/, "")}`];
+  return googleIntegration(
+    { id, category: config.category ?? "analytics" },
+    config.consentMode ?? "advanced",
     () => {
+      gtagProducts().add(id);
       const script = ensureGtagLibrary(config.measurementId);
       configureGtag(config.measurementId, config.params);
       return script;
     },
+    () => teardownGtagProduct(id, cookies),
   );
 }
 
@@ -258,6 +363,13 @@ export type GoogleAdsConfig = {
   id?: string;
   /** Extra `gtag('config', …)` params for the Ads tag. */
   params?: Record<string, unknown>;
+  /** Consent Mode strategy — `"advanced"` (default) or `"basic"`. */
+  consentMode?: GoogleConsentModeStrategy;
+  /**
+   * Google's Restricted Data Processing (US/California). Leave unset to enable it
+   * automatically for a US opt-out (CCPA) visitor; `true`/`false` forces it.
+   */
+  restrictedDataProcessing?: boolean;
 };
 
 /**
@@ -269,13 +381,26 @@ export type GoogleAdsConfig = {
  * initCookieYes({ mode: "cookie-only", integrations: [googleAds({ conversionId: "AW-XXXX" })] });
  */
 export function googleAds(config: GoogleAdsConfig): Integration {
-  return keepLoadIntegration(
-    { id: config.id ?? "google-ads", category: config.category ?? "advertisement" },
-    () => {
+  noteGoogleProduct("tag");
+  const id = config.id ?? "google-ads";
+  return googleIntegration(
+    { id, category: config.category ?? "advertisement" },
+    config.consentMode ?? "advanced",
+    (ctx) => {
+      gtagProducts().add(id);
       const script = ensureGtagLibrary(config.conversionId);
+      // Restricted Data Processing: explicit config wins; otherwise on for a US opt-out (CCPA) visitor.
+      const rdp = config.restrictedDataProcessing ?? ctx.region.regulation === "CCPA";
+      const rdpSet = dataLayerHas((cmd) => {
+        const c = cmd as Record<number, unknown>;
+        return c[0] === "set" && c[1] === "restricted_data_processing";
+      });
+      if (rdp && !rdpSet) (window as WindowWithGtag).gtag?.("set", "restricted_data_processing", true);
       configureGtag(config.conversionId, config.params);
       return script;
     },
+    // Ads' own cookie is `_gcl_au` — clearing GA4's `_ga*` here would break analytics.
+    () => teardownGtagProduct(id, ["_gcl_au"]),
   );
 }
 
@@ -286,6 +411,8 @@ export type GoogleTagManagerConfig = {
   category?: string;
   /** Override the integration id. Default `"gtm"`. */
   id?: string;
+  /** Consent Mode strategy — `"advanced"` (default) or `"basic"`. */
+  consentMode?: GoogleConsentModeStrategy;
 };
 
 /**
@@ -299,8 +426,11 @@ export type GoogleTagManagerConfig = {
  * initCookieYes({ mode: "cookie-only", integrations: [googleTagManager({ containerId: "GTM-XXXX" })] });
  */
 export function googleTagManager(config: GoogleTagManagerConfig): Integration {
-  return keepLoadIntegration(
+  noteGoogleProduct("container");
+  return googleIntegration(
     { id: config.id ?? "gtm", category: config.category ?? "analytics" },
+    config.consentMode ?? "advanced",
     () => ensureGtm(config.containerId),
+    () => removeGtm(),
   );
 }

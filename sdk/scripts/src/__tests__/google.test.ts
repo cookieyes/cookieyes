@@ -15,7 +15,7 @@ const REGION: RegionDecision = {
   confidence: "high",
 };
 
-function makeHost(initial: Record<string, boolean> = {}) {
+function makeHost(initial: Record<string, boolean> = {}, region: RegionDecision = REGION) {
   const consent: Record<string, boolean> = { ...initial };
   const subs = new Set<() => void>();
   const host: IntegrationHost = {
@@ -24,7 +24,7 @@ function makeHost(initial: Record<string, boolean> = {}) {
       subs.add(fn);
       return () => subs.delete(fn);
     },
-    region: REGION,
+    region,
   };
   return {
     host,
@@ -35,6 +35,8 @@ function makeHost(initial: Record<string, boolean> = {}) {
   };
 }
 
+const CCPA_REGION: RegionDecision = { ...REGION, regulation: "CCPA", region: "US-CA" };
+
 const flush = () => new Promise((r) => setTimeout(r, 0));
 const GTAG = "cky-google-gtag";
 const el = () => document.getElementById(GTAG) as HTMLScriptElement | null;
@@ -43,6 +45,8 @@ const win = () =>
     dataLayer?: unknown[][] | undefined;
     gtag?: ((...a: unknown[]) => void) | undefined;
     __ckyGcmReady?: boolean | undefined;
+    __ckyGoogleOverlapWarned?: boolean | undefined;
+    __ckyGtagProducts?: Set<string> | undefined;
   };
 const fireLoad = () => el()?.dispatchEvent(new Event("load"));
 const commands = () => (win().dataLayer ?? []).map((c) => Array.from(c));
@@ -52,6 +56,8 @@ beforeEach(() => {
   win().dataLayer = undefined;
   win().gtag = undefined;
   win().__ckyGcmReady = undefined;
+  win().__ckyGoogleOverlapWarned = undefined;
+  win().__ckyGtagProducts = undefined;
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -120,6 +126,54 @@ describe("ga4()", () => {
     await flush();
     const cfg = commands().find((c) => c[0] === "config" && c[1] === "G-P");
     expect(cfg?.[2]).toEqual({ send_page_view: false });
+  });
+
+  it("basic consent mode: loads only after consent, and removes on revoke", async () => {
+    bootstrapGoogleConsentMode();
+    const { host, set } = makeHost();
+    runIntegrations([ga4({ measurementId: "G-B", consentMode: "basic" })], host);
+    await flush();
+    expect(el()).toBeNull(); // advanced would have loaded already; basic waits
+    set("analytics", true);
+    await flush();
+    fireLoad();
+    await flush();
+    expect(el()).not.toBeNull(); // loaded on grant
+    set("analytics", false);
+    expect(el()).toBeNull(); // removed on revoke — not kept sending cookieless pings
+  });
+
+  it("basic teardown clears only this product's cookies (not the other product's)", async () => {
+    bootstrapGoogleConsentMode();
+    const writes: string[] = [];
+    vi.spyOn(document, "cookie", "set").mockImplementation((v: string) => writes.push(v));
+    const { host, set } = makeHost({ analytics: true });
+    runIntegrations([ga4({ measurementId: "G-CLEAR", consentMode: "basic" })], host);
+    await flush();
+    fireLoad();
+    await flush();
+    writes.length = 0;
+    set("analytics", false); // basic revoke → teardown
+    const deleted = writes.filter((w) => w.includes("max-age=0")).map((w) => w.split("=")[0]);
+    expect(deleted).toContain("_ga");
+    expect(deleted).toContain("_ga_CLEAR"); // GA4's per-property cookie
+    expect(deleted).not.toContain("_gcl_au"); // Ads' cookie must be left alone
+  });
+
+  it("basic teardown keeps the shared gtag.js while another gtag product is active", async () => {
+    bootstrapGoogleConsentMode();
+    const { host, set } = makeHost({ analytics: true, advertisement: true });
+    runIntegrations(
+      [ga4({ measurementId: "G-X", consentMode: "basic" }), googleAds({ conversionId: "AW-X" })],
+      host,
+    );
+    await flush();
+    fireLoad();
+    await flush();
+    document.cookie = "_gcl_au=ads.1.abc";
+    set("analytics", false); // GA4 basic teardown, but Ads (advanced) is still active
+    expect(el()).not.toBeNull(); // shared gtag.js stays
+    expect(document.cookie).toContain("_gcl_au=ads.1.abc"); // Ads cookie untouched
   });
 
   it("stays loaded on revoke (onRevoke: keep)", async () => {
@@ -198,6 +252,24 @@ describe("googleAds()", () => {
     expect(googleAds({ conversionId: "AW-X", id: "ads2" }).id).toBe("ads2");
   });
 
+  it("auto-enables Restricted Data Processing for a CCPA visitor (explicit false wins)", async () => {
+    bootstrapGoogleConsentMode();
+    const a = makeHost({}, CCPA_REGION);
+    runIntegrations([googleAds({ conversionId: "AW-R" })], a.host);
+    await flush();
+    expect(commands().some((c) => c[0] === "set" && c[1] === "restricted_data_processing" && c[2] === true)).toBe(true);
+
+    win().dataLayer = undefined;
+    win().gtag = undefined;
+    win().__ckyGcmReady = undefined;
+    document.head.innerHTML = "";
+    bootstrapGoogleConsentMode();
+    const b = makeHost({}, CCPA_REGION);
+    runIntegrations([googleAds({ conversionId: "AW-R", restrictedDataProcessing: false })], b.host);
+    await flush();
+    expect(commands().some((c) => c[0] === "set" && c[1] === "restricted_data_processing")).toBe(false);
+  });
+
   it("configures a given id only once, even if two integrations request it", async () => {
     bootstrapGoogleConsentMode();
     const { host } = makeHost();
@@ -257,5 +329,38 @@ describe("googleTagManager()", () => {
       (c) => (c as unknown as { event?: string }).event === "gtm.js",
     );
     expect(starts).toHaveLength(1); // gtm.start pushed once, not per retry
+  });
+});
+
+describe("Google container/tag overlap warning", () => {
+  it("warns once when GTM and a gtag product (GA4/Ads) are both configured", async () => {
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    runIntegrations([googleTagManager({ containerId: "GTM-X" }), ga4({ measurementId: "G-X" })], host);
+    await flush();
+    const overlap = spy.mock.calls.filter((c) => String(c[0]).includes("fire twice"));
+    expect(overlap).toHaveLength(1);
+  });
+
+  it("does not warn for gtag products alone (no container)", async () => {
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    runIntegrations([ga4({ measurementId: "G-X" }), googleAds({ conversionId: "AW-X" })], host);
+    await flush();
+    expect(spy.mock.calls.some((c) => String(c[0]).includes("fire twice"))).toBe(false);
+  });
+
+  it("warns even when the container is basic and never loads (config-time, not DOM)", async () => {
+    const spy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    runIntegrations(
+      [googleTagManager({ containerId: "GTM-X", consentMode: "basic" }), ga4({ measurementId: "G-X" })],
+      host,
+    );
+    await flush();
+    expect(spy.mock.calls.some((c) => String(c[0]).includes("fire twice"))).toBe(true);
   });
 });
