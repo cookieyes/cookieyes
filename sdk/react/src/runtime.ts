@@ -22,6 +22,7 @@ import {
   createLanguageController,
   type I18nConfig,
   type Integration,
+  type IntegrationDebugInfo,
   type IntegrationRunner,
   installNetworkBlocker,
   type LanguageInfo,
@@ -94,6 +95,8 @@ export type CookieYesRuntime = {
   getSnapshot: () => CookieYesSnapshot;
   getServerSnapshot: () => CookieYesSnapshot;
   manager: ConsentManager;
+  /** Config + live status for each script integration — data for a debug view. */
+  getIntegrations: () => IntegrationDebugInfo[];
   /** Text for the active language (English fills any gaps). Reactive — swaps on setLanguage. */
   translations: TranslationMap;
   getLanguageInfo: () => LanguageInfo;
@@ -398,6 +401,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     getSnapshot: () => cachedSnapshot,
     getServerSnapshot: () => ssrSnapshot,
     manager,
+    getIntegrations: () => _integrationRunner?.list() ?? [],
     get translations() {
       return language.getTranslations();
     },

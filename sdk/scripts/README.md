@@ -244,6 +244,57 @@ on teardown), and the resolved `region`. The return type is enforced by
 `onRevoke`: `remove` → a cleanup function, `silence` → `{ silence, resume }`,
 `keep` → nothing.
 
+### Choosing `load` and `onRevoke` safely
+
+The safe defaults are `load: "afterConsent"` + `onRevoke: "remove"` — nothing
+runs before consent, and everything is torn down after. The other choices are
+for specific cases and are only safe when they match how the script behaves:
+
+- **`load: "immediately"`** — runs *before* consent. Safe **only with
+  `onRevoke: "keep"`** and a script that stays silent until told otherwise (Google
+  Consent Mode, which denies by default). `immediately` + `remove` means "runs
+  with no consent, and is only removed after a granted-then-revoked" — fine under
+  an opt-out regime (CCPA), a footgun under opt-in (GDPR).
+- **`onRevoke: "keep"`** — leaves the script running on withdrawal. Only safe if
+  the script manages its **own** consent signal; otherwise it keeps tracking after
+  the visitor said no.
+- **`onRevoke: "silence"`** — the script stays loaded but is told to go quiet.
+  Only possible if the vendor has a real quiet/resume API (Meta's `fbq`).
+
+The engine also flags common mistakes with a console warning: an unknown format
+`version`, a duplicate `id`, the same vendor in both `integrations` and
+`builtInIntegrations`, an old `{ vendor }` entry, and a category that isn't in
+your taxonomy (or an empty one).
+
+### Testing your integration
+
+A quick checklist for a custom integration or preset:
+
+1. **Before consent** — nothing loads: no network request, no script tag, no
+   cookie/identifier.
+2. **On grant** — the script loads; status goes `loading` → `active`.
+3. **On revoke** — `remove` takes the tag off and clears identifiers; `silence`
+   goes quiet (script stays); `keep` does nothing. Status reflects it.
+4. **On re-grant** — `remove` re-loads once (no duplicate tag); `silence` resumes
+   without re-downloading.
+5. **Multiple products / the same vendor twice** — no double-load, and the SDK
+   warns on an overlap.
+
+Drive it with real banner clicks, not just programmatic calls, so the UI wiring
+is exercised too. In a browser, watch the Network tab and `document.cookie`.
+
+### Debugging
+
+The runtime exposes `getIntegrations()` — config + live status for each
+integration — as the data for a debug view:
+
+```ts
+import { getCookieYes } from "@cookieyes/react"; // or the runtime initCookieYes returns
+
+console.table(getCookieYes().getIntegrations());
+// [{ id: "segment", category: "analytics", load: "afterConsent", onRevoke: "remove", status: "active" }, …]
+```
+
 ## Good to know
 
 - **Removing a loaded script can't un-run it.** On revoke we remove the tag and

@@ -115,6 +115,25 @@ describe("runIntegrations", () => {
     expect(runner.status().meta).toBe("active");
   });
 
+  it("list() returns each integration's config plus live status (debug view)", async () => {
+    const { host, set } = makeHost();
+    const runner = runIntegrations(
+      [
+        anIntegration({ id: "seg", category: "analytics" }),
+        anIntegration({ id: "gtag", category: "analytics", load: "immediately", onRevoke: "keep", setup: () => {} }),
+      ],
+      host,
+    );
+    await flush();
+    expect(runner.list()).toEqual([
+      { id: "seg", category: "analytics", load: "afterConsent", onRevoke: "remove", status: "idle" },
+      { id: "gtag", category: "analytics", load: "immediately", onRevoke: "keep", status: "active" },
+    ]);
+    set("analytics", true);
+    await flush();
+    expect(runner.list().find((r) => r.id === "seg")?.status).toBe("active"); // reflects live status
+  });
+
   it("immediately + keep: loads at start regardless of consent; nothing on revoke", async () => {
     const setup = vi.fn();
     const integration: Integration = {

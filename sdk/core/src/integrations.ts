@@ -157,9 +157,23 @@ type Entry = {
   subs: Set<() => void>;
 };
 
+/** One row for a debug view: an integration's config plus its live status. */
+export type IntegrationDebugInfo = {
+  id: string;
+  category: ConsentCategory | ConsentCategory[];
+  load: "immediately" | "afterConsent";
+  onRevoke: "keep" | "remove" | "silence";
+  status: IntegrationStatus;
+};
+
 export type IntegrationRunner = {
   /** Current status per integration id — the debug/self-check view reads this. */
   status: () => Record<string, IntegrationStatus>;
+  /**
+   * Config + live status for every registered integration, in order — the data
+   * for a debug view (e.g. `console.table(runner.list())`).
+   */
+  list: () => IntegrationDebugInfo[];
   /**
    * Tear the runner down: stop reconciling, release every vendor's
    * consent-change listener, and undo each loaded vendor — `remove` runs its
@@ -398,6 +412,14 @@ export function runIntegrations(
       for (const entry of entries) out[entry.integration.id] = entry.status;
       return out;
     },
+    list: () =>
+      entries.map((entry) => ({
+        id: entry.integration.id,
+        category: entry.integration.category,
+        load: entry.integration.load,
+        onRevoke: entry.integration.onRevoke,
+        status: entry.status,
+      })),
     stop: () => {
       if (stopped) return;
       stopped = true;

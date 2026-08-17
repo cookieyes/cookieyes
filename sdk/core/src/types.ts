@@ -1,5 +1,5 @@
 import type { CategoryDef, ResolvedCategories } from "./categories.js";
-import type { Integration } from "./integrations.js";
+import type { Integration, IntegrationDebugInfo } from "./integrations.js";
 import type { NetworkBlockerConfig } from "./network-blocker.js";
 import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 
@@ -478,4 +478,6 @@ export type ConsentStore = {
 export type ConsentRuntime = {
   consentManager: ConsentManager;
   consentStore: ConsentStore;
+  /** Config + live status for each script integration — data for a debug view. */
+  getIntegrations: () => IntegrationDebugInfo[];
 };

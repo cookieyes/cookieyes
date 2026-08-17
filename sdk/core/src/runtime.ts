@@ -196,7 +196,11 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
     });
   }
 
-  _runtime = { consentManager: manager, consentStore };
+  _runtime = {
+    consentManager: manager,
+    consentStore,
+    getIntegrations: () => _integrationRunner?.list() ?? [],
+  };
   return _runtime;
 }
 
