@@ -1,5 +1,14 @@
 # @cookieyes/scripts
 
+## 0.1.1
+
+### Patch Changes
+
+- Fix an unusable `@cookieyes/core` dependency. 0.0.0 and 0.1.0 were published with
+  `"@cookieyes/core": "workspace:*"` — pnpm's workspace protocol, which npm and yarn
+  cannot resolve, so installing this package failed with `EUNSUPPORTEDPROTOCOL`. Both
+  are deprecated; use 0.1.1 or later.
+
 ## 0.1.0
 
 ### Minor Changes

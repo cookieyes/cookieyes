@@ -1,5 +1,14 @@
 # @cookieyes/nextjs
 
+## 0.5.1
+
+### Patch Changes
+
+- Repoint at `@cookieyes/scripts@0.1.1`. 0.5.0 depended on `@cookieyes/scripts@0.1.0`,
+  which was published with an unresolvable `workspace:*` dependency — so
+  `npm install @cookieyes/nextjs@0.5.0` failed with `EUNSUPPORTEDPROTOCOL`. No code
+  change in this package.
+
 ## 0.5.0
 
 ### Minor Changes
