@@ -1,5 +1,189 @@
 # @cookieyes/react
 
+## 0.5.0
+
+### Minor Changes
+
+- 53e5d9d: Add `@cookieyes/react/critical.css` — the paint-critical banner stylesheet
+
+  `styles.css` is ~25 KB and styles every surface: banner, preferences dialog, opt-out flow,
+  toggles, revisit widget, reload notice. If your bundler puts it in the critical path — what
+  an app-root `import` normally does — the banner is already styled at first paint and you
+  need nothing new.
+
+  For anyone who would rather keep that 25 KB off the critical path, `critical.css` contains
+  only the rules needed to render the banner (~1.6 KB gzipped). Inline it in `<head>` and load
+  the full sheet without blocking render:
+
+  ```html
+  <style>
+    /* contents of @cookieyes/react/critical.css */
+  </style>
+  <link
+    rel="stylesheet"
+    href="…/styles.css"
+    media="print"
+    onload="this.media='all'"
+  />
+  ```
+
+  Every rule in it is byte-identical to the same rule in `styles.css`, enforced by a test, so
+  the two can never disagree about how the banner looks. It is a supplement, not a
+  replacement — keep importing `styles.css`, or the preferences dialog will be unstyled when a
+  visitor opens it.
+
+  Purely additive: `styles.css` is unchanged and existing setups need no edits.
+
+- f4e54aa: Add optional region-based regulation (geo-detection).
+
+  - New `region` config: `detect` (return the visitor's region synchronously), `map` (region → regulation, you own it), `honorGpc` (default true), and `strictest` (default `GDPR`).
+  - Resolution rules: which banner shows is geo only — a detected region maps to your regulation; unknown/failed detection falls back to the strictest (a required banner is never skipped); a manual `regulation` always wins (with a dev warning).
+  - GPC: the browser's "do not sell" signal never changes which banner shows. On a CCPA banner it starts the visitor opted out — non-required categories denied, so gated scripts/iframes don't run — until they explicitly choose otherwise. Applied client-side; set `honorGpc: false` to ignore it.
+  - New `<CookieYesProvider region={…}>` (React/Next.js): supplies the regulation per request through context, so a Server Component tree renders the correct banner on the server for each visitor (no post-hydration correction). Optional and additive — without it, the hooks read the runtime as before. Pass the same `region` config you give `initCookieYes`.
+  - New `useRegion()` hook (React) and `consentStore.getRegion()` (core) expose the decision: `region`, `regulation`, `source` (`"manual" | "detected" | "strictest"`), `confidence`. `useRegion()`/`useRegulation()` read the provider when present. `useRegulation()` is unchanged in shape.
+  - `region.debug: true` logs the resolved decision to the console at setup — a quick check without writing component code.
+  - Self-hosted: the detected `region` is included on the consent-log payload.
+  - New `regionFromHeaders(headers, { header? })` reads the visitor's region from request headers on the server (defaults to the Vercel/Cloudflare headers, or a custom one) — feed it to `region.detect`. Works with Next.js `headers()` or any framework.
+
+  Fully optional and off by default — omit `region` and nothing changes.
+
+- 73bd445: Add consent-gated third-party integrations.
+
+  - New **`@cookieyes/scripts`** package with ready-made presets — Segment, Meta Pixel, and Google (GA4, Ads, and Tag Manager via Consent Mode) — plus a `customScript` helper for any other tag. Pass them to the `integrations` config: `initCookieYes({ integrations: [segment({ writeKey })] })`. Google products share one `gtag.js`/dataLayer, so `ga4()` + `googleAds()` compose without loading the library twice.
+  - For Google, **`@cookieyes/nextjs/server`** exports `<GoogleConsentMode />` — the deny-by-default snippet for the page `<head>` (also available as `googleConsentModeSnippet()` / `bootstrapGoogleConsentMode()` for non-Next apps), so a returning visitor's saved choice applies from first paint.
+  - New generic integration engine in core. Each integration declares two things: `load` (`"immediately"` | `"afterConsent"`) and `onRevoke` (`"keep"` | `"remove"` | `"silence"`). The runtime loads it once its category is granted (or immediately for Google Consent Mode), and removes or silences it on withdrawal — reconciling on every consent change.
+  - **Breaking rename.** The old `integrations` field — built-in vendor stop-handlers such as `{ vendor: "meta" }` — is **renamed to `builtInIntegrations`**, because the `integrations` name now takes the new presets. **Existing `integrations: [{ vendor: … }]` code will no longer work** as written — move those entries to `builtInIntegrations`. That field keeps working but is deprecated (logs a warning) and will be removed in a future release. If an old `{ vendor }` entry is left in `integrations`, the SDK skips it with a targeted warning pointing to `builtInIntegrations`, rather than failing silently.
+  - The SDK warns if the same vendor is configured in both `integrations` and `builtInIntegrations`, which would load it twice (e.g. a double-counted Meta pixel).
+
+- b436f2c: Returning visitors no longer see the banner flash before it disappears
+
+  The server had no way to know whether a visitor had already chosen, so it sent banner markup to
+  everyone and the client removed it after hydration. A returning visitor watched the banner appear
+  and then vanish, which reads as a bug rather than as a remembered choice.
+
+  Three additions let the server know:
+
+  **`readServerConsent(cookieHeader, options?)`** — new in `@cookieyes/core`. Reads a stored decision
+  from a request's `Cookie` header with no `document` and no browser APIs, so it works in any SSR
+  framework:
+
+  ```ts
+  const initialConsent = readServerConsent(
+    request.headers.get("cookie") ?? "",
+    config
+  );
+  ```
+
+  **`<CookieYesProvider initialConsent={…}>`** — new prop in `@cookieyes/react`. Given a decision, the
+  banner is never rendered: absent from the HTML rather than present-then-removed, so there is nothing
+  to flash.
+
+  **`getServerConsent(options?)`** — new in `@cookieyes/nextjs`, from the `@cookieyes/nextjs/server`
+  subpath. Reads `cookies()` for you in the App Router:
+
+  ```tsx
+  import { CookieYesProvider } from "@cookieyes/nextjs";
+  import { getServerConsent } from "@cookieyes/nextjs/server";
+
+  export default async function RootLayout({ children }) {
+    const initialConsent = await getServerConsent({ regulation: "GDPR" });
+    return (
+      <CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+        {children}
+      </CookieYesProvider>
+    );
+  }
+  ```
+
+  It lives on a separate subpath because it imports `next/headers` and must stay server-only — the
+  main `@cookieyes/nextjs` entry is `"use client"`.
+
+  `readServerConsent` returns `null` — meaning "show the banner" — for a first-time visitor, a cookie
+  recording no choice yet, a corrupt cookie, or one written against a different category taxonomy. That
+  last rule mirrors the client's exactly, including the exception that honours a legacy cookie with no
+  taxonomy stamp on the built-in five categories, so an upgrade never re-prompts existing visitors. If
+  the two ever disagreed, the banner would flash again.
+
+  `initialConsent` is a provider prop rather than an `initCookieYes` option deliberately: the consent
+  runtime is a module-level singleton shared across concurrent server requests, so per-visitor state
+  stored there would leak between visitors. React context is per-request.
+
+  Purely additive — omitting `initialConsent` leaves rendering byte-for-byte as it was.
+
+### Patch Changes
+
+- 80658c4: Fix the banner painting unstyled on first load, and replace its slide-in with a fade
+
+  **The banner now looks right on the very first paint.** `cookieyes.css` referenced
+  `var(--cy-primary)`, `var(--cy-bg)`, `var(--cy-text)` and the rest of the `--cy-*` tokens
+  without declaring any of them — the values only arrived once `useThemeVars` ran after
+  hydration. Until then the server-rendered banner painted with a transparent background,
+  no border radius and the host page's font. The stylesheet now ships `:root` defaults (plus
+  a `prefers-color-scheme: dark` block, matching the default `colorScheme: "system"`), so the
+  banner is correctly styled before any JavaScript runs.
+
+  Custom themes are unaffected: `useThemeVars` still applies your `theme` config to each
+  component container via `element.style.setProperty`, which beats a `:root` rule — and it
+  still uses the CSSOM rather than a generated `<style>` block, so strict `style-src` CSP
+  support is unchanged.
+
+  **The entry animation is now an opacity-only fade.** It was `cy-slide-up` — 0.5s, starting
+  from `opacity: 0` and `translateY(40px)` — which left the banner effectively invisible for
+  the first half-second after the page painted, and read as content sliding over the page.
+  It is now `cy-fade-in 0.2s ease-out`, and the exit animation `cy-fade-out` no longer
+  translates either. Neither keyframe set touches `transform` or any layout property, so
+  layout shift stays at zero.
+
+  If you were targeting `@keyframes cy-slide-up` or overriding `.cy-banner`'s `animation`
+  in your own CSS, update it to `cy-fade-in`. `prefers-reduced-motion: reduce` continues to
+  disable the animation entirely.
+
+- 80658c4: The banner no longer fades in twice on slower devices
+
+  The banner is server-rendered inline (React cannot server-render a portal), then moves into a
+  `<body>` portal just after hydration so it can escape any transformed ancestor. That move replaces
+  its DOM node, and the replacement re-ran the CSS entry animation.
+
+  On a fast machine this was invisible: the swap lands inside the 200ms fade, so it reads as one
+  continuous ramp. On a slow device it was not. Measured under 20× CPU throttling, hydration landed
+  around a second in — long after the fade had finished — so the visitor watched a fully visible
+  banner **disappear and fade in again**. Opacity dropped by 0.73–1.00 at the swap.
+
+  `Banner.Root` now marks the re-parent, and the replacement keeps the banner visible instead of
+  re-animating. Measured opacity drop after the change: 0.000, on both a fast machine and under 20×
+  throttling.
+
+  Unchanged: the banner still animates when it genuinely appears, including when it reappears after
+  `resetConsent()`, and the exit fade still plays on accept/reject.
+
+  If you override `.cy-banner`'s `animation` in your own CSS, note the new
+  `.cy-banner-wrap[data-cy-entered] .cy-banner:not([data-leaving])` rule, which sets
+  `animation: none` for the re-parent case only.
+
+- 53e5d9d: Minify the shipped stylesheets
+
+  `dist/styles.css` was copied verbatim from source, so consumers downloaded the source comments —
+  and the source is deliberately heavily commented, because several rules encode non-obvious
+  reasoning. The build now strips comments and collapses whitespace, taking `styles.css` from 4.80 KB
+  to 3.68 KB gzipped.
+
+  The transform is deliberately conservative — comment removal and whitespace collapsing only, no
+  value shortening, no rule merging, no reordering — so it cannot change what the CSS means. Space
+  after `:` is even left intact, since collapsing it is only safe inside a declaration and not in a
+  selector. It is verified by tests asserting every declaration survives, braces stay balanced, and
+  the constructs this sheet relies on (`calc()`, `color-mix()`, quoted font names, `:where()`,
+  attribute selectors) come through unchanged.
+
+  Net effect of this release on what an existing consumer downloads: **0.87 KB gzipped smaller**, with
+  the SSR, first-paint and consent-isolation work included.
+
+- Updated dependencies [95c56c9]
+- Updated dependencies [e25dc2f]
+- Updated dependencies [f4e54aa]
+- Updated dependencies [73bd445]
+- Updated dependencies [b436f2c]
+  - @cookieyes/core@0.4.0
+
 ## 0.4.0
 
 ### Minor Changes
