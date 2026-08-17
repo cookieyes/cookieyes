@@ -190,9 +190,17 @@ initCookieYes({
   the same Consent Mode signals — so use `googleTagManager()` *instead of*
   `ga4()`/`googleAds()` when those products live in your container.
 - Each takes an optional `category` and `id` override.
+- **`params`** on `ga4()`/`googleAds()` passes extra `gtag('config', …)` options —
+  e.g. `ga4({ measurementId, params: { send_page_view: false } })` for a single-page
+  app, or `{ debug_mode: true }` for DebugView.
+- **`urlPassthrough` / `adsDataRedaction`** on the Consent Mode options
+  (`googleConsentModeSnippet` / `bootstrapGoogleConsentMode`) turn on Google's
+  recommended ad-performance behaviour while `ad_storage` is denied. Off by default.
 - If a **custom taxonomy** maps more than one category to the same Google signal,
   set `googleConsentMatch: "all"` on `initCookieYes` to grant the signal only when
   *all* of them are granted (default is `"any"` — grant if any one is).
+- **Server-side boundary:** a GTM **server container** or the Google Ads API run on
+  your backend — out of scope for this browser package.
 
 ### `customScript(config)`
 

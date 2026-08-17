@@ -26,6 +26,10 @@ export type ConsentModeOptions = {
   defaults?: Partial<Record<GoogleSignal, "granted" | "denied">>;
   /** Milliseconds Google waits for a consent update before applying the default. Default `500`. */
   waitForUpdate?: number;
+  /** Pass ad-click ids through the URL when `ad_storage` is denied (Google's recommendation). Default off. */
+  urlPassthrough?: boolean;
+  /** Redact ad-click data while `ad_storage` is denied (Google's recommendation). Default off. */
+  adsDataRedaction?: boolean;
 };
 
 const DENY_ALL: Record<GoogleSignal, "granted" | "denied"> = {
@@ -64,12 +68,14 @@ type WindowWithGtag = Window &
  */
 export function googleConsentModeSnippet(options?: ConsentModeOptions): string {
   const dflt = JSON.stringify(buildDefault(options));
-  return (
+  let snippet =
     "window.dataLayer=window.dataLayer||[];" +
     "function gtag(){dataLayer.push(arguments);}" +
     "gtag('js',new Date());" +
-    `gtag('consent','default',${dflt});`
-  );
+    `gtag('consent','default',${dflt});`;
+  if (options?.urlPassthrough) snippet += "gtag('set','url_passthrough',true);";
+  if (options?.adsDataRedaction) snippet += "gtag('set','ads_data_redaction',true);";
+  return snippet;
 }
 
 /**
@@ -92,6 +98,8 @@ export function bootstrapGoogleConsentMode(options?: ConsentModeOptions): void {
   }
   w.gtag("js", new Date());
   w.gtag("consent", "default", buildDefault(options));
+  if (options?.urlPassthrough) w.gtag("set", "url_passthrough", true);
+  if (options?.adsDataRedaction) w.gtag("set", "ads_data_redaction", true);
 }
 
 const GTAG_SRC = "https://www.googletagmanager.com/gtag/js";
@@ -135,12 +143,15 @@ function dataLayerHas(predicate: (cmd: unknown) => boolean): boolean {
 }
 
 /** Register one Google product on the shared gtag — once per id, even across retries. */
-function configureGtag(id: string): void {
+function configureGtag(id: string, params?: Record<string, unknown>): void {
   const already = dataLayerHas((cmd) => {
     const c = cmd as Record<number, unknown>;
     return c[0] === "config" && c[1] === id;
   });
-  if (!already) (window as WindowWithGtag).gtag?.("config", id);
+  if (already) return;
+  const gtag = (window as WindowWithGtag).gtag;
+  if (params) gtag?.("config", id, params);
+  else gtag?.("config", id);
 }
 
 /** Ensure the GTM container script is on the page (injected once). */
@@ -215,6 +226,8 @@ export type Ga4Config = {
   category?: string;
   /** Override the integration id. Default `"ga4"`. */
   id?: string;
+  /** Extra `gtag('config', …)` params, e.g. `{ send_page_view: false }` (SPAs) or `{ debug_mode: true }`. */
+  params?: Record<string, unknown>;
 };
 
 /**
@@ -230,7 +243,7 @@ export function ga4(config: Ga4Config): Integration {
     { id: config.id ?? "ga4", category: config.category ?? "analytics" },
     () => {
       const script = ensureGtagLibrary(config.measurementId);
-      configureGtag(config.measurementId);
+      configureGtag(config.measurementId, config.params);
       return script;
     },
   );
@@ -243,6 +256,8 @@ export type GoogleAdsConfig = {
   category?: string;
   /** Override the integration id. Default `"google-ads"`. */
   id?: string;
+  /** Extra `gtag('config', …)` params for the Ads tag. */
+  params?: Record<string, unknown>;
 };
 
 /**
@@ -258,7 +273,7 @@ export function googleAds(config: GoogleAdsConfig): Integration {
     { id: config.id ?? "google-ads", category: config.category ?? "advertisement" },
     () => {
       const script = ensureGtagLibrary(config.conversionId);
-      configureGtag(config.conversionId);
+      configureGtag(config.conversionId, config.params);
       return script;
     },
   );

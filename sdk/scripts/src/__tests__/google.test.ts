@@ -70,6 +70,13 @@ describe("googleConsentModeSnippet()", () => {
     expect(s).toContain('"analytics_storage":"granted"');
     expect(s).toContain('"wait_for_update":1000');
   });
+
+  it("emits url_passthrough and ads_data_redaction only when enabled", () => {
+    expect(googleConsentModeSnippet()).not.toContain("url_passthrough");
+    const s = googleConsentModeSnippet({ urlPassthrough: true, adsDataRedaction: true });
+    expect(s).toContain("gtag('set','url_passthrough',true)");
+    expect(s).toContain("gtag('set','ads_data_redaction',true)");
+  });
 });
 
 describe("bootstrapGoogleConsentMode()", () => {
@@ -104,6 +111,15 @@ describe("ga4()", () => {
     runIntegrations([ga4({ measurementId: "G-TEST" })], host);
     await flush();
     expect(el()).not.toBeNull(); // loaded regardless of consent
+  });
+
+  it("passes extra config params to gtag (e.g. send_page_view for SPAs)", async () => {
+    bootstrapGoogleConsentMode();
+    const { host } = makeHost();
+    runIntegrations([ga4({ measurementId: "G-P", params: { send_page_view: false } })], host);
+    await flush();
+    const cfg = commands().find((c) => c[0] === "config" && c[1] === "G-P");
+    expect(cfg?.[2]).toEqual({ send_page_view: false });
   });
 
   it("stays loaded on revoke (onRevoke: keep)", async () => {
