@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "../styles/ds/index.css";
+
+html {
+  scrollbar-gutter: stable;
+}

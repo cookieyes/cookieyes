@@ -25,3 +25,9 @@ coverage/
 npm-debug.log*
 pnpm-debug.log*
 .gitnexus
+
+# Next.js app (apps/web)
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo

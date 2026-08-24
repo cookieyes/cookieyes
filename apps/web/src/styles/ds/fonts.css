@@ -1,0 +1,8 @@
+/* CookieYes uses Inter for UI/body and Poppins for display headings.
+   Both faces are loaded by next/font in src/app/layout.tsx — self-hosted, so
+   there is no external font request. These vars are what the design system and
+   page styles reference. */
+:root {
+  --font-ui: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-poppins), var(--font-inter), -apple-system, sans-serif;
+}
