@@ -37,6 +37,7 @@ already use.
 | `metaPixel(config)` | Meta Pixel (`fbq`), gated behind consent. |
 | `ga4()` / `googleAds()` / `googleTagManager()` | Google via Consent Mode (GA4, Ads, GTM). |
 | `posthog(config)` / `posthogSync(config)` | PostHog (`posthog-js`) — we load it, or sync consent with yours. |
+| `clarity(config)` | Microsoft Clarity (session recording + heatmaps), consent-gated. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -289,6 +290,57 @@ initCookieYes({ mode: "cookie-only", integrations: [posthogSync()] });
   - `"anonymous"` → requests to `*.posthog.com` **continue**, but still **no `ph_`
     cookie** (`posthog.get_distinct_id()` is `"$posthog_cookieless"`).
 
+### `clarity(config)`
+
+Microsoft Clarity (session recording + heatmaps), consent-gated.
+
+```ts
+clarity({
+  projectId: "abcd123xyz",   // required — the id in clarity.ms/tag/<id>
+  category: "analytics",     // optional — the category that gates it (default "analytics")
+  id: "clarity",             // optional — only needed if you run more than one
+});
+```
+
+- **`onRevoke: "silence"`** — nothing loads until consent (`load: "afterConsent"`);
+  on grant we call Clarity's Consent v2 API (cookies allowed), on withdrawal we
+  call it with consent denied. Clarity then **deletes its own `_clck` / `_clsk`
+  cookies** and keeps running **cookie-free** — the tag is not removed.
+- **Required account setting:** turn **Consent Mode on** in your Clarity project —
+  *Settings → Setup → Cookies → off*. Otherwise Clarity sets cookies the moment it
+  loads and this gate does nothing. (It's auto-on for EEA/UK/CH visitors.) This
+  lives in your own Clarity account, not in this code — same as PostHog's cookieless
+  toggle.
+- **Honest limit:** unlike Segment/Meta, Clarity **keeps sending** after a revoke —
+  it goes cookie-free, not silent — so its network calls don't stop. That's Clarity's
+  own behaviour, not a gating failure. If you need "load nothing at all," keeping
+  `afterConsent` already means it never loads until consent is granted.
+- **Session recording is higher-risk than ordinary analytics** — a recording can
+  capture what a visitor typed, their screen, names, order totals. Consider gating it
+  behind its **own** category (e.g. `clarity({ projectId, category: "session_recording" })`)
+  rather than sharing the general analytics permission.
+- **Hide sensitive content — mostly your job.** Clarity masks form fields and
+  passwords by default, but **not** ordinary page text (names, totals, health/financial
+  details). Mark those with Clarity's own attributes, especially on login, payment, and
+  health pages:
+
+  ```html
+  <div data-clarity-mask="True"> <!-- never recorded: name, card, diagnosis --> …</div>
+  <div data-clarity-unmask="true"> …safe to record… </div>
+  ```
+- **GPC** is handled by the SDK's consent flow, not here: under CCPA a Global Privacy
+  Control signal opts the visitor out, so the gating category is denied and Clarity —
+  being `afterConsent` — never loads. Under GDPR nothing loads until explicit consent
+  anyway.
+- **Send events** with `clarity(...)`; before the first grant it isn't on the page, so
+  guard it: `window.clarity?.("event", "signup")`.
+- **Good to state in your privacy notice:** Clarity keeps recordings ~30 days and
+  aggregated heatmap data up to 13 months, and Microsoft has **enforced** consent for
+  EU/UK/Swiss visitors since **31 October 2025**. See CookieYes's published guidance on
+  Clarity for the details.
+- **Verify:** load the page (nothing should load pre-consent), Accept → `_clck`/`_clsk`
+  appear, Reject → they're gone but Clarity keeps sending cookie-free.
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -400,6 +452,7 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **Meta** | `window.fbq` | Guard **before it loads** — `window.fbq?.("track", …)`. After load it persists (`silence` keeps it), and calls while denied are held by Meta. |
 | **Google** | `window.gtag` | **Safe** — `gtag` pushes to the `dataLayer`, which persists, so a direct call never throws. |
 | **PostHog** | `window.posthog` | Guard **before the first grant in `"stop"` mode** (`remove` — absent until consent): `safeCall("posthog", "capture", …)`. In `"anonymous"` mode it's present from load. |
+| **Clarity** | `window.clarity` | Guard **before the first grant** — `afterConsent`, so it's absent until consent: `window.clarity?.("event", …)`. After that it persists (`silence` keeps it) and keeps sending cookie-free even while denied. |
 
 ### Testing your integration
 
