@@ -36,6 +36,7 @@ already use.
 | `segment(config)` | Segment (`analytics.js`), gated behind consent. |
 | `metaPixel(config)` | Meta Pixel (`fbq`), gated behind consent. |
 | `ga4()` / `googleAds()` / `googleTagManager()` | Google via Consent Mode (GA4, Ads, GTM). |
+| `posthog(config)` / `posthogSync(config)` | PostHog (`posthog-js`) — we load it, or sync consent with yours. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -213,6 +214,81 @@ initCookieYes({
 - **Server-side boundary:** a GTM **server container** or the Google Ads API run on
   your backend — out of scope for this browser package.
 
+### `posthog(config)` / `posthogSync(config)`
+
+PostHog makes you decide one thing up front, because it's a legal choice, not a
+technical one: **what does rejecting consent mean?**
+
+- **`onReject: "stop"`** — nothing loads until consent; on withdrawal PostHog and
+  its data are removed. Reject means **no tracking at all**.
+- **`onReject: "anonymous"`** — PostHog keeps **counting visits with no cookie** (a
+  privacy-preserving server-side hash), and upgrades to normal cookie-based
+  tracking only on Accept. Reject means **keep counting, without a cookie**.
+
+`onReject` is **required** — there is no default. (A plain-JS caller who omits it
+gets a console warning and falls back to the safe `"stop"`.)
+
+**Which setup style?**
+
+- **`posthog()`** — we load PostHog for you, from your project API key.
+- **`posthogSync()`** — you already load and `init` PostHog yourself; we only keep
+  consent in sync (`opt_in` / `opt_out`) and inject nothing. Initialise PostHog
+  *before* `initCookieYes` runs, and choose the mode there (set
+  `cookieless_mode: "on_reject"` in your own `init` for the anonymous behaviour).
+
+```ts
+// (a) we load it for you:
+import { posthog } from "@cookieyes/scripts";
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [
+    posthog({
+      apiKey: "phc_XXXXXXXX",  // required — public by design, safe in browser code
+      onReject: "stop",        // required — "stop" or "anonymous"
+      region: "us",            // optional — "us" (default) or "eu"; sets api_host
+      // apiHost: "https://ph.example.com", // optional — self-hosted; overrides region
+      category: "analytics",   // optional — the category that gates it (default "analytics")
+    }),
+  ],
+});
+
+// (b) you already load PostHog yourself:
+import { posthogSync } from "@cookieyes/scripts";
+initCookieYes({ mode: "cookie-only", integrations: [posthogSync()] });
+```
+
+- **Anonymous loads on page load, before the banner is answered.** To count
+  cookie-free it must run right away — so a request carrying the visitor's IP
+  reaches PostHog *before* any choice is made. **No cookie is ever set until
+  Accept.** If that pre-consent request isn't acceptable for you, use `"stop"`.
+- **Account setting (anonymous only, required):** turn on **Cookieless** in your
+  PostHog project — *Settings → Web analytics → "Enable cookieless tracking"*. It
+  lives in your own PostHog account, not in this code (same as Segment's own
+  consent setting), and **anonymous mode does nothing without it**.
+- **`region` / `apiHost`** — one value keeps everything aligned: `region: "eu"`
+  sends data to the EU (`eu.i.posthog.com`); `apiHost` overrides it for a
+  self-hosted or reverse-proxied PostHog.
+- **Send events** with `posthog.capture(...)` as usual. In `"stop"` mode
+  `window.posthog` isn't there before the first grant, so guard it —
+  `safeCall("posthog", "capture", "Signup")` is a no-op until it loads and never
+  throws.
+- **Check consent with *our* record, never PostHog's.** PostHog's own "has this
+  visitor decided?" check has a known bug that can report *yes* when nobody has —
+  which has made real banners never show. Read consent from the SDK, not from
+  `posthog.has_opted_in_capturing()`.
+- **Honest limits:**
+  - A consent change can make PostHog **count one visit as two** — it starts a new
+    session when it switches cookie modes. This is a known PostHog behaviour, not a
+    fault in the gating.
+  - Cookie-free tracking is **not full compliance on its own** — you still need a
+    lawful basis, clear wording, data-minimisation, IP handling, and a real
+    deletion process.
+- **Verify your reject choice** — the one thing worth checking directly. Reject in
+  the banner and watch the Network tab + `document.cookie`:
+  - `"stop"` → **no** requests to `*.posthog.com`, no `ph_` cookie.
+  - `"anonymous"` → requests to `*.posthog.com` **continue**, but still **no `ph_`
+    cookie** (`posthog.get_distinct_id()` is `"$posthog_cookieless"`).
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -314,7 +390,7 @@ The engine also flags common mistakes with a console warning: an unknown format
 `builtInIntegrations`, an old `{ vendor }` entry, and a category that isn't in
 your taxonomy (or an empty one).
 
-### Sending events safely (the three vendors compared)
+### Sending events safely (the vendors compared)
 
 Whether you must guard a vendor call depends on what the preset does on revoke:
 
@@ -323,6 +399,7 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **Segment** | `window.analytics` | **Always guard** — `remove` deletes it on revoke, so a bare `.track()` throws. Use `safeCall("analytics", "track", …)`. |
 | **Meta** | `window.fbq` | Guard **before it loads** — `window.fbq?.("track", …)`. After load it persists (`silence` keeps it), and calls while denied are held by Meta. |
 | **Google** | `window.gtag` | **Safe** — `gtag` pushes to the `dataLayer`, which persists, so a direct call never throws. |
+| **PostHog** | `window.posthog` | Guard **before the first grant in `"stop"` mode** (`remove` — absent until consent): `safeCall("posthog", "capture", …)`. In `"anonymous"` mode it's present from load. |
 
 ### Testing your integration
 
