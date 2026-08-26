@@ -22,9 +22,10 @@ export type ClarityConfig = {
  * Clarity then deletes its own `_clck` / `_clsk` cookies and keeps running in
  * **no-consent mode** (cookie-free), the same shape as Meta/Google.
  *
- * Requires **Consent Mode** on in your Clarity project (*Settings → Setup →
- * Cookies → off*), or Clarity sets cookies the moment it loads and the gate does
- * nothing. It is auto-on for EEA/UK/CH visitors.
+ * Requires the **Cookies** toggle turned **off** in your Clarity project
+ * (*Settings → Setup → Advanced settings → Cookies*) — this is Clarity's Consent
+ * Mode: it makes Clarity wait for consent instead of setting cookies on load.
+ * Otherwise the gate does nothing. (Auto-on for EEA/UK/CH visitors.)
  *
  * `setup` resolves only when the tag has actually loaded (rejects if it fails), so
  * the engine's status is truthful: `loading` → `active`, `silenced`, or `error`.

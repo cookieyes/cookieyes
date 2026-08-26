@@ -116,9 +116,12 @@ export function posthog(config: PostHogConfig): Integration {
 /**
  * Keep consent in sync with a PostHog you already load and `init` yourself — we
  * inject nothing. On withdrawal we call `posthog.opt_out_capturing()`; on grant,
- * `posthog.opt_in_capturing()`. Whether "opted out" means fully stopped or
- * cookie-free depends on your own `init` (set `cookieless_mode: "on_reject"` there
- * for the anonymous behaviour). Initialise PostHog before `initCookieYes` runs.
+ * `posthog.opt_in_capturing()`.
+ *
+ * **Init opted-out**, or PostHog captures with a cookie from the moment it loads —
+ * before consent. In your own `init` pass `opt_out_capturing_by_default: true`
+ * (stop-style; we opt in on grant) or `cookieless_mode: "on_reject"` (cookie-free /
+ * anonymous). Initialise PostHog before `initCookieYes` runs.
  *
  * @example
  * initCookieYes({ mode: "cookie-only", integrations: [posthogSync()] });

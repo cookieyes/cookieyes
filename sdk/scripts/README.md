@@ -234,8 +234,10 @@ gets a console warning and falls back to the safe `"stop"`.)
 - **`posthog()`** — we load PostHog for you, from your project API key.
 - **`posthogSync()`** — you already load and `init` PostHog yourself; we only keep
   consent in sync (`opt_in` / `opt_out`) and inject nothing. Initialise PostHog
-  *before* `initCookieYes` runs, and choose the mode there (set
-  `cookieless_mode: "on_reject"` in your own `init` for the anonymous behaviour).
+  *before* `initCookieYes` runs, and **init it opted-out** so nothing is captured
+  before consent — pass `opt_out_capturing_by_default: true` (stop-style; we opt in
+  on grant) or `cookieless_mode: "on_reject"` (cookie-free / anonymous) in your own
+  `init`. Otherwise PostHog captures with a cookie the moment it loads.
 
 ```ts
 // (a) we load it for you:
@@ -306,11 +308,11 @@ clarity({
   on grant we call Clarity's Consent v2 API (cookies allowed), on withdrawal we
   call it with consent denied. Clarity then **deletes its own `_clck` / `_clsk`
   cookies** and keeps running **cookie-free** — the tag is not removed.
-- **Required account setting:** turn **Consent Mode on** in your Clarity project —
-  *Settings → Setup → Cookies → off*. Otherwise Clarity sets cookies the moment it
-  loads and this gate does nothing. (It's auto-on for EEA/UK/CH visitors.) This
-  lives in your own Clarity account, not in this code — same as PostHog's cookieless
-  toggle.
+- **Required account setting:** in your Clarity project, turn the **Cookies** toggle
+  **off** — *Settings → Setup → Advanced settings → Cookies*. That's Clarity's
+  Consent Mode: it makes Clarity wait for consent instead of setting cookies on load.
+  Otherwise this gate does nothing. (Auto-on for EEA/UK/CH visitors.) It lives in your
+  own Clarity account, not in this code — same as PostHog's cookieless toggle.
 - **Honest limit:** unlike Segment/Meta, Clarity **keeps sending** after a revoke —
   it goes cookie-free, not silent — so its network calls don't stop. That's Clarity's
   own behaviour, not a gating failure. If you need "load nothing at all," keeping
@@ -336,8 +338,9 @@ clarity({
   guard it: `window.clarity?.("event", "signup")`.
 - **Good to state in your privacy notice:** Clarity keeps recordings ~30 days and
   aggregated heatmap data up to 13 months, and Microsoft has **enforced** consent for
-  EU/UK/Swiss visitors since **31 October 2025**. See CookieYes's published guidance on
-  Clarity for the details.
+  EU/UK/Swiss visitors since **31 October 2025**. See Microsoft's
+  [Clarity consent docs](https://learn.microsoft.com/en-us/clarity/setup-and-installation/consent-mode)
+  for the details.
 - **Verify:** load the page (nothing should load pre-consent), Accept → `_clck`/`_clsk`
   appear, Reject → they're gone but Clarity keeps sending cookie-free.
 
