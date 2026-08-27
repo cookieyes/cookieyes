@@ -58,3 +58,34 @@ describe("styling — className / style passthrough", () => {
     expect(card?.style.zIndex).toBe("42");
   });
 });
+
+describe("styling — per-part classNames / styles", () => {
+  it("merges classNames onto the named part, keeping our defaults", () => {
+    mountCookieOnly("GDPR");
+    render(<CookieBanner classNames={{ acceptAll: "brand-accept" }} />);
+
+    const accept = document.querySelector('[data-cy-part="accept-all"]');
+    expect(accept?.classList.contains("cy-btn")).toBe(true); // default kept
+    expect(accept?.classList.contains("brand-accept")).toBe(true); // custom added
+  });
+
+  it("applies per-part inline styles", () => {
+    mountCookieOnly("GDPR");
+    render(<CookieBanner styles={{ rejectAll: { color: "rgb(1, 2, 3)" } }} />);
+
+    const reject = document.querySelector<HTMLElement>('[data-cy-part="reject-all"]');
+    expect(reject?.style.color).toBe("rgb(1, 2, 3)");
+  });
+
+  it("styles the toggle part, which keeps its checked/unchecked state hook", () => {
+    const rt = mountCookieOnly("GDPR");
+    act(() => rt.manager.showPreferences());
+    render(<CookiePreferences classNames={{ toggle: "brand-toggle" }} />);
+
+    const toggle = document.querySelector('[data-cy-part="toggle"]');
+    expect(toggle?.classList.contains("cy-toggle")).toBe(true); // default kept
+    expect(toggle?.classList.contains("brand-toggle")).toBe(true); // custom added
+    // The state hook the checked-toggle example relies on still works.
+    expect(toggle?.getAttribute("data-cy-state")).toBe("off");
+  });
+});

@@ -93,9 +93,13 @@ export {
 } from "./hooks/index.js";
 
 // Styled presets — drop-in defaults built from the primitives
-export { CookieBanner, type CookieBannerProps } from "./presets/CookieBanner.js";
-export { CookieOptOut, type CookieOptOutProps } from "./presets/CookieOptOut.js";
-export { CookiePreferences, type CookiePreferencesProps } from "./presets/CookiePreferences.js";
+export { type BannerPart, CookieBanner, type CookieBannerProps } from "./presets/CookieBanner.js";
+export { CookieOptOut, type CookieOptOutProps, type OptOutPart } from "./presets/CookieOptOut.js";
+export {
+  CookiePreferences,
+  type CookiePreferencesProps,
+  type DialogPart,
+} from "./presets/CookiePreferences.js";
 export { ReloadNotice } from "./presets/ReloadNotice.js";
 // Headless primitives — composable slot namespaces
 export { Banner } from "./primitives/Banner.js";

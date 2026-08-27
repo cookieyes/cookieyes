@@ -320,22 +320,46 @@ initCookieYes({
 
 ### Custom styling with CSS
 
-For anything beyond theme tokens, write your own CSS. Three things make this easy:
+Our styles are low-specificity and self-contained, so your app's CSS won't accidentally reshape the
+banner — and you can still override any part deliberately. Four ways, most reliable first.
 
-**1. Clean, low-specificity hooks.** Our styles use single-class selectors (specificity `0,1,0`),
-so a `data-cy-part` selector of your own matches that specificity and wins by load order — no
-`!important` gymnastics. Import your overrides after `@cookieyes/react/styles.css`.
+**1. Theme tokens** — colours, radius, font. Set the `--cy-*` custom properties via the `theme`
+config, or in your own CSS. They win regardless of specificity, so they always apply:
 
-**2. Target any part.** Every component labels its pieces with `data-cy-part`, and toggles also
-carry `data-cy-state="on" | "off"`:
+| Token | `theme` key | Default |
+|---|---|---|
+| `--cy-primary` | `primaryColor` | `#1863dc` |
+| `--cy-primary-hover` | _(derived)_ | `color-mix(…)` |
+| `--cy-bg` | `backgroundColor` | `#ffffff` |
+| `--cy-text` | `textColor` | `#212121` |
+| `--cy-muted` | `mutedTextColor` | `#6b7280` |
+| `--cy-border` | `borderColor` | `#f4f4f4` |
+| `--cy-radius` | `borderRadius` | `6px` |
+| `--cy-font` | `fontFamily` | system stack |
+| `--cy-widget-bg` | _(fixed)_ | `#0056a7` |
 
-```css
-[data-cy-part="accept-all"] { background: #16a34a; }
-[data-cy-part="toggle"][data-cy-state="on"] .cy-toggle-track { background: #16a34a; }
+These names are a supported contract — a rename is a breaking change.
+
+**2. `styles` prop** — an inline style on any part, guaranteed to win:
+
+```tsx
+<CookieBanner styles={{ acceptAll: { borderRadius: 12 } }} />
 ```
 
-The part names are a stable contract. The full set (also exported as the typed `CY_PART` / `CY_STATE`
-constants):
+**3. `classNames` prop or your own CSS.** Target parts by `data-cy-part` (toggles also carry
+`data-cy-state="on" | "off"`; state via native `:hover` / `:focus-visible` / `:disabled`). These tie
+with our specificity, so import your CSS **after** `@cookieyes/react/styles.css`:
+
+```tsx
+<CookieBanner classNames={{ acceptAll: "bg-indigo-600 text-white" }} />
+```
+```css
+[data-cy-part="accept-all"]:hover { background: #15803d; }
+[data-cy-part="toggle"][data-cy-state="on"] .cy-toggle-track { background: #16a34a; } /* checked */
+```
+
+Keys are typed (`BannerPart` / `DialogPart` / `OptOutPart`); the parts are also the `CY_PART` /
+`CY_STATE` constants:
 
 | Component | `data-cy-part` |
 |---|---|
@@ -345,19 +369,8 @@ constants):
 | Recall button | `recall` |
 | Reload notice | `reload-notice`, `reload-message`, `reload-dismiss` |
 
-**3. Restyle a whole preset's box.** Each preset takes `className` / `style`, merged onto its
-visible card on top of our defaults:
-
-```tsx
-<CookieBanner className="my-banner" style={{ maxWidth: 480 }} />
-```
-
-Want to start from our exact look and edit it? Copy `@cookieyes/react/styles.css` (the same file you
-import) into your project as a starting point instead of building from scratch.
-
-**4. Swap in your own element.** Any control primitive takes `asChild` — render *your* element and
-we wire our behaviour (the click action, `data-cy-part`, ref) onto it instead of rendering our own
-button. Your handlers, `className`, and `style` are preserved (event handlers run alongside ours):
+**4. `asChild`** — replace our element with your own; we keep the behaviour (click action,
+`data-cy-part`, ref) and your `className` / `style` / handlers:
 
 ```tsx
 <Banner.AcceptAll asChild>
@@ -365,7 +378,13 @@ button. Your handlers, `className`, and `style` are preserved (event handlers ru
 </Banner.AcceptAll>
 ```
 
-Available on the button controls of `Banner`, `Preferences`, and `OptOut`.
+**Tailwind** works with no `!important` — pass utilities via `classNames`, or point our tokens at
+yours:
+
+```css
+[data-cy-part="banner"] { --cy-primary: var(--brand-500); }              /* match a design system */
+.dark [data-cy-part="banner"] { --cy-bg: #0b1220; --cy-text: #e5e7eb; }  /* dark mode */
+```
 
 ## Translations (i18n)
 

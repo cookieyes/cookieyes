@@ -4,38 +4,61 @@ import type { CSSProperties } from "react";
 import { Preferences } from "../primitives/Preferences.js";
 import { CY_PART, CY_STATE } from "../styles/parts.js";
 
-/** Styling passthrough — merged onto the visible dialog card, on top of our defaults. */
+/** Every styleable part of the preferences dialog — keys for {@link CookiePreferencesProps.classNames}. */
+export type DialogPart = keyof typeof CY_PART.dialog;
+
+/**
+ * Styling passthrough. `className` / `style` target the dialog card;
+ * `classNames` / `styles` target individual parts by name (e.g. `toggle`,
+ * `save`) — each merged on top of our defaults. A class you pass always wins
+ * over ours (our styles sit in the `cookieyes` cascade layer); an inline
+ * `style` wins over any class. Style the checked toggle via the `toggle` part
+ * and `[data-cy-state="on"]` (see the styling guide).
+ */
 export type CookiePreferencesProps = {
   className?: string;
   style?: CSSProperties;
+  classNames?: Partial<Record<DialogPart, string>>;
+  styles?: Partial<Record<DialogPart, CSSProperties>>;
 };
 
-export function CookiePreferences({ className, style }: CookiePreferencesProps = {}) {
+export function CookiePreferences({
+  className,
+  style,
+  classNames,
+  styles,
+}: CookiePreferencesProps = {}) {
+  /** Merge a part's default class with the caller's `classNames`/`styles` for that part. */
+  const part = (key: DialogPart, base: string) => ({
+    className: [base, classNames?.[key]].filter(Boolean).join(" ") || undefined,
+    style: styles?.[key],
+  });
+
   return (
-    <Preferences.Root className="cy-dialog-overlay">
+    <Preferences.Root {...part("overlay", "cy-dialog-overlay")}>
       <div
-        className={className ? `cy-dialog ${className}` : "cy-dialog"}
-        style={style}
+        className={["cy-dialog", className, classNames?.root].filter(Boolean).join(" ")}
+        style={{ ...style, ...styles?.root }}
         data-cy-part={CY_PART.dialog.root}
       >
         <div className="cy-dialog-header">
-          <Preferences.Title className="cy-dialog-title" />
-          <Preferences.Close className="cy-dialog-close" />
+          <Preferences.Title {...part("title", "cy-dialog-title")} />
+          <Preferences.Close {...part("close", "cy-dialog-close")} />
         </div>
 
         <div className="cy-dialog-body">
           <div className="cy-dialog-content-intro">
-            <Preferences.Intro className="cy-dialog-desc" />
+            <Preferences.Intro {...part("intro", "cy-dialog-desc")} />
           </div>
           <Preferences.Categories className="cy-accordion-wrapper">
             {(cat) => (
-              <Preferences.Category category={cat} className="cy-accordion">
+              <Preferences.Category category={cat} {...part("category", "cy-accordion")}>
                 {({ label, description, checked, disabled, toggle }) => (
                   <div className="cy-accordion-item">
                     <div className="cy-accordion-header-wrapper">
                       <div className="cy-accordion-header">
                         <span
-                          className="cy-accordion-btn"
+                          {...part("categoryLabel", "cy-accordion-btn")}
                           data-cy-part={CY_PART.dialog.categoryLabel}
                         >
                           {label}
@@ -44,7 +67,7 @@ export function CookiePreferences({ className, style }: CookiePreferencesProps =
                           <span className="cy-always-active">Always Active</span>
                         ) : (
                           <label
-                            className="cy-toggle"
+                            {...part("toggle", "cy-toggle")}
                             data-cy-part={CY_PART.dialog.toggle}
                             data-cy-state={checked ? CY_STATE.on : CY_STATE.off}
                           >
@@ -63,7 +86,12 @@ export function CookiePreferences({ className, style }: CookiePreferencesProps =
                         )}
                       </div>
                       <div className="cy-accordion-header-des">
-                        <p data-cy-part={CY_PART.dialog.categoryDescription}>{description}</p>
+                        <p
+                          {...part("categoryDescription", "")}
+                          data-cy-part={CY_PART.dialog.categoryDescription}
+                        >
+                          {description}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -76,11 +104,11 @@ export function CookiePreferences({ className, style }: CookiePreferencesProps =
         <div className="cy-dialog-footer">
           <span className="cy-dialog-footer-shadow" aria-hidden="true" />
           <div className="cy-dialog-footer-actions">
-            <Preferences.RejectAll className="cy-btn cy-btn-primary" />
-            <Preferences.Save className="cy-btn cy-btn-primary" />
-            <Preferences.AcceptAll className="cy-btn cy-btn-primary" />
+            <Preferences.RejectAll {...part("rejectAll", "cy-btn cy-btn-primary")} />
+            <Preferences.Save {...part("save", "cy-btn cy-btn-primary")} />
+            <Preferences.AcceptAll {...part("acceptAll", "cy-btn cy-btn-primary")} />
           </div>
-          <Preferences.Branding className="cy-branding" />
+          <Preferences.Branding {...part("branding", "cy-branding")} />
         </div>
       </div>
     </Preferences.Root>

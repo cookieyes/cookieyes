@@ -9,13 +9,30 @@ import { CY_PART } from "../styles/parts.js";
 
 const ANNOUNCE_DELAY_MS = 700;
 
-/** Styling passthrough — merged onto the visible banner card, on top of our defaults. */
+/** Every styleable part of the banner — keys for {@link CookieBannerProps.classNames}. */
+export type BannerPart = keyof typeof CY_PART.banner;
+
+/**
+ * Styling passthrough. `className` / `style` target the visible banner card;
+ * `classNames` / `styles` target individual parts by name (e.g. `acceptAll`,
+ * `toggle`) — each merged on top of our defaults. A class you pass always wins
+ * over ours (our styles sit in the `cookieyes` cascade layer); an inline `style`
+ * wins over any class.
+ */
 export type CookieBannerProps = {
   className?: string;
   style?: CSSProperties;
+  classNames?: Partial<Record<BannerPart, string>>;
+  styles?: Partial<Record<BannerPart, CSSProperties>>;
 };
 
-export function CookieBanner({ className, style }: CookieBannerProps = {}) {
+export function CookieBanner({ className, style, classNames, styles }: CookieBannerProps = {}) {
+  /** Merge a part's default class with the caller's `classNames`/`styles` for that part. */
+  const part = (key: BannerPart, base: string) => ({
+    className: [base, classNames?.[key]].filter(Boolean).join(" ") || undefined,
+    style: styles?.[key],
+  });
+
   const reg = useRegulation();
   const t = useTranslations();
   const isCCPA = reg === "CCPA";
@@ -69,8 +86,8 @@ export function CookieBanner({ className, style }: CookieBannerProps = {}) {
           `data-cky-banner` hook + dialog role, and (via `display: contents` on
           the wrapper) is the only measurable banner box. */}
         <div
-          className={className ? `cy-banner ${className}` : "cy-banner"}
-          style={style}
+          className={["cy-banner", className, classNames?.root].filter(Boolean).join(" ")}
+          style={{ ...style, ...styles?.root }}
           data-cky-banner=""
           data-cy-part={CY_PART.banner.root}
           role="dialog"
@@ -78,27 +95,27 @@ export function CookieBanner({ className, style }: CookieBannerProps = {}) {
           aria-live="polite"
           aria-label={t.bannerTitle}
         >
-          {isCCPA && <Banner.Close className="cy-banner-close" />}
+          {isCCPA && <Banner.Close {...part("close", "cy-banner-close")} />}
 
           <div className="cy-banner-text">
-            <Banner.Title className="cy-banner-title" />
-            <Banner.Description className="cy-banner-description" />
+            <Banner.Title {...part("title", "cy-banner-title")} />
+            <Banner.Description {...part("description", "cy-banner-description")} />
           </div>
 
-          <Banner.Actions className="cy-banner-actions">
+          <Banner.Actions {...part("actions", "cy-banner-actions")}>
             {isCCPA ? (
-              <Banner.DoNotSell className="cy-btn cy-btn-do-not-sell" />
+              <Banner.DoNotSell {...part("doNotSell", "cy-btn cy-btn-do-not-sell")} />
             ) : (
               <>
-                <Banner.OpenPreferences className="cy-btn cy-btn-outline" />
-                <Banner.RejectAll className="cy-btn cy-btn-primary" />
-                <Banner.AcceptAll className="cy-btn cy-btn-primary" />
+                <Banner.OpenPreferences {...part("customise", "cy-btn cy-btn-outline")} />
+                <Banner.RejectAll {...part("rejectAll", "cy-btn cy-btn-primary")} />
+                <Banner.AcceptAll {...part("acceptAll", "cy-btn cy-btn-primary")} />
               </>
             )}
           </Banner.Actions>
 
           <div className={`cy-banner-footer${isCCPA ? " cy-banner-footer--ccpa" : ""}`}>
-            <Banner.Branding className="cy-branding" />
+            <Banner.Branding {...part("branding", "cy-branding")} />
           </div>
         </div>
       </Banner.Root>
