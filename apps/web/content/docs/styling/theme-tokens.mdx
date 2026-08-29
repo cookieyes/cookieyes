@@ -1,0 +1,232 @@
+---
+title: Theme tokens
+description: Every CSS custom property the SDK reads, with defaults.
+---
+
+## When to use it
+
+Use theme tokens for anything expressible as a color, radius, or font — which covers most brand alignment. They apply consistently across the banner, both dialogs, the recall widget, the reload notice, and iframe placeholders, so one value updates every surface.
+
+For spacing, layout, or per-element rules, tokens are not enough — use [Custom CSS](/docs/styling/custom-css) against the part contract. See the [Styling overview](/docs/styling/overview) for where tokens fit relative to the other layers.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+initCookieYes({
+  mode: "cookie-only",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+    fontFamily: "'Inter', sans-serif",
+  },
+});
+```
+
+Three tokens have no `theme` key — `--cy-primary-hover` and two auto-contrast tokens covered in [Two tokens are derived automatically for readable text](#two-tokens-are-derived-automatically-for-readable-text) below. **A plain `:root` override will not change any of them**, for the reason in the next section: every token is written inline onto the SDK's own containers on each render, whether or not you configured it, and an inline declaration beats an inherited `:root` value. To change one of these you need an author `!important` rule aimed at the SDK's container:
+
+```css title="app/consent.css"
+/* Loaded after @cookieyes/react/styles.css. `!important` is genuinely
+   required here — it is the one case where it is, because the value is
+   set inline by the SDK rather than by a stylesheet rule. */
+.cy-widget {
+  --cy-primary-hover: #0f4bb0 !important;
+}
+```
+
+## Options
+
+Twelve tokens in total, nine directly configurable via a `theme` key and three derived
+automatically. For the full list — defaults, dark-mode values, and every element each one
+paints — see the [generated CSS variables reference](/docs/styling/css-variables), regenerated
+from the SDK's own source so it can't drift from the code.
+
+Every token this SDK reads is `--cy-`-prefixed, with zero exceptions.
+
+## Behaviour and trade-offs
+
+### `theme` values win over CSS
+
+The stylesheet sets the defaults on `:root`. On every render the SDK writes **all twelve** tokens onto each component container with `element.style.setProperty()` — not only the ones you configured, but the computed defaults and derived values too. An inline declaration beats an inherited `:root` value, so a `:root` rule loses for every token, not just the ones you set.
+
+An author rule marked `!important` does still win, because the cascade sorts by importance before it considers where a declaration came from. That is the escape hatch for the three tokens with no `theme` key.
+
+So this does nothing if `theme.primaryColor` is set:
+
+```css title="Ineffective override"
+:root { --cy-primary: rebeccapurple; } /* loses to the inline value */
+```
+
+```css title="Effective override"
+.cy-banner { --cy-primary: rebeccapurple !important; } /* wins on importance */
+```
+
+Pick one mechanism per token. Prefer `theme` config wherever a key exists — it is the only mechanism that also applies on the first paint. Reach for an `!important` rule only for the three tokens with no key, or when a media or container query has to drive the value. See [the escalation ladder](/docs/styling/overview#the-escalation-ladder) for how this fits among the other layers.
+
+### Scoping different values to different instances
+
+The same "an inline declaration beats an inherited one" rule above means a plain wrapper class — `.checkout { --cy-primary: red; }` — cannot scope one instance of a component differently from another, ever, regardless of selector cleverness. `useThemeVars` writes all twelve tokens inline on the SDK's own container inside an effect with deliberately no dependency array, so the values are inline on every render, whether or not you configured them; an inline declaration always beats an inherited `:root`/ancestor value, full stop.
+
+What does work is the same escape hatch as above, aimed at two different wrapper elements: an author `!important` rule beats a normal inline declaration, because the cascade sorts by importance before it considers origin.
+
+```css title="app/consent.css"
+/* Loaded after @cookieyes/react/styles.css */
+.checkout-widget [data-cy-part="banner"] { --cy-primary: #c026d3 !important; }
+.support-widget  [data-cy-part="banner"] { --cy-primary: #0ea5e9 !important; }
+```
+
+```tsx title="app/page.tsx"
+<div className="checkout-widget"><CookieBanner /></div>
+{/* elsewhere on the same page */}
+<div className="support-widget"><CookieBanner /></div>
+```
+
+Two independently-themed instances on the same page, with no change to `useThemeVars` or any other SDK code — this is a documentation-only pattern, built entirely on the precedence rule above.
+
+### Five tokens change in dark mode, only where you have not set them
+
+`--cy-bg`, `--cy-text`, `--cy-muted`, `--cy-border`, and `--cy-widget-bg` each have a dark-mode default. Unlike the rest of this SDK's theming, that default is conditional: it applies **only to whichever of those five you left unset**. If you set `theme.backgroundColor`, that exact value is used in both light and dark mode — the dark default only fills in gaps, it never overwrites an explicit choice.
+
+```tsx title="Explicit config survives dark mode"
+initCookieYes({
+  mode: "cookie-only",
+  colorScheme: "system",
+  theme: {
+    backgroundColor: "#fafafa", // used in both schemes — the dark default never applies
+    widgetBackgroundColor: "#7c3aed", // same
+  },
+});
+```
+
+`primaryColor`, `focusColor`, `borderRadius`, and `fontFamily` are used unchanged in both schemes regardless — they were never part of the dark-default group, since a brand color, a focus color, a radius, and a font aren't the kind of thing that should silently differ by scheme. If your brand color fails contrast on the dark background, set it per scheme in CSS rather than via config:
+
+```css title="app/consent.css"
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"] { --cy-primary: #4d8ef7; }
+}
+```
+
+### Two tokens are derived automatically for readable text
+
+`--cy-on-primary` and `--cy-on-widget-bg` are computed, not configured. Each is a near-black or near-white color, chosen by WCAG relative luminance to be the more readable of the two against the corresponding background (`--cy-primary` and `--cy-widget-bg`, respectively) — so setting a brand or widget color to something light still produces legible text and icons, without you having to separately configure a foreground color.
+
+`--cy-on-widget-bg` is derived from whichever `--cy-widget-bg` value actually applies in the active color scheme — the light value, or the dark default, or your own configured value if you set one — so a dark-mode widget never ends up with a foreground chosen for the wrong background.
+
+**This derivation is hex-only, by design.** `primaryColor` or `widgetBackgroundColor` set to anything other than a 3- or 6-digit hex string — `rgb()`, `hsl()`, a named color, `var()`, `color-mix()` — is not evaluated, and the derivation falls back to white. This isn't a bug to report: parsing arbitrary CSS color syntax correctly would need `oklch(from ...)` relative-color support this SDK's supported browser floor doesn't guarantee, so hex is the one format handled, and anything else gets the safe (if not always ideal) fallback. Stick to hex for `primaryColor` and `widgetBackgroundColor` if the auto-contrast result matters to you.
+
+### Values are sanitised
+
+Every string token is stripped of characters that could break out of a CSS declaration — `;`, `{`, `}`, `<`, `>`, `\`, comment markers, newlines — and truncated to 200 characters. A value that is empty after cleaning falls back to the default.
+
+This means a token cannot be used to inject CSS, and also that an over-clever value may silently become the default. If a token appears to be ignored, check it survives sanitisation.
+
+### `--cy-radius` is one value
+
+There is no per-corner or per-component radius token. For different radii on different elements, target parts:
+
+```css title="app/consent.css"
+[data-cy-part="banner"] { border-radius: 16px; }
+[data-cy-part="accept-all"] { border-radius: 999px; }
+```
+
+### `fontFamily` accepts a CSS variable
+
+Useful with `next/font`, which exposes a variable rather than a family name:
+
+```tsx title="app/cookieyes.tsx"
+theme: { fontFamily: "var(--font-inter), sans-serif" }
+```
+
+The variable must be defined on an ancestor of the SDK's containers. Since they portal into `<body>`, define it on `:root` or `html` — a variable scoped to a nested wrapper will not reach them.
+
+### First paint uses the stylesheet, not your config
+
+The `:root` defaults exist so a server-rendered banner paints correctly on the first frame with no JavaScript. Your `theme` values apply once `useThemeVars` runs after hydration. For default-ish themes nobody notices; for a dramatically different brand color there can be a brief flash of the default blue. Mirror the value in your own CSS if that matters:
+
+```css title="app/consent.css"
+:root { --cy-primary: #7c3aed; }
+```
+
+### Reduced motion is already handled
+
+Every SDK animation and transition respects `prefers-reduced-motion: reduce` out of the box — this isn't something you need to opt into or configure via a token. If you layer your own animation on top of a part selector, honour the same preference yourself:
+
+```css title="app/consent.css"
+@media (prefers-reduced-motion: reduce) {
+  [data-cy-part="banner"] { animation: none; transition: none; }
+}
+```
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+import "./consent.css";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  colorScheme: "system",
+  theme: {
+    primaryColor: "#7c3aed",
+    mutedTextColor: "#64748b",
+    borderRadius: "12px",
+    fontFamily: "var(--font-inter), system-ui, sans-serif",
+    focusColor: "#f59e0b",
+    widgetBackgroundColor: "#7c3aed",
+  },
+});
+```
+
+```css title="app/consent.css"
+/* Match the config value so first paint is not the default blue. */
+:root {
+  --cy-primary: #7c3aed;
+  --cy-primary-hover: #6d28d9;
+}
+
+/* Lift the primary for contrast on the dark surface. */
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    --cy-primary: #a78bfa;
+  }
+}
+```
+
+## Common mistakes
+
+**A `:root` override is ignored.**
+The same token is set in `theme`, and the inline value wins. Remove it from config.
+
+**A normal CSS rule still loses.**
+The token is written inline on every render, and an inline declaration beats a normal author rule. Either stop setting the key in `theme` and own the value in CSS, or mark your rule `!important` — importance is weighed before origin, so an important author rule does win. Prefer the first; forcing leaves both mechanisms live.
+
+**The brand color is unreadable in dark mode.**
+`primaryColor` does not change by scheme, even though five other tokens do. Override it per scheme in CSS.
+
+**Text on a brand-colored button looks wrong after changing `primaryColor`.**
+It shouldn't — `--cy-on-primary` recomputes automatically for hex values. If you set `primaryColor` to something other than hex (`rgb()`, a named color, `var()`), the derivation can't parse it and falls back to white; switch to a hex value if the auto-contrast result matters.
+
+**`fontFamily: "var(--font-inter)"` renders a fallback font.**
+The variable is not defined on an ancestor of the portalled containers. Define it on `:root`.
+
+**A token appears to do nothing.**
+It may have been sanitised to empty and fallen back. Check for `;`, braces, or comment markers in the value.
+
+**The banner flashes the default blue before turning brand-colored.**
+First paint uses the stylesheet. Mirror the value in `:root`.
+
+## Across the SDK
+
+The tokens live in `@cookieyes/react` and are used identically by `@cookieyes/nextjs`. The `ThemeConfig` type is defined in `@cookieyes/core` and re-exported, so the same `theme` object is valid in every package — though `core` ships no CSS to apply it to.
+
+## See also
+
+- [CSS variables reference](/docs/styling/css-variables) — every token's default, dark-mode value, and full reverse index of what it paints
+- [Styling overview](/docs/styling/overview) — where tokens fit among the other layers
+- [Color scheme](/docs/styling/color-scheme) — light, dark, and following the system
+- [Custom CSS](/docs/styling/custom-css) — everything tokens cannot express
+- [CSP](/docs/styling/csp) — why the CSSOM approach matters

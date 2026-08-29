@@ -1,0 +1,190 @@
+---
+title: CSP
+description: Run the SDK under a strict Content-Security-Policy.
+---
+
+## When to use it
+
+Read this if your app sends a `Content-Security-Policy` header — especially a strict `style-src` or `script-src`. The headline is short: the SDK will not force you to loosen `style-src`.
+
+You can skip it if you have no CSP, though the `script-src` section still applies the moment you gate a third-party tag.
+
+## Basic usage
+
+A policy the SDK is fully compatible with:
+
+```http title="Response header"
+Content-Security-Policy:
+  default-src 'self';
+  style-src 'self';
+  script-src 'self';
+```
+
+No `unsafe-inline`. No nonce. The banner, both dialogs, the recall widget, and custom `theme` colors all work.
+
+**One exception, if you inline `critical.css`.** The SDK ships two stylesheets. `@cookieyes/react/styles.css` is loaded as a normal file and is fully covered by the policy above. `@cookieyes/react/critical.css` is an optional performance extra that [Installation](/docs/getting-started/installation#stylescss-vs-criticalcss) suggests **inlining in `<head>`** — and an inlined stylesheet is a literal `<style>` block, which `style-src 'self'` blocks like any other.
+
+If you inline it, you must account for that one block. Either add a hash for it (`style-src 'self' 'sha256-…'`), give it a nonce, or simply link `critical.css` as a file instead of inlining it and keep the policy above unchanged. Linking it is the simplest option and costs only the extra request; the SDK itself still needs no blanket allowance either way.
+
+### Summary for a security questionnaire
+
+Copy this as-is into a vendor security review:
+
+> CookieYes's UI ships as a real, `<link>`-loaded stylesheet — never an inline `<style>` block — and per-instance theme colors are applied by writing CSS custom properties directly onto the DOM (the CSSOM), not by generating stylesheet text. It is fully compatible with a `style-src 'self'` policy: **no `unsafe-inline`, no per-request nonce or token, and no blanket inline-styling allowance are required** for the SDK's own styling. The one exception is the optional `critical.css` performance file, and only if you choose to inline it rather than link it. All customer-supplied `theme` values are sanitised before use. Gated third-party tags (`GatedScript`, `GatedFrame`) need their own vendor origin allowed in `script-src` / `frame-src`, the same as they would without CookieYes.
+
+Where a typical embedded UI needs a nonce or token threaded through every request, or a blanket `unsafe-inline` allowance for at least some of its components, CookieYes needs neither — the CSSOM approach below removes the reason either would be necessary.
+
+## Options
+
+What each directive needs.
+
+| Directive | SDK requirement | Why |
+| --- | --- | --- |
+| `style-src` | `'self'` | The stylesheet is a real `<link>`; theme colors go through the CSSOM |
+| `script-src` | `'self'` | The SDK's own code is a normal bundle |
+| `script-src` (gated tags) | The vendor's origin | Injected `<script src>` must be allowed, or it is blocked |
+| `connect-src` (self-hosted) | Your `apiUrl` origin | The consent POST |
+| `frame-src` (GatedFrame) | The embed's origin | Iframes you gate |
+
+## Behaviour and trade-offs
+
+### Why `style-src 'self'` is enough
+
+Two decisions make it work:
+
+1. **The stylesheet is a real file**, loaded with a `<link>`. There is no runtime-generated `<style>` block to be blocked.
+2. **Theme colors are applied via the CSSOM** — `element.style.setProperty("--cy-primary", value)` on each container — not by generating CSS text.
+
+CSP restricts stylesheet *content*: `<style>` blocks and `style` attributes parsed from markup. It does **not** restrict direct property writes through the CSSOM. So a custom `theme` keeps working under a policy with no `unsafe-inline` and no nonce.
+
+<Callout type="info">
+  This is the non-obvious part, and it is why the SDK sets theme values one property at a time rather than building a `<style>` element with the same content. The two look equivalent and behave completely differently under CSP.
+</Callout>
+
+### What stops a malicious theme value
+
+The CSSOM path removes `style-src` as an attack surface, but a `theme` value is still customer-supplied text, so it is sanitised before it reaches `setProperty()`: the characters that could break out of a CSS declaration — `;`, `{`, `}`, `<`, `>`, `\`, comment delimiters (`/* */`), and newlines — are stripped, and the result is capped at 200 characters. If a value is empty after cleaning, the SDK falls back to its own default rather than passing nothing through. This isn't a CSP concern as such — `setProperty()` was never going to execute a `<style>` block regardless — but it is the answer to "what stops someone from putting something dangerous in a theme color."
+
+### Gated scripts need their vendor origin allowed
+
+[`GatedScript`](/docs/components/gated-script) injects a real `<script src="...">` when consent is granted. That element is subject to `script-src` like any other, so the vendor's origin must be allowed:
+
+```http title="script-src directive"
+script-src 'self' https://www.googletagmanager.com https://static.hotjar.com;
+```
+
+Otherwise the tag is blocked, `onLoad` never fires, and — because injection is fire-and-forget — nothing in the SDK reports it. Check the console for the CSP violation.
+
+This is a genuine tension with consent: you must pre-authorise in your CSP a vendor the visitor has not yet consented to. The authorisation is not the load. Nothing is requested until consent is granted; the policy only says the request *would* be permitted.
+
+### The SDK warns about `style-src` violations it did not cause
+
+The SDK listens for `securitypolicyviolation` events and logs a warning on any `style-src` violation:
+
+```text title="Console warning"
+[cookieyes] A style was blocked by your Content-Security-Policy (style-src). CookieYes's own styling doesn't require "unsafe-inline" or a nonce, so this is likely unrelated to this SDK — check your own inline styles or third-party scripts. See https://developer.cookieyes.com/docs/styling/csp for the exact policy this SDK needs.
+```
+
+This is a safety net, not an error report. Since the SDK's styling cannot itself violate `style-src`, a violation means something else on the page — your own inline styles, a third-party script, or a regression in the SDK. The warning surfaces it rather than letting it fail silently.
+
+It is a `console.warn` and nothing more: it never blocks rendering, never alters the consent flow, and a visitor never sees it. It exists purely so the person who set up the CSP has a lead when something on the page is blocked.
+
+### `connect-src` for self-hosted mode
+
+Under `mode: "self-hosted"` the consent POST goes to your `apiUrl`, which needs a matching `connect-src`:
+
+```http title="connect-src directive"
+connect-src 'self' https://api.example.com;
+```
+
+The POST is fire-and-forget — failures are caught and swallowed so a broken endpoint never breaks the consent flow. A CSP block therefore looks exactly like success from inside your app. Check the Network tab and the console.
+
+### Reporting mode first
+
+Roll a strict policy out with `Content-Security-Policy-Report-Only` before enforcing it. Exercise the full flow — banner, preferences dialog, accept, revoke, reload notice — and check for violations. The dialog mounts on open rather than being hidden, so a policy problem there does not surface until someone actually opens it.
+
+## Complete example
+
+```ts title="middleware.ts"
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export function middleware(request: NextRequest) {
+  const csp = [
+    "default-src 'self'",
+    // No unsafe-inline, no nonce — the SDK does not need either.
+    "style-src 'self'",
+    // 'self' for your bundle; vendor origins for consent-gated tags.
+    "script-src 'self' https://www.googletagmanager.com https://static.hotjar.com",
+    // Your self-hosted consent endpoint.
+    "connect-src 'self' https://api.example.com",
+    // Origins used by GatedFrame embeds.
+    "frame-src https://www.youtube-nocookie.com",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
+
+  const response = NextResponse.next();
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
+}
+```
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { GatedScript, initCookieYes } from "@cookieyes/nextjs";
+import "@cookieyes/react/styles.css";
+
+initCookieYes({
+  mode: "self-hosted",
+  apiUrl: "https://api.example.com/v1/consent",
+  // Works under style-src 'self' — applied via the CSSOM, not a <style> block.
+  theme: { primaryColor: "#7c3aed", borderRadius: "10px" },
+});
+
+export function CookieYesRoot() {
+  return (
+    <GatedScript
+      id="ga4"
+      src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"
+      category="analytics"
+    />
+  );
+}
+```
+
+## Common mistakes
+
+**A gated tag never loads after accepting.**
+Its origin is missing from `script-src`. Look for the CSP violation in the console.
+
+**`onLoad` never fires.**
+Same cause — the element was blocked, so `load` never happens.
+
+**Consent decisions never reach the backend.**
+`connect-src` does not allow your `apiUrl`. The POST is silent by design, so nothing surfaces in the SDK.
+
+**A `GatedFrame` embed stays on the placeholder after consent.**
+Missing `frame-src` for the embed origin.
+
+**You added `unsafe-inline` to `style-src` for the banner.**
+Not needed. Something else on the page required it — the SDK's warning says as much.
+
+**A CSP warning appears in the console but the banner looks fine.**
+That is the safety-net listener reporting a violation from elsewhere on the page.
+
+**The policy passes in testing and fails in production.**
+The dialog mounts on open. Exercise the full flow in report-only mode, including opening preferences.
+
+## Across the SDK
+
+The CSSOM approach and the violation listener live in `@cookieyes/react`, used unchanged by `@cookieyes/nextjs`. Script injection lives in `@cookieyes/core`, so the `script-src` requirement applies to any framework using `registerScript`. `@cookieyes/core` has no styling and so no `style-src` requirement at all.
+
+## See also
+
+- [Styling overview](/docs/styling/overview) — the full escalation ladder this policy interacts with
+- [Theme tokens](/docs/styling/theme-tokens) — the values applied via the CSSOM
+- [Part & state contract](/docs/styling/part-and-state-contract) — the selectors this policy has to cover
+- [GatedScript](/docs/components/gated-script) — the tags that need `script-src`
+- [Troubleshooting](/docs/troubleshooting) — diagnosing a blocked tag

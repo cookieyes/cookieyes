@@ -1,0 +1,308 @@
+---
+title: Styling overview
+description: The layers you can style, and which one to reach for first — and where to look when a rule doesn't apply.
+---
+
+Every `cy-*` class, every `--cy-*` custom property, and every `data-cy-part` / `data-cy-state` value this SDK renders is a stable, versioned public contract. Renaming one is a breaking change that ships with a changeset — the same guarantee that covers a function export. Style against them with confidence: none of it shifts under you in a minor or patch release.
+
+## When to use it
+
+Read this before changing any SDK styling. The most common mistake is reaching for a heavier layer than the job needs — rebuilding a banner on primitives to change a button color, or overriding CSS to change a value the `theme` config already exposes.
+
+If you only want the banner to use your brand color, you need the first layer and nothing else.
+
+This page answers two different questions, and conflating them is the usual cause of over-built styling code:
+
+- **"How do I style *this element*?"** Find its part and target it — see [Part & state contract](/docs/styling/part-and-state-contract).
+- **"How far do I need to escalate for *this kind of change*?"** That's [the escalation ladder](#the-escalation-ladder) below — most changes need less than you'd guess.
+
+## Troubleshooting
+
+Start here if a rule you wrote isn't doing what you expected. These three cover the overwhelming majority of "my CSS didn't apply" reports.
+
+### A toggle's checked-state background does nothing
+
+This is the single most-hit gotcha in the whole styling surface, so read it in full even if you think you already know the fix.
+
+The toggle's DOM is a label wrapping a native checkbox and two spans:
+
+```html title="Toggle DOM"
+<label data-cy-part="toggle" data-cy-state="on" class="cy-toggle">
+  <input type="checkbox" />
+  <span class="cy-toggle-track">
+    <span class="cy-toggle-thumb"></span>
+  </span>
+</label>
+```
+
+The obvious selector looks correct and silently fails:
+
+```css title="Looks right, does nothing"
+[data-cy-part="toggle"][data-cy-state="on"] {
+  background: var(--brand-success);
+}
+```
+
+It fails because `background` is being set on the `<label>`, but the `<span class="cy-toggle-track">` inside it is absolutely positioned and paints over the entire control. The label's background is never visible no matter how correctly that selector matches — this isn't a specificity problem yet, it's a paint-order problem.
+
+So the fix is to target the track, not the label:
+
+```css title="Fixes paint order, still loses"
+[data-cy-part="toggle"][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+```
+
+This one *also* does nothing, and now it is a specificity problem. The SDK's own rule for the checked track is `.cy-toggle input:checked ~ .cy-toggle-track`, which has specificity **(0,3,1)** — three class-level selectors (`.cy-toggle`, `:checked`, `.cy-toggle-track`) plus one type selector (`input`). The rule above has two attribute selectors and one class, specificity **(0,3,0)** — tied on the class count, but the SDK's rule has a type selector this one doesn't, so the SDK's rule wins the tiebreak.
+
+The working selector repeats the part attribute:
+
+```css title="Correct"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+```
+
+`[data-cy-part]` with no value matches anything `[data-cy-part="toggle"]` already matched — it narrows nothing, it just adds one more attribute selector to the count. That lifts this rule to **(0,4,0)**, which beats the SDK's (0,3,1) outright at the class-count comparison, before type selectors are even considered. Repeating an attribute selector is a legitimate way to add specificity without changing what a selector matches, and it's the one place in this SDK's docs where that trick is load-bearing rather than a curiosity.
+
+Do not reach for `!important` here — a plain `[data-cy-part="toggle"][data-cy-state="on"] .cy-toggle-track` selector placed *after* the SDK's stylesheet in source order would also happen to win, because same-specificity rules resolve by order. That's fragile: it silently breaks the moment your import order changes, or the moment the SDK adds a second same-specificity rule of its own. The doubled-attribute selector wins on specificity alone and doesn't depend on where your stylesheet is imported.
+
+### Styles vanish under a strict CSP
+
+If colors or the stylesheet itself seem to disappear under a `Content-Security-Policy` header, this SDK is very unlikely to be the cause — it needs no `unsafe-inline` and no nonce for its own styling. See [CSP](/docs/styling/csp) for what's actually required and how to tell the difference between the SDK's own warning and a real problem elsewhere on the page.
+
+### A CSS override of `--cy-primary` does nothing
+
+You set `--cy-primary` on `:root`, but `theme.primaryColor` writes the same property as an inline style on the container via `element.style.setProperty()`, and an inline declaration beats a `:root` rule regardless of specificity. Remove the key from `theme` and own the value in CSS, or set it on the component's own container instead of `:root`. This is covered in full, with the one legitimate use for `!important`, under [Pick one source per token](#pick-one-source-per-token) below.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+
+initCookieYes({
+  mode: "cookie-only",
+  colorScheme: "system",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+    fontFamily: "'Inter', sans-serif",
+  },
+});
+```
+
+## Behaviour and trade-offs
+
+### The escalation ladder
+
+| Layer | How much power | What it changes (visuals vs. structure) | Effort | Page |
+| --- | --- | --- | --- | --- |
+| 1. `theme` config | Sets 9 configurable fields (of the SDK's 12 total tokens — 3 are derived automatically and have no `theme` key) | Visuals only — colors, radius, font, focus ring | One object | [Theme tokens](/docs/styling/theme-tokens) |
+| 2. CSS custom properties | Reaches any of the 12 tokens, including the 3 with no `theme` key | Visuals only — same tokens, a different mechanism | A few lines | [CSS variables](/docs/styling/theme-tokens#behaviour-and-trade-offs) |
+| 3. Part selectors | Any CSS property on any element the SDK renders | Visuals only, but unconstrained — spacing, layout, shadows, states | A stylesheet | [Custom CSS](/docs/styling/custom-css) |
+| 4. Headless primitives | Full control | Structure — the DOM itself, and you own accessibility | A component | [Primitives overview](/docs/headless/overview) |
+
+Layers 1–3 keep the SDK's own components and accessibility behaviour. Only layer 4 replaces them, and only layer 4 makes you responsible for focus management, ARIA, and keyboard support yourself.
+
+### Start simple
+
+Start at layer 1 and escalate only when a specific value has no token to reach for. Most integrations never leave layer 1 — a brand color, a radius, and a font cover the large majority of "make it match our site" requests. Reach for layer 2 only for the handful of tokens with no `theme` key. Reach for layer 3 when the change isn't a color, radius, or font at all — spacing, a shadow, a specific button's weight. Layer 4 is for when your design system demands markup this SDK's presets don't produce, which is rare.
+
+### Wording lives in translations, not styling
+
+Button labels, category names, dialog copy — none of that is a styling concern, and this page will not cover changing it. Text is a [translations](/docs/translations) concern: override strings via `i18n.messages`, the same way for every surface this SDK renders. If you're looking for a `theme` key or a `className` trick to change what a button says, stop looking here — see [Overriding strings in English](/docs/translations#overriding-strings-in-english).
+
+### Pick one source per token
+
+Every theme-configurable token can be set two ways: through `theme` config, or through CSS. Pick one per token — don't set the same value both places.
+
+The reason is mechanical, not stylistic: `theme` values are written onto each component's container element via `element.style.setProperty()`, an inline declaration, on every render. An inline declaration beats a normal CSS rule regardless of specificity or import order, so a `:root` or part-selector rule for a token that's also set in `theme` is dead code — it will never win.
+
+```css title="Ineffective — theme.primaryColor is set"
+:root {
+  --cy-primary: rebeccapurple; /* loses to the inline value every time */
+}
+```
+
+If you need to override a token from CSS — because it varies with a media query, or because it's one of the tokens with no `theme` key at all — stop setting it in `theme` and own it in CSS instead:
+
+```css title="Effective — theme.primaryColor is not set"
+[data-cy-part="banner"] {
+  --cy-primary: rebeccapurple; /* wins, because nothing inline is competing */
+}
+```
+
+An author rule marked `!important` does still win over an inline value, because the cascade weighs importance before it considers where a declaration came from — but treat that as the one legitimate exception, reserved for the tokens that have no `theme` key, not a general escape hatch. Fighting `theme` with `!important` everywhere else just means the next person doesn't know which mechanism is actually in control.
+
+### The SDK isolates itself from your CSS
+
+Every root container — `.cy-banner-wrap`, `.cy-dialog-overlay`, `.cy-widget`, `.cy-reload-notice`, `.cy-frame-placeholder` — sets inheritable typography explicitly, so a host font or reset cannot leak in. Descendant resets use `:where()` so they sit at specificity 0 and your own rules still win.
+
+This is why the banner does not inherit your app's font unless you ask it to via `theme.fontFamily`.
+
+### Where to stop
+
+| You want to change | Use |
+| --- | --- |
+| Brand color, radius, font, focus ring | `theme` config |
+| A value with no `theme` key, like `--cy-primary-hover` | CSS variables |
+| Spacing, layout, a specific button's weight | Part selectors |
+| The DOM structure itself | Primitives |
+
+## Task-oriented recipes
+
+Five common jobs, each as the shortest correct answer.
+
+### Set your brand color
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+
+initCookieYes({
+  mode: "cookie-only",
+  theme: { primaryColor: "#7c3aed" },
+});
+```
+
+That's it — every surface (banner, both dialogs, the recall widget) picks it up, and the text painted on top of it stays legible automatically. See [The compliance boundary](#the-compliance-boundary) below if what you actually want is to change which button reads as primary, not its color.
+
+### Style one specific part
+
+```css title="app/consent.css"
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+Import this after `@cookieyes/react/styles.css` so it wins ties on source order. See [Custom CSS](/docs/styling/custom-css) for the full selector list and the import-order rule.
+
+### Support dark mode
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+
+initCookieYes({
+  mode: "cookie-only",
+  colorScheme: "system",
+});
+```
+
+`colorScheme: "system"` follows `prefers-color-scheme` live. Five tokens — `--cy-bg`, `--cy-text`, `--cy-muted`, `--cy-border`, and `--cy-widget-bg` — get a dark-mode default, but **only for whichever of those you didn't set yourself**. If you configured `theme.backgroundColor`, that value is used in both schemes; the dark default only fills in the ones you left alone. See [Color scheme](/docs/styling/color-scheme) for the full behaviour, including the class-based-toggle case this config option doesn't cover.
+
+### Match an existing design system
+
+Point the two tokens most design systems already have a value for — font and brand color — at your existing variables, rather than hardcoding a duplicate value:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+
+initCookieYes({
+  mode: "cookie-only",
+  theme: {
+    fontFamily: "var(--font-inter), sans-serif",
+    primaryColor: "#1863dc",
+  },
+});
+```
+
+`fontFamily` accepts a CSS variable reference as-is — useful with `next/font`, which exposes one rather than a family name. If you're on Tailwind, check [the import-order rule](/docs/styling/tailwind#import-order-the-sdk-goes-last) first — getting that wrong is the most common reason a design-system mapping like this appears to do nothing.
+
+### Style a toggle's checked state
+
+The correct selector on the first try, not as a fix:
+
+```css title="app/consent.css"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+```
+
+The repeated `[data-cy-part]` is not a typo — it lifts this rule's specificity to (0,4,0), enough to beat the SDK's own `.cy-toggle input:checked ~ .cy-toggle-track` rule at (0,3,1). Full explanation, including why the two more obvious selectors both fail, is under [Troubleshooting](#a-toggles-checked-state-background-does-nothing) above.
+
+## The compliance boundary
+
+Button arrangement, and which button is visually primary — Accept All vs. Reject All vs. Save Preferences — are not styling decisions. They're governed by consent-compliance rules this SDK enforces per regulation, tied to `regulation` in your config. This page will not show you how to reorder those buttons or recolor one to make it read as "primary," because doing so can put you out of compliance with the law your `regulation` setting is supposed to satisfy. See [Choosing a privacy law](/docs/getting-started/configuration#choosing-a-privacy-law--the-regulation-option) for what each regulation requires.
+
+Everything else about those buttons — their font, their radius, their brand color via `--cy-primary` / `--cy-on-primary` — is a normal styling concern and works exactly like any other part.
+
+## Complete example
+
+Config for the tokens, CSS for everything else:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+import "./consent.css";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  colorScheme: "system",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "10px",
+    fontFamily: "var(--font-inter), sans-serif",
+    focusColor: "#f59e0b",
+    widgetBackgroundColor: "#0f172a",
+  },
+});
+```
+
+```css title="app/consent.css"
+/* Tokens without a theme key */
+:root {
+  --cy-primary-hover: #0f4bb0;
+}
+
+/* Anything the tokens don't reach */
+[data-cy-part="banner"] {
+  max-width: 34rem;
+  box-shadow: 0 20px 40px -12px rgb(0 0 0 / 0.25);
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+
+/* The toggle gotcha — see Troubleshooting above for why this exact selector */
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+```
+
+## Common mistakes
+
+**Nothing is styled at all.**
+Missing `import "@cookieyes/react/styles.css";`.
+
+**The banner does not use the app's font.**
+By design — the style boundary blocks inheritance. Set `theme.fontFamily`.
+
+**Dark mode colors appear on a light-only site.**
+`colorScheme` defaults to `"system"`. Set it to `"light"` explicitly.
+
+## Across the SDK
+
+The stylesheet and tokens live in `@cookieyes/react` and are used unchanged by `@cookieyes/nextjs` — the import path is `@cookieyes/react/styles.css` in both. `@cookieyes/core` ships no CSS at all, but it does own the `ThemeConfig` type itself — `react` and `nextjs` both re-export it rather than defining their own.
+
+## See also
+
+- [Theme tokens](/docs/styling/theme-tokens) — every token in detail, including the derived ones
+- [Part & state contract](/docs/styling/part-and-state-contract) — the selectors you can rely on
+- [Custom CSS](/docs/styling/custom-css) — restyling without replacing components
+- [Color scheme](/docs/styling/color-scheme) — light, dark, and following the system
+- [CSP](/docs/styling/csp) — why the CSSOM approach matters

@@ -1,0 +1,202 @@
+---
+title: Custom CSS
+description: Style the SDK with plain CSS against the part contract.
+---
+
+## When to use it
+
+Use custom CSS when you need to change something that is not a color, radius, or font: the banner's width, the gap between buttons, a category row's borders, the dialog's max height.
+
+Try [theme tokens](/docs/styling/theme-tokens) first — they are fewer lines and apply everywhere consistently. And you almost never need to drop to [primitives](/docs/headless/overview) for styling; the part contract reaches every element the SDK renders.
+
+## Basic usage
+
+```css title="app/consent.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+```
+
+```tsx title="app/cookieyes.tsx"
+import "@cookieyes/react/styles.css";
+import "./consent.css"; // after, so your rules win ties
+```
+
+## Options
+
+The selectors available to you.
+
+| Selector | Stability | Use for |
+| --- | --- | --- |
+| `[data-cy-part="..."]` | **Public contract** — renames are breaking | Everything. The recommended target |
+| `[data-cy-state="on" \| "off"]` | Public contract | Toggle state |
+| `.cy-*` classes | Public contract | When a part does not exist for the element |
+| `.cy-frame-placeholder` | Public contract | The only way to style a `GatedFrame` placeholder |
+| Element/structural selectors | **Not** stable | Avoid — DOM shape can change without a major bump |
+
+The full part list is in [Part & state contract](/docs/styling/part-and-state-contract).
+
+## Behaviour and trade-offs
+
+### Import order decides ties
+
+A part selector has the same specificity as a class (0,1,0), and the SDK's own rules are mostly single classes. Equal specificity means source order wins, so import your stylesheet **after** the SDK's:
+
+```tsx title="app/cookieyes.tsx"
+import "@cookieyes/react/styles.css";
+import "./consent.css";
+```
+
+If you cannot control order — a CSS-in-JS setup, or a framework that hoists imports — add an ancestor part instead of reaching for `!important`:
+
+```css title="app/consent.css"
+[data-cy-part="banner"] [data-cy-part="accept-all"] { font-weight: 600; }
+```
+
+### `!important` usually means you are fighting `theme`
+
+If a rule needs `!important` to apply, the value is probably being set inline by `theme` config, and an inline declaration beats a normal author rule. (An `!important` author rule does win — the cascade weighs importance before origin — which is exactly why it appears to be the fix.) Remove the key from `theme` and own it in CSS instead. Forcing it leaves both mechanisms live and the next person confused.
+
+### The SDK isolates its typography deliberately
+
+Root containers — `.cy-banner-wrap`, `.cy-dialog-overlay`, `.cy-widget`, `.cy-reload-notice`, `.cy-frame-placeholder` — set `font-family`, `font-size`, `font-weight`, `line-height`, and `letter-spacing` explicitly, so a host font or CSS reset cannot leak in.
+
+That means the banner will not pick up your app's typography by accident. To opt in, set `theme.fontFamily` or override on the container:
+
+```css title="app/consent.css"
+.cy-banner-wrap { font-family: var(--font-inter), sans-serif; }
+```
+
+Descendant resets use `:where()` at specificity 0, so they never block your own rules.
+
+### The components portal into `<body>`
+
+The banner, dialogs, and recall widget render into `document.body`, not where you placed them in the tree. Consequences:
+
+- A selector scoped to your app shell — `.app-root [data-cy-part="banner"]` — matches nothing.
+- CSS Modules and styled-components scoping generally will not reach them either. Use a global stylesheet.
+- They are not clipped by a parent's `overflow: hidden`, and their stacking context is `<body>`, so layering issues are plain `z-index` conflicts.
+
+### Scope shared part names
+
+`title`, `close`, `accept-all`, `reject-all`, and `branding` appear on more than one surface. Scope with an ancestor when you mean one — see [Part & state contract](/docs/styling/part-and-state-contract).
+
+### Respect reduced motion
+
+If you add animation, honour the preference:
+
+```css title="app/consent.css"
+@media (prefers-reduced-motion: reduce) {
+  [data-cy-part="banner"] { animation: none; transition: none; }
+}
+```
+
+## Complete example
+
+```css title="app/consent.css"
+/* Imported after @cookieyes/react/styles.css */
+
+/* ── Banner ─────────────────────────────────────────── */
+[data-cy-part="banner"] {
+  max-width: 34rem;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px -12px rgb(0 0 0 / 0.25);
+}
+
+[data-cy-part="banner"] [data-cy-part="title"] {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+[data-cy-part="banner"] [data-cy-part="description"] {
+  margin-top: 0.5rem;
+  line-height: 1.6;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+[data-cy-part="accept-all"],
+[data-cy-part="reject-all"] {
+  min-width: 8rem;
+  font-weight: 600;
+}
+
+/* ── Preferences dialog ─────────────────────────────── */
+[data-cy-part="dialog"] {
+  max-width: 40rem;
+  max-height: min(90vh, 44rem);
+}
+
+[data-cy-part="category"] + [data-cy-part="category"] {
+  border-top: 1px solid var(--cy-border);
+}
+
+[data-cy-part="category-label"] {
+  font-weight: 600;
+}
+
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+
+/* ── Recall widget & placeholder ────────────────────── */
+[data-cy-part="recall"] {
+  z-index: 60;
+}
+
+.cy-frame-placeholder {
+  min-height: 315px;
+  border-radius: 0.5rem;
+  background: var(--surface-muted);
+}
+
+/* ── Motion ─────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    animation: none;
+    transition: none;
+  }
+}
+```
+
+## Common mistakes
+
+**A rule does nothing.**
+Equal specificity, losing on source order. Import after `styles.css`, or add an ancestor part.
+
+**A rule needs `!important`.**
+`theme` is setting that value inline. Remove the config key.
+
+**A scoped selector matches nothing.**
+The components portal to `<body>`. Use global CSS with no app-shell ancestor.
+
+**CSS Modules styles never apply.**
+Same cause — the generated class never reaches a portalled element. Use a global sheet or pass `className` explicitly.
+
+**A banner rule also restyled the dialog headings.**
+Shared part name. Scope it.
+
+**The banner ignores the app font.**
+Intentional isolation. Set `theme.fontFamily`, or override on `.cy-banner-wrap`.
+
+**Styles applied but the layout broke.**
+You replaced a `cy-*` class that carried layout duties rather than adding to it. Prefer part selectors, which are identification-only.
+
+## Across the SDK
+
+Identical for `@cookieyes/react` and `@cookieyes/nextjs` — the stylesheet is `@cookieyes/react/styles.css` in both. `@cookieyes/core` ships no CSS. If you rebuild the UI on [primitives](/docs/headless/overview), your part-based stylesheet keeps working, since primitives emit the same `data-cy-part` attributes.
+
+## See also
+
+- [Styling overview](/docs/styling/overview) — where part selectors fit among theme tokens and primitives
+- [Tailwind](/docs/styling/tailwind) — the same, with utility classes
+- [CSP](/docs/styling/csp) — styling under a strict Content-Security-Policy
+- [Part & state contract](/docs/styling/part-and-state-contract) — every selector

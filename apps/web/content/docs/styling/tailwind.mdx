@@ -1,0 +1,216 @@
+---
+title: Tailwind
+description: Use Tailwind with the SDK, including the import-order rule.
+---
+
+## When to use it
+
+Read this if your app uses Tailwind. The import-order section matters even if you never write a single utility against the SDK — getting it wrong lets Tailwind's preflight reset fight the SDK's own styles.
+
+If you do not use Tailwind, [Custom CSS](/docs/styling/custom-css) covers the same ground in plain CSS.
+
+## Basic usage
+
+Import the SDK's stylesheet **after** Tailwind:
+
+```css title="app/globals.css"
+@import "tailwindcss";
+@import "@cookieyes/react/styles.css";
+```
+
+Then pass utilities through `className`:
+
+```tsx title="Applying utilities"
+<CookieBanner className="shadow-2xl ring-1 ring-black/5" />
+```
+
+## Options
+
+Three ways to combine Tailwind with the SDK, in order of how much you take on.
+
+| Approach | How | Best for |
+| --- | --- | --- |
+| Utilities via `className` | `<CookieBanner className="shadow-2xl" />` | Small adjustments to the presets |
+| `@apply` on part selectors | `[data-cy-part="banner"] { @apply max-w-lg; }` | Systematic restyling, keeping the presets |
+| Utilities on primitives | `<Banner.Root className="fixed inset-x-4 …">` | Full design-system alignment |
+
+## Behaviour and trade-offs
+
+### Import order: the SDK goes last
+
+Tailwind's preflight resets `button`, `input`, and heading styles. If the SDK's sheet loads first, preflight strips the SDK's own defaults and the banner renders with unstyled buttons.
+
+```css title="app/globals.css"
+/* Right — SDK last */
+@import "tailwindcss";
+@import "@cookieyes/react/styles.css";
+```
+
+```css title="Wrong"
+@import "@cookieyes/react/styles.css";
+@import "tailwindcss"; /* preflight now strips the SDK's button styles */
+```
+
+<Callout type="warn">
+  This is exactly the class of bug documentation-site frameworks hit too — a preset stylesheet loading in the wrong order and quietly winning. If the banner's buttons look like bare text while the rest of the banner is styled, check this first.
+</Callout>
+
+If you also load other preset stylesheets, the SDK's sheet still goes last in the top-level `@import` block.
+
+### `className` is additive on most components, replacing on `RecallButton`
+
+| Component | `className` behaviour |
+| --- | --- |
+| `CookieBanner`, `CookiePreferences`, `CookieOptOut` | **Appended** to the SDK's own class |
+| `RecallButton` | **Replaces** `cy-widget` entirely |
+| Primitives (`Banner.*`, etc.) | Applied to the element; part attributes always remain |
+
+So `<RecallButton className="ml-2" />` silently drops all the widget styling. Keep the class if you want the defaults:
+
+```tsx title="Keep the defaults"
+<RecallButton className="cy-widget ring-2 ring-brand" />
+```
+
+### Utilities need to beat the SDK's rules
+
+A Tailwind utility is a single class (specificity 0,1,0), the same as the SDK's own rules. Because the SDK's sheet is imported last, its rules win ties on order — so a utility may not apply.
+
+The fix is source order, not force. Import your own stylesheet **after** `@cookieyes/react/styles.css` and your utilities win the tie outright:
+
+```tsx title="app/layout.tsx"
+import "@cookieyes/react/styles.css";
+import "./globals.css"; // yours last — utilities now win ties
+```
+
+If you cannot control the order, add one level of specificity in your own sheet rather than forcing:
+
+```css title="app/globals.css"
+/* Doubling the attribute selector lifts specificity to 0,2,0 — enough to
+   beat the SDK's single-class rules regardless of import order. */
+[data-cy-part="banner"][data-cy-part] {
+  @apply max-w-md;
+}
+```
+
+<Callout type="warn">
+  Avoid Tailwind's important modifier (`!max-w-md`) here. It compiles to `!important`, which the SDK never needs and never uses — nothing in `styles.css` is marked important — so reaching for it hides an ordering problem rather than fixing it, and it will beat your own later overrides too. The one genuine exception is the two theme tokens the SDK writes inline; see [Theme tokens](/docs/styling/theme-tokens#theme-values-win-over-css).
+
+  Do not wrap the override in `@layer components` either. The SDK's stylesheet is deliberately unlayered, and an unlayered declaration always beats a layered one regardless of specificity — so a layered override would lose.
+</Callout>
+
+Prefer `@apply` on part selectors for anything systematic — it keeps the fix in one place rather than scattering `!` across JSX.
+
+### Content detection and portals
+
+Tailwind v4 scans your source files, so utilities you write in JSX are found normally. But the SDK's components portal into `<body>`, which means:
+
+- A utility written on an ancestor does **not** cascade in any way that helps — the portalled element is not a DOM descendant.
+- Group and peer variants across the portal boundary do not work.
+- `dark:` variants using the `class` strategy still work, because the class is on `<html>`.
+
+### `dark:` variants and `colorScheme`
+
+The SDK has its own dark handling driven by `colorScheme` config — it does not read Tailwind's dark class. If your app toggles dark mode with a class on `<html>` rather than following the OS, set `colorScheme` to match, or the SDK will follow the system preference while your app follows the class. See [Color scheme](/docs/styling/color-scheme).
+
+### Arbitrary values reach the tokens
+
+Tailwind arbitrary values can set the SDK's custom properties directly:
+
+```tsx title="Arbitrary value"
+<CookieBanner className="[--cy-primary:#7c3aed]" />
+```
+
+This loses to `theme.primaryColor` if that is set, for the usual inline-style reason.
+
+## Complete example
+
+```css title="app/globals.css"
+@import "tailwindcss";
+@import "@cookieyes/react/styles.css";
+
+@layer components {
+  [data-cy-part="banner"] {
+    @apply max-w-lg rounded-xl p-6 shadow-2xl ring-1 ring-black/5;
+  }
+
+  [data-cy-part="banner"] [data-cy-part="title"] {
+    @apply text-lg font-semibold tracking-tight;
+  }
+
+  [data-cy-part="actions"] {
+    @apply mt-5 flex flex-wrap gap-3;
+  }
+
+  [data-cy-part="accept-all"],
+  [data-cy-part="reject-all"] {
+    @apply min-w-32 font-semibold;
+  }
+
+  [data-cy-part="dialog"] {
+    @apply max-w-2xl;
+  }
+
+  [data-cy-part="category"] + [data-cy-part="category"] {
+    @apply border-t border-[var(--cy-border)];
+  }
+
+  .cy-frame-placeholder {
+    @apply grid min-h-[315px] place-items-center rounded-lg bg-slate-100;
+  }
+}
+```
+
+Or with primitives, where utilities apply directly and ordering stops mattering:
+
+```tsx title="components/ConsentBanner.tsx"
+"use client";
+
+import { Banner } from "@cookieyes/react";
+
+export function ConsentBanner() {
+  return (
+    <Banner.Root>
+      <section className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-xl border bg-white p-6 shadow-xl dark:bg-slate-900">
+        <Banner.Title className="text-lg font-semibold" />
+        <Banner.Description className="mt-2 text-sm text-slate-600 dark:text-slate-300" />
+        <Banner.Actions className="mt-5 flex flex-wrap gap-3">
+          <Banner.AcceptAll className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700" />
+          <Banner.RejectAll className="rounded-lg border px-4 py-2 font-medium" />
+          <Banner.OpenPreferences className="px-4 py-2 text-sm underline" />
+        </Banner.Actions>
+      </section>
+    </Banner.Root>
+  );
+}
+```
+
+## Common mistakes
+
+**The banner's buttons render as unstyled text.**
+Tailwind preflight loaded after the SDK's sheet and reset them. Put `@import "@cookieyes/react/styles.css"` last.
+
+**A utility on `<CookieBanner>` does nothing.**
+Specificity tie, and the SDK's sheet is later. Use `!` or `@apply` on a part selector.
+
+**`<RecallButton className="...">` made the widget unstyled.**
+`className` replaces `cy-widget` there. Include it.
+
+**`group-hover:` across the banner does nothing.**
+The banner is portalled out of your tree; group and peer variants cannot cross that boundary.
+
+**The app is dark but the banner is light.**
+Your app uses Tailwind's class strategy; the SDK follows `colorScheme`, which defaults to `"system"`. Set it explicitly.
+
+**`[--cy-primary:...]` is ignored.**
+`theme.primaryColor` is set and wins as an inline style. Remove it from config.
+
+## Across the SDK
+
+Identical for `@cookieyes/react` and `@cookieyes/nextjs`; the stylesheet path is `@cookieyes/react/styles.css` in both. `@cookieyes/core` ships no CSS, so there is nothing to order.
+
+## See also
+
+- [Styling overview](/docs/styling/overview) — how Tailwind usage fits the escalation ladder
+- [Custom CSS](/docs/styling/custom-css) — the same patterns in plain CSS
+- [Color scheme](/docs/styling/color-scheme) — matching your app's dark mode
+- [Part & state contract](/docs/styling/part-and-state-contract) — the selectors to `@apply` against
