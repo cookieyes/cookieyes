@@ -1,0 +1,193 @@
+---
+title: GatedFrame
+description: Gate an iframe behind consent, with a placeholder until it is granted.
+---
+
+## When to use it
+
+Use this for any third-party embed that sets cookies or profiles the visitor: YouTube, Vimeo, Google Maps, Spotify, social embeds, Calendly. An `<iframe>` loads the vendor's cookies the moment it renders, so it needs the same gating a tracking script does.
+
+You do not need it for a same-origin iframe or one that provably sets no cookies. And it is not the tool for scripts — use [`GatedScript`](/docs/components/gated-script).
+
+## Basic usage
+
+```tsx title="components/VideoEmbed.tsx"
+"use client";
+
+import { GatedFrame } from "@cookieyes/react";
+
+export function VideoEmbed() {
+  return (
+    <GatedFrame
+      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+      category="functional"
+      width={560}
+      height={315}
+      title="Product tour"
+    />
+  );
+}
+```
+
+## Options
+
+`GatedFrame` accepts **every native `<iframe>` attribute** except `src`, which it defines itself, plus:
+
+<ComponentPropsTable component="GatedFrame" />
+
+The default placeholder renders "This content requires **&lt;category&gt;** cookies to be enabled" and a **Manage Preferences** button that opens the dialog.
+
+<Callout type="warn">
+  Props in `...rest` are spread onto the **iframe**, not the placeholder. `className` and `style` therefore style the embed once it appears, not the box the visitor sees beforehand. Style the placeholder with `.cy-frame-placeholder`.
+</Callout>
+
+## Behaviour and trade-offs
+
+### It never renders the iframe during SSR or first hydration
+
+Consent is per-visitor and only known in the browser, so the server — a process shared across all visitors — must not decide it. The placeholder renders on the server and through the first client render; only after mount does consent take over.
+
+This keeps server and first client render identical, so there is no hydration mismatch, and no chance of one visitor's consent leaking into another's cached HTML.
+
+### Once loaded, it stays for the session
+
+The component latches: after the iframe has rendered under a committed grant, revoking consent does **not** swap it back to the placeholder mid-session. The block takes effect on the next page load, when `category` starts denied.
+
+This matches [`GatedScript`](/docs/components/gated-script) and for the same reason — the embed has already set its cookies, so hiding it would be theatre rather than compliance.
+
+### Consent granted while the placeholder is on screen
+
+The other direction — going from placeholder to embed — is not "next page load." `GatedFrame` reads `useConsentCategory(category)`, which re-renders the component whenever committed consent changes. If a visitor opens the preferences dialog from the placeholder's own button and grants the category, the swap from placeholder to the real iframe happens **live, immediately on commit** — no reload, no re-navigation. The latch described above only applies to *withdrawing* consent after the embed is already showing; granting it while the placeholder is showing takes effect right away.
+
+### The placeholder's text is translatable
+
+Both pieces of the default placeholder's text come from translation keys, not hardcoded English: the explanatory line is `gatedFrame.placeholder` (with `{category}` substituted for the category name), and the button label is `gatedFrame.action`. Both ship translated in all five supported languages. Override them the same way as any other translation key, via `i18n.messages`:
+
+```tsx title="app/cookieyes.tsx"
+import { initCookieYes } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: "en",
+    messages: {
+      en: {
+        gatedFrame: {
+          placeholder: "Enable {category} cookies to watch this video.",
+          action: "Update cookie settings",
+        },
+      },
+    },
+  },
+});
+```
+
+### Give the placeholder the embed's dimensions
+
+The placeholder and the iframe are different elements, so the swap can shift your layout. Pass `width`/`height` (which reach the iframe) *and* size `.cy-frame-placeholder` to match, or wrap both in a fixed-aspect container.
+
+### Pick the category deliberately
+
+Video and map embeds are usually `functional`; social and ad embeds are usually `advertisement`. The category must exist in your active taxonomy — one gated on a category your `categories` config does not include can never be granted.
+
+## Verify it works
+
+After gating an embed, check all three:
+
+1. **Nothing third-party loads before consent.** With `category` rejected (or not yet decided), confirm only the placeholder renders and no request to the embed's domain appears in the Network tab.
+2. **The embed appears once consent is granted**, and does so immediately if you grant it while the placeholder is on screen — no reload needed (see "Consent granted while the placeholder is on screen" above).
+3. **Withdrawing consent does not remove the embed mid-session.** Reject the category after the embed has loaded — it stays for the rest of this page load; the block applies on the next one.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| The embed never appears even after accepting | `category` is not in your active taxonomy, or you granted a different one | Check `useCategories()` and make sure `category` matches a configured id |
+| The embed still shows after revoking consent | The session latch — this is expected | It will not load on the next page load |
+| The page jumps when the embed appears | Placeholder and iframe have different intrinsic sizes | Size `.cy-frame-placeholder` to match, or wrap both in a fixed-aspect container |
+| The placeholder shows briefly on every load even after consent | Expected — the component cannot know consent until it mounts on the client | Size the placeholder to match the embed so the swap doesn't shift layout |
+| The iframe loads before consent in a screenshot test | Your test harness is granting consent from a seeded cookie | That's `@cookieyes/test` behaving correctly — seed a rejected state instead |
+
+## Complete example
+
+```tsx title="components/VideoEmbed.tsx"
+"use client";
+
+import { GatedFrame, useConsentActions } from "@cookieyes/react";
+
+function VideoPlaceholder() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <div className="aspect-video grid place-items-center rounded-lg bg-slate-100">
+      <div className="text-center">
+        <p className="text-sm text-slate-600">
+          This video is hosted by YouTube and needs functional cookies.
+        </p>
+        <button
+          type="button"
+          className="mt-3 rounded bg-slate-900 px-4 py-2 text-sm text-white"
+          onClick={() => showPreferences()}
+        >
+          Allow and play
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function VideoEmbed() {
+  return (
+    <div className="aspect-video">
+      <GatedFrame
+        src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+        category="functional"
+        title="Product tour"
+        className="h-full w-full rounded-lg"
+        allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture"
+        allowFullScreen
+        placeholder={<VideoPlaceholder />}
+      />
+    </div>
+  );
+}
+```
+
+```css title="app/consent.css"
+.cy-frame-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 315px;
+  border-radius: 0.5rem;
+  background: var(--surface-muted);
+}
+```
+
+## Common mistakes
+
+**The placeholder shows briefly on every load even after consent.**
+Expected. The component cannot know consent until it mounts on the client. Size the placeholder to match the embed so the swap does not shift layout.
+
+**`className` styles the iframe but not the placeholder.**
+By design — `...rest` goes to the iframe. Use `.cy-frame-placeholder` or a custom `placeholder`.
+
+**The embed still shows after revoking consent.**
+The session latch. It will not load on the next page load.
+
+**The embed never appears even after accepting.**
+The `category` is not in your active taxonomy, or you granted a different one. Check `useCategories()`.
+
+**The page jumps when the video appears.**
+Placeholder and iframe have different intrinsic sizes. Wrap both in a fixed-aspect container, as in the example.
+
+**The iframe loads before consent in a screenshot test.**
+Your test harness is granting consent from a seeded cookie. That is `@cookieyes/test` behaving correctly — seed a rejected state instead.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. `@cookieyes/core` has no component layer — in vanilla JS, read `consentStore.getState().has(category)` and render the embed yourself, remembering the SSR and latching rules above.
+
+## See also
+
+- [GatedScript](/docs/components/gated-script) — the same gating for scripts
+- [useConsentCategory via focused hooks](/docs/hooks/focused-hooks) — gate your own components
+- [Rendering & selector contract](/docs/rendering-and-selector-contract) — SSR and hydration rules

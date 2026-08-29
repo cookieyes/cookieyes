@@ -1,0 +1,201 @@
+---
+title: CookieOptOut
+description: The CCPA opt-out surface. Required whenever regulation resolves to CCPA — without it, the banner's Do Not Sell action opens nothing, silently.
+---
+
+## When to use it
+
+**This component is required whenever `regulation` can resolve to `"CCPA"`** — either because you set it directly, or because your `region.map` routes some visitors there. Under CCPA the banner shows a **Do Not Sell** action, and this dialog is what it opens. Mount `CookieOptOut` alongside your banner whenever CCPA is in play; do not treat it as optional or add it later.
+
+**Without it mounted, nothing works — and nothing tells you.** Clicking Do Not Sell opens nothing. There is no error, no console warning, no failed network request to notice. The button simply does not respond, and unless someone happens to click it during testing, this ships silently.
+
+Because the failure mode is silent, the reliable safeguard is structural rather than a runtime check: **mount `CookieOptOut` in the same module that calls `initCookieYes()`**, so the regulation and the components that serve it live in one file and cannot drift apart.
+
+A runtime probe does not work here, and it is worth knowing why. `CookieOptOut` renders nothing at all until the dialog is open — the element carrying `data-cy-part="optout"` only exists while it is showing. Any check that looks for it in the DOM on load would warn on every page view of a perfectly correct setup.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookieOptOut, CookiePreferences, initCookieYes } from "@cookieyes/react";
+
+// Both the regulation and every component it requires are declared together,
+// so choosing CCPA and forgetting the opt-out dialog is a one-file mistake
+// rather than a cross-file one.
+initCookieYes({ mode: "cookie-only", regulation: "CCPA" });
+
+export function ConsentManager() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      {/* Required under CCPA — the banner's Do Not Sell action opens this. */}
+      <CookieOptOut />
+    </>
+  );
+}
+```
+
+This is a suggested pattern for your own setup, not a feature the SDK provides — treat it as a starting point, not a guarantee, since it only checks the DOM after render and only in whatever browsers your team actually exercises in development.
+
+You do not need it in a GDPR-only app — use [`CookiePreferences`](/docs/components/cookie-preferences). If you serve both regions, mount both: each renders only under its own regulation, so there is no conflict.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookieOptOut, initCookieYes } from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "CCPA" });
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookieOptOut />
+    </>
+  );
+}
+```
+
+## Options
+
+<ComponentPropsTable component="CookieOptOut" />
+
+### Parts
+
+| Part | Element |
+| --- | --- |
+| `optout` | The dialog root |
+| `title` | Dialog heading |
+| `message` | Explanatory text |
+| `confirm` | Confirm / save button |
+| `close` | Close button |
+
+Text comes from the `optOut.*` translation keys — `title`, `description`, `cancel`, `successText`, `successCountdown`. See [Translations](/docs/translations).
+
+## Behaviour and trade-offs
+
+### Focus and keyboard behaviour are handled
+
+While the dialog is open, focus is trapped inside it — Tab cycles only through its own controls, not the rest of the page. **Escape** closes it. Closing it, by any route, returns focus to whatever opened it — the banner's Do Not Sell action, your own trigger, or the recall button.
+
+### The checkbox reflects the current opt-out state — and resets every time
+
+When the dialog opens it reads the visitor's current state — opted out when `analytics` is not granted — and pre-checks the box accordingly. This happens **every time the dialog reopens**, not only the first time: if a visitor opens it, changes the checkbox, then closes without saving and reopens it, the checkbox is back to matching their actual current choice, not whatever they last clicked.
+
+**What saving actually does is not obvious from the UI, so state it plainly:**
+
+- Box **ticked** and saved → rejects everything (`rejectAll()`)
+- Box **unticked** and saved → accepts everything (`acceptAll()`)
+
+There is no partial state. This is a single switch, not a per-category form — see [below](#opt-out-is-not-the-same-as-per-category-consent) for why.
+
+### GPC opts a visitor out before they ever see this
+
+If the browser sends a Global Privacy Control signal and `regulation` resolves to `"CCPA"`, the visitor **starts opted out**, with non-required categories off, before any interaction. Nothing is shared first and then withdrawn. Turn this off with `region: { honorGpc: false }`, though honouring GPC is a legal requirement in some US states.
+
+### It closes itself after saving
+
+Once the visitor saves, the buttons are replaced by a confirmation message and a **10-second countdown**, then the dialog closes on its own (`COUNTDOWN_SECONDS = 10`). The countdown text comes from the `optOut.successCountdown` translation key, which contains the placeholder `{seconds}` — the SDK substitutes the remaining count into that exact position each second, so a translation can put the number anywhere in the sentence.
+
+The dialog's header close button keeps rendering during the countdown, so a visitor **can close it manually** before the 10 seconds finish. The countdown is a courtesy, not a lock.
+
+### Opt-out is not the same as per-category consent
+
+CCPA is an opt-out regime: processing is lawful until the visitor objects. That is why this dialog has one switch rather than five. Do not try to reproduce the GDPR preferences dialog here — mount `CookiePreferences` for GDPR visitors instead.
+
+## Verify it works
+
+1. **The Do Not Sell action appears** on the banner when `regulation` resolves to `"CCPA"`.
+2. **Clicking it opens this dialog** — not nothing, not an error.
+3. **Saving persists across a refresh** — reload the page and the same choice (opted out or not) is reflected if you reopen the dialog.
+4. **The confirmation closes itself** after the 10-second countdown, without any further interaction.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| Do Not Sell does nothing, no error | `<CookieOptOut />` is not mounted | Mount it alongside your banner |
+| The dialog never appears even under CCPA | `regulation` did not actually resolve to `"CCPA"` | Turn on `region: { debug: true }` and check `useRegion()`'s `source` |
+| Saved choice does not survive a refresh | Testing in `cookie-only` mode with cookies blocked, or clearing cookies between checks | Confirm cookies are allowed for the test origin |
+| The dialog closes before you can read it | The 10-second success countdown, working as intended | Style or reword it via `optOut.successCountdown`, or close it manually to skip the wait |
+| Visitors are opted out before touching anything | Global Privacy Control is being honoured | Expected under CCPA; disable with `region: { honorGpc: false }` if unwanted |
+
+## Complete example
+
+Serving both regimes from one config:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import {
+  CookieBanner,
+  CookieOptOut,
+  CookiePreferences,
+  RecallButton,
+  initCookieYes,
+} from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  region: {
+    detect: () => document.documentElement.dataset.region,
+    map: { "US-CA": "CCPA", DE: "GDPR", FR: "GDPR" },
+    strictest: "GDPR",
+    honorGpc: true,
+  },
+  i18n: {
+    locale: "en",
+    messages: {
+      en: {
+        optOut: {
+          title: "Do Not Sell or Share My Personal Information",
+          description:
+            "You can opt out of the sale or sharing of your personal information at any time.",
+          successText: "Your request has been recorded.",
+        },
+      },
+    },
+  },
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <CookieOptOut />
+      <RecallButton />
+    </>
+  );
+}
+```
+
+## Common mistakes
+
+**The banner's "Do Not Sell" link does nothing.**
+`<CookieOptOut />` is not mounted.
+
+**The dialog never appears even under CCPA.**
+Check what `regulation` actually resolved to. `useRegion()` returns the `region`, the resolved `regulation`, and the `source` — turn on `region: { debug: true }` to log the decision at setup.
+
+**Both dialogs appear at once.**
+They cannot — each renders only under its own regulation. If you are seeing this, you have two runtimes mounted, which means `initCookieYes()` is being called from more than one module.
+
+**Visitors are opted out before touching anything.**
+That is GPC being honoured. Expected under CCPA.
+
+**The dialog closes on its own and it looks like a bug.**
+The 10-second success countdown. Style or reword it via the `optOut.successCountdown` translation key.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core`, `readGpc()` exposes the raw GPC signal and `consentStore.getRegion()` the regulation decision, so the same logic can drive a custom opt-out surface anywhere.
+
+## See also
+
+- [OptOut primitives](/docs/headless/opt-out) — build your own opt-out dialog
+- [CookiePreferences](/docs/components/cookie-preferences) — the GDPR counterpart
+- [Reopening the preferences dialog](/docs/reopening-preferences) — build your own trigger for this dialog, not just the ready-made recall button
+- [Configuration](/docs/getting-started/configuration) — `region` and `honorGpc`

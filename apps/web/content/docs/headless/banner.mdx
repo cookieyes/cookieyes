@@ -1,0 +1,169 @@
+---
+title: Banner
+description: Headless banner primitive.
+---
+
+## When to use it
+
+Use `Banner.*` when your design system needs markup that [`CookieBanner`](/docs/components/cookie-banner) does not produce. You get identical behaviour and the same part attributes, with your elements and classes.
+
+If you only need different colors, fonts, or spacing, style the preset instead — see [Custom CSS](/docs/styling/custom-css). Read [Overview](/docs/headless/overview) first for `asChild` and the shared prop conventions.
+
+## Basic usage
+
+```tsx title="components/ConsentBanner.tsx"
+"use client";
+
+import { Banner } from "@cookieyes/react";
+
+export function ConsentBanner() {
+  return (
+    <Banner.Root className="ds-banner">
+      <Banner.Title className="ds-heading" />
+      <Banner.Description className="ds-body" />
+      <Banner.Actions className="ds-actions">
+        <Banner.AcceptAll className="ds-btn-primary" />
+        <Banner.RejectAll className="ds-btn-ghost" />
+        <Banner.OpenPreferences className="ds-link" />
+      </Banner.Actions>
+    </Banner.Root>
+  );
+}
+```
+
+## Options
+
+Every slot forwards a ref and spreads native props for the element it renders.
+
+| Slot | Renders | Part | Behaviour |
+| --- | --- | --- | --- |
+| `Banner.Root` | `<div>` | `banner` | Visibility, portal into `<body>`, theme variables. Returns `null` when hidden |
+| `Banner.Title` | `<p>` | `title` | Translated `bannerTitle` |
+| `Banner.Description` | `<p>` | `description` | Translated `bannerDescription` |
+| `Banner.Actions` | `<div>` | `actions` | Layout container only |
+| `Banner.AcceptAll` | `<button>` | `accept-all` | Grants every category |
+| `Banner.RejectAll` | `<button>` | `reject-all` | Denies every non-required category |
+| `Banner.OpenPreferences` | `<button>` | `customise` | Opens the preferences dialog |
+| `Banner.Close` | `<button>` | `close` | **Grants every category** — see the warning below |
+| `Banner.DoNotSell` | `<button>` | `do-not-sell` | Opens the CCPA opt-out dialog |
+| `Banner.Branding` | `<a>` | `branding` | "Powered by" link |
+
+Shared props on every slot:
+
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `children` | `ReactNode` | No | translated text | Replaces default content |
+| `className` | `string` | No | — | Applied to the element |
+| `asChild` | `boolean` | No | `false` | Action slots only — render your own element |
+| `onClick` | `MouseEventHandler` | No | — | Chained **before** the slot's action |
+| `ref` | `Ref<Element>` | No | — | Forwarded to the DOM node |
+
+## Behaviour and trade-offs
+
+### `Banner.Root` is not optional
+
+It owns visibility. Without it, your banner renders unconditionally — including for visitors who already decided. It also portals into `document.body`, so the banner is never clipped by a parent's `overflow: hidden`, and applies the theme CSS variables the slots inherit.
+
+### Slot order and grouping are yours
+
+`Banner.Actions` is a plain container with a part attribute. You are free to omit it, nest slots differently, or interleave your own elements. Nothing depends on the tree shape.
+
+### `Close` accepts everything — it does not dismiss
+
+<Callout type="warn">
+  **`Banner.Close` calls `acceptAll()`.** Despite the name, it does not dismiss the banner without recording a decision — it grants every category, exactly as `Banner.AcceptAll` does. The only difference between the two is the part attribute and the default label. See `chain(onClick, acceptAll)` in the primitive's source.
+</Callout>
+
+This matters most if you are building your own banner. A close affordance that silently grants consent is **not valid consent under GDPR**, so under an opt-in regulation you should either omit `Close` entirely or pair it with an explicit `Banner.RejectAll` and make the accepting behaviour obvious to the visitor.
+
+`Close` exists for the opt-out model, where the preset only renders it under CCPA (`CookieBanner` gates it on the regulation). Under an opt-out regime the visitor's categories already start granted, so closing changes nothing about their state and is a legitimate outcome.
+
+If you want a control that records a rejection, use `Banner.RejectAll`. If you want one that genuinely records nothing, there is no primitive for that — leaving the banner untouched is the only way to leave consent unrecorded, which is why the preset offers no dismiss under GDPR.
+
+### Render `DoNotSell` conditionally
+
+Read `useRegulation()` and render `DoNotSell` under CCPA, `AcceptAll`/`RejectAll` otherwise. The preset does exactly this. Rendering all of them at once produces a banner that makes sense under neither regime.
+
+### Text is automatic
+
+Every text slot pulls the active language's string. Passing `children` overrides it — and opts that string out of translation, so do it only for text you translate yourself.
+
+## Complete example
+
+Regulation-aware, using a design system throughout:
+
+```tsx title="components/ConsentBanner.tsx"
+"use client";
+
+import { Banner, useRegulation } from "@cookieyes/react";
+import { Button } from "@/components/ui/button";
+
+export function ConsentBanner() {
+  const regulation = useRegulation();
+  const isCCPA = regulation === "CCPA";
+
+  return (
+    <Banner.Root>
+      <section
+        className="fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-xl border bg-white p-6 shadow-xl"
+        aria-labelledby="consent-title"
+      >
+        <Banner.Title id="consent-title" className="text-lg font-semibold" />
+        <Banner.Description className="mt-2 text-sm text-slate-600" />
+
+        <Banner.Actions className="mt-4 flex flex-wrap gap-2">
+          {isCCPA ? (
+            <Banner.DoNotSell asChild>
+              <Button variant="primary">Do not sell my information</Button>
+            </Banner.DoNotSell>
+          ) : (
+            <>
+              <Banner.AcceptAll asChild>
+                <Button variant="primary">Accept all</Button>
+              </Banner.AcceptAll>
+              <Banner.RejectAll asChild>
+                <Button variant="secondary">Reject all</Button>
+              </Banner.RejectAll>
+            </>
+          )}
+          <Banner.OpenPreferences asChild>
+            <Button variant="ghost">Customise</Button>
+          </Banner.OpenPreferences>
+        </Banner.Actions>
+
+        <Banner.Branding className="mt-3 block text-xs text-slate-400" />
+      </section>
+    </Banner.Root>
+  );
+}
+```
+
+## Common mistakes
+
+**The banner shows for visitors who already accepted.**
+You skipped `Banner.Root` or replaced it with your own wrapper.
+
+**Buttons render nested inside buttons.**
+Add `asChild` when passing a design-system component that renders its own `<button>`.
+
+**`Error: [cookieyes] \`asChild\` expects exactly one React element child.`**
+Text, a fragment, or multiple children. Wrap in exactly one element.
+
+**Clicking Customise does nothing.**
+[`CookiePreferences`](/docs/components/cookie-preferences) or your own `Preferences.Root` is not mounted. `OpenPreferences` only requests the dialog.
+
+**The banner appears behind a sticky header.**
+It portals to `<body>`, so this is a plain `z-index` conflict. Raise it on your own wrapper element.
+
+**Slots render empty.**
+You passed empty `children`. Omit the prop to get translated text.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core`, the equivalent is `consentStore` plus `consentManager.acceptAll()` / `rejectAll()` / `showPreferences()` — you own visibility and markup entirely.
+
+## See also
+
+- [Preferences](/docs/headless/preferences) — the dialog Customise opens
+- [OptOut](/docs/headless/opt-out) — the CCPA surface
+- [Overview](/docs/headless/overview) — `asChild` and the part contract

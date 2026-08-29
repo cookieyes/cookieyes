@@ -1,0 +1,258 @@
+---
+title: CookieBanner
+description: The consent banner shown on first visit.
+---
+
+## When to use it
+
+Render this once, near your app root, in every app that needs consent. It manages its own visibility: it shows only when a decision is genuinely needed and returns `null` otherwise, so you never guard it yourself.
+
+Do not use it if your design system demands markup this component does not produce — reach for the [`Banner` primitives](/docs/headless/banner) instead, which give you the same behaviour with your own elements. A visual change — colors, spacing, wording — almost never requires that step; see [Restyling: start here](#restyling-start-here) before you reach for the primitives.
+
+Under `regulation: "CCPA"` the banner renders a **Do Not Sell** action instead of Accept/Reject, because CCPA is an opt-out regime. See [GDPR vs CCPA, side by side](#gdpr-vs-ccpa-side-by-side) for the full comparison.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
+
+export function CookieYesRoot() {
+  return <CookieBanner />;
+}
+```
+
+## Options
+
+<ComponentPropsTable component="CookieBanner" />
+
+`className` and `style` target the whole banner card. `classNames` and `styles` go further — each is a map from a part name (see [Parts](#parts) below) to a class or an inline style, so you can restyle one button or the description text without touching the rest. All four merge with our own defaults rather than replacing them; see [`className` is additive, not a replacement](#classname-is-additive-not-a-replacement) below for why that is safe to rely on.
+
+Everything else about the banner — text, colors, position, which buttons appear — is driven by [configuration](/docs/getting-started/configuration), not props, so it stays consistent across every surface the SDK renders.
+
+### What's configured elsewhere
+
+The banner's props control its own markup only. Everything else comes from [`initCookieYes()`](/docs/getting-started/configuration):
+
+- **Wording and translations** — [Translations](/docs/translations)
+- **Colours and theme** — [Theme tokens](/docs/styling/theme-tokens)
+- **Which privacy law applies** — [`regulation`](/docs/getting-started/configuration#choosing-a-privacy-law--the-regulation-option)
+- **Which categories exist** — [Consent categories](/docs/getting-started/configuration#consent-categories)
+
+Set these once, in the config object, and every surface the SDK renders — not just the banner — stays consistent with them.
+
+### What's not configurable yet
+
+Two things have no prop or config key today, and this is an acknowledged gap, not an oversight:
+
+- **Button order.** Under GDPR/DEFAULT the order is always Customise, Reject All, Accept All. There is no way to rearrange them without moving to the [primitives](/docs/headless/banner).
+- **Which button is visually primary.** Reject All and Accept All currently render with the same button styling — there is no built-in way to make one more visually prominent than the other.
+
+If either blocks you, the primitives give you full control over order and emphasis in the meantime.
+
+### Parts
+
+Target these in CSS with `[data-cy-part="..."]`. See the [part & state contract](/docs/styling/part-and-state-contract).
+
+| Part | Element |
+| --- | --- |
+| `banner` | The banner root |
+| `title` | Heading text |
+| `description` | Body text |
+| `actions` | Button container |
+| `accept-all` | Accept All button |
+| `reject-all` | Reject All button |
+| `customise` | Opens the preferences dialog |
+| `do-not-sell` | CCPA-only opt-out action |
+| `close` | Close button |
+| `branding` | "Powered by" link |
+
+## Behaviour and trade-offs
+
+### Restyling: start here
+
+Reach for these in order — each is more powerful, and more work, than the one before it:
+
+1. **Theme settings first.** Most rebrands are a color, a radius, and a font — [`theme`](/docs/styling/theme-tokens) covers exactly that, applies to every surface the SDK renders (not just the banner), and needs no CSS at all.
+2. **`className` / `style`.** Reach for these for something theme tokens don't expose on the card as a whole — a shadow, a max-width, a specific spacing value.
+3. **`classNames` / `styles` per part.** Use these when the change is scoped to one piece, like the Accept All button or the description text, rather than the whole card.
+4. **Part-targeting CSS.** For anything that reads better as a stylesheet than as inline React props — media queries, pseudo-classes, animations — target [`data-cy-part`](/docs/styling/part-and-state-contract) directly.
+5. **Build your own, on the [`Banner` primitives](/docs/headless/banner).** Reach for this only when your design system demands markup the preset does not produce.
+
+At every one of the first four levels, a class or style you pass **always wins** — see the next section. You never need `!important`; needing it is a sign you skipped a level, not that the SDK is fighting you.
+
+### `className` is additive, not a replacement
+
+The banner keeps its `cy-banner` class and appends yours. This is deliberate: the layout, positioning, and animation rules live on `cy-banner`, so replacing it would break the banner rather than restyle it. If you want to own the markup completely, use the primitives.
+
+Our rules are almost all single classes — specificity `0,1,0` — and the stylesheet contains no `!important` anywhere. Descendant resets are wrapped in `:where()`, which contributes zero specificity, so those never fight you.
+
+That means a class you pass **ties** with ours rather than beating it, and a tie is settled by source order. Import your own stylesheet **after** `@cookieyes/react/styles.css` and your rule wins; import it before and ours does. If you cannot control the order, add one level of specificity — an ancestor selector, or doubling the class — rather than reaching for `!important`. See [Part and state contract](/docs/styling/part-and-state-contract#your-rule-wins-without-forcing-it).
+
+### Visibility is not yours to control
+
+There is no `open` prop. The banner is visible whenever the visitor has not yet acted and neither dialog is open — `!hasActed && !isPreferencesOpen && !isOptOutOpen`. That rule is the same under every regulation: nothing hides the banner based on the visitor's region or which privacy law applies. To reopen consent after a decision, render [`RecallButton`](/docs/components/recall-button) — that is what it is for.
+
+Once the visitor acts, that choice is written to the `cookieyes-consent` cookie, and `hasActed` reads from it — so the banner does not reappear on a later visit in the same browser, as long as the cookie survives. The recall widget takes over from there: it stays hidden until the visitor acts, then becomes the way back in — except under CCPA, where it is visible immediately, before any decision, because Do Not Sell is meaningful even to a visitor who has not yet acted.
+
+### GDPR vs CCPA, side by side
+
+The banner renders different markup depending on `regulation` — not just different text.
+
+| | GDPR / DEFAULT | CCPA |
+| --- | --- | --- |
+| Buttons | Customise, Reject All, Accept All | Do Not Sell |
+| Close button | Never rendered | Rendered |
+| Description text | Standard wording | CCPA-specific wording |
+| Non-required categories, before the visitor acts | Off (opt-in) | On (opt-out) |
+
+**Why the close button is CCPA-only.** [`Banner.Close`](/docs/headless/banner#close-accepts-everything--it-does-not-dismiss) calls `acceptAll()` — despite its name, it grants every category rather than dismissing anything unrecorded. Under GDPR that would not be valid consent: a visitor who closes the banner without choosing has not agreed to anything, so no control that grants consent may masquerade as a neutral dismissal. Under CCPA the categories already start granted before the visitor does anything, so closing changes nothing about their state — a legitimate, honest outcome. `CookieBanner` renders `Banner.Close` only when `isCCPA` is true, for exactly this reason.
+
+**CCPA requires a second component.** The Do Not Sell button opens the opt-out dialog — mount [`CookieOptOut`](/docs/components/cookie-opt-out) alongside the banner, or the button opens nothing:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookieOptOut, initCookieYes } from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "CCPA" });
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      {/* Required under CCPA — Do Not Sell opens this dialog. */}
+      <CookieOptOut />
+    </>
+  );
+}
+```
+
+Some consent tools show no banner at all under a California configuration, relying on a passive privacy-policy link instead. This SDK shows one either way — the content changes, the presence does not.
+
+### It renders through a portal
+
+The banner mounts into `document.body` via `createPortal`, so it is not clipped by a parent's `overflow: hidden` and does not inherit stacking context from wherever you placed it. Practically, this means where you render `<CookieBanner />` in your tree does not affect where it appears on screen.
+
+During server rendering React cannot portal, so the banner is server-rendered inline and re-parented into `<body>` after hydration. The component suppresses the entry animation on that re-parent, so visitors do not see it fade in twice on a slow device.
+
+### Performance: what shipping this banner costs
+
+**It arrives already built.** The banner renders as part of the page's initial HTML — [server-rendered inline, then re-parented into `<body>` after hydration](#it-renders-through-a-portal) — rather than being assembled by the browser afterwards. A visitor sees the real banner on first paint, not a loading state that resolves into one.
+
+**It never pushes your content around.** `.cy-banner` is `position: fixed` (defined in `cookieyes.css`), so showing or hiding it never reflows the page — it overlays, it does not occupy space in your layout.
+
+**Network requests depend on `mode`, not on the banner.** In `mode: "cookie-only"`, the banner — and everything else the SDK does — makes **zero** network requests, ever. In `mode: "self-hosted"`, exactly one fire-and-forget `POST` fires when the visitor accepts, rejects, or saves a choice — never on page load, and never speculatively.
+
+This matters because a consent banner is often the first interactive thing on a page: one that costs a layout shift or a blocking request works against the same metrics your site is trying to protect. See [Rendering & selector contract](/docs/rendering-and-selector-contract) for the full picture of where and when the SDK renders.
+
+### Accessibility: what this banner guarantees
+
+**It announces itself.** A visually-hidden `aria-live="assertive"` region announces the banner's title when it appears, so a screen-reader visitor is told a decision is needed even without looking at the screen. See [Accessibility](/docs/accessibility) for the SDK-wide guarantee table this is one row of.
+
+**The announcement is deliberately delayed.** It fires 700ms after the banner becomes visible, not immediately. Right after a page loads, screen readers are typically still announcing the page navigation itself, and a live-region update made in that window is commonly dropped rather than queued — the delay gives that announcement room to finish first.
+
+**It is a dialog, but not a focus trap.** The banner has `role="dialog"` and `aria-modal="false"` — deliberately not `"true"`. Unlike [`CookiePreferences`](/docs/components/cookie-preferences) and [`CookieOptOut`](/docs/components/cookie-opt-out), which both trap focus while open, the banner never blocks a keyboard user from tabbing past it into the page.
+
+**Its accessible label comes from your translations.** The banner's `aria-label` is the same `bannerTitle` string [`Banner.Title`](/docs/headless/banner) renders, so translating it updates the accessible name along with the visible text, in every language you configure. See [Translations](/docs/translations).
+
+### If you build your own
+
+If you rebuild the banner on the [`Banner` primitives](/docs/headless/banner) instead of using this preset, two things are yours to preserve:
+
+**`Banner.Close` grants consent — it does not dismiss.** Despite the name, it calls `acceptAll()`, exactly like `Banner.AcceptAll`. This preset only ever renders it under CCPA, for the reason explained in [GDPR vs CCPA, side by side](#gdpr-vs-ccpa-side-by-side) above. Read the [full warning on the primitives page](/docs/headless/banner#close-accepts-everything--it-does-not-dismiss) before adding a close control under an opt-in regulation.
+
+**You take on everything in [Accessibility](#accessibility-what-this-banner-guarantees) above.** `Banner.Root` gives you visibility, the portal, and theme variables — but the live-region announcement and its delay, the non-trapping dialog role, and the translated accessible label are markup this preset adds on top. Read [Accessibility](/docs/accessibility) for the complete guarantee before deciding what to reproduce.
+
+## Verify it works
+
+1. **The banner appears** on a fresh browser profile, before you interact with anything.
+2. **The right buttons show for your `regulation`** — Customise/Reject All/Accept All under GDPR or DEFAULT, Do Not Sell under CCPA.
+3. **A choice sticks** — accept, reject, or save, reload the page, and the banner stays gone.
+4. **It is screen-reader accessible** — Tab past it without getting stuck, and confirm a screen reader announces it shortly after it appears.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| Banner never appears | You already acted in this browser | Clear the `cookieyes-consent` cookie, or call `useConsentActions().reset()` |
+| Banner never appears, and there is no error anywhere | `initCookieYes()` and `<CookieBanner />` are not in the same `"use client"` module — this fails silently, not loudly | See [the rule that breaks most first setups](/docs/getting-started/configuration#the-rule-that-breaks-most-first-setups) |
+| Banner is completely unstyled, no error anywhere | Missing `import "@cookieyes/react/styles.css";` | Import it once at your app root |
+| Accept All / Reject All missing, Do Not Sell shows instead | `regulation: "CCPA"` — this is correct, not a bug | See [GDPR vs CCPA, side by side](#gdpr-vs-ccpa-side-by-side) |
+| Do Not Sell button does nothing | `<CookieOptOut />` is not mounted | Mount it alongside the banner |
+| Banner flashes then vanishes on every load | No `initialConsent` passed on the server | Pass it via `CookieYesProvider` — see [Rendering & selector contract](/docs/rendering-and-selector-contract) |
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import {
+  CookieBanner,
+  CookiePreferences,
+  RecallButton,
+  initCookieYes,
+} from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  colorScheme: "system",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+  },
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner className="shadow-2xl" />
+      <CookiePreferences />
+      <RecallButton />
+    </>
+  );
+}
+```
+
+```css title="app/consent.css"
+/* Restyle without replacing the component */
+[data-cy-part="banner"] {
+  max-width: 32rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+```
+
+## Common mistakes
+
+**The banner never renders, and there is no error anywhere.**
+`<CookieBanner />` rendered before `initCookieYes()` ran. This fails silently: `CookieBanner` reads the runtime through a non-throwing accessor, so a missing runtime never crashes the render — it just renders nothing. Both must be in the same `"use client"` module, with the config at module scope. You will only see `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.` thrown from code that calls `getCookieYes()` or `useConsentRuntime()` directly.
+
+**The banner never appears.**
+You already made a decision in this browser. Clear the `cookieyes-consent` cookie, or call `useConsentActions().reset()`.
+
+**The banner appears and instantly disappears on every page load.**
+Server-rendered for everyone, then removed on the client. Pass `initialConsent` via `CookieYesProvider` — see [Rendering & selector contract](/docs/rendering-and-selector-contract).
+
+**Accept All and Reject All are missing; there is a "Do Not Sell" link instead.**
+You are in `regulation: "CCPA"`. That is correct — CCPA is opt-out, so there is nothing to accept.
+
+**The banner is unstyled.**
+Missing `import "@cookieyes/react/styles.css";`.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. `@cookieyes/core` has no UI — build your own against `consentStore`, or use the primitives in a React app.
+
+## See also
+
+- [CookiePreferences](/docs/components/cookie-preferences) — the dialog the Customise button opens
+- [Banner primitives](/docs/headless/banner) — the same behaviour with your own markup
+- [Part & state contract](/docs/styling/part-and-state-contract) — every selector you can target

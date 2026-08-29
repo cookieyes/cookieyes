@@ -1,0 +1,245 @@
+---
+title: ReloadNotice
+description: Prompt for a reload when a consent change needs one.
+---
+
+## When to use it
+
+Mount this if you gate `tiktok`, `linkedin` or `hotjar` through the legacy `builtInIntegrations` option, or if you've registered any of your own tools as needing a refresh via `registerStopHandler`. Those tools have no confident, documented way to stop cleanly at runtime, so withdrawing consent for them can only be fully applied by reloading, and this component is what tells the visitor that.
+
+Some third-party code cannot be unloaded once it has run — it has patched globals, opened sockets, or registered listeners you cannot reach. Without this notice, a visitor who withdraws consent keeps being tracked until they happen to navigate, which is the compliance gap it closes.
+
+You do not need it if every tool you load has a clean stop handler, or if you set `reloadOnRevoke: true` and are willing to reload without asking. This component is the gentler option: it never reloads on its own.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookiePreferences, ReloadNotice, initCookieYes } from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <ReloadNotice />
+    </>
+  );
+}
+```
+
+## Options
+
+`ReloadNotice` takes **no props**. Its visibility, text, and behaviour all come from runtime state and translations, so it stays consistent with the rest of the SDK.
+
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| — | — | — | — | This component accepts no props |
+
+### Parts
+
+| Part | Element |
+| --- | --- |
+| `reload-notice` | The notice root |
+| `reload-message` | Message text |
+| `reload-dismiss` | Dismiss button |
+
+Text comes from the `reloadNotice.*` translation keys — `message`, `reloadButton`, `dismissButton`.
+
+## Behaviour and trade-offs
+
+### Which tools need this, and which don't
+
+Four vendors are modelled as **reload-only** in the legacy `builtInIntegrations` path — `tiktok`, `linkedin`, `hotjar` and `segment`. Any tool you register yourself with `needsReload: true` (see below) joins them.
+
+<Callout type="warn">
+  **`segment` is only reload-only on the legacy path.** `@cookieyes/scripts` ships a Segment preset whose `onRevoke` is `"remove"` — it deletes the script tag and clears Segment's own identifiers, a genuine clean stop that needs no reload and shows no notice. If you are gating Segment, use that preset through the `integrations` option rather than `builtInIntegrations`, which is deprecated and warns on use. See [GatedScript vs the integrations route](/docs/components/gated-script) for the comparison.
+</Callout>
+
+**Why exactly these four.** It is not because they behave badly. It's the honest, narrower claim: nobody has found and documented a confident runtime opt-out for them. `meta` is the one *built-in* vendor with a **verified clean stop** — it calls `fbq('consent', 'revoke')` / `fbq('consent', 'grant')`, Meta's own consent API — so revoking its category stops it in place, with no reload and no notice. Both `meta` and `segment` also have `@cookieyes/scripts` presets, which is the route to prefer for either.
+
+**This list can shrink.** If a vendor later publishes a proper stop method, moving it off the reload-only list is a small, one-line change (`resolveBuiltInIntegration` in `@cookieyes/core`) — nothing structural. Nothing here is permanent by design.
+
+**Google Analytics and Google Tag Manager are not part of this system at all.** They're not on the reload-only list, and they're not a `meta`-style clean stop either — they're governed entirely by Google Consent Mode v2, which this SDK broadcasts automatically whenever a `dataLayer` is present on the page. There is no stop handler to register and no reload to trigger for them; the signal update is Google's own responsibility to react to.
+
+`required` becomes true only when a revoked tool registered a **reload-only** handler — the shape `{ id, category, needsReload: true }` — meaning it declared it cannot stop cleanly. Tools with a working `stop()` are stopped in place and never trigger the notice. Revoking a category whose tools all stop cleanly shows nothing.
+
+`reasons` lists the handler ids that triggered it, e.g. `["hotjar"]`, which is useful when debugging why the notice appeared.
+
+There are two ways a reload-only handler gets registered:
+
+- **Built-in vendors**, via the four listed above.
+- **Your own**, via `registerStopHandler` from `@cookieyes/core`. The config's `customStopHandlers` key is typed for clean-stop handlers, so a reload-only marker goes through that function directly:
+
+```ts title="app/cookieyes.tsx"
+import { registerStopHandler } from "@cookieyes/core";
+
+registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+```
+
+<Callout type="info">
+  A `stop()` that **throws** is treated as "could not be stopped cleanly" and falls back to the reload notice for that one tool. It never breaks the page — see "The unexpected extra trigger" below.
+</Callout>
+
+### It appears only when a reload is genuinely needed
+
+The notice appears **only on a genuine grant→deny transition** — a category that was previously granted and is then turned off. Two situations that look similar do **not** trigger it, and getting this distinction wrong is the most common false bug report about this component:
+
+- **A first-time rejection never triggers it.** If a visitor rejects a category they had never granted, nothing was running, so there is nothing to stop and nothing to reload for.
+- **A returning visitor's standing rejection never triggers it.** Loading the page with a category already denied from a prior visit is not a transition — `initStopHandlers` only seeds internal state from the stored decision and explicitly never raises the notice at load.
+
+It **never appears on page load**, for the same reason. It renders nothing at all — not even an empty container — until a real transition needs it.
+
+There's also one way to trigger the notice for a tool that isn't on the built-in list at all:
+
+**The unexpected extra trigger.** A handler that is registered as a clean stop (via `customStopHandlers`, with a real `stop()`) but whose `stop()` **throws** when called is downgraded to needing a refresh for that one revoke — the notice can appear for a tool you registered as clean-stop, not just for the four reload-only vendors.
+
+The underlying state names which tool(s) triggered it — `reasons`, e.g. `["hotjar"]` — which is useful when confirming which tool caused an appearance during testing.
+
+### Dismissing is sticky until a new revoke
+
+Once dismissed it will not reappear for the same revoke. A genuinely new revocation that needs a reload shows it again.
+
+### It never reloads on its own
+
+The visitor stays in control. It invites a refresh and **never performs one automatically**. The notice offers a Reload button and a Dismiss button; nothing happens until one is pressed.
+
+It is announced to screen readers immediately on appearance (`role="alert"`), and both buttons are reachable by keyboard like any other native `<button>`.
+
+If you want an automatic reload instead, the separate, legacy `reloadOnRevoke: true` config option forces a full page reload on withdrawal. It is **off by default**, and the recommendation is against turning it on: it discards whatever the visitor was in the middle of doing — an unsaved form, scroll position, in-progress input — with no chance to decline. `ReloadNotice` exists specifically as the alternative that keeps the visitor in control; pick one or the other, not both.
+
+### Customising it
+
+For different wording, override the `reloadNotice.*` translation keys — `message`, `reloadButton`, and `dismissButton` — all three are translatable, per language, the same way as every other `TranslationMap` key.
+
+For different markup, read the same state with `useReloadNotice()` and render your own — the hook returns `required`, `reasons`, and `dismiss`.
+
+```tsx title="app/CustomReloadNotice.tsx"
+"use client";
+
+import { useReloadNotice } from "@cookieyes/react";
+
+export function CustomReloadNotice() {
+  const { required, reasons, dismiss } = useReloadNotice();
+  if (!required) return null;
+  return (
+    <div role="alert">
+      <p>Reload to finish applying your privacy choices. ({reasons.join(", ")})</p>
+      <button type="button" onClick={() => window.location.reload()}>
+        Reload
+      </button>
+      <button type="button" onClick={dismiss}>
+        Dismiss
+      </button>
+    </div>
+  );
+}
+```
+
+## Verify it works
+
+Testing this component is easy to get wrong in one specific way: rejecting a category for the first time and expecting to see the notice. That is not how it triggers — follow this sequence instead.
+
+1. **Accept the relevant category** (e.g. `analytics`, for a `hotjar`-gated tool) so the tool actually starts running.
+2. **Reload the page** so the tool is genuinely active in this page load, not just registered.
+3. **Withdraw that same category.** The notice should now appear, announced to a screen reader, with a working Reload button and a working Dismiss button.
+4. **Dismiss it, then withdraw again on a fresh reload** — it should reappear, because dismissal is scoped to one revoke, not to the tool forever.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| I rejected a category for the first time and saw nothing | **This is correct behaviour, not a fault.** The tool was never running, so there's nothing to stop and nothing to reload for | Follow the accept → reload → withdraw sequence above to actually trigger it |
+| The notice never appears when revoking consent | Nothing declared itself reload-only for that category, or you never completed the accept → reload → withdraw sequence | Confirm the tool is one of `tiktok`/`linkedin`/`hotjar`/`segment`, or is registered via `customStopHandlers`/`registerStopHandler` |
+| The page reloads immediately without showing the notice | `reloadOnRevoke: true` is set in config — that bypasses the notice entirely | Pick one or the other, not both |
+| The notice reappears constantly, without visitor action | A stop handler is being re-registered on every render | Register handlers once, e.g. at module scope or in `initCookieYes()`'s config, not inside a component body |
+| Custom wording does not apply | The keys are nested under `reloadNotice`, not top-level | Set `i18n.messages.en.reloadNotice.message`, not `i18n.messages.en.message` |
+
+## Complete example
+
+{/* check="false": window.Intercom is Intercom's own global, not part of the SDK's typed surface. */}
+
+```tsx title="app/cookieyes.tsx" check="false"
+"use client";
+
+import {
+  CookieBanner,
+  CookiePreferences,
+  GatedScript,
+  RecallButton,
+  ReloadNotice,
+  initCookieYes,
+} from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  // A tool that CAN stop cleanly declares stop() — it never triggers the notice.
+  customStopHandlers: [
+    {
+      id: "intercom",
+      category: "functional",
+      stop: () => window.Intercom?.("shutdown"),
+      resume: () => window.Intercom?.("boot"),
+    },
+  ],
+  i18n: {
+    locale: "en",
+    messages: {
+      en: {
+        reloadNotice: {
+          message: "Reload the page to finish applying your new privacy choices.",
+          reloadButton: "Reload now",
+          dismissButton: "Later",
+        },
+      },
+    },
+  },
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+      <ReloadNotice />
+      <GatedScript
+        id="hotjar"
+        src="https://static.hotjar.com/c/hotjar-1234567.js"
+        category="analytics"
+      />
+    </>
+  );
+}
+```
+
+## Common mistakes
+
+**The notice never appears when revoking consent.**
+Nothing declared itself reload-only. Either every revoked tool stopped cleanly, or you have not registered a `customStopHandlers` entry for the tool that cannot. The notice is state-driven, not a general "consent changed" toast.
+
+**The page reloads immediately without showing the notice.**
+`reloadOnRevoke: true` is set in config. That bypasses the notice entirely — pick one or the other.
+
+**The notice reappears constantly.**
+Each genuinely new revoke that needs a reload shows it again. If it is firing repeatedly without visitor action, check that a stop handler is not being registered on every render.
+
+**Custom wording does not apply.**
+The keys are nested under `reloadNotice`, not top-level: `i18n.messages.en.reloadNotice.message`.
+
+**The notice is announced twice by a screen reader.**
+It carries `role="alert"`. If you also wrap it in your own live region, remove yours.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core` the same state is on `consentManager.reloadNotice` (`{ required, reasons }`) with `consentManager.dismissReloadNotice()`, so any framework can render an equivalent notice. Stop handlers are registered through `registerStopHandler` from core, which is what the `customStopHandlers` config key calls.
+
+## See also
+
+- [GatedScript](/docs/components/gated-script) — why revoking cannot unload a script
+- [Configuration](/docs/getting-started/configuration) — `customStopHandlers` and `reloadOnRevoke`
+- [Low-level hooks](/docs/hooks/low-level-hooks) — `useReloadNotice` for a custom notice

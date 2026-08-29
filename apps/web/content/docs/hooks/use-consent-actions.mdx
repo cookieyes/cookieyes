@@ -1,0 +1,168 @@
+---
+title: useConsentActions
+description: Accept, reject, and update consent.
+---
+
+## When to use it
+
+Use this to build your own consent controls: a footer "Cookie settings" link, a custom banner's buttons, a "reset consent" button in a dev panel.
+
+You do not need it with the styled components or the primitives — [`Banner.AcceptAll`](/docs/headless/banner) and friends already call these actions. Reach for the hook when you are building a trigger the SDK does not provide.
+
+To *read* consent, pair this with [`useConsent()`](/docs/hooks/use-consent). This hook only writes; it does not subscribe to changes, so it never causes a re-render.
+
+## Basic usage
+
+```tsx title="components/CookieSettingsLink.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+export function CookieSettingsLink() {
+  const { showPreferences } = useConsentActions();
+
+  return (
+    <button type="button" className="footer-link" onClick={() => showPreferences()}>
+      Cookie settings
+    </button>
+  );
+}
+```
+
+## Options
+
+`useConsentActions()` takes **no arguments** and returns `ConsentActions`:
+
+| Action | Signature | Commits? | Description |
+| --- | --- | --- | --- |
+| `acceptAll` | `() => void` | Yes | Grants every category and saves |
+| `rejectAll` | `() => void` | Yes | Denies every non-required category and saves |
+| `acceptSelected` | `(categories: ConsentCategory[]) => void` | Yes | Grants exactly this list, denies the rest, saves |
+| `save` | `() => void` | Yes | Commits the current live values |
+| `updateCategory` | `(category: ConsentCategory, value: boolean) => void` | **No** | Sets a live value only |
+| `reset` | `() => void` | Yes | Clears the decision — the banner shows again |
+| `showPreferences` | `() => void` | — | Opens the preferences dialog |
+| `hidePreferences` | `() => void` | — | Closes it |
+| `showOptOut` | `() => void` | — | Opens the CCPA opt-out dialog |
+| `hideOptOut` | `() => void` | — | Closes it |
+
+## Behaviour and trade-offs
+
+### `updateCategory` does not save
+
+It writes the **live** value — the same thing a dialog toggle does. Nothing is committed until `save()`. A custom dialog therefore needs `updateCategory` for each toggle *and* a `save()` on its confirm button. Call only `updateCategory` and the visitor's choices silently evaporate.
+
+For a one-shot write that commits immediately, use `acceptSelected([...])` instead.
+
+### `acceptSelected` is exhaustive
+
+It grants the ids you pass and **denies everything else**. It is not additive. To grant analytics while keeping existing choices, read the current committed state, merge, and pass the full list:
+
+```tsx title="Merging with existing consent"
+const { committedCategories } = useConsent();
+const { acceptSelected } = useConsentActions();
+
+const granted = Object.entries(committedCategories)
+  .filter(([, v]) => v)
+  .map(([id]) => id);
+
+acceptSelected([...new Set([...granted, "analytics"])]);
+```
+
+### `showPreferences` and `showOptOut` remember focus
+
+Both record the currently focused element before opening, so focus returns there on close. Calling `runtime.manager.showPreferences()` directly through [`useConsentRuntime()`](/docs/hooks/low-level-hooks) skips that — use this hook for anything a visitor triggers.
+
+### `reset` is a genuine reset
+
+It clears the recorded decision entirely, so the banner reappears as if for a first-time visitor. Useful in a dev panel and for a "withdraw all consent" control. It does not unload anything already running — see [ReloadNotice](/docs/components/reload-notice).
+
+### The actions are stable, and no-ops before mount
+
+The returned object is memoised on the runtime, so it is safe in a `useEffect` dependency array. Before `initCookieYes()` has registered a runtime — during SSR, for instance — every action is a silent no-op rather than a throw, so a server-rendered button will not crash the render.
+
+## Complete example
+
+A complete custom banner built on the two hooks:
+
+```tsx title="components/CustomBanner.tsx"
+"use client";
+
+import { useCategories, useConsent, useConsentActions } from "@cookieyes/react";
+
+export function CustomBanner() {
+  const { hasActed, categories } = useConsent();
+  const { acceptAll, rejectAll, updateCategory, save } = useConsentActions();
+  const { list, requiredIds } = useCategories();
+
+  if (hasActed) return null;
+
+  return (
+    <div role="dialog" aria-label="Cookie consent" className="banner">
+      <h2>We use cookies</h2>
+
+      {list.map((cat) => {
+        const required = requiredIds.has(cat.id);
+        return (
+          <label key={cat.id}>
+            <input
+              type="checkbox"
+              checked={required || categories[cat.id] === true}
+              disabled={required}
+              onChange={(e) => updateCategory(cat.id, e.target.checked)}
+            />
+            {cat.label ?? cat.id}
+          </label>
+        );
+      })}
+
+      <div className="actions">
+        <button type="button" onClick={rejectAll}>
+          Reject all
+        </button>
+        <button type="button" onClick={acceptAll}>
+          Accept all
+        </button>
+        {/* Without this, every toggle above is discarded. */}
+        <button type="button" onClick={save}>
+          Save my choices
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+<Callout type="warn">
+  This example reimplements markup, focus handling, and ARIA that [`Banner` primitives](/docs/headless/banner) provide for free. Prefer the primitives unless you genuinely need something they cannot express.
+</Callout>
+
+## Common mistakes
+
+**Toggles work in the UI but nothing persists.**
+`updateCategory` without `save()`. Add a save action.
+
+**Granting one category silently revoked the others.**
+`acceptSelected` is exhaustive. Merge with the current committed state first.
+
+**Focus jumps to the top of the page when a dialog closes.**
+You opened it via the low-level runtime instead of `showPreferences()`, so no focus was remembered.
+
+**`showPreferences()` does nothing.**
+[`CookiePreferences`](/docs/components/cookie-preferences) or your own `Preferences.Root` is not mounted. The action only sets state.
+
+**Buttons do nothing and there is no error.**
+No runtime is registered yet, so the actions are no-ops. Check that `initCookieYes()` runs in a `"use client"` module.
+
+**The banner will not come back for testing.**
+Call `reset()`, or clear the `cookieyes-consent` cookie.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. The hook is a thin wrapper over `consentManager`, so in `@cookieyes/core` the same actions are `consentManager.acceptAll()`, `.rejectAll()`, `.acceptSelected()`, `.updateCategory()`, `.savePreferences()`, `.resetConsent()`, `.showPreferences()`, `.hidePreferences()`. Note `save` here maps to `savePreferences` and `reset` to `resetConsent`.
+
+## See also
+
+- [useConsent](/docs/hooks/use-consent) — read the state these actions change
+- [Banner primitives](/docs/headless/banner) — the actions already wired to accessible markup
+- [Low-level hooks](/docs/hooks/low-level-hooks) — direct runtime access

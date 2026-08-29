@@ -1,0 +1,206 @@
+---
+title: Low-level hooks
+description: Escape hatches for wiring the core engine directly.
+---
+
+## When to use it
+
+Reach for these only when [`useConsent()`](/docs/hooks/use-consent), [`useConsentActions()`](/docs/hooks/use-consent-actions), and the [focused hooks](/docs/hooks/focused-hooks) genuinely cannot express what you need — a debug panel listing integration status, a test harness, or an imperative call outside React.
+
+For everything else these are the wrong tool. They bypass conveniences the higher-level hooks provide (notably focus tracking), they expose surface that can change, and they make components harder to test.
+
+<Callout type="warn">
+  `getCookieYes()` **throws** when no runtime is registered. The hooks return safe defaults instead. Prefer the hooks inside React.
+</Callout>
+
+## Basic usage
+
+```tsx title="components/ConsentDebugPanel.tsx"
+"use client";
+
+import { useConsentRuntime } from "@cookieyes/react";
+
+export function ConsentDebugPanel() {
+  const runtime = useConsentRuntime();
+  const integrations = runtime.getIntegrations();
+
+  return (
+    <ul>
+      {integrations.map((i) => (
+        <li key={i.id}>
+          {i.id}: {i.status}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Options
+
+### `useConsentRuntime()`
+
+Takes no arguments. Returns `CookieYesRuntime`:
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `manager` | `ConsentManager` | The full manager — every action plus current state |
+| `getSnapshot` | `() => CookieYesSnapshot` | Current snapshot, imperatively |
+| `getServerSnapshot` | `() => CookieYesSnapshot` | The SSR snapshot |
+| `subscribe` | `(listener: () => void) => () => void` | Low-level change subscription |
+| `getIntegrations` | `() => IntegrationDebugInfo[]` | Config and live status per script integration |
+| `translations` | `TranslationMap` | Active-language text |
+| `getLanguageInfo` | `() => LanguageInfo` | Active language and direction |
+
+### Module-level registry
+
+Not hooks — call these outside React.
+
+| Function | Signature | Description |
+| --- | --- | --- |
+| `getCookieYes()` | `() => CookieYesRuntime` | The registered runtime. **Throws** if none is registered |
+| `resetCookieYes()` | `() => void` | Clears the registry. For tests |
+| `initCookieYes(config)` | `(config: CookieYesConfig) => void` | Registers the runtime |
+
+### Config-level callbacks
+
+| Option | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `onConsentReady` | `(state: ConsentSnapshot) => void` | No | — | Fires once, after initial state is known |
+| `onConsentUpdate` | `(state: ConsentSnapshot) => void` | No | — | Fires on every saved change, for the config's lifetime |
+
+### Core store subscriptions
+
+| Method | Fires on | Notes |
+| --- | --- | --- |
+| `consentStore.on(type, listener, options?)` | Saved decisions | **The recommended API.** Includes the initial replay |
+| `consentStore.subscribe(listener)` | Every state change | Includes transient dialog toggles |
+| `consentStore.getState().subscribeToConsentChanges(listener)` | Saved changes only | Payload is `{ allowedCategories, deniedCategories }` |
+
+## Behaviour and trade-offs
+
+### `useConsentRuntime()` skips focus tracking
+
+`runtime.manager.showPreferences()` opens the dialog without recording which element had focus, so focus does not return there on close. `useConsentActions().showPreferences()` does record it. For anything a visitor triggers, use the action hook — this is an accessibility regression that is easy to introduce and hard to notice.
+
+### `getCookieYes()` throws, hooks do not
+
+```text title="Error output"
+Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
+```
+
+This is correct for module-level code that genuinely requires a runtime, and wrong inside a component, where it turns a missing config into a render crash. The hooks return safe defaults instead.
+
+### `subscribe` vs `on` vs `subscribeToConsentChanges`
+
+Three subscriptions with genuinely different semantics, and picking wrong is the most common bug on this page:
+
+- `consentStore.subscribe` fires on **every** state change, including a checkbox flip before saving. Use it to re-render a custom UI, never to load a script.
+- `consentStore.on("change", ...)` fires only on a real committed difference, and replays once on attach. This is what you want for side effects.
+- `subscribeToConsentChanges` fires on saved changes with an allowed/denied split. Lower-level and rarely the right choice now that `on` exists.
+
+### `onConsentReady` / `onConsentUpdate` cannot be removed
+
+They live as long as the config. There is no unsubscribe. For anything tied to a component lifecycle, use [`useOnConsentChange`](/docs/hooks/use-on-consent-change), which cleans up on unmount.
+
+`onConsentReady` is genuinely useful for one-shot startup work — deciding whether to boot analytics on first load.
+
+### `resetCookieYes()` is for tests
+
+It clears the module-level registry so the next `initCookieYes()` starts clean. Calling it in application code leaves your mounted components pointing at nothing. For a visitor-facing reset, use `useConsentActions().reset()`.
+
+For testing consent-dependent code, prefer `@cookieyes/test` — it runs the real engine rather than a mock, so a passing test means the code actually works.
+
+### Per-request state never goes on the runtime
+
+The registry is a module-level singleton **shared across concurrent server requests**. Writing anything visitor-specific onto it leaks between visitors. Per-request values go through `CookieYesProvider` — that is why `initialConsent` and the provider's `regulation` prop exist rather than config keys.
+
+## Complete example
+
+```tsx title="components/ConsentDevTools.tsx"
+"use client";
+
+import { useConsentRuntime, useConsentActions } from "@cookieyes/react";
+
+export function ConsentDevTools() {
+  const runtime = useConsentRuntime();
+  // Focus-aware actions — not runtime.manager.showPreferences().
+  const { showPreferences, reset } = useConsentActions();
+
+  const snapshot = runtime.getSnapshot();
+  const { language, direction } = runtime.getLanguageInfo();
+
+  if (process.env.NODE_ENV === "production") return null;
+
+  return (
+    <aside className="devtools">
+      <h3>Consent</h3>
+      <p>
+        id: <code>{snapshot.consentId}</code>
+      </p>
+      <p>
+        language: {language} ({direction})
+      </p>
+
+      <h4>Integrations</h4>
+      <ul>
+        {runtime.getIntegrations().map((i) => (
+          <li key={i.id}>
+            {i.id} — {i.status}
+          </li>
+        ))}
+      </ul>
+
+      <button type="button" onClick={() => showPreferences()}>
+        Open preferences
+      </button>
+      <button type="button" onClick={() => reset()}>
+        Reset consent
+      </button>
+    </aside>
+  );
+}
+```
+
+Outside React, in a plain module:
+
+```ts title="src/consent-log.ts"
+import { getCookieYes } from "@cookieyes/react";
+
+export function logCurrentConsent() {
+  // Throws if initCookieYes() has not run — acceptable here, since this is
+  // only ever called from code that runs after the app has mounted.
+  const snapshot = getCookieYes().getSnapshot();
+  console.log(snapshot.committedCategories);
+}
+```
+
+## Common mistakes
+
+**Focus jumps to the top of the page when the dialog closes.**
+`runtime.manager.showPreferences()` instead of `useConsentActions().showPreferences()`.
+
+**`Error: [cookieyes] No runtime is registered.`**
+`getCookieYes()` ran before `initCookieYes()`. Inside components, use a hook.
+
+**A script loads when someone flips a toggle without saving.**
+`consentStore.subscribe` fires on transient state. Use `consentStore.on("change", ...)`.
+
+**A `useEffect` subscription never fires for a returning visitor.**
+`subscribe` has no initial replay. `on()` does.
+
+**One test's consent state leaks into the next.**
+Call `resetCookieYes()` between tests, or use `@cookieyes/test`, which handles teardown.
+
+**Consent from one visitor appears for another in production SSR.**
+Per-visitor state was written onto the config or runtime. Move it to `CookieYesProvider`.
+
+## Across the SDK
+
+`useConsentRuntime()` exposes essentially what `initCookieYes()` returns in `@cookieyes/core` — `{ consentManager, consentStore, getIntegrations }`. In core there is no registry at all: you hold the returned object yourself, which sidesteps the singleton concerns above entirely. `@cookieyes/test` depends on two `@internal` core exports to reset script and stop-handler registries between tests.
+
+## See also
+
+- [useConsent](/docs/hooks/use-consent) — the hook you probably want instead
+- [Which API should I use?](/docs/getting-started/which-api) — the full decision tree
+- [Rendering & selector contract](/docs/rendering-and-selector-contract) — SSR and the singleton

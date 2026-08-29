@@ -1,0 +1,12 @@
+{
+  "title": "Hooks",
+  "pages": [
+    "use-consent",
+    "use-consent-actions",
+    "use-on-consent-change",
+    "focused-hooks",
+    "low-level-hooks"
+  ],
+  "defaultOpen": true,
+  "collapsible": true
+}

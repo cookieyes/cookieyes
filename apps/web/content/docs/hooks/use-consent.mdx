@@ -1,0 +1,159 @@
+---
+title: useConsent
+description: Read the current consent state.
+---
+
+## When to use it
+
+Use `useConsent()` when a component needs to reflect consent state — a settings page showing current choices, a debug panel, a custom banner that reacts to the whole picture.
+
+Do **not** use it to gate a single thing. `useConsent()` re-renders on **every** consent change, including transient dialog toggles, so gating on it loads your tracker the instant someone flips a switch — before they save. Use [`useConsentCategory()`](/docs/hooks/focused-hooks) instead, which reads the committed value and re-renders only when that one category changes.
+
+To *change* consent rather than read it, use [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+## Basic usage
+
+```tsx title="components/ConsentStatus.tsx"
+"use client";
+
+import { useConsent } from "@cookieyes/react";
+
+export function ConsentStatus() {
+  const { hasActed, categories } = useConsent();
+
+  if (!hasActed) return <p>No choice made yet.</p>;
+
+  return (
+    <ul>
+      {Object.entries(categories).map(([id, granted]) => (
+        <li key={id}>
+          {id}: {granted ? "allowed" : "blocked"}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## Options
+
+`useConsent()` takes **no arguments**. It returns a `CookieYesSnapshot`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `consentId` | `string` | Stable id for this visitor's consent record |
+| `hasActed` | `boolean` | Whether a real decision has been made. Drives banner visibility |
+| `categories` | `Record<string, boolean>` | **Live** values — reflect unsaved dialog toggles. Drive checkboxes |
+| `committedCategories` | `Record<string, boolean>` | **Committed** values — change only on a real decision. Gate on these |
+| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | The regulation in effect |
+| `lastRenewed` | `number \| undefined` | Timestamp of the last decision |
+| `taxonomyHash` | `string \| undefined` | Signature of the taxonomy this consent was recorded under |
+| `isPreferencesOpen` | `boolean` | Whether the preferences dialog is open |
+| `isOptOutOpen` | `boolean` | Whether the CCPA opt-out dialog is open |
+| `reloadNotice` | `ReloadNoticeState` | `{ required, reasons }` — see [ReloadNotice](/docs/components/reload-notice) |
+
+## Behaviour and trade-offs
+
+### `categories` vs `committedCategories`
+
+The single most important distinction in this API.
+
+| Field | Changes on | Use for |
+| --- | --- | --- |
+| `categories` | Every toggle, including unsaved | The dialog's own checkboxes |
+| `committedCategories` | Accept / Reject / Save / Reset only | Gating scripts, embeds, trackers |
+
+Reading `categories` to decide whether to load analytics means a visitor who opens the dialog, flips analytics on to read the description, and then closes without saving has been tracked. Gate on `committedCategories`, or better, on `useConsentCategory()`.
+
+### It re-renders a lot
+
+Every state change re-renders every component calling this hook — including transient UI state like a dialog opening. That is fine for a settings page and wasteful in a component that only cares about one boolean. Prefer the focused hooks where they fit.
+
+### It is SSR-safe
+
+On the server and before mount it returns a stable default snapshot rather than throwing, so it will not break server rendering. But the server cannot know a specific visitor's consent — see [Rendering & selector contract](/docs/rendering-and-selector-contract) for how to avoid a banner flash for returning visitors.
+
+### `hasActed` is not "accepted"
+
+It means a decision was recorded, in either direction. A visitor who rejected everything has `hasActed: true` and every non-required category `false`.
+
+## Complete example
+
+A consent settings panel that reflects state and offers a way to change it:
+
+```tsx title="components/PrivacySettings.tsx"
+"use client";
+
+import { useCategories, useConsent, useConsentActions } from "@cookieyes/react";
+
+export function PrivacySettings() {
+  const { hasActed, committedCategories, lastRenewed, regulation } = useConsent();
+  const { showPreferences, reset } = useConsentActions();
+  const { list } = useCategories();
+
+  return (
+    <section>
+      <h2>Privacy settings</h2>
+      <p>
+        Regulation: <strong>{regulation}</strong>
+      </p>
+
+      {hasActed ? (
+        <>
+          <p>
+            Last updated:{" "}
+            {lastRenewed ? new Date(lastRenewed).toLocaleDateString() : "unknown"}
+          </p>
+          <ul>
+            {list.map((cat) => (
+              <li key={cat.id}>
+                {cat.label ?? cat.id}:{" "}
+                {committedCategories[cat.id] ? "Allowed" : "Blocked"}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p>You have not made a choice yet.</p>
+      )}
+
+      <button type="button" onClick={() => showPreferences()}>
+        Change preferences
+      </button>
+      <button type="button" onClick={() => reset()}>
+        Reset and show banner again
+      </button>
+    </section>
+  );
+}
+```
+
+## Common mistakes
+
+**A tracker loads the moment someone toggles a switch.**
+You read `categories` instead of `committedCategories`. Or better: use `useConsentCategory()`.
+
+**Everything reads as defaults — `hasActed` is `false`, categories are empty — and there is no error.**
+The component rendered before `initCookieYes()` ran, or `useConsent()` itself is in a Server Component. This is not a bug: on the server and before mount, `useConsent()` deliberately returns a stable default snapshot instead of throwing, which is also what makes it SSR-safe (see [It is SSR-safe](#it-is-ssr-safe) above). Confirm `initCookieYes()` runs in a `"use client"` module that is actually imported on the path to this component, and that the component itself is in a `"use client"` file. A thrown `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.` only ever comes from code that calls `getCookieYes()` or [`useConsentRuntime()`](/docs/hooks/low-level-hooks) directly — `useConsent()` never throws it.
+
+**The whole page re-renders when the dialog opens.**
+A high-level component calls `useConsent()`. Move the call down to the component that needs it, or switch to a focused hook.
+
+**`hasActed` is true but every category is false.**
+The visitor rejected everything. Correct.
+
+**Consent looks wrong on the first render after page load.**
+Before mount the hook returns defaults. Read consent on the server with `getServerConsent()` and pass it through `CookieYesProvider` if the first render matters.
+
+**A category id is missing from `categories`.**
+It is not in the active taxonomy. Check `useCategories()`.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core` the equivalent is `consentStore.getState()` for a one-off read and `consentStore.subscribe(listener)` for updates. The store exposes `consents` (live) and `committedConsents` (committed) — the same distinction under different names — plus `has(category)`, which reads the committed value.
+
+## See also
+
+- [useConsentActions](/docs/hooks/use-consent-actions) — change consent
+- [Focused hooks](/docs/hooks/focused-hooks) — fewer re-renders, one concern each
+- [useOnConsentChange](/docs/hooks/use-on-consent-change) — run code when consent changes
