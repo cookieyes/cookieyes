@@ -1,0 +1,226 @@
+---
+title: Which API should I use?
+description: How to pick the right hook or primitive for reading, changing, and reacting to consent — and when you actually need more than the basics.
+---
+
+## When to use it
+
+Read this before you build a consent UI. Skip it if you are happy with the styled defaults — `CookieBanner` and `CookiePreferences` are the right answer for most apps and you can stop there.
+
+If you are building your own UI, most of what you need comes down to two hooks: [`useConsent()`](/docs/hooks/use-consent) to **read** consent, and [`useConsentActions()`](/docs/hooks/use-consent-actions) to **change** it. Everything else below exists for a narrower situation — reacting to a change, gating one value cheaply, working outside a component — and is worth reaching for only when that specific situation applies to you. More options is not a feature; it is the cost of covering those situations at all.
+
+This page is the single source of truth for the decision, and the package READMEs point here rather than repeating it. If you arrived from a `docs/which-api-should-i-use.md` link in the repository, that file is now only a pointer to this page.
+
+## Basic usage
+
+The three layers, cheapest to most involved:
+
+```tsx title="app/presets-example.tsx"
+import { CookieBanner, CookiePreferences } from "@cookieyes/react";
+
+export function ConsentUI() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+    </>
+  );
+}
+```
+
+```tsx title="app/primitives-example.tsx"
+import { Banner } from "@cookieyes/react";
+
+<Banner.Root className="my-banner">
+  <Banner.Title className="my-title" />
+  <Banner.Description />
+  <Banner.Actions>
+    <Banner.AcceptAll className="btn-primary" />
+    <Banner.RejectAll className="btn-ghost" />
+  </Banner.Actions>
+</Banner.Root>
+```
+
+```tsx title="app/hooks-example.tsx"
+import { useConsent, useConsentActions } from "@cookieyes/react";
+
+const { hasActed, categories } = useConsent();
+const { acceptAll, rejectAll } = useConsentActions();
+```
+
+## Choosing a layer
+
+| Layer | You write | You get | Choose when |
+| --- | --- | --- | --- |
+| **Presets** | Nothing | Full styled UI, a11y, focus management, i18n, dark mode | The default. Theme it with `theme` config or CSS |
+| **Primitives** | Your markup and classes | Behaviour, state wiring, a11y, focus trap, part attributes | The defaults do not fit your design system |
+| **Hooks** | Everything | Consent state and actions only | You are building something that is not a banner |
+
+## Find your situation
+
+Landed on "hooks," or need something the presets and primitives don't expose? This is the whole decision — every row links straight to the page that covers it.
+
+| You want to | Use |
+| --- | --- |
+| Read consent state, inside a component | [`useConsent()`](/docs/hooks/use-consent) — the recommended read |
+| Change consent — accept, reject, open a dialog | [`useConsentActions()`](/docs/hooks/use-consent-actions) — the recommended write |
+| Run code when consent changes, from inside a component | [`useOnConsentChange()`](/docs/hooks/use-on-consent-change) — the recommended way to react |
+| Run code when consent changes, from outside a component | [`consentStore.on()`](/docs/hooks/low-level-hooks#core-store-subscriptions) — same idea, no React |
+| Gate one thing without re-rendering on everything else | [`useConsentCategory()`](/docs/hooks/focused-hooks) — committed value, one category |
+| Answer a narrower question — region, language, whether the banner is showing... | [Focused hooks](/docs/hooks/focused-hooks) — nine single-purpose hooks |
+| Call something imperatively — an event handler, a non-component file | [`getCookieYes()`](/docs/hooks/low-level-hooks#module-level-registry) |
+| Read or write consent in plain JS, or another framework | [`consentStore`](/docs/hooks/low-level-hooks#core-store-subscriptions) — `@cookieyes/core`, no React at all |
+| Read a returning visitor's consent on the server | [`getServerConsent()` / `readServerConsent()`](/docs/rendering-and-selector-contract#server-rendering-helpers) |
+
+The first two rows cover most apps. The rest are documented in full on their own pages — this table exists so you don't have to guess which one, not so you have to read all of them.
+
+## Behaviour and trade-offs
+
+### Reading and changing are peers, not a pair with a preferred half
+
+`useConsent()` answers "what is the state right now." `useConsentActions()` answers "make it something else." Neither depends on the other — `useConsentActions()` only writes, so calling it causes no re-render, and pairing it with `useConsent()` in the same component is normal, not redundant.
+
+### Reacting inside a component vs. outside one
+
+`useOnConsentChange()` is the React answer: it subscribes on mount and cleans up on unmount, so a component that reacts to consent — loading an SDK, starting a recorder — never leaks a listener. `consentStore.on()` does the same job for code with no component lifecycle to hook into: a plain script, a non-React framework, a module that runs once at startup. Reach for `consentStore.on()` only when you are genuinely outside React — inside a component it is strictly worse than the hook, since you would be wiring up the cleanup yourself.
+
+### `useConsent()` vs `useConsentCategory()`
+
+`useConsent()` re-renders on **every** consent change, including transient dialog toggles. That is what you want for a UI that reflects the whole state.
+
+`useConsentCategory("analytics")` re-renders only when that one category's **committed** value changes. Use it for gating. The distinction matters: a visitor flipping a switch in the dialog without saving should not load your analytics script, and `useConsentCategory` correctly ignores that. `useConsent().categories` is the live working value and would not.
+
+### Committed vs live values
+
+This trips people up more than anything else on this page.
+
+| Value | Changes on | Use for |
+| --- | --- | --- |
+| `committedCategories` / `useConsentCategory()` | A real decision — accept, reject, save, reset | Gating scripts, embeds, trackers |
+| `categories` / `consents` | Every toggle, including unsaved ones | Driving the dialog's own checkboxes |
+
+**Gate on committed values.** Always.
+
+### Nine narrower questions
+
+Each of these answers something `useConsent()` doesn't cover on its own, not a rival way to get the same thing. Full detail — signatures, return shapes, nuance — lives on [Focused hooks](/docs/hooks/focused-hooks).
+
+| Hook | Answers |
+| --- | --- |
+| `useRegulation()` | Which privacy law applies |
+| `useRegion()` | *How* that was decided — region, source, confidence |
+| `useCategories()` | The resolved category taxonomy, built-in or custom |
+| `useTranslations()` | Resolved text for the active language |
+| `useLanguage()` | Active language, text direction, and a live switcher |
+| `useBannerVisibility()` | Whether the banner should be showing right now |
+| `usePreferencesOpen()` | Whether the preferences dialog is open |
+| `useOptOutOpen()` | Whether the CCPA opt-out dialog is open |
+| `useReloadNotice()` | Whether a saved change requires a page reload, and why |
+
+### Outside a component, three different situations
+
+None of these are what the recommended hooks are for — there is no component tree to hook into, so a hook is the wrong shape of tool, not a worse version of the right one.
+
+- **Imperative access** — an event handler, a non-component file. Use [`getCookieYes()`](/docs/hooks/low-level-hooks#module-level-registry) to reach the runtime directly. It **throws** if `initCookieYes()` hasn't run yet, which is correct outside React: there is no safe default to render instead.
+- **Plain JS or another framework** — no React at all. Build against [`consentStore`](/docs/hooks/low-level-hooks#core-store-subscriptions) from `@cookieyes/core` directly: `.subscribe()` for every change, `.on("change", ...)` for saved ones only, and its actions to change consent.
+- **Reading a returning visitor's consent on the server** — a Server Component, route handler, or middleware, where nothing has mounted yet. Use [`getServerConsent()`](/docs/rendering-and-selector-contract#server-rendering-helpers) from `@cookieyes/nextjs/server`, or `readServerConsent(cookieHeader)` from `@cookieyes/core` on any other server runtime. This only *reads* a stored decision — pass the result to `<CookieYesProvider initialConsent={…}>` so the first paint is already correct instead of flashing.
+
+Only `useConsentRuntime()` and `getCookieYes()` throw when nothing is registered — that pair is the raw escape hatch, and a crash beats a silent wrong answer there. Every other hook on this page, including all fourteen covered above, degrades safely instead: safe defaults, no-op actions, the SSR snapshot.
+
+### You can mix layers freely
+
+They are not exclusive. A common shape: styled `CookieBanner`, a hand-built preferences dialog on `Preferences.*` primitives to match a design system, and `useOnConsentChange` for script loading. All three read the same runtime.
+
+## Complete example
+
+A realistic mix — preset banner, custom dialog, hook-driven gating:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import {
+  CookieBanner,
+  Preferences,
+  initCookieYes,
+  useOnConsentChange,
+} from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
+
+function BrandedPreferences() {
+  return (
+    <Preferences.Root className="ds-modal-overlay">
+      <div className="ds-modal">
+        <Preferences.Title className="ds-h2" />
+        <Preferences.Intro className="ds-body" />
+        <Preferences.Categories>
+          {(cat) => (
+            <Preferences.Category category={cat}>
+              {({ label, description, checked, disabled, toggle }) => (
+                <label className="ds-row">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={(e) => toggle(e.target.checked)}
+                  />
+                  <span className="ds-label">{label}</span>
+                  <p className="ds-help">{description}</p>
+                </label>
+              )}
+            </Preferences.Category>
+          )}
+        </Preferences.Categories>
+        <Preferences.Save className="ds-btn-primary" />
+      </div>
+    </Preferences.Root>
+  );
+}
+
+/** Your own loader — whatever actually starts analytics in your app. */
+function loadAnalytics() {}
+
+function AnalyticsLoader() {
+  useOnConsentChange("change", ({ changedCategories }) => {
+    if (changedCategories.includes("analytics")) loadAnalytics();
+  });
+  return null;
+}
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <BrandedPreferences />
+      <AnalyticsLoader />
+    </>
+  );
+}
+```
+
+## Common mistakes
+
+**A script loads as soon as someone flips a toggle, before they hit Save.**
+You gated on `useConsent().categories` (live) instead of `useConsentCategory()` (committed). Switch to `useConsentCategory`.
+
+**`Error: [cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`**
+A primitive was used outside its namespace root. Every `Preferences.*` must be a descendant of `Preferences.Root`; same for `OptOut.*` and `OptOut.Root`.
+
+**Rebuilt the whole banner with hooks to change one button's color.**
+You wanted primitives, or just CSS. See [Custom CSS](/docs/styling/custom-css) — the part contract lets you restyle the presets entirely without replacing them.
+
+**`Error: [cookieyes] No runtime is registered.` — but only sometimes, and never inside a component.**
+`getCookieYes()` ran before `initCookieYes()`, or ran inside a component where a hook belongs instead. Every hook here except `useConsentRuntime()` returns a safe default rather than throwing — reach for `getCookieYes()` only in module-level code that genuinely has no component to hook into.
+
+**Reading consent in a Server Component with `useConsent()`.**
+Hooks need a mounted client runtime, which a Server Component never has. Use [`getServerConsent()`](/docs/rendering-and-selector-contract#server-rendering-helpers) from `@cookieyes/nextjs/server`.
+
+## Across the SDK
+
+The three layers exist in `@cookieyes/react` and `@cookieyes/nextjs`. `@cookieyes/core` has no UI at all — it gives you `consentManager` and `consentStore`, which is what every "outside a component" row above ultimately points to. Everything the React layers do is built on that same store, so behaviour is identical across them.
+
+## See also
+
+- [Overview (asChild, part contract)](/docs/headless/overview) — how the primitives compose
+- [useConsent](/docs/hooks/use-consent) — the recommended read, in full
+- [useConsentActions](/docs/hooks/use-consent-actions) — the recommended write, in full
