@@ -30,4 +30,24 @@ pnpm-debug.log*
 .next/
 out/
 next-env.d.ts
+
+# Fumadocs generated content index (apps/web)
+.source/
 *.tsbuildinfo
+
+# Doc example type-check scratch output (apps/web)
+.doc-examples/
+
+# Generated config reference JSON, regenerated every build (apps/web)
+.generated/
+
+# Peer-dependency matrix scratch output — per-combo results before
+# aggregate-results.mjs merges them into the committed matrix-results.json
+# (matrix/matrix.config.mjs, matrix/matrix-results.json)
+matrix/results/
+
+# The global `next-env.d.ts` rule above would also hide the committed
+# example-app template's copy — that one is a real checked-in file (not
+# framework-regenerated in place; only its scratch copies get built), so
+# un-ignore it explicitly.
+!matrix/example-app/next-env.d.ts
