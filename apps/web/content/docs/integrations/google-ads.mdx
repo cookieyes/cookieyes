@@ -1,0 +1,122 @@
+---
+title: Google Ads
+description: Load Google Ads conversion tracking behind consent, gated by Google Consent Mode v2.
+---
+
+## When to use it
+
+Use this preset if you're tracking Google Ads conversions via `gtag.js` and want it gated by consent, with Restricted Data Processing handled automatically for opted-out US visitors. It shares the same `gtag.js` library as [GA4](/docs/integrations/ga4), so if you're also loading GA4 directly, both presets reuse one injected script rather than two.
+
+If Google Ads is managed *through* a GTM container instead, use [Google Tag Manager](/docs/integrations/google-tag-manager) instead — configuring both for the same product fires an overlap warning.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { googleAds } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [googleAds({ conversionId: "AW-XXXXXXXXX" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+Like every Google product here, this needs the `<head>` deny-default snippet in place before it — see [Google Consent Mode v2 → Basic usage](/docs/integrations/google-consent-mode#basic-usage).
+
+## Behaviour and trade-offs
+
+### Config fields
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `conversionId` | `string` | — required | Google Ads id, e.g. `"AW-XXXXXXXXX"`. |
+| `category` | `string` | `"advertisement"` | Consent category that gates this integration. |
+| `id` | `string` | `"google-ads"` | Override the integration id — the registry key; must stay unique. |
+| `params` | `Record<string, unknown>` | — | Extra `gtag('config', …)` params for the Ads tag. |
+| `consentMode` | `"advanced" \| "basic"` | `"advanced"` | See [Google Consent Mode v2](/docs/integrations/google-consent-mode#advanced-vs-basic--the-real-trade-off) for the full trade-off. |
+| `restrictedDataProcessing` | `boolean` | auto | See below — leave unset unless you need to force it. |
+
+### Restricted Data Processing is automatic for CCPA opt-outs
+
+Leave `restrictedDataProcessing` unset and this preset enables it automatically for a visitor who has opted out under CCPA (`ctx.region.regulation === "CCPA"`); an explicit `true` or `false` always overrides that. This is an automatic, region-driven behavior — easy to miss if you're expecting to set it yourself, and worth knowing about before you go looking for why it's already on for some visitors and not others.
+
+### What `consentMode` changes for Google Ads specifically
+
+The general `advanced`/`basic` trade-off lives on the [Consent Mode page](/docs/integrations/google-consent-mode#advanced-vs-basic--the-real-trade-off) — here's what it means for Google Ads in particular:
+
+| | `advanced` (default) | `basic` |
+| --- | --- | --- |
+| `onRevoke` | `"keep"` — nothing happens; Consent Mode's cookieless modelling is the only response | `"remove"` — the shared `gtag.js` (if no other Google product still needs it) and Ads' own cookie are cleared |
+| Cookies cleared on revoke | none | `_gcl_au` only |
+
+Google Ads' basic-mode teardown clears only `_gcl_au` — it deliberately never touches GA4's `_ga`/`_gid`/`_gat` cookies, even though both products can share the same underlying `gtag.js` script. Revoking `advertisement` consent doesn't wipe out your `analytics` measurement.
+
+## Complete example
+
+```tsx title="app/layout.tsx"
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { googleAds } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [
+    googleAds({
+      conversionId: "AW-XXXXXXXXX",
+      consentMode: "basic",
+    }),
+  ],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**Restricted Data Processing is on without having been set.**
+It's enabled automatically for a US visitor who has opted out under CCPA, unless you set `restrictedDataProcessing` explicitly. See [Restricted Data Processing is automatic for CCPA opt-outs](#restricted-data-processing-is-automatic-for-ccpa-opt-outs) above.
+
+**Revoking advertisement consent also clears GA4 cookies.**
+It shouldn't — Google Ads' basic-mode teardown clears only `_gcl_au`, never GA4's `_ga*` cookies. If you're seeing GA4 cookies disappear, check whether you also set `ga4()`'s own `consentMode: "basic"` and revoked `analytics` at the same time.
+
+**Revoking advertisement consent doesn't stop Ads' requests.**
+That's `advanced` (the default) working as designed — `onRevoke: "keep"` leaves the tag loaded; Consent Mode's signals are the only response. Set `consentMode: "basic"` if you want the tag and its cookie torn down on revoke.
+
+**No Ads requests fire at all.**
+The `<head>` deny-default snippet is likely missing — see [Consent Mode → Basic usage](/docs/integrations/google-consent-mode#basic-usage).
+
+## Across the SDK
+
+`googleAds()` is a `@cookieyes/scripts` export returning an `Integration`, the same shape every preset in this SDK returns, consumed through the `integrations` key on `initCookieYes()`. What Google Ads does with pre-consent traffic is governed by Consent Mode's broadcast (`@cookieyes/core`'s `google-consent-mode.ts`); the Restricted Data Processing auto-behavior reads `ctx.region` from the same region resolution `@cookieyes/core` uses everywhere else (`resolveRegion`).
+
+To run your own code when advertisement consent changes, a React host uses `useOnConsentChange("change", listener, { category: "advertisement" })` from `@cookieyes/react`; a plain-JavaScript or non-React host uses the `onConsentUpdate` config callback on `CookieYesConfig`.
+
+## See also
+
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — the full signal list and the `advanced`/`basic` trade-off.
+- [Google Analytics 4](/docs/integrations/ga4) — the other gtag product sharing this library.
+- [Google Tag Manager](/docs/integrations/google-tag-manager) — if Ads is (or should be) managed through a container instead.

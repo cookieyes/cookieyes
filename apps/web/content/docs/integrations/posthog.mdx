@@ -1,0 +1,182 @@
+---
+title: PostHog
+description: Consent-gate PostHog with posthog() or sync consent into a PostHog you already load — and the required onReject decision.
+---
+
+## When to use it
+
+Use `posthog()` if you want this SDK to load PostHog for you, consent-gated from a project API key. Use `posthogSync()` instead if you already `init` PostHog yourself (for feature flags before consent, or any other reason) and only want consent kept in sync with it — `posthogSync()` injects nothing.
+
+Skip both if PostHog is loaded through a GTM container you gate separately with `googleTagManager()` — see [Google Consent Mode v2](/docs/integrations/google-consent-mode#gtm-is-a-special-case) for why the container's own tags are invisible to this SDK.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { posthog } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [posthog({ apiKey: "phc_your_project_key", onReject: "stop" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+`onReject` has no default — you must supply it. That's deliberate; see below.
+
+## Behaviour and trade-offs
+
+### `onReject` is required, on purpose
+
+Every other config field in this SDK's presets that has a sensible default gets one. `onReject` doesn't, and that's not an oversight — `PostHogConfig` declares it as `onReject: "stop" | "anonymous"` with no `?`, so a call to `posthog({ apiKey: "…" })` without it fails to type-check.
+
+The reason is that this is a genuine privacy decision, not an implementation detail, and PostHog's own out-of-the-box default (keep tracking after a "no") is not one this SDK is willing to make silently on your behalf:
+
+- **`"stop"`** — the conservative, default-safe choice. Nothing loads until `analytics` (or your configured category) is granted. On withdrawal, PostHog is fully torn down: the script, its persistence, and its stored data are all removed (`onRevoke: "remove"`). No visitor data reaches PostHog before an explicit yes, and none continues after an explicit no.
+- **`"anonymous"`** — PostHog loads **immediately** (`load: "immediately"`), before any consent decision, and keeps counting visits **cookie-free** via PostHog's own `cookieless_mode`. Reject or no decision yet means server-side-hashed, non-identifying counting continues; grant upgrades it to normal, cookie-based, identified tracking (`onRevoke: "silence"`, using `opt_in_capturing`/`opt_out_capturing`). This requires **"Cookieless"** turned on in your PostHog project settings — without it, `cookieless_mode: "on_reject"` is passed to a PostHog project that doesn't support it.
+
+Picking between them is picking between "no data before consent, full stop after a no" and "keep anonymous, aggregate counting alive even after a no." Both are legitimate positions; requiring the field forces you to actually decide rather than inherit PostHog's own default silently.
+
+### Config fields
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `apiKey` | `string` | — required | Your PostHog project API key (`phc_…`). Public by design — safe in browser code. |
+| `onReject` | `"stop" \| "anonymous"` | — **required, no default** | See above. |
+| `region` | `"us" \| "eu"` | `"us"` | Maps to `api_host`: `us` → `https://us.i.posthog.com`, `eu` → `https://eu.i.posthog.com`. Ignored if `apiHost` is set. |
+| `apiHost` | `string` | — | Explicit host for self-hosted / reverse-proxied PostHog. Overrides `region`. |
+| `category` | `string` | `"analytics"` | Must exist in your active taxonomy. |
+| `id` | `string` | `"posthog"` | Only change this if you run more than one PostHog instance. |
+
+### `load` and `onRevoke` follow directly from `onReject`
+
+| `onReject` | `load` | `onRevoke` | What happens on withdrawal |
+| --- | --- | --- | --- |
+| `"stop"` | `afterConsent` | `"remove"` | Script, stub, and PostHog's own stored data (persistence cookie/localStorage and the opt-out preference key) are all cleared. Opt-out is called *before* clearing, so PostHog's own persistence timer stops writing before its cookie is removed. |
+| `"anonymous"` | `immediately` | `"silence"` | The script stays loaded the whole time. Withdrawal calls `posthog.opt_out_capturing()`; grant calls `posthog.opt_in_capturing()`. Nothing is torn down — cookie-free capture continues underneath. |
+
+There is no fourth combination — `"stop"` cannot be made to load immediately, and `"anonymous"` cannot be made to fully remove itself, because the whole point of `"anonymous"` is that something is always running.
+
+### PostHog's own opt-out check is not the source of truth
+
+Consent here is driven **only by CookieYes's own committed record**, never by asking PostHog `has_opted_in_capturing()`/`has_opted_out_capturing()` first. This is deliberate: PostHog has a documented bug where that check can report "already decided" when nobody actually has, which would let a visitor's tracking state get out of sync with what they were actually shown and asked. If you build anything on top of PostHog's consent state yourself, read it from CookieYes (`useConsentState()`, or [`useOnConsentChange`](/docs/hooks/use-on-consent-change)), not from PostHog's own API.
+
+### `posthogSync()` for a PostHog you already `init` yourself
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { posthogSync } from "@cookieyes/scripts";
+
+// PostHog itself must already be initialized before this runs — with
+// opt_out_capturing_by_default: true (stop-style) or cookieless_mode:
+// "on_reject" (anonymous-style), matching whichever posture you want.
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [posthogSync({ category: "analytics" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+`posthogSync()` injects nothing — it only calls `opt_in_capturing()`/`opt_out_capturing()` in step with the gating category (`load: "immediately"`, `onRevoke: "silence"`, always). **Initialize PostHog opted-out by default** in your own `init` call, or it will capture with a cookie from the moment it loads — before this SDK has had a chance to react to any consent state at all.
+
+### Guard calls made before PostHog is guaranteed loaded
+
+```ts title="app/track-signup.ts"
+declare global {
+  interface Window {
+    posthog?: { capture: (event: string, props?: Record<string, unknown>) => void };
+  }
+}
+
+export function trackSignup(): void {
+  window.posthog?.capture("signup_completed");
+}
+```
+
+### Reacting to consent changes yourself
+
+Use [`useOnConsentChange`](/docs/hooks/use-on-consent-change) if your own React code needs to know when the `analytics` category changes — separate from `posthog()`/`posthogSync()` themselves, which already react internally:
+
+```tsx title="app/analytics-indicator.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+import { useState } from "react";
+
+export function AnalyticsIndicator() {
+  const [active, setActive] = useState(false);
+
+  useOnConsentChange(
+    "change",
+    ({ categories }) => setActive(categories.analytics === true),
+    { category: "analytics" },
+  );
+
+  if (!active) return null;
+  return <span>Analytics active</span>;
+}
+```
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { posthog } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [
+    posthog({
+      apiKey: "phc_your_project_key",
+      onReject: "anonymous",
+      region: "eu",
+    }),
+  ],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**`posthog({ apiKey: "…" })` doesn't type-check.**
+`onReject` has no default — you must pass `"stop"` or `"anonymous"` explicitly. See "`onReject` is required, on purpose" above for why.
+
+**With `onReject: 'anonymous'`, nothing is counted for a rejecting visitor.**
+Check that **Cookieless** is turned on in your PostHog project settings — `cookieless_mode: "on_reject"` needs that support enabled on PostHog's side, not just this config.
+
+**With `onReject: 'stop'`, PostHog data persists after a visitor rejects.**
+Check you're actually on `"stop"`, not `"anonymous"` — `"anonymous"` keeps cookie-free counting alive on reject by design; that's not a bug in `"stop"`.
+
+**`posthog.has_opted_in_capturing()` disagrees with what CookieYes shows.**
+Expected — this preset never reads that check itself, and neither should you. Read consent from CookieYes (`useConsentState()` or `useOnConsentChange`), not from PostHog's own opt-in/opt-out API.
+
+**`posthogSync()` isn't gating anything.**
+`posthogSync()` never loads PostHog — it assumes you already did, and only toggles `opt_in_capturing`/`opt_out_capturing`. If PostHog wasn't initialized opted-out (or cookieless) in your own `init` call, it captures before consent regardless of this preset.
+
+## Across the SDK
+
+`posthog` and `posthogSync` are `@cookieyes/scripts` exports, built on the same `Integration` shape as every other preset (`id`, `category`, `load`, `onRevoke`, `setup` — see `sdk/core/src/integrations.ts`). `safeCall`, also exported from `@cookieyes/scripts`, is what both use internally to call PostHog's stub methods without throwing if `window.posthog` isn't ready yet.
+
+For reacting to consent changes outside a preset: React code uses [`useOnConsentChange`](/docs/hooks/use-on-consent-change); a framework-agnostic host with no React tree uses the `onConsentUpdate` config callback on `CookieYesConfig` instead (see [Configuration](/docs/getting-started/configuration#callbacks)) — the same core/react split this whole documentation set uses elsewhere.
+
+## See also
+
+- [Build a custom integration](/docs/integrations/custom-integration) — Mixpanel, a vendor with the same shape of opt-in/opt-out API PostHog has, worked as a raw `Integration`
+- [Segment](/docs/integrations/segment) — a simpler analytics vendor with no vendor-side consent API and no `onReject`-style decision to make
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — for the three Google products; PostHog is not part of it

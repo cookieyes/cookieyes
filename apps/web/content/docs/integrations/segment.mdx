@@ -1,0 +1,138 @@
+---
+title: Segment
+description: Consent-gate Segment (analytics.js) with segment() — a full teardown on withdrawal, no vendor-side consent API involved.
+---
+
+## When to use it
+
+Use `segment()` when you want Segment's `analytics.js` loaded only after consent, with a full, clean removal on withdrawal. Segment has no vendor-managed consent API of its own — unlike Meta Pixel, Microsoft Clarity, or PostHog's `"anonymous"` mode, there's nothing here to "pause" and "resume"; either the library is on the page and running, or it isn't.
+
+Skip it if Segment is loaded through a GTM container you gate separately with `googleTagManager()` — see [Google Consent Mode v2](/docs/integrations/google-consent-mode#gtm-is-a-special-case) for why the container's own tags are invisible to this SDK.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { segment } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [segment({ writeKey: "your_segment_write_key" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+Nothing loads until `analytics` (the default category) is granted. Once it is, `segment()` injects `analytics.min.js`, queues an initial page view through Segment's own stub, and resolves once the library has actually loaded.
+
+## Behaviour and trade-offs
+
+### Config fields
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `writeKey` | `string` | — required | Your Segment source write key. Public by design — safe in browser code. |
+| `category` | `string` | `"analytics"` | Must exist in your active taxonomy. |
+| `id` | `string` | `"segment"` | Only change this if you run more than one Segment source. |
+
+### Why `onRevoke` is `"remove"`
+
+Segment doesn't offer a pause/resume API the way Meta, Clarity, and PostHog do — there is no `analytics.consent(...)` equivalent to call. So `segment()` uses the only mechanism that's actually available: on withdrawal, the script is removed from the page, `window.analytics` is dropped, and Segment's own identifier cookies/localStorage keys (`ajs_anonymous_id`, `ajs_user_id`) are cleared. A re-grant re-injects the library from scratch — a real reload of the vendor, not a resume.
+
+This is the same `"remove"` behavior GA4/Google Ads/GTM fall back to when configured with `consentMode: "basic"` and PostHog uses under `onReject: "stop"` — the pattern for any vendor with no consent API of its own to defer to.
+
+### Re-grant starts a fresh Segment session — that's expected
+
+Because `"remove"` fully tears the library down, a later re-grant re-runs Segment's own bootstrap, which queues a fresh page view the moment it loads. If you're watching Segment's own event stream, you'll see a new session start on every grant-after-revoke cycle. That is Segment's own session boundary firing correctly — it is **not** a double-count of the events your own code sends through `analytics.track(...)`.
+
+### Sending events
+
+Segment's snippet queues calls made before the real library finishes loading, so calling `track`/`identify` right after a grant isn't lost — but guard the reference anyway, since `window.analytics` doesn't exist at all before the category has ever been granted once:
+
+```ts title="app/track-purchase.ts"
+declare global {
+  interface Window {
+    analytics?: {
+      track: (event: string, props?: Record<string, unknown>) => void;
+      identify: (userId: string, traits?: Record<string, unknown>) => void;
+    };
+  }
+}
+
+export function trackPurchase(value: number): void {
+  window.analytics?.track("Purchase Completed", { value });
+}
+```
+
+### Reacting to consent changes yourself
+
+Use [`useOnConsentChange`](/docs/hooks/use-on-consent-change) if your own React code needs to know when the `analytics` category changes — separate from `segment()` itself, which already reacts internally:
+
+```tsx title="app/analytics-indicator.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+import { useState } from "react";
+
+export function AnalyticsIndicator() {
+  const [active, setActive] = useState(false);
+
+  useOnConsentChange(
+    "change",
+    ({ categories }) => setActive(categories.analytics === true),
+    { category: "analytics" },
+  );
+
+  if (!active) return null;
+  return <span>Analytics active</span>;
+}
+```
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { segment } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [segment({ writeKey: "your_segment_write_key", id: "segment" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**Revoking consent removes Segment rather than pausing it.**
+Segment has no vendor-side pause/resume API for `segment()` to call into, unlike Meta Pixel or Clarity — `"remove"` is the only mechanism available. If you need pause/resume semantics for a vendor without one, that's not something any preset can offer; see [Build a custom integration](/docs/integrations/custom-integration) for what a vendor actually needs to support that.
+
+**Every re-grant fires a new session and page view in Segment.**
+Expected — see "Re-grant starts a fresh Segment session" above. It's Segment's own bootstrap re-running after a full teardown, not a bug in your event tracking.
+
+**`window.analytics.track(...)` throws before the first consent grant.**
+`window.analytics` doesn't exist until the category has been granted at least once. Guard the reference: `window.analytics?.track(...)`.
+
+**A custom category isn't gating Segment.**
+Only categories that exist in your active taxonomy can ever be granted. If you renamed or removed `analytics` and left `segment()` on its default, it waits forever for a decision on a category nobody is ever asked about — the same trap covered on [GatedScript](/docs/components/gated-script#gatedscript-vs-the-integrations-route).
+
+## Across the SDK
+
+`segment` is a `@cookieyes/scripts` export, built on the same `Integration` shape as every other preset (`id`, `category`, `load`, `onRevoke`, `setup` — see `sdk/core/src/integrations.ts`). All the Segment-specific knowledge (the `analytics.js` stub, cookie/localStorage cleanup) lives inside the preset, not the engine.
+
+For reacting to consent changes outside a preset: React code uses [`useOnConsentChange`](/docs/hooks/use-on-consent-change); a framework-agnostic host with no React tree uses the `onConsentUpdate` config callback on `CookieYesConfig` instead (see [Configuration](/docs/getting-started/configuration#callbacks)).
+
+## See also
+
+- [PostHog](/docs/integrations/posthog) — another analytics vendor, contrast the `"stop"` (`"remove"`) path there with Segment's only option
+- [Build a custom integration](/docs/integrations/custom-integration) — the raw `Integration` shape `segment()` itself is built on
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — for the three Google products; Segment is not part of it
