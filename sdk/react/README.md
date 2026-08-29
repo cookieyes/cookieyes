@@ -22,7 +22,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#usage">API</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md">Docs</a>
+  <a href="https://developer.cookieyes.com/docs/getting-started/configuration">Docs</a>
 </p>
 
 ---
@@ -178,7 +178,7 @@ toggle or widget styling.
 ## Which API should I use?
 
 **`useConsent()` is the recommended way to read consent in React.** See the
-[shared decision tree](../../docs/which-api-should-i-use.md) if you're not
+[shared decision tree](https://developer.cookieyes.com/docs/getting-started/which-api) if you're not
 sure which API applies to your situation — this package also exposes a
 handful of lower-level hooks (see [Hooks](#hooks)) for specific edge cases.
 
@@ -187,7 +187,7 @@ handful of lower-level hooks (see [Hooks](#hooks)) for specific edge cases.
 `initCookieYes(config)` takes the canonical `CookieYesConfig` object — the same shape accepted
 by `@cookieyes/core` and `@cookieyes/nextjs`, copy-pasteable between them with zero edits. The
 full option reference (modes, `theme`, `i18n`, self-hosted persistence, callbacks) lives in
-**[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)**.
+**[Configuration](https://developer.cookieyes.com/docs/getting-started/configuration)**.
 
 | Option | Type | Notes |
 |--------|------|-------|
@@ -201,7 +201,7 @@ full option reference (modes, `theme`, `i18n`, self-hosted persistence, callback
 | `onConsentReady` / `onConsentUpdate` | `(state) => void` | Lifecycle callbacks. |
 
 > Migrating from the deprecated `createCookieYes()` builder? See the
-> [migration guide](https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md).
+> [migration guide](https://developer.cookieyes.com/docs/migration).
 
 ### Components
 
@@ -317,7 +317,7 @@ the elements (via CSSOM), so custom colors work even under a strict `style-src` 
 `unsafe-inline`/nonce — **and you can override the same custom properties from your own
 stylesheet**. This is separate from the base component styles, which ship as the external
 `@cookieyes/react/styles.css` you import once (see Quick start). See the theming reference in
-**[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md#theming)**.
+**[Configuration](https://developer.cookieyes.com/docs/getting-started/configuration#theme)**.
 
 ```tsx
 initCookieYes({
@@ -621,7 +621,7 @@ an existing integration, the builder configures the same runtime:
 | `.i18n({ messages })` | Provide locale translation maps. |
 | `.backend(adapter)` / `.backendURL(url)` | Self-hosted persistence. |
 | `.apiKey(key)` | Optional auth key. |
-| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. See **[how script blocking works and what it costs](https://github.com/cookieyes/cookieyes/blob/main/docs/script-blocking.md)**. |
+| `.blockNetwork(config)` | Block network requests (fetch/XHR/`sendBeacon`) until consent. See **[how script blocking works and what it costs](https://developer.cookieyes.com/docs/components/gated-script)**. |
 | `.categories([...])` | Define your own category taxonomy instead of the built-in five. See [core: consent categories](../core/README.md#consent-categories). |
 | `.integrations([...])` | Built-in vendor stop-handlers — e.g. `{ vendor: "meta" }` — the deprecated `builtInIntegrations` path. For new consent-gated scripts, pass `integrations` to `initCookieYes(config)` with a preset from [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts). See [core: stopping tracking](../core/README.md#stopping-tracking-when-consent-is-withdrawn). |
 | `.customStopHandlers([...])` | Stop your own scripts on revoke (clean `stop()`, or `needsReload: true`). |
@@ -681,7 +681,7 @@ Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
 
 - [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
 - Email — [support@cookieyes.com](mailto:support@cookieyes.com).
-- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md) — configuration, migration, examples.
+- [Full documentation](https://developer.cookieyes.com/docs/getting-started/configuration) — configuration, migration, examples.
 
 _(A community chat channel is on the roadmap.)_
 

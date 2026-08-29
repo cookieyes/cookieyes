@@ -36,7 +36,7 @@ Open-source, developer-first cookie consent SDK. The same compliance engine that
 All business logic lives in `@cookieyes/core`. Framework adapters are thin wrappers — no logic, only wiring.
 
 **Not sure which API reads consent status in your case?** See the
-[decision tree](./docs/which-api-should-i-use.md) — there's one recommended
+[decision tree](https://developer.cookieyes.com/docs/getting-started/which-api) — there's one recommended
 path per platform; everything else is a documented low-level option for a
 specific edge case.
 
@@ -65,7 +65,7 @@ Verified by installing the exact versions above, building a real Next.js app, se
 You configure the SDK once with a single config object, then drop in the banner
 and dialog components. Every package — core, React, and Next.js — accepts the
 exact same `initCookieYes(config)` shape. Full options are documented in
-[Configuration](./docs/configuration.md).
+[Configuration](https://developer.cookieyes.com/docs/getting-started/configuration).
 
 ### React
 
