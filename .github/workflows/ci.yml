@@ -11,6 +11,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  peer-deps-derive-check:
+    name: Peer-dependency matrix derive-check
+    runs-on: ubuntu-latest
+    # No Node-version dependency (parses package.json/matrix.config.mjs text
+    # only, no install) — a separate job from `build` so it doesn't
+    # triple-run across the Node matrix. See
+    # ai-context/designs/peer-dependency-matrix.md §5.6.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install root dependencies only (semver, for derive-check.mjs)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Derive-from-peerDeps enforcement
+        run: pnpm peer-matrix:derive-check
+
   build:
     name: Lint, typecheck, build & test
     runs-on: ubuntu-latest
@@ -41,6 +66,9 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Build web app
+        run: pnpm build:web
 
       - name: Test
         run: pnpm test
