@@ -87,7 +87,7 @@ export function Hero() {
           />{" "}
         </div>{" "}
         <a
-          href="#"
+          href="/docs/changelog"
           aria-label="What's new"
           className="scp4"
           style={{
@@ -203,7 +203,7 @@ export function Hero() {
           <div style={{ display: "flex", flexFlow: "wrap", gap: "var(--cy-space-12)" }}>
             {" "}
             <a
-              href="#"
+              href="/docs/getting-started/installation?pkg=nextjs"
               className="scp5 scp6"
               style={{
                 height: "52px",
@@ -247,7 +247,7 @@ export function Hero() {
               </span>
             </a>{" "}
             <a
-              href="#"
+              href="/docs/getting-started/installation?pkg=react"
               className="scp7 scp6"
               style={{
                 height: "52px",
@@ -428,7 +428,7 @@ export function Hero() {
             </div>{" "}
           </div>{" "}
           <a
-            href="#"
+            href="/docs"
             className="scp1"
             style={{
               marginTop: "var(--cy-space-16)",

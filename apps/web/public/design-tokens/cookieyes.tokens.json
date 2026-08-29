@@ -1,0 +1,92 @@
+{
+  "$description": "CookieYes SDK design tokens — generated, do not edit by hand.",
+  "cy": {
+    "primary": {
+      "$type": "color",
+      "$value": "#1863dc",
+      "$description": "The primary brand colour — primary buttons, links inside the banner description, the checked toggle track, and the source colour for the focus ring and the primary-hover mix."
+    },
+    "primary-hover": {
+      "$type": "color",
+      "$value": "{cy.primary}",
+      "$description": "The primary button's hover colour — a darker mix of --cy-primary, applied on hover in place of the fade every other button gets. No theme key of its own; override it with an author !important rule if you need a different mix. The real value is a runtime color-mix() transform of the referenced token, not a static colour — see $extensions.cookieyes.transform.",
+      "$extensions": {
+        "cookieyes": {
+          "transform": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+          "computed": true
+        }
+      }
+    },
+    "bg": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "The banner card and preferences-dialog surface colour — the background you see behind all of their content."
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#212121",
+      "$description": "Body and heading text colour across every SDK surface."
+    },
+    "muted": {
+      "$type": "color",
+      "$value": "#6b7280",
+      "$description": "Secondary, less prominent text — the frame placeholder's caption text today; reserved for other secondary text as the SDK grows."
+    },
+    "border": {
+      "$type": "color",
+      "$value": "#f4f4f4",
+      "$description": "Hairline borders, dividers, and separators — the banner's own border, the dialog header/footer rules, and the accordion separators."
+    },
+    "widget-bg": {
+      "$type": "color",
+      "$value": "#0056a7",
+      "$description": "The background of the floating recall (re-open) widget button."
+    },
+    "radius": {
+      "$type": "dimension",
+      "$value": {
+        "value": 6,
+        "unit": "px"
+      },
+      "$description": "Corner rounding for the banner and preferences dialog — one value shared by both; the iframe placeholder scales it down by 40%."
+    },
+    "font": {
+      "$type": "fontFamily",
+      "$value": [
+        "-apple-system",
+        "BlinkMacSystemFont",
+        "\"Segoe UI\"",
+        "Roboto",
+        "sans-serif"
+      ],
+      "$description": "The font stack used for every piece of SDK text, across every surface."
+    },
+    "focus": {
+      "$type": "color",
+      "$value": "{cy.primary}",
+      "$description": "The focus-visible outline colour on buttons, the toggle switch, and the CCPA opt-out checkbox. Defaults to a pure alias of --cy-primary — set focusColor to break that link."
+    },
+    "on-primary": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Automatically computed near-white or near-black text/icon colour, chosen by WCAG relative luminance to be the more readable of the two against --cy-primary. Recomputes only for hex primaryColor values — anything else falls back to white. This file cannot reflect a customer's own colour choice — it recomputes at runtime via WCAG contrast against --cy-primary.",
+      "$extensions": {
+        "cookieyes": {
+          "computed": true,
+          "computedFrom": "{cy.primary}"
+        }
+      }
+    },
+    "on-widget-bg": {
+      "$type": "color",
+      "$value": "#ffffff",
+      "$description": "Automatically computed near-white or near-black icon colour for the recall widget, chosen the same way as --cy-on-primary but against whichever --cy-widget-bg value actually applies in the active colour scheme. This file cannot reflect a customer's own colour choice — it recomputes at runtime via WCAG contrast against --cy-widget-bg.",
+      "$extensions": {
+        "cookieyes": {
+          "computed": true,
+          "computedFrom": "{cy.widget-bg}"
+        }
+      }
+    }
+  }
+}

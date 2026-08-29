@@ -147,7 +147,7 @@ export function SiteFooter() {
                 {"Product"}
               </span>{" "}
               <a
-                href="#"
+                href="/docs"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0 var(--cy-space-12)",
@@ -163,7 +163,7 @@ export function SiteFooter() {
                 {"Documentation"}
               </a>{" "}
               <a
-                href="#"
+                href="/docs/getting-started/installation?pkg=nextjs"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -179,7 +179,7 @@ export function SiteFooter() {
                 {"Next.js"}
               </a>{" "}
               <a
-                href="#"
+                href="/docs/getting-started/installation?pkg=react"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -195,7 +195,7 @@ export function SiteFooter() {
                 {"React"}
               </a>{" "}
               <a
-                href="#"
+                href="/docs/integrations"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -234,7 +234,7 @@ export function SiteFooter() {
                 {"Project"}
               </span>{" "}
               <a
-                href="https://www.npmjs.com/org/cookieyes"
+                href="https://github.com/cookieyes/cookieyes"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0 var(--cy-space-12)",
@@ -266,7 +266,7 @@ export function SiteFooter() {
                 {"npm"}
               </a>{" "}
               <a
-                href="https://github.com/cookieyes/cookieyes/releases"
+                href="/docs/changelog"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -321,7 +321,7 @@ export function SiteFooter() {
                 {"CookieYes"}
               </a>{" "}
               <a
-                href="#"
+                href="https://github.com/cookieyes/cookieyes"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -337,7 +337,7 @@ export function SiteFooter() {
                 {"GitHub"}
               </a>{" "}
               <a
-                href="#"
+                href="https://www.cookieyes.com/contact/"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -392,7 +392,7 @@ export function SiteFooter() {
                 {"MIT License"}
               </a>{" "}
               <a
-                href="#"
+                href="https://www.cookieyes.com/privacy-policy/"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -408,7 +408,7 @@ export function SiteFooter() {
                 {"Privacy Policy"}
               </a>{" "}
               <a
-                href="#"
+                href="https://www.cookieyes.com/cookie-policy/"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -424,7 +424,7 @@ export function SiteFooter() {
                 {"Cookie Policy"}
               </a>{" "}
               <a
-                href="#"
+                href="https://www.cookieyes.com/terms-and-conditions/"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",

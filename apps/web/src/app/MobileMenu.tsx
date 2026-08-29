@@ -188,7 +188,7 @@ export function MobileMenu() {
       <div style={{ marginTop: "var(--cy-space-24)", display: "flex", flexDirection: "column" }}>
         {" "}
         <a
-          href="#"
+          href="/docs"
           style={{
             padding: "var(--cy-space-20) 0",
             borderTop: "1px solid var(--cy-border)",
@@ -220,7 +220,7 @@ export function MobileMenu() {
           {"Changelog"}
         </a>{" "}
         <a
-          href="#"
+          href="https://github.com/cookieyes/cookieyes"
           style={{
             padding: "var(--cy-space-20) 0",
             borderTop: "1px solid var(--cy-border)",

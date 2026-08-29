@@ -1070,7 +1070,7 @@ export function StartWithInstall() {
             <div style={{ display: "flex", flexFlow: "wrap", gap: "var(--cy-space-12)" }}>
               {" "}
               <a
-                href="#"
+                href="/docs/getting-started/installation?pkg=nextjs"
                 className="scp5 scp6"
                 style={{
                   height: "52px",
@@ -1114,7 +1114,7 @@ export function StartWithInstall() {
                 </span>
               </a>{" "}
               <a
-                href="#"
+                href="/docs/getting-started/installation?pkg=react"
                 className="scp7 scp6"
                 style={{
                   height: "52px",
@@ -1297,7 +1297,7 @@ export function StartWithInstall() {
               </div>{" "}
             </div>{" "}
             <a
-              href="#"
+              href="/docs"
               className="scp1"
               style={{
                 marginTop: "var(--cy-space-16)",

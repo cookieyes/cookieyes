@@ -1,3 +1,5 @@
+import { createMDX } from "fumadocs-mdx/next";
+
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
@@ -6,4 +8,8 @@ const config = {
   agentRules: false,
 };
 
-export default config;
+// Compiles the MDX under content/docs into the generated .source module that
+// src/lib/source.ts loads.
+const withMDX = createMDX();
+
+export default withMDX(config);

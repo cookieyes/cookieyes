@@ -3,6 +3,7 @@ import "./landing.css";
 import { InstallCommandCopy } from "./InstallCommandCopy";
 import { MobileMenu } from "./MobileMenu";
 import { LandingMotion } from "./motion/LandingMotion";
+import { SearchTriggers } from "./SearchTriggers";
 import { BuiltToLast } from "./sections/BuiltToLast";
 import { GridFrame } from "./sections/GridFrame";
 import { Hero } from "./sections/Hero";
@@ -33,6 +34,7 @@ export default function LandingPage() {
   return (
     <div className="cy-page cy-light cy-nolines">
       <InstallCommandCopy />
+      <SearchTriggers />
       <LandingMotion />
       <GridFrame />
       <SiteNav />

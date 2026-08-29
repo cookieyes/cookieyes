@@ -241,7 +241,7 @@ export function SiteNav() {
           >
             {" "}
             <a
-              href="#"
+              href="/docs"
               data-navlink="1"
               style={{
                 display: "flex",
