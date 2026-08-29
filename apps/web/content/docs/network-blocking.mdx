@@ -1,0 +1,243 @@
+---
+title: Network blocking
+description: What networkBlocker actually stops, what it doesn't, what it costs, and starter rules for common vendors.
+---
+
+There are two mechanisms for keeping third-party code from running before consent, and the important one is not "blocking." Consent-gated injection (`GatedScript`, or the `integrations` presets from `@cookieyes/scripts`) is the primary mechanism — it's always on, and it's effectively free, because nothing is ever added to the DOM until consent is granted. There's nothing to block, because nothing was ever loaded.
+
+`networkBlocker` is the second mechanism: an opt-in fallback for code you don't control — a tag hard-coded in HTML you can't edit, a script injected by another vendor's bundle, a beacon fired from inside code you don't own. This page documents exactly what it does, what it costs, and where it can go wrong.
+
+## When to use it
+
+Reach for `networkBlocker` only when you cannot register the tag with `GatedScript`. If you can reference the script in your own code, [`GatedScript`](/docs/components/gated-script) is the right tool, and it's cheaper: one conditional and a `Map` lookup, versus three globally patched browser APIs for the lifetime of the page.
+
+<Callout type="warn">
+  `networkBlocker` **cannot** stop a `<script src="...">` element. Nothing patches `HTMLScriptElement` or `document.createElement` — the browser fetches a script tag's own `src` through a path this SDK never touches, so a script element's request never passes through `fetch`, `XMLHttpRequest`, or `sendBeacon`. Most readers assume the opposite. See [GatedScript](/docs/components/gated-script#when-to-use-it) for the mechanism that does control script tags.
+</Callout>
+
+Use network interception when:
+
+- A third-party tag is hard-coded into HTML you don't control (a CMS template, a partner's embed snippet).
+- Another vendor's own bundle injects a request you didn't ask for.
+- A library fires a beacon (`navigator.sendBeacon`) on unload or page-exit that you can't intercept any other way.
+
+If none of those apply — if you can reference the tag in code — register it with `GatedScript` instead and stop reading here.
+
+## Basic usage
+
+The declarative path is what almost everyone uses: the `networkBlocker` key on `initCookieYes()`.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "cookie-only",
+  networkBlocker: {
+    rules: [{ id: "ga4", domain: "google-analytics.com", category: "analytics" }],
+  },
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+Every request to `google-analytics.com` (or any subdomain of it) is denied until the `analytics` category is granted.
+
+You will rarely call the underlying functions directly — `installNetworkBlocker(config, hasConsent)` and `uninstallNetworkBlocker()` are exported from `@cookieyes/core` for the rare case where you're managing consent state yourself, outside `initCookieYes()`. Note that `react` and `nextjs` do not re-export either function — the `networkBlocker` config key is the only path in those two packages.
+
+```ts title="src/network-blocker-manual.ts"
+import { installNetworkBlocker } from "@cookieyes/core";
+import type { ConsentCategory } from "@cookieyes/core";
+
+const committedCategories: Partial<Record<ConsentCategory, boolean>> = {
+  analytics: false,
+};
+
+const uninstall = installNetworkBlocker(
+  {
+    rules: [{ id: "ga4", domain: "google-analytics.com", category: "analytics" }],
+  },
+  (category) => committedCategories[category] === true,
+);
+
+// Later — equivalent to calling uninstallNetworkBlocker() directly.
+uninstall();
+```
+
+## Behaviour and trade-offs
+
+### What gets patched, and what a blocked caller actually observes
+
+This is the part worth reading in full before you rely on it — the three transports fail in three different, observable ways:
+
+| Transport | What's patched | What the caller observes when blocked |
+| --- | --- | --- |
+| `window.fetch` | Replaced wholesale. | The returned promise **rejects** with a `TypeError`, message `Blocked by consent (rule: <id>, category: <category>)`. This looks exactly like a real network failure, so an existing `.catch()` fires. |
+| `XMLHttpRequest` | `open()` only records the url/method; `send()` is patched. | `open()` always succeeds — it never blocks. The patched `send()` calls `this.abort()` and returns. **Nothing throws.** A `try/catch` around `xhr.send()` sees nothing at all; only a listener on the `abort` event notices. |
+| `navigator.sendBeacon` | Replaced wholesale. | **Returns `true` without sending anything.** It reports success for a beacon that never left. This is deliberate: returning `false` makes some libraries retry the same payload over another transport (fetch or XHR), which would also get blocked, producing noisier failures for no benefit — but it also means anyone checking the boolean return value is misled by design. |
+
+`sendBeacon` is patched at all because it's how GA4 and Meta fire their exit/unload pings — `fetch`/XHR interception alone would miss that traffic entirely.
+
+### How a request matches a rule
+
+- **`domain`** matches the request's hostname exactly, or as a suffix of `"." + domain` — both lower-cased first. A rule for `google-analytics.com` also matches `region1.google-analytics.com`, but **not** `evilgoogle-analytics.com` (no dot boundary, so it isn't a suffix match).
+- **`pathIncludes`** is a plain substring test against the URL's path **and query string** together. A narrow-looking string can still match more than you expect if the same substring shows up in an unrelated query parameter on the same host.
+- **`methods`**, if omitted, matches every method — including `OPTIONS` preflights. If present, it's a case-insensitive allow-list. `sendBeacon`'s method is always `"POST"`, since that's the only method the browser API supports.
+- A URL that fails to parse is never blocked.
+- Rules are checked in array order. A rule that matches but whose category is **already consented** is skipped, and evaluation continues to the next rule — so two overlapping rules for the same host with different categories can behave differently depending on which one is listed first. Put the more specific rule first.
+
+### Consent gating is committed, not live
+
+The consent check runs fresh on every request, and it reads **committed** consent — not the live, unsaved toggle state inside the preferences dialog while someone is still adjusting it. Granting consent unblocks only requests made *after* that point; nothing already rejected is queued or retried automatically.
+
+### Install and uninstall
+
+`installNetworkBlocker` is a module-level singleton, not a stack:
+
+- A second `installNetworkBlocker()` call while one is already active is a **silent no-op** — the second config's rules are discarded, with no warning logged.
+- It's also a no-op when `config.rules` is empty, and when `window` is undefined, so it's safe to call during server-side rendering.
+- `uninstallNetworkBlocker()` restores the exact `fetch`/XHR/`sendBeacon` originals captured at install time, and is idempotent — calling it twice, or when nothing is installed, does nothing.
+- `resetConsentRuntime()` uninstalls the blocker before dropping the runtime, so tearing down and re-initializing (a hot-reload path, or two independent setup calls in sequence) leaves a clean slate rather than a stale blocker holding an old consent closure.
+
+### Logging and the `onRequestBlocked` callback
+
+`logBlockedRequests` defaults to on — only an explicit `false` turns it off. When enabled, every blocked request logs exactly:
+
+```text title="Console output when a request is blocked"
+[cookieyes] blocked <METHOD> <url> (rule "<id>", category: <category>)
+```
+
+`onRequestBlocked` receives `{ rule, url, method }` and fires independently of logging — wire it up if you want to react to blocked requests (metrics, debugging) without the console noise, or with logging turned off entirely.
+
+### What it costs
+
+Measured in Chromium on an emulated Pixel 5, CPU throttled 4×, network throttled to roughly 1.6 Mbps / 150 ms RTT. Three runs:
+
+| | Measured |
+| --- | --- |
+| Consent-gated injection (mechanism 1) | no measurable overhead |
+| `fetch()` dispatch, blocker off | ~29.7 µs/call |
+| `fetch()` dispatch, blocker on | ~30.7–34 µs/call |
+| **Per-request overhead of the patch** | **~1–4.5 µs** |
+
+Method: time the *synchronous* dispatch of 2,000 `fetch()` calls without awaiting them, with and without the blocker installed. Awaiting the responses instead of just timing dispatch buries the wrapper under milliseconds of real network I/O — a first attempt at this measured the overhead as *negative*, which is what network noise looks like at a microsecond scale.
+
+**Read this as an order of magnitude, not a precise figure.** A page making 100 requests pays well under a millisecond in total. The real cost isn't speed — it's that `fetch`, `XMLHttpRequest`, and `sendBeacon` are all globally patched for the page's entire lifetime, which is a correctness and debuggability consideration more than a performance one.
+
+The benchmark harness that produced these numbers is **not in this repository** — it needs a real browser and isn't part of this repo's CI. The figures above are recorded as quotable measurements, not something you can re-run from this repo without first standing that harness back up.
+
+### Starter rules for common vendors
+
+<Callout type="warn">
+  These rules are written from each vendor's publicly documented endpoints. Their **matching behaviour** is verified against this SDK's own rule-matching logic — not against captured live traffic from each vendor, which needs production-like network conditions this repository doesn't have. Endpoints change without notice. Treat this table as a starting point: confirm against your own Network tab before shipping, the same way you'd verify any third-party integration.
+</Callout>
+
+| Vendor | Consent posture | Starter rule |
+| --- | --- | --- |
+| Google Analytics 4 / GTM | Already Consent-Mode-aware — this SDK broadcasts Google Consent Mode v2 signals automatically whenever a `dataLayer` is present. A `networkBlocker` rule here is defense-in-depth, not the only control. | `{ id: "ga4", domain: "google-analytics.com", category: "analytics" }` |
+| Meta Pixel | Does not read Consent Mode. Needs active blocking (or the vendor's own runtime consent API) for a hard-coded snippet. | `{ id: "meta-pixel", domain: "facebook.com", pathIncludes: "/tr", methods: ["POST"], category: "advertisement" }` |
+| Hotjar | Does not support consent signals. Active blocking is the control. | `{ id: "hotjar", domain: "static.hotjar.com", category: "analytics" }` |
+| TikTok Pixel | Does not support consent signals. | `{ id: "tiktok-pixel", domain: "analytics.tiktok.com", category: "advertisement" }` |
+
+The GA4 rule's suffix matching covers the regional host `region1.google-analytics.com` automatically — no second rule needed. The Meta Pixel rule matches `facebook.com` with `pathIncludes: "/tr"`, which is the *tracking* endpoint; `connect.facebook.net` is the separate *script* host for the pixel's own JS, which is a `GatedScript` concern rather than a `networkBlocker` one. TikTok Pixel is the one vendor of the four not otherwise referenced anywhere in this repo — it's written from documented endpoints, not from something this codebase exercises, so verify it especially carefully against your own traffic.
+
+### Where this can go wrong
+
+Every consent tool that intercepts network requests has these properties — they're inherent to this category of feature, not a defect specific to this SDK. Here's what reliably works, and where the edges are.
+
+**Under-blocking** — cases where the SDK fails to block something it should:
+
+- **The single biggest gap: it cannot stop a `<script src="...">` element at all.** Covered above, worth repeating here — no `HTMLScriptElement`/`document.createElement` patch exists.
+- A vendor changes its tracking endpoint without notice, and your rule's `domain` or `pathIncludes` no longer matches.
+- A transport this SDK doesn't patch (anything other than `fetch`, `XMLHttpRequest`, and `sendBeacon`) is unaffected.
+- A request fired before the blocker installs — for example, from code that runs ahead of `initCookieYes()` — is not intercepted.
+- A malformed URL is never blocked; a URL that fails to parse falls through.
+
+**Over-blocking** — cases where the SDK blocks something it shouldn't:
+
+- Too broad a `domain` catches a vendor's non-tracking endpoints too — a rule for `example.com` blocks every subdomain of `example.com`, which is correct suffix-matching behaviour but can be wider than intended.
+- Omitting `methods` means every method matches, including `OPTIONS` preflights — usually harmless, but worth knowing if you see preflights logged as blocked.
+- `pathIncludes` matches against the query string too, so a substring that looks narrow can match an unrelated request that happens to carry the same string in a query parameter.
+
+What this reliably catches: any request from `fetch`, `XMLHttpRequest`, or `sendBeacon` whose URL matches a rule and whose category is not yet consented — which is the large majority of third-party tracking traffic that isn't loaded via a hard-coded script tag.
+
+## Verify it works
+
+Check **per transport** — a console-only check misses the `sendBeacon` case entirely, since a blocked beacon call reports success and logs nothing unless `logBlockedRequests` or `onRequestBlocked` tells you otherwise.
+
+1. Reject the target category (or leave it undecided).
+2. Trigger the code path that fires the vendor's request. Open DevTools → Network.
+3. Check per transport:
+   - **`fetch`** — the request shows as **failed** (red) in the Network tab; an unhandled rejection appears in the console with the `Blocked by consent (rule: …)` message if nothing `.catch()`es it.
+   - **XHR** — the request shows as **(canceled)** in the Network tab; nothing appears in the console unless you registered an `abort` listener yourself.
+   - **`sendBeacon`** — **no request appears in the Network tab at all**, and no console output unless `logBlockedRequests` is on (the default) or `onRequestBlocked` is wired up. The call itself silently reports success to the caller — this is the transport most likely to be mis-tested by "check the console" alone.
+4. Grant the category, retry, and confirm the request now appears and succeeds for all three transports.
+5. To check domain matching specifically, run a scratch `fetch("https://sub.<domain>/...")` from the DevTools console to confirm a subdomain is caught, and `fetch("https://evil<domain>/...")` (no dot before the domain) to confirm a lookalike is **not** caught.
+
+## Complete example
+
+A config combining two starter rules for vendors that need active blocking (Meta Pixel and TikTok Pixel), with `onRequestBlocked` wired to a callback:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "cookie-only",
+  networkBlocker: {
+    rules: [
+      {
+        id: "meta-pixel",
+        domain: "facebook.com",
+        pathIncludes: "/tr",
+        methods: ["POST"],
+        category: "advertisement",
+      },
+      { id: "tiktok-pixel", domain: "analytics.tiktok.com", category: "advertisement" },
+    ],
+    onRequestBlocked: ({ rule, url, method }) => {
+      console.info(`blocked by rule "${rule.id}":`, method, url);
+    },
+    // Defaults to true — set false to silence the console.warn and rely on
+    // onRequestBlocked only.
+    logBlockedRequests: true,
+  },
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**A `<script src="...">` tag isn't blocked.**
+It won't. Nothing patches `HTMLScriptElement` or `document.createElement`. If you need a script gated, register it with `GatedScript` — see "When to use it" above.
+
+**A blocked `sendBeacon` call looks successful.**
+It is, by design — `sendBeacon` always returns `true` when blocked, without sending anything. Checking the return value tells you the call was accepted, not that anything was sent. Check the Network tab, or wire `onRequestBlocked`.
+
+**A `try/catch` around `xhr.send()` never fires.**
+The patched `send()` calls `this.abort()` and returns normally — it doesn't throw. Listen for the `abort` event on the `XMLHttpRequest` instance instead.
+
+**A second `installNetworkBlocker()` call's new rules never apply.**
+A second call while one is already active is a silent no-op — the new config's rules are discarded with no warning. This is the same reason `resetConsentRuntime()` uninstalls the blocker before dropping the runtime: without that, a second `initCookieYes()` (or a hot-reload path re-running setup) would leave the old rule set installed.
+
+**After granting consent, the already-rejected request never happens.**
+Nothing is queued or retried. Granting consent only unblocks requests made *after* that point — the caller that already got a rejected promise, an aborted XHR, or a fake-successful beacon needs to retry the request itself.
+
+## Across the SDK
+
+`installNetworkBlocker`, `uninstallNetworkBlocker`, and the `NetworkBlockerConfig`/`NetworkBlockerRule`/`BlockedRequestInfo` types are all `@cookieyes/core` exports. `@cookieyes/react` and `@cookieyes/nextjs` reach this feature only declaratively, through the `networkBlocker` key on `initCookieYes()` — neither package re-exports the imperative functions, so the config key is the only path if you're on either of those packages.
+
+This page is distinct from `sdk/core/README.md`'s "three-layer stop-tracking model": that section answers "how do I stop something already running once consent is withdrawn" (network blocking as one of three layers, alongside built-in and custom stop-handlers). This page answers a different question — "how do I stop something from ever starting before consent, and what does that cost." Both are accurate descriptions of the same underlying function, from two different angles.
+
+## See also
+
+- [GatedScript](/docs/components/gated-script) — the primary mechanism; use this first if you can register the tag
+- [Configuration](/docs/getting-started/configuration#networkblocker) — the field-by-field option reference for `networkBlocker`
+- [Troubleshooting](/docs/troubleshooting) — other console messages this SDK produces

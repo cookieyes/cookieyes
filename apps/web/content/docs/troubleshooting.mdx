@@ -1,0 +1,219 @@
+---
+title: Troubleshooting
+description: Error messages you may hit, what causes them, and the fix.
+---
+
+## When to use it
+
+Come here with a symptom or a console message. Errors are quoted verbatim, so searching this page for the exact text works.
+
+If you are setting up for the first time and nothing has gone wrong yet, [Quick start](/docs/getting-started/quick-start) ends with a "Verify it works" checklist that catches most setup problems before they become symptoms.
+
+## Basic usage
+
+The three checks that resolve most issues:
+
+```bash title="1. Is the stylesheet imported?"
+# Should appear exactly once, at your app root
+grep -r "@cookieyes/react/styles.css" src/ app/
+```
+
+```js title="2. What state is the visitor actually in?"
+// DevTools console
+document.cookie.split("; ").find((c) => c.startsWith("cookieyes-consent="));
+```
+
+```js title="3. Reset to a clean slate"
+document.cookie = "cookieyes-consent=; max-age=0; path=/";
+location.reload();
+```
+
+## Errors
+
+### `[cookieyes] No runtime is registered.`
+
+**This almost never actually shows up.** A missing `initCookieYes()` or a missing `"use client"` does not throw — every hook and every styled component reads the runtime through a non-throwing accessor and degrades silently instead: no banner, nothing in the console, hooks returning their safe defaults, actions doing nothing. That silence is the real symptom, and it is harder to diagnose precisely because there is no error to search for. Check, in order of likelihood:
+
+1. The config lives in a module nothing imports on the path to your components. A module nobody imports never runs.
+2. `initCookieYes()` is in a Server Component — it must be in a `"use client"` module.
+3. It is inside a component body rather than at module scope.
+4. The components rendering (`CookieBanner`, `CookiePreferences`, ...) are not themselves in a `"use client"` file.
+
+The rule, with a correct and incorrect example side by side, is on [Configuration](/docs/getting-started/configuration#the-rule-that-breaks-most-first-setups).
+
+You will see an actual thrown error only when code calls [`useConsentRuntime()`](/docs/hooks/low-level-hooks) or `getCookieYes()` directly — both skip the safe-default behaviour on purpose, because that low-level escape hatch is meant for code that genuinely requires a runtime to exist:
+
+```text title="Error output"
+Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
+```
+
+### `[cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`
+
+Also `[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`
+
+A primitive slot escaped its namespace root — usually after extracting a sub-tree into a component rendered elsewhere. Every `Preferences.*` must be a DOM descendant of `Preferences.Root`.
+
+### `` [cookieyes] `asChild` expects exactly one React element child. ``
+
+You passed text, a fragment, or multiple children to a slot using `asChild`. Wrap in exactly one element.
+
+### `createCookieYes(): .mode() is required before .mount().`
+
+Builder-only. Migrate to `initCookieYes`, where `mode` is a required field the type system enforces. See [Migration](/docs/migration).
+
+### `createCookieYes(): .mode('self-hosted') requires either .backend(...) or .backendURL(...).`
+
+Same — builder-only.
+
+### `[cookieyes] initCookieYes() called more than once.`
+
+Two modules call the builder, or it is inside a component body.
+
+### `TS2353: ... does not exist in type 'CookieYesOfflineConfig'.`
+
+You used a backend key (`apiUrl`, `apiKey`, `backend`) under `mode: "cookie-only"`. The union is discriminated on `mode` precisely to catch this. Switch mode or drop the key.
+
+## Warnings
+
+### `` [cookieyes] `regulation` is set manually, so region detection is ignored. ``
+
+Both `regulation` and `region` are set. A manual regulation always wins. Remove `regulation` to let detection decide.
+
+### `[cookieyes] mode: "offline" has been renamed to "cookie-only".`
+
+A pure rename, identical behaviour. See [Migration](/docs/migration).
+
+### `` [cookieyes] `builtInIntegrations` (formerly the `integrations` field) is deprecated ``
+
+The `integrations` key changed meaning. See [Migration](/docs/migration) — this is the one deprecation that can change behaviour silently.
+
+### `[cookieyes] A style was blocked by your Content-Security-Policy`
+
+```text title="Console warning"
+[cookieyes] A style was blocked by your Content-Security-Policy (style-src). CookieYes's own styling doesn't require "unsafe-inline" or a nonce, so this is likely unrelated to this SDK — check your own inline styles or third-party scripts.
+```
+
+A safety net, not an SDK error. The SDK's styling cannot violate `style-src`, so something else on the page did. See [CSP](/docs/styling/csp).
+
+## Silent failures
+
+The hardest category — no error, nothing in the console.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Banner renders as unstyled text | Stylesheet not imported | `import "@cookieyes/react/styles.css"` |
+| Preferences dialog unstyled, banner fine | Only `critical.css` loaded | Load `styles.css` too |
+| Banner never appears | Already decided in this browser | Clear the cookie, or `reset()` |
+| Nothing renders anywhere, no error at all | `initCookieYes()` never ran, or ran outside `"use client"` | Confirm the module is imported and starts with `"use client"` — see [the rule that breaks most first setups](/docs/getting-started/configuration#the-rule-that-breaks-most-first-setups) |
+| Banner flashes and vanishes on every load | No `initialConsent` | Pass it via `CookieYesProvider` |
+| Gated script never loads | Category not in the active taxonomy, or CSP blocked it | Check `useCategories().ids`, then `script-src` |
+| Consent never reaches the backend | `cookie-only` mode, or no `apiUrl`/`backend`, or `connect-src` | POST is fire-and-forget — check the Network tab |
+| Custom categories do not appear | Config rejected, fell back to the built-in five | Check the console for the validation warning |
+| Tracker loads before the visitor saves | Gating on live values | Use `useConsentCategory()` |
+| Dialog toggles never persist | No `Save`/`AcceptAll`/`RejectAll` rendered | Add one |
+| Checkbox can be turned on but never off | `onChange={toggle}` passes an event | `onChange={(e) => toggle(e.target.checked)}` |
+| CSS rule does nothing | Specificity tie, losing on source order | Import your sheet after `styles.css` |
+| CSS rule needs `!important` | `theme` setting it inline | Remove the config key |
+| Scoped/CSS-Modules styles never apply | Components portal into `<body>` | Use global CSS |
+| Banner is English despite `locale: "fr"` | No `fr` entry in `i18n.messages` | Add the catalog |
+| Focus jumps to page top on dialog close | Opened via the low-level runtime | Use `useConsentActions().showPreferences()` |
+| Revoking consent does not stop a tracker | Injection is one-way within a page load | Mount `ReloadNotice`, or `reloadOnRevoke: true` |
+| `strategy="lazyOnce"` changed nothing | Currently a no-op | Leave it unset |
+| Reload notice never appears | Nothing declared itself reload-only | Register a `needsReload` handler |
+
+## Behaviour and trade-offs
+
+### Hooks return defaults; `getCookieYes()` throws
+
+Deliberate. A missing runtime should not crash a render, but module-level code that genuinely requires one should fail loudly. If you are getting defaults where you expected real state, the runtime is not registered — the hook is not hiding an error, it is telling you the same thing quietly.
+
+### The consent POST is silent by design
+
+Failures are caught and swallowed so a broken endpoint never breaks the consent flow or shows an error to a visitor. There is no retry and no response parsing. So a wrong `apiUrl`, a CORS failure, a CSP block, and a 500 all look identical from inside your app. Diagnose in the Network tab.
+
+### A category validation failure falls back rather than throwing
+
+An invalid `categories` config logs a warning and uses the built-in five. Common causes: no category marked `required: true`, or an id colliding with a reserved cookie meta key — `consentid`, `consent`, `action`, `tax`, `lastRenewedDate`.
+
+### Reading the cookie directly
+
+```text title="Raw cookie value"
+consentid:abc123,consent:yes,action:yes,tax:1a2b3c,necessary:yes,analytics:no,lastRenewedDate:1735689600000
+```
+
+Comma-separated `key:value`. Five meta keys as above; every other pair is a category id mapped to `yes`/`no`. `tax` is the taxonomy signature — if it does not match your current config, the visitor is re-asked, which is correct.
+
+### Testing consent-dependent code
+
+Use `@cookieyes/test` rather than mocking. It runs core's real engine, so a passing test means the code actually works. `seedConsentCookie` sets up a returning visitor; `resetConsentTestState` clears between tests. A parity test asserts the harness cannot drift from production behaviour.
+
+### First-paint problems need a real browser
+
+jsdom has no paint, no layout shift, and does not resolve CSS custom properties, so unit tests cannot tell you whether a visitor actually *saw* the banner. Three manual checks:
+
+1. Server-render with **JavaScript disabled** and reload. The banner must be fully styled — a transparent banner means the theme tokens were lost.
+2. Throttle CPU to 20× and reload. The banner must not visibly disappear and fade back in.
+3. Accept, then reload. The banner must be absent from View Source, not flash and vanish.
+
+## Complete example
+
+A diagnostic component for a dev environment:
+
+```tsx title="components/ConsentDiagnostics.tsx"
+"use client";
+
+import {
+  useCategories,
+  useConsent,
+  useConsentActions,
+  useRegion,
+  useReloadNotice,
+} from "@cookieyes/react";
+
+export function ConsentDiagnostics() {
+  const { consentId, hasActed, categories, committedCategories } = useConsent();
+  const { region, regulation, source, confidence } = useRegion();
+  const { ids, requiredIds, isDefault } = useCategories();
+  const { required, reasons } = useReloadNotice();
+  const { reset, showPreferences } = useConsentActions();
+
+  if (process.env.NODE_ENV === "production") return null;
+
+  return (
+    <pre style={{ fontSize: 12 }}>
+      {JSON.stringify(
+        {
+          // "unregistered" here means initCookieYes() has not run.
+          consentId: consentId || "unregistered",
+          hasActed,
+          regulation: `${regulation} (via ${source}, ${confidence})`,
+          region: region ?? "unknown",
+          taxonomy: { ids, required: [...requiredIds], isDefault },
+          // If these disagree, someone has unsaved toggles open.
+          live: categories,
+          committed: committedCategories,
+          reloadNeeded: required ? reasons : false,
+        },
+        null,
+        2,
+      )}
+      <button type="button" onClick={() => showPreferences()}>
+        Open preferences
+      </button>
+      <button type="button" onClick={() => reset()}>
+        Reset consent
+      </button>
+    </pre>
+  );
+}
+```
+
+## Across the SDK
+
+Error messages come from `@cookieyes/core` and `@cookieyes/react`, and are identical in `@cookieyes/nextjs` since it mirrors the `react` surface. `@cookieyes/core` throws none of the React-specific errors — no runtime registry, no primitives — so in core the equivalent failure is simply holding a runtime object you never created.
+
+## See also
+
+- [Migration & deprecations](/docs/migration) — every deprecation warning explained
+- [Rendering & selector contract](/docs/rendering-and-selector-contract) — SSR and selector issues
+- [CSP](/docs/styling/csp) — blocked scripts and styles

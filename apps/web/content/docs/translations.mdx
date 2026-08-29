@@ -1,0 +1,529 @@
+---
+title: Translations (i18n)
+description: Ship consent copy in every locale your app supports.
+---
+
+## When to use it
+
+Set up i18n if your app serves more than one language, or if the default English copy does not match your tone. Overriding a single string uses the same mechanism as translating everything.
+
+You do not need this to change *category labels only* — those live under the same `i18n.messages` tree, so this is still the page, but you can override just `categories` and leave everything else.
+
+## Basic usage
+
+### Shipped languages need no writing
+
+We ship five languages out of the box — English (built in), German, Spanish, French, and Italian. Using one requires no translation work at all: import the catalog and hand it to `initCookieYes`.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { fr } from "@cookieyes/translations/fr";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: "fr",
+    messages: { fr },
+  },
+});
+```
+
+That's the whole integration — no strings to write, no keys to fill in. See [Ready-made catalogs](#ready-made-catalogs) below for the full list and import paths.
+
+Need a language we don't ship? Open an issue — or a pull request adding the catalog — against [`@cookieyes/translations`](https://github.com/cookieyes/cookieyes/issues). Until then, write your own with `i18n.messages`, covered next.
+
+<Callout type="warn">
+  The CLI's setup wizard (`npx @cookieyes/cli init`, see [Quick start](/docs/getting-started/quick-start)) currently offers three of the five at setup — Spanish, French, and German. Italian isn't an option there yet; import it manually as shown above until that's added.
+</Callout>
+
+### Overriding strings in English
+
+Partial overrides are the biggest time-saver here, so it's worth stating plainly first: any override can be partial — supply one string, and everything else falls back to English automatically. The merge is deep, too: overriding one item inside a group, like a single category's label, doesn't discard the rest of that group.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    messages: {
+      en: {
+        bannerTitle: "We value your privacy",
+        acceptAll: "Sounds good",
+      },
+    },
+  },
+});
+```
+
+Translatable text is grouped exactly as `TranslationMap` groups it — banner text, shared button labels, preferences text, category labels and descriptions, opt-out text, gated-content text, and reload-notice text. See the full key reference under [Options](#translationmap-keys) below.
+
+For a complete language rather than a handful of strings, start from one of the shipped catalogs above — spread it and override what you like, as the [complete example](#complete-example) further down does — or write one from scratch. `PartialTranslations` accepts anything from a single key to the entire map.
+
+### Reading translations in your own components
+
+`useTranslations()` returns the full, English-filled `TranslationMap` for the active language, and re-renders your component automatically when the language changes — the same subscription the built-in components use.
+
+```tsx title="components/consent-manager/custom-banner-text.tsx"
+"use client";
+
+import { useTranslations } from "@cookieyes/react";
+
+export function CustomBannerText() {
+  const t = useTranslations();
+  return <p>{t.bannerDescription}</p>;
+}
+```
+
+## Options
+
+### `I18nConfig`
+
+| Option | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `messages` | `Record<string, PartialTranslations>` | No | `{}` | Translations per language tag. Each may be partial |
+| `locale` | `string` | No | — | Preferred language tag. Must exist in `messages` to take effect |
+| `detectBrowserLanguage` | `boolean` | No | **`true`** | Fall back to `navigator.language` |
+| `loadLanguage` | `(tag: string) => PartialTranslations \| Promise<PartialTranslations>` | No | — | Fetch a language on demand when switching |
+
+### Ready-made catalogs
+
+`@cookieyes/translations` ships five locales as **subpath imports**:
+
+| Locale | Import |
+| --- | --- |
+| English | built in — always the base |
+| Spanish | `import { es } from "@cookieyes/translations/es"` |
+| French | `import { fr } from "@cookieyes/translations/fr"` |
+| German | `import { de } from "@cookieyes/translations/de"` |
+| Italian | `import { it } from "@cookieyes/translations/it"` |
+
+<Callout type="warn">
+  Import from the **subpath**, never the barrel. The package deliberately does not re-export the locale tables from `@cookieyes/translations`, so that importing one locale cannot pull all five into your bundle.
+</Callout>
+
+### `TranslationMap` keys
+
+| Key | Where it appears |
+| --- | --- |
+| `bannerTitle`, `bannerDescription` | Banner |
+| `acceptAll`, `rejectAll`, `managePreferences`, `accept` | Banner and dialog buttons |
+| `savePreferences` | Preferences dialog |
+| `doNotSell`, `ccpaDescription` | CCPA banner |
+| `poweredBy` | Branding link's accessible name |
+| `preferencesTitle`, `preferencesIntro` | Preferences dialog |
+| `alwaysActive` | Shown in place of a toggle for a category marked `required: true` |
+| `preferencesDialogLabel` | Accessible name of the preferences dialog |
+| `optOutDialogLabel` | Accessible name of the opt-out dialog |
+| `recallButtonLabel` | Accessible name (and tooltip) of the floating recall button |
+| `bannerCloseLabel` | Accessible name of the banner's close button (rendered under CCPA only) |
+| `preferencesCloseLabel` | Accessible name of the preferences dialog's close button |
+| `optOutCloseLabel` | Accessible name of the opt-out dialog's close button |
+| `categories.<id>.label` / `.description` | One category row — the built-in five, or any custom id |
+| `optOut.title` / `.description` / `.cancel` / `.successText` / `.successCountdown` | Opt-out dialog |
+| `gatedFrame.placeholder` / `.action` | [`GatedFrame`](/docs/components/gated-frame)'s blocked-content placeholder — `placeholder` substitutes `{category}` |
+| `reloadNotice.message` / `.reloadButton` / `.dismissButton` | Reload notice |
+
+Every user-facing string and every accessibility label comes from this map, including the ones easy to miss: the three close buttons above each render only an icon, so the label is that button's entire accessible name — a screen-reader user gets nothing else to go on. `TranslationMap` is a required shape, so a shipped language missing a key fails the build; a regression suite (`sdk/react/src/__tests__/a11yLabelI18n.test.tsx`) additionally checks that the components actually read them, not just that the languages supply them. See [Accessibility](/docs/accessibility) for the SDK's other accessibility guarantees.
+
+## Behaviour and trade-offs
+
+### `locale` only works if the language is in `messages`
+
+This is the most common i18n bug with the SDK. Language resolution walks, in order, the configured `locale`, then the browser's language if detection is on, then English — but each candidate only wins if `messages` actually has an entry for it. A configured `locale` with nothing behind it silently loses to the next candidate rather than erroring.
+
+```tsx title="app/cookieyes-en-only.tsx"
+import { initCookieYes } from "@cookieyes/react";
+
+// Renders in ENGLISH — no `fr` entry in messages.
+initCookieYes({ mode: "cookie-only", i18n: { locale: "fr" } });
+```
+
+```tsx title="app/cookieyes-with-fr.tsx"
+import { initCookieYes } from "@cookieyes/react";
+import { fr } from "@cookieyes/translations/fr";
+
+// Renders in French.
+initCookieYes({ mode: "cookie-only", i18n: { locale: "fr", messages: { fr } } });
+```
+
+There is no warning. If your banner is stubbornly English, check that the tag is a key in `messages`.
+
+### `detectBrowserLanguage` defaults to `true`
+
+Omitting it means the SDK reads `navigator.language`. With `messages: { fr }` and no `locale`, a French-browser visitor gets French and everyone else gets English — often exactly what you want, and surprising if you did not expect it.
+
+Set `detectBrowserLanguage: false` to pin the language to `locale` alone.
+
+### Region tags fall back to the primary subtag
+
+`"en-GB"` matches a `messages.en` entry, and `"pt-BR"` matches `messages.pt`. Exact match wins, then the primary subtag. So you can ship one `messages.en` and serve every English region.
+
+### The language is decided fresh on every page load
+
+Resolution runs again on every page load — there's no session or persistence built in. A visitor who switched away from their browser's default language won't see that choice preserved on their next visit unless you store it yourself and feed it back in as `locale`.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { de } from "@cookieyes/translations/de";
+import { fr } from "@cookieyes/translations/fr";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: typeof window !== "undefined" ? (localStorage.getItem("cy-locale") ?? undefined) : undefined,
+    messages: { fr, de },
+  },
+});
+```
+
+```tsx title="components/consent-manager/language-picker.tsx"
+"use client";
+
+import { useLanguage } from "@cookieyes/react";
+
+// Wherever you offer a switcher, persist the choice yourself.
+export function LanguagePicker() {
+  const { language, languages, setLanguage } = useLanguage();
+  return (
+    <select
+      value={language}
+      onChange={async (e) => {
+        const tag = e.target.value;
+        await setLanguage(tag);
+        localStorage.setItem("cy-locale", tag);
+      }}
+    >
+      {languages.map((tag) => (
+        <option key={tag} value={tag}>
+          {tag}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+### Every override is deep-partial
+
+`PartialTranslations` is a deep partial of `TranslationMap`, merged onto English. Supply one string and the rest stays English — no need to copy the whole map. That also means a typo in a key is silently ignored rather than throwing.
+
+### English is always available
+
+English is the base every language merges onto, so switching to it never needs a loader even when `messages` has no `"en"` key. `useLanguage().languages` therefore always includes `"en"`.
+
+### Reading direction is automatic to compute, not applied by the presets
+
+Text direction is derived from the primary subtag, with nothing to configure: `ar`, `he`, `fa`, `ur`, `ps`, `sd`, `yi`, `dv` resolve to `rtl`; everything else resolves to `ltr`. Read it with `useLanguage().direction`.
+
+The styled presets — `CookieBanner`, `CookiePreferences`, `CookieOptOut`, `RecallButton`, `ReloadNotice` — don't act on it: their generated stylesheet fixes `direction: ltr` directly on the SDK's own root elements (`.cy-banner-wrap` and friends), so today they render left-to-right even for a recognised RTL language. If you serve one, build on [primitives](/docs/headless/overview) instead — they carry none of that reset, so `dir={direction}` on your own root behaves normally:
+
+```tsx title="components/consent-manager/rtl-banner.tsx"
+"use client";
+
+import { Banner, useLanguage } from "@cookieyes/react";
+
+export function RtlBanner() {
+  const { direction } = useLanguage();
+  return (
+    <Banner.Root dir={direction} className="my-banner">
+      <Banner.Title />
+      <Banner.Description />
+      <Banner.Actions>
+        <Banner.AcceptAll />
+        <Banner.RejectAll />
+      </Banner.Actions>
+    </Banner.Root>
+  );
+}
+```
+
+A language whose primary subtag isn't in the list above always resolves to `ltr` — there's no override in `I18nConfig` for a language we don't recognise as right-to-left. Handle it the same way: build on primitives and hardcode `dir="rtl"` for that language yourself.
+
+### Switching languages live
+
+`useLanguage()` returns everything you need for a switcher: the active `language` tag, its `direction`, the `languages` currently available without a fetch, and `setLanguage(tag)` to switch — see the [complete example](#complete-example) below for a working picker.
+
+Switching applies immediately when the language is already in `messages` (or is `"en"`). Otherwise it's fetched — see [Loading languages on demand](#loading-languages-on-demand) below — and the interface stays on the current language until that resolves, so always `await setLanguage(...)` before assuming it applied.
+
+If the language can't be found — no entry in `messages`, no `loadLanguage`, or `loadLanguage` throws — the SDK warns and stays on the current language rather than breaking:
+
+```text
+[cookieyes] no translations for language "${tag}"; staying on "${language}". Add it to i18n.messages or provide i18n.loadLanguage.
+```
+
+That warning fires once per language tag, not once per attempt — a silent console on a second `setLanguage("xx")` call does not mean it started working; check `useLanguage().languages` to know for sure.
+
+### Loading languages on demand
+
+Supply `i18n.loadLanguage` and the SDK calls it exactly once per language, the moment something needs a language not already in `messages` — a visitor's `setLanguage(tag)`, or an explicit starting `locale` that isn't bundled. English never needs loading: it's the base every language merges onto, so it's always available even with an empty `messages`.
+
+Two common loaders:
+
+```tsx title="app/cookieyes-load-from-package.tsx"
+import { initCookieYes } from "@cookieyes/react";
+import { en } from "@cookieyes/translations/en";
+import type { PartialTranslations } from "@cookieyes/react";
+
+// Import from our own package on demand — only the language actually used
+// ever reaches the bundle.
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: "en",
+    messages: { en },
+    loadLanguage: async (tag): Promise<PartialTranslations> =>
+      (await import(`@cookieyes/translations/${tag}`))[tag],
+  },
+});
+```
+
+```tsx title="app/cookieyes-load-from-server.tsx"
+import { initCookieYes } from "@cookieyes/react";
+import { en } from "@cookieyes/translations/en";
+
+// Fetch from your own server instead — for languages we don't ship, or
+// translations your team manages outside this package.
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: "en",
+    messages: { en },
+    loadLanguage: async (tag) => {
+      const res = await fetch(`/api/translations/${tag}`);
+      if (!res.ok) throw new Error(`no translations for ${tag}`);
+      return res.json();
+    },
+  },
+});
+```
+
+The two ways a loader can fail behave differently. A loader that **throws** (or whose promise rejects — the fetch example does this on a bad response) is caught: the SDK warns with the message quoted above and stays on the current language. A loader that **resolves with `undefined`** is not an error — nothing is thrown, so nothing is caught, and no warning is logged. The active language tag switches to what you asked for, but every string quietly renders English because there is nothing to merge in — and since direction and category text key off the new tag too, you can end up with an RTL language tag showing English text left-to-right. Always resolve a real object, even a partial one; never resolve to nothing.
+
+<Callout type="warn">
+  `loadLanguage` never runs during server rendering — it's guarded on `typeof window !== "undefined"` in the runtime. A starting `locale` that isn't in `messages` therefore renders in English for the server HTML and the first client paint, then swaps once the fetch resolves after hydration — a brief, visible flash. If that flash is unacceptable, bundle the language in `messages` instead of loading it.
+</Callout>
+
+### Category text has its own precedence
+
+For a category label and description, resolution is: the active language's translation → the category's config `label`/`description` → the built-in English default → the raw id. A translation therefore wins over a config label, which is what lets a custom taxonomy still be translated.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  categories: [
+    { id: "necessary", required: true },
+    { id: "social-widgets", label: "Social widgets" }, // custom category, with a config label
+  ],
+  i18n: {
+    locale: "de",
+    messages: {
+      de: {
+        categories: {
+          analytics: { label: "Analyse", description: "…" }, // built-in five — wins over the English default
+          "social-widgets": { label: "Social-Widgets", description: "…" }, // custom id — wins over the config label
+        },
+      },
+    },
+  },
+});
+```
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { de } from "@cookieyes/translations/de";
+import { en } from "@cookieyes/translations/en";
+import { fr } from "@cookieyes/translations/fr";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  i18n: {
+    locale: "en",
+    detectBrowserLanguage: true,
+    messages: {
+      en: {
+        ...en,
+        // Tone tweaks on top of the shipped catalog.
+        bannerTitle: "We value your privacy",
+        acceptAll: "Accept all",
+      },
+      fr,
+      de,
+    },
+    // Anything not bundled above is fetched on demand.
+    loadLanguage: async (tag) => {
+      const mod = await import(`@cookieyes/translations/${tag}`);
+      return mod[tag];
+    },
+  },
+});
+```
+
+```tsx title="components/ConsentLanguagePicker.tsx"
+"use client";
+
+import { useLanguage } from "@cookieyes/react";
+
+export function ConsentLanguagePicker() {
+  const { language, languages, direction, setLanguage } = useLanguage();
+
+  return (
+    <select
+      dir={direction}
+      value={language}
+      onChange={async (e) => {
+        await setLanguage(e.target.value);
+      }}
+    >
+      {languages.map((tag) => (
+        <option key={tag} value={tag}>
+          {new Intl.DisplayNames([tag], { type: "language" }).of(tag) ?? tag}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+### Locale-routed sites (`/en-us`, `/de-de`)
+
+A copy-paste starting point for a Next.js App Router site where the URL itself carries the language, e.g. `/en-us/pricing` and `/de-de/pricing`. Bundle every language your routes support and let the URL decide, rather than the visitor's browser:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { de } from "@cookieyes/translations/de";
+import { en } from "@cookieyes/translations/en";
+import { es } from "@cookieyes/translations/es";
+import { fr } from "@cookieyes/translations/fr";
+import { it } from "@cookieyes/translations/it";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    // Every route-supported language is bundled, so the switch below is
+    // synchronous — no loader, no flash from a missing catalog.
+    messages: { en, de, es, fr, it },
+    // The URL decides the language, not the visitor's browser — see below.
+    detectBrowserLanguage: false,
+  },
+});
+```
+
+```tsx title="app/locale-sync.tsx"
+"use client";
+
+import { useLanguage } from "@cookieyes/react";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+
+// Maps the first path segment ("/en-us/…", "/de-de/…") to the tag the SDK
+// expects. We only bundle base languages above, so the region half is
+// dropped — resolving it here, rather than relying on the SDK's own
+// primary-subtag fallback, keeps `useLanguage().language` reporting exactly
+// the tag we asked for.
+function localeFromPathname(pathname: string): string {
+  const segment = pathname.split("/")[1] ?? "en";
+  return segment.split("-")[0] || "en";
+}
+
+/** Keeps the consent interface in sync with the `/[locale]` route segment. */
+export function LocaleSync() {
+  const pathname = usePathname();
+  const { language, setLanguage } = useLanguage();
+  const tag = localeFromPathname(pathname);
+
+  useEffect(() => {
+    if (tag !== language) void setLanguage(tag);
+    // Only the route's locale should drive this — re-running whenever
+    // `language` changes would fight a visitor's own language switcher.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tag]);
+
+  return null;
+}
+```
+
+```tsx title="app/layout.tsx"
+import "@cookieyes/react/styles.css";
+import { CookieBanner, CookiePreferences } from "@cookieyes/react";
+import type { ReactNode } from "react";
+import "./cookieyes";
+import { LocaleSync } from "./locale-sync";
+
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <LocaleSync />
+        <CookieBanner />
+        <CookiePreferences />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+A few things this covers directly:
+
+- **URL vs. browser language.** The URL wins. `detectBrowserLanguage: false` above turns off the automatic fallback, so only `LocaleSync`'s explicit `setLanguage(tag)` decides the language — a visitor's `Accept-Language` header never overrides the route they're actually on. If you want the opposite for a visitor's *first* visit — redirecting them to their browser language's route — do that redirect at the routing layer (middleware), before the page renders; that's a routing decision, not a translation one.
+- **Navigating between locale routes.** `usePathname()` re-renders `LocaleSync` on every client-side navigation, and the effect re-runs whenever the derived `tag` changes, so going from `/en-us/pricing` to `/de-de/pricing` switches the language with no reload.
+- **A regional variant with only the base language supplied.** `localeFromPathname` strips the region before calling `setLanguage`, so `/en-us` and `/en-gb` both resolve to `"en"` — the only tag actually bundled above. Passing the full regional tag straight through would still work, since the SDK falls back from a region to its primary subtag on its own (see [Region tags fall back to the primary subtag](#region-tags-fall-back-to-the-primary-subtag)); stripping it ourselves just keeps `useLanguage().language` reporting `"en"` rather than a tag it fell back from.
+
+<Callout type="warn">
+  One limitation this doesn't remove: `initCookieYes` runs once, at module load, with no knowledge of the request's route. With no `locale` set and detection off, the server render and first client paint resolve to English regardless of the URL — `LocaleSync` corrects it in an effect after mount. A hard load of `/de-de` therefore shows a brief English flash before switching, the same category of flash covered in [Loading languages on demand](#loading-languages-on-demand) above, just triggered by routing instead of a missing catalog. There's no way around it from `i18n` config alone.
+</Callout>
+
+## Common mistakes
+
+**`locale: "fr"` renders English.**
+No `fr` key in `messages`. Add the catalog.
+
+**The banner is in the visitor's browser language when you wanted one fixed language.**
+`detectBrowserLanguage` defaults to `true`. Set it to `false`.
+
+**Importing one locale pulled all five into the bundle.**
+You imported from `@cookieyes/translations` instead of the subpath.
+
+**A key override does nothing.**
+Typo in the key path — overrides are deep-partial and unknown keys are ignored silently. Check nesting: `optOut.title`, not `optOutTitle`.
+
+**Custom category labels do not appear.**
+They go under `messages[locale].categories[id]`, keyed by category id.
+
+**`setLanguage` seems not to apply.**
+It is async. Await it, especially when the language is loaded via `loadLanguage`.
+
+**The language switched, but the text is still English.**
+The loader resolved with nothing. That's not treated as a failure — no warning is logged — so check what your loader actually returns; it must resolve to a translations object, even a partial one.
+
+**An RTL language renders left-to-right.**
+Expected today for `CookieBanner`, `CookiePreferences`, and `CookieOptOut` — their stylesheet fixes `direction: ltr`. Build on [primitives](/docs/headless/overview) and set `dir={useLanguage().direction}` on your own root instead.
+
+## Across the SDK
+
+`I18nConfig`, `TranslationMap`, and the resolution logic all live in `@cookieyes/core`, so language behaviour is identical in every package. In core, use `consentStore.translations`, `getLanguageInfo()`, and `setLanguage(tag)` — the same controller the React hooks wrap. `@cookieyes/translations` is framework-agnostic and works with all of them.
+
+## See also
+
+- [Focused hooks](/docs/hooks/focused-hooks) — `useTranslations` and `useLanguage`
+- [Headless primitives](/docs/headless/overview) — build a fully custom, translated (and correctly directional) UI
+- [CookiePreferences](/docs/components/cookie-preferences) — where category text appears
+- [Accessibility](/docs/accessibility) — direction and language attributes

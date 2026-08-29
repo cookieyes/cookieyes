@@ -1,0 +1,203 @@
+---
+title: Rendering & selector contract
+description: Where the SDK renders in the DOM and which selectors are safe to depend on.
+---
+
+## When to use it
+
+Read this when a CSS rule or test selector is not matching, when a returning visitor sees the banner flash and disappear, or when you are writing end-to-end tests against consent.
+
+You do not need it for ordinary styling — [Custom CSS](/docs/styling/custom-css) covers that. This page is about *where* things render and *what is stable*.
+
+## Basic usage
+
+The fix most people arrive here for — no banner flash for returning visitors:
+
+```tsx title="app/layout.tsx"
+import { CookieYesProvider } from "@cookieyes/nextjs";
+import { getServerConsent } from "@cookieyes/nextjs/server";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialConsent = await getServerConsent({ regulation: "GDPR" });
+
+  return (
+    <html lang="en">
+      <body>
+        <CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+          {children}
+        </CookieYesProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+## Options
+
+### Where each surface renders
+
+| Surface | Location | Notes |
+| --- | --- | --- |
+| Banner | `#cookieyes-portal-root`, the **first child of `<body>`** | Server-rendered inline, relocated after mount |
+| Recall widget | Same portal root | |
+| Preferences dialog | `<body>` | Mounts on open, not hidden |
+| Opt-out dialog | `<body>` | Mounts on open |
+| Reload notice | In place | Not portalled |
+| `GatedFrame` placeholder | In place | Where you render it |
+
+### Selector stability
+
+| Selector | Stable? | Notes |
+| --- | --- | --- |
+| `[data-cy-part="..."]` | **Yes** — public contract | The recommended target |
+| `[data-cy-state="on" \| "off"]` | **Yes** | Toggles; preset only |
+| `.cy-*` classes | **Yes** | Prefer parts where one exists |
+| `#cookieyes-portal-root` | **Yes** | The portal container id |
+| `[data-cky-banner]` | **Yes** | Legacy alias on the visible banner card |
+| `data-cy-entered` | No — internal | Animation suppression marker |
+| DOM structure, nesting, element types | **No** | Can change without a major bump |
+
+### Server-rendering helpers
+
+| Function | Package | Signature |
+| --- | --- | --- |
+| `getServerConsent` | `@cookieyes/nextjs/server` | `(options?) => Promise<ConsentSnapshot \| null>` |
+| `readServerConsent` | `@cookieyes/core` | `(cookieHeader, options?) => ConsentSnapshot \| null` |
+
+## Behaviour and trade-offs
+
+### The banner is server-rendered, then re-parented
+
+React cannot server-render a portal. So `Banner.Root` renders **inline** on the server, and once mounted moves into `#cookieyes-portal-root`. React discards the original node and builds a fresh one.
+
+Two things follow:
+
+- The banner **is present in the initial HTML**, so it paints in the same frame as the page rather than appearing after hydration.
+- The node swap would re-run the CSS entry animation. The component marks a re-parent with `data-cy-entered` and suppresses it — otherwise, on a slow device where hydration lands a second later, visitors see an already-visible banner disappear and fade back in.
+
+Do not depend on the banner being inline in the DOM. Query by part, not by position.
+
+### The portal root is `<body>`'s first child
+
+Inserted with `insertBefore`, not appended. This is what puts the banner early in tab order regardless of where you mount `<CookieYesRoot />` — see [Accessibility](/docs/accessibility).
+
+### Returning visitors and the banner flash
+
+The server does not know what a visitor chose, so by default it renders the banner for everyone and the client removes it after hydration. A returning visitor sees it appear and vanish.
+
+`readServerConsent` reads the decision from the request's `Cookie` header with no browser APIs. It returns `null` — meaning "show the banner" — for a first-time visitor, a cookie recording no choice yet, a corrupt cookie, or one written under a different category taxonomy.
+
+Its validity rule is **deliberately identical** to the client's. If the two disagreed about the same visitor, the banner would flash — which is the bug it exists to prevent.
+
+In any non-Next framework, pass the header directly:
+
+```ts title="src/server.ts"
+import { readServerConsent } from "@cookieyes/core";
+
+const initialConsent = readServerConsent(request.headers.get("cookie") ?? "", {
+  regulation: "GDPR",
+});
+```
+
+### `getServerConsent` opts the route into dynamic rendering
+
+It reads `cookies()`, which makes the route dynamic exactly as any `cookies()` call does. A statically rendered route has no request to read, so there the banner is server-rendered for everyone and hidden on the client as before. That is a correctness-preserving fallback, not a bug — but it means a fully static page cannot avoid the flash.
+
+### Per-request state never goes on the config or runtime
+
+The registry is a module-level singleton **shared across concurrent server requests**. Anything visitor-specific placed there leaks between visitors.
+
+This is why `initialConsent` and `regulation` are `CookieYesProvider` props rather than config keys. It is the single most consequential rule on this page: getting it wrong shows one visitor another's consent state.
+
+### The dialogs mount on open
+
+They are not rendered hidden. A selector for the preferences dialog matches nothing until something opens it — which also means a CSP or styling problem there does not surface until a visitor actually opens it. Test the full flow.
+
+### Portals defeat scoped CSS
+
+Because surfaces render into `<body>`:
+
+- `.app-shell [data-cy-part="banner"]` matches nothing.
+- CSS Modules and styled-components scoping generally will not reach them.
+- Tailwind `group-`/`peer-` variants cannot cross the boundary.
+- Stacking is against `<body>`, so layering problems are plain `z-index` conflicts, not stacking-context ones.
+
+Use global CSS. See [Custom CSS](/docs/styling/custom-css).
+
+### Consent is committed before side effects run
+
+The decision is persisted and broadcast **before** any script injection or integration callback runs, and a throwing third-party tag cannot strand the banner or block mounting. So a listener reading consent during a change always sees the committed value, and a broken vendor tag cannot leave a visitor unable to dismiss the banner.
+
+## Complete example
+
+```ts title="e2e/consent.spec.ts"
+import { CY_PART } from "@cookieyes/react";
+import { expect, test } from "@playwright/test";
+
+const part = (p: string) => `[data-cy-part="${p}"]`;
+
+test("first-time visitor can accept", async ({ page }) => {
+  await page.goto("/");
+
+  // Present in the initial HTML — no waiting for hydration.
+  await expect(page.locator(part(CY_PART.banner.root))).toBeVisible();
+
+  // Reachable within the first Tab, wherever CookieYesRoot is mounted.
+  await page.keyboard.press("Tab");
+  await expect(page.locator(part(CY_PART.banner.acceptAll))).toBeFocused();
+
+  await page.locator(part(CY_PART.banner.acceptAll)).click();
+  await expect(page.locator(part(CY_PART.banner.root))).toHaveCount(0);
+});
+
+test("returning visitor gets no banner in the HTML", async ({ page, context }) => {
+  await context.addCookies([
+    {
+      name: "cookieyes-consent",
+      value: "consentid:abc,consent:yes,action:yes,necessary:yes,analytics:yes",
+      url: "http://localhost:3000",
+    },
+  ]);
+
+  const response = await page.goto("/");
+  const html = await response!.text();
+
+  // Not "hidden after hydration" — genuinely absent from the markup.
+  expect(html).not.toContain('data-cy-part="banner"');
+});
+```
+
+## Common mistakes
+
+**The banner flashes and disappears for returning visitors.**
+No `initialConsent`. Pass it via `CookieYesProvider`.
+
+**`getServerConsent()` returns `null` for someone who definitely accepted.**
+Expected for a corrupt cookie or a taxonomy change — the client re-requests consent in both cases too. If it is a plain returning visitor, check the cookie is actually on the request (domain and path).
+
+**A scoped CSS rule never applies.**
+Portals. Use global CSS.
+
+**A test selector matches nothing.**
+Either the dialog is not open — they mount on open — or the selector depends on DOM structure, which is not stable. Use parts.
+
+**Consent from one visitor appears for another in production.**
+Per-request state on the config or runtime. Move it to the provider.
+
+**The banner is missing from View Source on a static route.**
+`getServerConsent()` cannot read a request there, so the flash-prevention path is inactive. Expected on static routes.
+
+**The banner briefly disappears and fades back in on a slow device.**
+The re-parent animation guard was bypassed by a custom `Banner.Root` replacement.
+
+## Across the SDK
+
+`readServerConsent` lives in `@cookieyes/core` and works in any server runtime — it touches no browser API. `@cookieyes/nextjs/server` wraps it as `getServerConsent()`, reading `cookies()` for you. The main `@cookieyes/nextjs` entry is `"use client"`, which is why server-only helpers live on the `./server` subpath: importing `next/headers` from the main entry would break a Server Component.
+
+Portalling, part attributes, and the re-parent guard all live in `@cookieyes/react` and behave identically in `nextjs`.
+
+## See also
+
+- [Part & state contract](/docs/styling/part-and-state-contract) — the full selector list
+- [Configuration](/docs/getting-started/configuration) — the SSR section
+- [Troubleshooting](/docs/troubleshooting) — diagnosing a flash or a missing banner
