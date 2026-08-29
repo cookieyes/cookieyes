@@ -16,6 +16,10 @@ export const it: TranslationMap = {
   preferencesTitle: "Personalizza le preferenze di consenso",
   preferencesIntro:
     "Utilizziamo i cookie per aiutarti a navigare in maniera efficiente e a svolgere determinate funzioni. Troverai informazioni dettagliate su tutti i cookie sotto ogni categoria di consensi sottostanti.",
+  alwaysActive: "Sempre attivo",
+  preferencesDialogLabel: "Preferenze sui cookie",
+  optOutDialogLabel: "Preferenze di opt-out",
+  recallButtonLabel: "Preferenze di consenso",
   categories: {
     necessary: {
       label: "Necessari",
@@ -50,6 +54,13 @@ export const it: TranslationMap = {
     cancel: "Annulla",
     successText: "La tua preferenza di non partecipare è stata registrata e accettata.",
     successCountdown: "Il banner si chiuderà automaticamente tra {seconds} s...",
+  },
+  bannerCloseLabel: "Chiudi",
+  preferencesCloseLabel: "Chiudi le preferenze",
+  optOutCloseLabel: "Chiudi",
+  gatedFrame: {
+    placeholder: "Questo contenuto richiede l'attivazione dei cookie {category}.",
+    action: "Gestisci preferenze",
   },
   reloadNotice: {
     message:

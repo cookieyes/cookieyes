@@ -16,6 +16,10 @@ export const es: TranslationMap = {
   preferencesTitle: "Personalizar las preferencias de consentimiento",
   preferencesIntro:
     "Usamos cookies para ayudarle a navegar de manera eficiente y realizar ciertas funciones. Encontrará información detallada sobre cada una de las cookies bajo cada categoría de consentimiento a continuación.",
+  alwaysActive: "Siempre activo",
+  preferencesDialogLabel: "Preferencias de cookies",
+  optOutDialogLabel: "Preferencias de exclusión voluntaria",
+  recallButtonLabel: "Preferencias de consentimiento",
   categories: {
     necessary: {
       label: "Necesaria",
@@ -50,6 +54,13 @@ export const es: TranslationMap = {
     cancel: "Cancelar",
     successText: "Su opción de exclusión se ha registrado y será respetada.",
     successCountdown: "El báner se cerrará automáticamente en {seconds} s...",
+  },
+  bannerCloseLabel: "Cerrar",
+  preferencesCloseLabel: "Cerrar preferencias",
+  optOutCloseLabel: "Cerrar",
+  gatedFrame: {
+    placeholder: "Este contenido requiere que las cookies de {category} estén habilitadas.",
+    action: "Gestionar preferencias",
   },
   reloadNotice: {
     message:

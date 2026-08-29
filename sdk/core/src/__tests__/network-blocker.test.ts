@@ -4,6 +4,7 @@ import {
   type NetworkBlockerRule,
   uninstallNetworkBlocker,
 } from "../network-blocker.js";
+import { resetConsentRuntime } from "../runtime.js";
 
 const ruleGA: NetworkBlockerRule = {
   id: "ga",
@@ -281,5 +282,29 @@ describe("installNetworkBlocker — navigator.sendBeacon", () => {
     installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
     uninstallNetworkBlocker();
     expect(navigator.sendBeacon).toBe(beaconMock);
+  });
+});
+
+describe("resetConsentRuntime un-patches the transports", () => {
+  /**
+   * The blocker is a module-level singleton and a second install is a silent
+   * no-op while one is active. If a reset left it installed, the next
+   * `initCookieYes()` would keep the OLD rules and the OLD consent closure while
+   * appearing to accept new ones — wrong behaviour with nothing in the console.
+   */
+  it("restores fetch so a later install can apply new rules", () => {
+    const pristineFetch = window.fetch;
+
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
+    expect(window.fetch).not.toBe(pristineFetch);
+
+    resetConsentRuntime();
+    expect(window.fetch).toBe(pristineFetch);
+
+    // The singleton is clear, so a fresh install with different rules takes effect.
+    installNetworkBlocker({ rules: [ruleFB], logBlockedRequests: false }, () => false);
+    expect(window.fetch).not.toBe(pristineFetch);
+    uninstallNetworkBlocker();
+    expect(window.fetch).toBe(pristineFetch);
   });
 });

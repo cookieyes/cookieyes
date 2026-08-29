@@ -21,7 +21,7 @@
 ---
 
 > This package only provides locale strings — for which API to use to read
-> consent status, see the [shared decision tree](../../docs/which-api-should-i-use.md).
+> consent status, see the [shared decision tree](https://developer.cookieyes.com/docs/getting-started/which-api).
 
 ## Key features
 
@@ -102,7 +102,7 @@ Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
 
 - [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
 - Email — [support@cookieyes.com](mailto:support@cookieyes.com).
-- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md).
+- [Full documentation](https://developer.cookieyes.com/docs/getting-started/configuration).
 
 _(A community chat channel is on the roadmap.)_
 

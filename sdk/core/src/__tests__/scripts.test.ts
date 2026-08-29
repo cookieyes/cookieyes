@@ -82,7 +82,6 @@ describe("registerScript + applyScripts", () => {
       id,
       src: "https://cdn.example.com/e.js",
       category: "performance",
-      strategy: "lazyOnce",
     });
 
     applyScripts(categories({ performance: true }));

@@ -39,7 +39,7 @@ describe("GatedScript", () => {
     expect(el?.src).toBe("https://cdn.example.com/z.js");
   });
 
-  it("forwards the strategy and onLoad callback to the registry", () => {
+  it("forwards the onLoad callback to the registry", () => {
     const rt = mountOffline("GDPR");
     rt.manager.acceptAll();
     const id = uniqueScriptId();
@@ -49,7 +49,6 @@ describe("GatedScript", () => {
         id={id}
         src="https://cdn.example.com/w.js"
         category="analytics"
-        strategy="lazyOnce"
         onLoad={onLoad}
       />,
     );

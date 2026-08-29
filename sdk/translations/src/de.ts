@@ -16,6 +16,10 @@ export const de: TranslationMap = {
   preferencesTitle: "Einstellungen für die Zustimmung anpassen",
   preferencesIntro:
     "Wir verwenden Cookies, damit Sie effizient navigieren und bestimmte Funktionen ausführen können. Detaillierte Informationen zu allen Cookies finden Sie unten unter jeder Einwilligungskategorie.",
+  alwaysActive: "Immer aktiv",
+  preferencesDialogLabel: "Cookie-Einstellungen",
+  optOutDialogLabel: "Opt-out-Präferenzen",
+  recallButtonLabel: "Zustimmungseinstellungen",
   categories: {
     necessary: {
       label: "Notwendige",
@@ -50,6 +54,13 @@ export const de: TranslationMap = {
     cancel: "Stornieren",
     successText: "Ihre Abmeldung wurde gespeichert und wird berücksichtigt.",
     successCountdown: "Das Banner schließt sich in {seconds} s automatisch.",
+  },
+  bannerCloseLabel: "Schließen",
+  preferencesCloseLabel: "Einstellungen schließen",
+  optOutCloseLabel: "Schließen",
+  gatedFrame: {
+    placeholder: "Für diesen Inhalt müssen {category}-Cookies aktiviert sein.",
+    action: "Einstellungen verwalten",
   },
   reloadNotice: {
     message:

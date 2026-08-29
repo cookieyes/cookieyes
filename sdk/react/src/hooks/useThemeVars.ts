@@ -3,6 +3,7 @@
 import type { ThemeConfig } from "@cookieyes/core";
 import { type RefObject, useEffect, useState } from "react";
 import type { ColorSchemePref } from "../runtime.js";
+import { warnOnLowContrast } from "../styles/contrast-warning.js";
 import { computeThemeVars } from "../styles/tokens.js";
 
 // Applies theme colors directly to the element via the CSSOM
@@ -35,6 +36,7 @@ export function useThemeVars(
     if (!el) return;
     const isDark = colorScheme === "dark" || (colorScheme === "system" && prefersDark);
     const vars = computeThemeVars(theme, isDark);
+    warnOnLowContrast(vars, isDark); // dev-only; guarded/deduped internally
     for (const [name, value] of Object.entries(vars)) {
       el.style.setProperty(name, value);
     }

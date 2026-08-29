@@ -65,6 +65,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   const [saved, setSaved] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
   const { theme, colorScheme } = useThemeConfig();
+  const t = useTranslations();
 
   useEscapeKey(open, hideOptOut);
   useFocusTrap(open, containerRef);
@@ -108,7 +109,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         }}
         role="dialog"
         aria-modal="true"
-        aria-label="Opt-out preferences"
+        aria-label={t.optOutDialogLabel}
         tabIndex={-1}
         data-cy-part={CY_PART.optOut.root}
         {...props}
@@ -148,8 +149,9 @@ const Close = forwardRef<HTMLButtonElement, ActionProps>(function OptOutClose(
   ref,
 ) {
   const { hideOptOut } = useConsentActions();
+  const t = useTranslations();
   const behavior = {
-    "aria-label": ariaLabel ?? "Close",
+    "aria-label": ariaLabel ?? t.optOutCloseLabel,
     "data-cy-part": CY_PART.optOut.close,
     onClick: chain(onClick, hideOptOut),
     ...rest,

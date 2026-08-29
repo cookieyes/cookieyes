@@ -11,12 +11,13 @@ import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
+import { useTranslations } from "../hooks/useTranslations.js";
 import { chain, useBodyPortalRoot } from "../primitives/utils.js";
 import { CY_PART } from "../styles/parts.js";
 
-type Props = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
+export type RecallButtonProps = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
 
-export const RecallButton = forwardRef<HTMLButtonElement, Props>(function RecallButton(
+export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(function RecallButton(
   { children, onClick, className, ...rest },
   ref,
 ) {
@@ -29,6 +30,7 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
   const portalRoot = useBodyPortalRoot();
   const containerRef = useRef<HTMLButtonElement | null>(null);
   const { theme, colorScheme } = useThemeConfig();
+  const t = useTranslations();
   useThemeVars(containerRef, theme, colorScheme);
 
   if (bannerVisible) return null;
@@ -45,11 +47,11 @@ export const RecallButton = forwardRef<HTMLButtonElement, Props>(function Recall
         else if (ref) ref.current = node;
       }}
       type="button"
-      aria-label="Consent Preferences"
+      aria-label={t.recallButtonLabel}
       className={className ?? "cy-widget"}
       data-cy-part={CY_PART.recall.root}
       data-pos="bottom-left"
-      data-tooltip="Consent Preferences"
+      data-tooltip={t.recallButtonLabel}
       onClick={chain(onClick, onActivate)}
       {...rest}
     >

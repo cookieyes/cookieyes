@@ -16,7 +16,7 @@ export type BannerPart = keyof typeof CY_PART.banner;
  * Styling passthrough. `className` / `style` target the visible banner card;
  * `classNames` / `styles` target individual parts by name (e.g. `acceptAll`,
  * `toggle`) — each merged on top of our defaults. A class you pass always wins
- * over ours (our styles sit in the `cookieyes` cascade layer); an inline `style`
+ * over ours (ours are single-class rules with no `!important`, so yours wins on source order when your sheet loads later); an inline `style`
  * wins over any class.
  */
 export type CookieBannerProps = {

@@ -22,7 +22,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#api">API</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md">Docs</a>
+  <a href="https://developer.cookieyes.com/docs/getting-started/configuration">Docs</a>
 </p>
 
 ---
@@ -64,7 +64,7 @@ bun add @cookieyes/core
 **2. Initialise the runtime**
 
 > **Which API should I use?** `consentStore.subscribe` is the recommended way to
-> read consent outside React. See the [shared decision tree](../../docs/which-api-should-i-use.md)
+> read consent outside React. See the [shared decision tree](https://developer.cookieyes.com/docs/getting-started/which-api)
 > if you're not sure which API applies to your situation — core also exposes a
 > handful of lower-level options (see [Low-level / advanced API](#low-level--advanced-api))
 > for specific edge cases.
@@ -154,9 +154,9 @@ still works today and logs a one-time console warning, and will be removed
 Both accept the canonical `CookieYesConfig` and return `{ consentManager, consentStore }` (a
 singleton — call `resetConsentRuntime()` to clear it, mainly for tests). `initCookieYes` is an
 alias provided so one setup name reads across every package. Every option is documented once in
-**[Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)**.
+**[Configuration](https://developer.cookieyes.com/docs/getting-started/configuration)**.
 Migrating off the deprecated `overrides.regulation` / `backendURL` keys? See the
-**[migration guide](https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md)**.
+**[migration guide](https://developer.cookieyes.com/docs/migration)**.
 
 **`config`** (`CookieYesConfig`):
 
@@ -239,7 +239,7 @@ await consentStore.setLanguage("fr");   // switch live; loads via i18n.loadLangu
 ```
 
 Missing text falls back to English; custom categories translate by id (see the
-[configuration guide](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md)).
+[configuration guide](https://developer.cookieyes.com/docs/getting-started/configuration)).
 In React, use the `useTranslations()` / `useLanguage()` hooks instead.
 
 ## Region-based regulation (geo-detection)
@@ -294,7 +294,9 @@ is lost.
 
 There are three layers:
 
-1. **Network blocking** (`networkBlocker` / `blockNetwork`) — intercepts
+1. **Network blocking** (`networkBlocker` / `blockNetwork`) — see
+   [Network blocking](https://developer.cookieyes.com/docs/network-blocking) for what it
+   can and cannot stop, its measured cost, and starter rules for common vendors. It intercepts
    `fetch`, `XMLHttpRequest`, **and `navigator.sendBeacon`** to blocked domains,
    in real time, for as long as the page is open. `sendBeacon` matters because
    GA4/Meta use it for exit/unload tracking that fetch/XHR interception misses.
@@ -526,7 +528,7 @@ Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
 
 - [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
 - Email — [support@cookieyes.com](mailto:support@cookieyes.com).
-- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md).
+- [Full documentation](https://developer.cookieyes.com/docs/getting-started/configuration).
 
 _(A community chat channel is on the roadmap.)_
 

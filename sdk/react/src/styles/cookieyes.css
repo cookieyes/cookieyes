@@ -27,18 +27,32 @@
   --cy-widget-bg: #0056a7;
   --cy-radius: 6px;
   --cy-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --cy-focus: var(--cy-primary);
+  --cy-on-primary: #ffffff;
+  --cy-on-widget-bg: #ffffff;
 }
 /* `colorScheme` defaults to "system", so matching the OS preference here is */
 /* right for the default configuration. An explicit `colorScheme: "light"`   */
 /* on a dark-preference device gets these for the first paint only, until    */
 /* `useThemeVars` applies the configured light values — still a large        */
 /* improvement on painting with no colors at all.                            */
+/*                                                                           */
+/* Six declarations below: the five tokens that actually differ in dark      */
+/* mode (--cy-bg, --cy-text, --cy-muted, --cy-border, --cy-widget-bg — a     */
+/* dark default applies to each only when the developer didn't set that     */
+/* value explicitly, see tokens.ts's DARK_DEFAULTABLE) plus --cy-on-widget-bg,*/
+/* redeclared here because it's derived from --cy-widget-bg and must be      */
+/* recomputed against this scheme's default background (it happens to also  */
+/* resolve to #ffffff here, but that's a coincidence of this particular      */
+/* color, not a guarantee).                                                  */
 @media (prefers-color-scheme: dark) {
   :root {
     --cy-bg: #161b27;
     --cy-text: #f3f4f6;
     --cy-muted: #9ca3af;
     --cy-border: #2d3748;
+    --cy-widget-bg: #1f6fd1;
+    --cy-on-widget-bg: #ffffff;
   }
 }
 
@@ -241,14 +255,26 @@
   opacity: 0.8;
 }
 .cy-btn:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 
 .cy-btn-primary {
   background: var(--cy-primary);
-  color: #fff;
+  color: var(--cy-on-primary);
   border: 2px solid var(--cy-primary);
+}
+/* opacity: 1 cancels the inherited .cy-btn:hover fade so the colour shift is
+   the only visible hover effect. border-color must move with background or
+   the darker fill reads as a stale ring against the un-hovered border.
+   --cy-on-primary is derived from --cy-primary, not --cy-primary-hover, so it
+   does not recompute here — --cy-primary-hover is strictly darker
+   (color-mix(in srgb, var(--cy-primary) 85%, black)), so the existing
+   foreground only ever gains contrast on hover, never loses it. */
+.cy-btn-primary:hover {
+  opacity: 1;
+  background: var(--cy-primary-hover);
+  border-color: var(--cy-primary-hover);
 }
 
 .cy-btn-outline {
@@ -314,7 +340,7 @@
   opacity: 0.6;
 }
 .cy-banner-close:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 
@@ -333,7 +359,7 @@
   border: none;
 }
 .cy-show-desc-btn:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 
@@ -447,7 +473,7 @@
   opacity: 0.6;
 }
 .cy-dialog-close:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 .cy-dialog-close svg {
@@ -515,7 +541,7 @@
   line-height: 24px;
 }
 .cy-accordion-btn:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 .cy-always-active {
@@ -603,11 +629,15 @@
 
 .cy-btn-confirm {
   background: var(--cy-primary);
-  color: #fff;
+  color: var(--cy-on-primary);
   border: 1px solid var(--cy-primary);
 }
+/* Matches .cy-btn-primary:hover — same visual role (the dialog's primary
+   action) and the same colours at rest, so the same hover treatment. */
 .cy-btn-confirm:hover {
-  opacity: 0.8;
+  opacity: 1;
+  background: var(--cy-primary-hover);
+  border-color: var(--cy-primary-hover);
 }
 
 /* ── CCPA Opt-out dialog ─────────────────────────────────────────── */
@@ -680,7 +710,7 @@
   transform: rotate(45deg);
 }
 .cy-optout-checkbox:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 .cy-optout-checkbox-label {
@@ -787,7 +817,7 @@
   transform: translateX(20px);
 }
 .cy-toggle input:focus-visible ~ .cy-toggle-track {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 
@@ -833,7 +863,7 @@
   height: 45px;
   border-radius: 50%;
   background: var(--cy-widget-bg);
-  color: #fff;
+  color: var(--cy-on-widget-bg);
   border: none;
   cursor: pointer;
   display: flex;
@@ -841,12 +871,8 @@
   justify-content: center;
   animation: cy-widget-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-.cy-widget[data-pos="bottom-right"] {
-  left: auto;
-  right: 15px;
-}
 .cy-widget:focus-visible {
-  outline: 3px solid var(--cy-primary);
+  outline: 3px solid var(--cy-focus);
   outline-offset: 3px;
 }
 /* Tooltip */

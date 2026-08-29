@@ -35,6 +35,20 @@ export type TranslationMap = {
   poweredBy: string;
   preferencesTitle: string;
   preferencesIntro: string;
+  /** Shown in place of a toggle on a category marked `required: true`. */
+  alwaysActive: string;
+  /** Accessible name of the preferences dialog. */
+  preferencesDialogLabel: string;
+  /** Accessible name of the opt-out dialog. */
+  optOutDialogLabel: string;
+  /** Accessible name of the floating recall button. */
+  recallButtonLabel: string;
+  /** Accessible name of the banner's close button (rendered under CCPA only). */
+  bannerCloseLabel: string;
+  /** Accessible name of the preferences dialog's close button. */
+  preferencesCloseLabel: string;
+  /** Accessible name of the opt-out dialog's close button. */
+  optOutCloseLabel: string;
   // The built-in five are always present; the index signature lets customers
   // translate their own custom categories by id, through the same system.
   categories: {
@@ -50,6 +64,12 @@ export type TranslationMap = {
     cancel: string;
     successText: string;
     successCountdown: string;
+  };
+  gatedFrame: {
+    /** Placeholder shown in place of blocked embedded content. `{category}` is substituted. */
+    placeholder: string;
+    /** Label of the placeholder's button, which opens the preferences dialog. */
+    action: string;
   };
   reloadNotice: {
     message: string;
@@ -108,15 +128,26 @@ export type ThemeConfig = {
   borderColor?: string | undefined;
   borderRadius?: string | undefined;
   fontFamily?: string | undefined;
-  buttonVariant?: "filled" | "outlined" | undefined;
-  widgetPosition?: "bottom-right" | "bottom-left" | undefined;
+  /**
+   * Focus-ring color for interactive elements. Falls back to
+   * `var(--cy-primary)` — the ring matches your brand color exactly like it
+   * did before this field existed.
+   */
+  focusColor?: string | undefined;
+  /**
+   * Background color of the floating recall widget (the small circular
+   * re-open button). Falls back to `"#0056a7"` in light mode. In dark mode,
+   * this value is still respected if you set it; only when you don't set it
+   * does a dark-mode default apply, the same way
+   * backgroundColor/textColor/mutedTextColor/borderColor already work.
+   */
+  widgetBackgroundColor?: string | undefined;
 };
 
 export type ScriptEntry = {
   id: string;
   src: string;
   category: ConsentCategory;
-  strategy?: "afterConsent" | "lazyOnce" | undefined;
   onLoad?: (() => void) | undefined;
 };
 
@@ -260,7 +291,7 @@ export interface ConsentBackend {
 
 /**
  * @deprecated Use `"cookie-only"` instead — identical behavior, clearer name.
- * `"offline"` still works but will be removed in a future release.
+ * `"offline"` still works but will be removed after three release cycles.
  */
 type DeprecatedOfflineMode = "offline";
 
@@ -290,7 +321,6 @@ type CookieYesConfigCommon = {
   colorScheme?: ColorScheme | undefined;
   theme?: ThemeConfig | undefined;
   i18n?: I18nConfig | undefined;
-  consentCategories?: ConsentCategory[] | undefined;
   /**
    * Define your own category taxonomy. Omit to get the built-in five
    * (necessary, functional, analytics, performance, advertisement) unchanged.
@@ -320,8 +350,8 @@ type CookieYesConfigCommon = {
    * @deprecated Renamed from `integrations`. Built-in stop-handlers for a few
    * first-party vendors — e.g. `{ vendor: "meta" }` — stopped cleanly (no
    * reload) when their category is revoked. Prefer the new `integrations` field
-   * with a preset from `@cookieyes/scripts`; this will be removed in a future
-   * release.
+   * with a preset from `@cookieyes/scripts`; this will be removed after three
+   * release cycles.
    */
   builtInIntegrations?: BuiltInIntegration[] | undefined;
   /**

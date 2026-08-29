@@ -67,10 +67,10 @@ export {
   CookieYesProvider,
   type CookieYesProviderProps,
 } from "./context/CookieYesProvider.js";
-export { GatedFrame } from "./controls/GatedFrame.js";
-export { GatedScript } from "./controls/GatedScript.js";
+export { GatedFrame, type GatedFrameProps } from "./controls/GatedFrame.js";
+export { GatedScript, type GatedScriptProps } from "./controls/GatedScript.js";
 // Controls — standalone helpers
-export { RecallButton } from "./controls/RecallButton.js";
+export { RecallButton, type RecallButtonProps } from "./controls/RecallButton.js";
 // Hooks
 export {
   type ConsentActions,

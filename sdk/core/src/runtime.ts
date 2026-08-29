@@ -10,7 +10,7 @@ import {
 } from "./integrations.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
-import { installNetworkBlocker } from "./network-blocker.js";
+import { installNetworkBlocker, uninstallNetworkBlocker } from "./network-blocker.js";
 import { _logRegionDecision, readGpc, resolveRegion } from "./region.js";
 import type {
   ActiveUI,
@@ -215,6 +215,13 @@ export function initCookieYes(config: CookieYesConfig): ConsentRuntime {
 }
 
 export function resetConsentRuntime(): void {
+  // Un-patch `fetch`/XHR/`sendBeacon` before dropping the runtime. The blocker is a
+  // module-level singleton: leaving it installed would keep the *old* manager's
+  // committed-consent closure deciding what is allowed, and because a second
+  // `installNetworkBlocker()` is a no-op while one is active, the next
+  // `initCookieYes()` would silently never apply its own rules. Idempotent — a no-op
+  // when nothing was installed.
+  uninstallNetworkBlocker();
   _integrationRunner?.stop();
   _integrationRunner = null;
   _runtime = null;
