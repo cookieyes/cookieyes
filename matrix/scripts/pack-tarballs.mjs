@@ -18,7 +18,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -69,11 +69,14 @@ function packOne({ name, dir }, outDir) {
 }
 
 export function packTarballs(outDir) {
-  mkdirSync(outDir, { recursive: true });
+  // Absolute, so the `file:` specifiers written into the scratch app's
+  // package.json resolve against the repo — not against the app directory.
+  const absOutDir = resolve(outDir);
+  mkdirSync(absOutDir, { recursive: true });
   /** @type {Record<string, string>} */
   const tarballs = {};
   for (const pkg of PACKAGES) {
-    tarballs[pkg.name] = packOne(pkg, outDir);
+    tarballs[pkg.name] = packOne(pkg, absOutDir);
   }
   return tarballs;
 }
@@ -101,7 +104,7 @@ export function resolveTarballsFromDir(dir) {
     const packageName = [...TARBALL_PREFIX_TO_PACKAGE.entries()].find(([prefix]) =>
       file.startsWith(prefix),
     )?.[1];
-    if (packageName) tarballs[packageName] = join(dir, file);
+    if (packageName) tarballs[packageName] = resolve(dir, file);
   }
 
   const missing = PACKAGES.map((p) => p.name).filter((name) => !tarballs[name]);
