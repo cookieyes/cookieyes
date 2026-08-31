@@ -1,0 +1,212 @@
+---
+title: Preferences
+description: Headless preferences primitive.
+---
+
+## When to use it
+
+Use `Preferences.*` when [`CookiePreferences`](/docs/components/cookie-preferences) cannot match your design system — most often when category rows need to be your own accordion, table, or card component.
+
+You get the dialog's accessibility for free: focus trap, autofocus, `Escape` to close, focus restoration, `role="dialog"` and `aria-modal`. Rebuilding this on hooks means reimplementing all of it. Read [Overview](/docs/headless/overview) first.
+
+## Basic usage
+
+```tsx title="components/ConsentPreferences.tsx"
+"use client";
+
+import { Preferences } from "@cookieyes/react";
+
+export function ConsentPreferences() {
+  return (
+    <Preferences.Root className="ds-overlay">
+      <div className="ds-modal">
+        <Preferences.Title className="ds-h2" />
+        <Preferences.Close className="ds-close" />
+        <Preferences.Intro className="ds-body" />
+
+        <Preferences.Categories className="ds-list">
+          {(category) => (
+            <Preferences.Category category={category}>
+              {({ label, description, checked, disabled, toggle }) => (
+                <div className="ds-row">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={(e) => toggle(e.target.checked)}
+                  />
+                  <span className="ds-label">{label}</span>
+                  <p className="ds-help">{description}</p>
+                </div>
+              )}
+            </Preferences.Category>
+          )}
+        </Preferences.Categories>
+
+        <Preferences.Save className="ds-btn-primary" />
+      </div>
+    </Preferences.Root>
+  );
+}
+```
+
+## Options
+
+| Slot | Renders | Part | Behaviour |
+| --- | --- | --- | --- |
+| `Preferences.Root` | `<div>` | `overlay` | Open state, focus trap, `Escape`, autofocus, focus restore, theme vars. `null` when closed |
+| `Preferences.Title` | `<h2>` | `title` | Translated `preferencesTitle` |
+| `Preferences.Intro` | `<p>` | `intro` | Translated `preferencesIntro` |
+| `Preferences.Description` | `<p>` | — | Alternate body text slot |
+| `Preferences.Close` | `<button>` | `close` | Closes the dialog |
+| `Preferences.Categories` | `<div role="list">` | — | **Render prop.** Iterates the configured taxonomy in declaration order |
+| `Preferences.Category` | `<div>` | `category` | **Render prop.** Resolves one category's label, description, and state |
+| `Preferences.AcceptAll` | `<button>` | `accept-all` | Grants every category and saves |
+| `Preferences.RejectAll` | `<button>` | `reject-all` | Denies every non-required category and saves |
+| `Preferences.Save` | `<button>` | `save` | Commits the current toggles |
+| `Preferences.Branding` | `<a>` | `branding` | "Powered by" link |
+
+### `Preferences.Categories`
+
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `children` | `(category: ConsentCategory) => ReactNode` | **Yes** | — | Called once per configured category id |
+| ...rest | `<div>` props except `children` | No | — | Spread onto the `role="list"` wrapper |
+
+### `Preferences.Category`
+
+| Prop | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `category` | `ConsentCategory` | **Yes** | — | The id to resolve |
+| `children` | `(props: CategoryRenderProps) => ReactNode` | **Yes** | — | Receives the resolved row state |
+| ...rest | `<div>` props except `children` | No | — | Spread onto the row wrapper |
+
+`CategoryRenderProps`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `category` | `ConsentCategory` | The id |
+| `label` | `string` | Resolved display name |
+| `description` | `string` | Resolved description, `""` if none |
+| `checked` | `boolean` | Live toggle value. Always `true` for required categories |
+| `disabled` | `boolean` | `true` for required categories |
+| `toggle` | `(next: boolean) => void` | Sets the live value. **No-op** for required categories |
+
+## Behaviour and trade-offs
+
+### `toggle` takes the next value, not an event
+
+It is `(next: boolean) => void`. Passing it straight to `onChange` hands it a React event, which is truthy — so the box can never be unchecked:
+
+```tsx title="Wrong vs. right"
+// Wrong — always toggles on
+<input type="checkbox" onChange={toggle} />
+
+// Right
+<input type="checkbox" onChange={(e) => toggle(e.target.checked)} />
+```
+
+### Toggling is not saving
+
+`toggle` writes the **live** value. Nothing is committed until `Save`, `AcceptAll`, or `RejectAll`. This is why gating code reads committed values — see [Which API should I use?](/docs/getting-started/which-api).
+
+Always render a `Save` (or Accept/Reject) somewhere. A dialog whose toggles never commit looks like it works and silently does nothing.
+
+### Iterate with `Categories`, do not hard-code ids
+
+`Categories` walks the configured taxonomy in declaration order. Hard-coding the built-in five breaks the moment someone sets `categories`, and it silently omits custom categories.
+
+### Label and description resolution order
+
+Text falls back in this order: the active language's translation → the category's config `label`/`description` → the built-in English default → the raw id. So a customer translation always wins over a config label, and a missing translation degrades to something readable rather than blank.
+
+### Required categories
+
+`checked` is forced `true`, `disabled` is `true`, and `toggle` is a no-op. Render the disabled state — do not hide the row, since visitors are entitled to see what is set regardless of choice.
+
+## Complete example
+
+```tsx title="components/ConsentPreferences.tsx"
+"use client";
+
+import { Preferences } from "@cookieyes/react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+
+export function ConsentPreferences() {
+  return (
+    <Preferences.Root className="fixed inset-0 z-50 grid place-items-center bg-black/50">
+      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
+        <header className="flex items-start justify-between">
+          <Preferences.Title className="text-xl font-semibold" />
+          <Preferences.Close className="rounded p-1 hover:bg-slate-100" />
+        </header>
+
+        <Preferences.Intro className="mt-2 text-sm text-slate-600" />
+
+        <Preferences.Categories className="mt-4 divide-y">
+          {(category) => (
+            <Preferences.Category category={category} className="py-3">
+              {({ label, description, checked, disabled, toggle }) => (
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-medium">{label}</p>
+                    {description && (
+                      <p className="mt-1 text-sm text-slate-500">{description}</p>
+                    )}
+                  </div>
+                  <Switch checked={checked} disabled={disabled} onCheckedChange={toggle} />
+                </div>
+              )}
+            </Preferences.Category>
+          )}
+        </Preferences.Categories>
+
+        <footer className="mt-6 flex justify-end gap-2">
+          <Preferences.RejectAll asChild>
+            <Button variant="ghost">Reject all</Button>
+          </Preferences.RejectAll>
+          <Preferences.AcceptAll asChild>
+            <Button variant="secondary">Accept all</Button>
+          </Preferences.AcceptAll>
+          <Preferences.Save asChild>
+            <Button variant="primary">Save preferences</Button>
+          </Preferences.Save>
+        </footer>
+      </div>
+    </Preferences.Root>
+  );
+}
+```
+
+Note `onCheckedChange={toggle}` works directly here — that design-system prop already passes a boolean.
+
+## Common mistakes
+
+**`Error: [cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`**
+A slot escaped the root, commonly after extracting the category list into a component rendered elsewhere.
+
+**Checkboxes can be turned on but never off.**
+`onChange={toggle}` passes an event object. Use `onChange={(e) => toggle(e.target.checked)}`.
+
+**Choices do not persist after closing.**
+No `Save`, `AcceptAll`, or `RejectAll` in the tree. Toggles alone never commit.
+
+**Custom categories do not appear.**
+You hard-coded ids instead of using `Categories`, or your `categories` config was rejected and fell back to the built-in five — check the console.
+
+**The dialog never opens.**
+Nothing called `showPreferences()`. Mount `Banner.OpenPreferences`, [`RecallButton`](/docs/components/recall-button), or your own trigger.
+
+**Descriptions are blank.**
+No translation and no config `description`. The chain resolves to `""` rather than throwing.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core`, `consentStore.categories` gives the resolved taxonomy, `getCategoryText(id)` the translated text, and `setConsent` / `saveConsents` the live and committed writes — the same model without React.
+
+## See also
+
+- [OptOut](/docs/headless/opt-out) — the CCPA dialog
+- [Focused hooks](/docs/hooks/focused-hooks) — `useCategories`, `usePreferencesOpen`
+- [Translations (i18n)](/docs/translations) — category labels per locale

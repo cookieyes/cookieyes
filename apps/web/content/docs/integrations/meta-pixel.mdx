@@ -1,0 +1,156 @@
+---
+title: Meta Pixel
+description: Consent-gate Meta Pixel with metaPixel() — Meta's own consent API, Limited Data Use, and what silencing actually does.
+---
+
+## When to use it
+
+Use `metaPixel()` when you want Meta Pixel (`fbq`) — conversion tracking and audience building for Meta/Instagram ads — loaded only after consent, with revocation wired into Meta's own consent mechanism rather than left to chance.
+
+Skip it if:
+
+- Meta Pixel is already loaded through a Google Tag Manager container. The container's tags are opaque to this SDK — see [Google Consent Mode v2](/docs/integrations/google-consent-mode#gtm-is-a-special-case). Configuring `metaPixel()` *and* a GTM tag for the same pixel double-loads and double-counts it.
+- You only need the pixel gone from a page you don't control (a hard-coded snippet in a CMS template). That's [`networkBlocker`](/docs/network-blocking#starter-rules-for-common-vendors), which already ships a starter rule for Meta's `/tr` endpoint — active blocking, not this preset.
+
+Meta Pixel does **not** read Google Consent Mode. It has its own consent API (`fbq('consent', ...)`), which is exactly what `metaPixel()` drives — see below.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { metaPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [metaPixel({ pixelId: "1234567890" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+Nothing loads until `advertisement` (the default category) is granted. Once it is, `metaPixel()` injects `fbevents.js`, calls Meta's own `init` and the first `PageView`, and resolves only once the library has actually loaded — so its status in the debug view is truthful, not just "we called setup."
+
+## Behaviour and trade-offs
+
+### Config fields
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `pixelId` | `string` | — required | The numeric id from Meta Events Manager. |
+| `category` | `string` | `"advertisement"` | Must exist in your active taxonomy. |
+| `id` | `string` | `"meta"` | Only change this if you run more than one Meta Pixel. |
+| `autoPageView` | `boolean` | `true` | Set `false` if you track page views yourself (SPA route changes). |
+| `limitedDataUse` | `boolean` | unset — auto-on for CCPA | See below. |
+
+### Why `onRevoke` is `"silence"`, not `"remove"`
+
+Meta Pixel ships its own consent API — `fbq('consent', 'grant')` / `fbq('consent', 'revoke')` — the same shape Microsoft Clarity's `consentv2` call and Mixpanel's `opt_in_tracking()`/`opt_out_tracking()` are built on (see [Build a custom integration](/docs/integrations/custom-integration)). Because Meta already knows how to stop itself cleanly, tearing the whole script down on revoke would be strictly worse: Meta would have to re-download and re-initialize `fbevents.js` on every re-grant, instead of just being told "you may resume."
+
+So on withdrawal, `metaPixel()`:
+
+1. Calls `fbq('consent', 'revoke')` — Meta itself stops sending events.
+2. Clears Meta's `_fbp` and `_fbc` cookies. Meta's own `revoke` call does **not** clear these on its own, so the preset does it explicitly — otherwise the identifiers would sit on the visitor's browser doing nothing, which isn't the same as actually withdrawn.
+
+The script itself stays on the page the whole time; only Meta's internal consent flag changes. A re-grant calls `fbq('consent', 'grant')` and tracking resumes immediately, with no reload and no re-fetch of `fbevents.js`.
+
+Events fired while silenced are **queued by Meta itself**, not dropped — Meta's own stub buffers calls made before `fbevents.js` has loaded or while consent is revoked, and can replay them once granted. That is Meta's behavior, not something this SDK adds or controls.
+
+### `limitedDataUse` and CCPA
+
+Meta's Limited Data Use flag restricts how Meta may use pixel data for a specific visitor — the US CCPA equivalent of an opt-out. Leave `limitedDataUse` unset and `metaPixel()` turns it on automatically for a visitor this SDK has resolved as a CCPA opt-out (`ctx.region.regulation === "CCPA"`); pass `true`/`false` to force it either way regardless of region. This is the same automatic, region-driven pattern Google Ads' `restrictedDataProcessing` uses — easy to miss if you only read the config type and not the region behavior.
+
+### Guard calls made before the pixel has loaded or while silenced
+
+`window.fbq` is only defined once `metaPixel()`'s setup has run at least once. Guard any call you make yourself:
+
+```ts title="app/track-purchase.ts"
+declare global {
+  interface Window {
+    fbq?: (...args: unknown[]) => void;
+  }
+}
+
+export function trackPurchase(value: number): void {
+  window.fbq?.("track", "Purchase", { value, currency: "USD" });
+}
+```
+
+### Reacting to consent changes yourself
+
+If you need your own code to react when the `advertisement` category changes — for example, to show a UI element only once ad tracking is active — use [`useOnConsentChange`](/docs/hooks/use-on-consent-change) in a React component:
+
+```tsx title="app/ad-tracking-badge.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+import { useState } from "react";
+
+export function AdTrackingBadge() {
+  const [active, setActive] = useState(false);
+
+  useOnConsentChange(
+    "change",
+    ({ categories }) => setActive(categories.advertisement === true),
+    { category: "advertisement" },
+  );
+
+  if (!active) return null;
+  return <span>Ad measurement active</span>;
+}
+```
+
+You do not need this to make `metaPixel()` itself work — the preset already reacts to consent changes internally. Reach for the hook only when *your own* code needs to know.
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { metaPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [
+    metaPixel({
+      pixelId: "1234567890",
+      autoPageView: false, // this app tracks page views itself, on route change
+    }),
+  ],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**Calling `window.fbq(...)` right after `initCookieYes()` does nothing.**
+`fbq` isn't defined (or isn't loaded) until the `advertisement` category is granted and `fbevents.js` finishes loading. Guard every call: `window.fbq?.("track", "Purchase")`.
+
+**After revoking consent, the pixel is still in the Network tab and still in `document`.**
+That's expected — `onRevoke: "silence"` never removes the script. Meta is told to stop via its own consent API; the tag stays loaded so it can resume instantly on re-grant. If you need the script physically gone, `metaPixel()` isn't the tool — see [Build a custom integration](/docs/integrations/custom-integration).
+
+**`limitedDataUse` doesn't match what was set.**
+Check whether you actually set it. Unset, it's automatic and region-driven (CCPA opt-out → on), which can look surprising if you expected it to always be off. Pass an explicit `true`/`false` to override the automatic behavior.
+
+**Meta Pixel and a GTM container both fire the same conversion.**
+The container's tags are invisible to this SDK — if your GTM container also loads Meta Pixel, configuring `metaPixel()` here fires it a second time. Pick one path.
+
+## Across the SDK
+
+`metaPixel` is a `@cookieyes/scripts` export, built on the same `Integration` shape (`id`, `category`, `load`, `onRevoke`, `setup`) as every other preset — see `sdk/core/src/integrations.ts`. There is nothing Meta-specific about the engine; all the vendor knowledge (the `fbq` stub, the consent-revoke call, cookie clearing) lives in the preset itself.
+
+For reacting to consent changes outside a preset: React code uses [`useOnConsentChange`](/docs/hooks/use-on-consent-change); a framework-agnostic host with no React tree uses the `onConsentUpdate` config callback on `CookieYesConfig` instead (see [Configuration](/docs/getting-started/configuration#callbacks)) — the hook is the recommended path inside React, `onConsentUpdate` is the only option outside it.
+
+## See also
+
+- [networkBlocker](/docs/network-blocking) — for a Meta Pixel snippet hard-coded somewhere you can't register it with a preset
+- [Build a custom integration](/docs/integrations/custom-integration) — the raw `Integration` shape `metaPixel()` itself is built on, worked through with Mixpanel
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — for the three Google products; Meta Pixel is not part of it

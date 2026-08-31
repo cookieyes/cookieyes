@@ -1,0 +1,5 @@
+/* CookieYes design system — transcribed from the Figma file via design/cydev/_ds.
+   Token and type definitions only; page styles live with their page. */
+@import "./fonts.css";
+@import "./fig-tokens.css";
+@import "./typography.css";

@@ -5,7 +5,6 @@ import type { BuiltInIntegration, StopHandler } from "./stop-handlers.js";
 import type {
   ColorScheme,
   ConsentBackend,
-  ConsentCategory,
   ConsentRuntimeMode,
   ConsentSnapshot,
   CookieYesConfig,
@@ -30,7 +29,6 @@ export type _NormalizedConfig = {
   colorScheme?: ColorScheme | undefined;
   theme?: ThemeConfig | undefined;
   i18n?: I18nConfig | undefined;
-  consentCategories?: ConsentCategory[] | undefined;
   categories?: CategoryDef[] | undefined;
   networkBlocker?: NetworkBlockerConfig | undefined;
   reloadOnRevoke?: boolean | undefined;
@@ -88,8 +86,6 @@ export function _normalizeConfig(config: CookieYesConfig): _NormalizedConfig {
   if (config.colorScheme !== undefined) normalized.colorScheme = config.colorScheme;
   if (config.theme !== undefined) normalized.theme = config.theme;
   if (config.i18n !== undefined) normalized.i18n = config.i18n;
-  if (config.consentCategories !== undefined)
-    normalized.consentCategories = config.consentCategories;
   if (config.categories !== undefined) normalized.categories = config.categories;
   if (config.networkBlocker !== undefined) normalized.networkBlocker = config.networkBlocker;
   if (config.reloadOnRevoke !== undefined) normalized.reloadOnRevoke = config.reloadOnRevoke;

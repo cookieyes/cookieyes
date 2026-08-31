@@ -1,0 +1,44 @@
+{
+  "name": "@cookieyes/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CookieYes for Developers — the landing page",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "node scripts/generate-config-reference.mjs && node scripts/generate-component-reference.mjs && node scripts/generate-css-variables-reference.mjs && node scripts/check-examples.mjs && next build",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit",
+    "check-examples": "node scripts/check-examples.mjs",
+    "generate:peer-matrix-readme": "node scripts/generate-peer-matrix-reference.mjs",
+    "check:peer-matrix-readme": "node scripts/generate-peer-matrix-reference.mjs --check",
+    "clean": "rm -rf .next"
+  },
+  "dependencies": {
+    "@types/mdx": "^2.0.14",
+    "fumadocs-core": "^16.15.1",
+    "fumadocs-mdx": "^15.3.1",
+    "fumadocs-ui": "^16.15.1",
+    "next": "16.3.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "three": "0.160.0",
+    "three-globe": "2.31.0",
+    "topojson-client": "3.1.0",
+    "world-atlas": "^2.0.2"
+  },
+  "devDependencies": {
+    "@cookieyes/core": "workspace:*",
+    "@cookieyes/nextjs": "workspace:*",
+    "@cookieyes/react": "workspace:*",
+    "@cookieyes/scripts": "workspace:*",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3"
+  }
+}

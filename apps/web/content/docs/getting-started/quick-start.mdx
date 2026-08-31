@@ -1,0 +1,245 @@
+---
+title: Quick start
+description: A working consent banner in your app, end to end, with a way to verify it works.
+---
+
+## When to use it
+
+Start here if you have never set up the SDK in this app. If you already have a banner rendering and want to change how it behaves, go to [Configuration](/docs/getting-started/configuration) instead. If you are deciding between the styled components and building your own UI, read [Which API should I use?](/docs/getting-started/which-api) first — this page uses the styled components.
+
+**Prerequisites:** Node 20+, and React 18+ (Next.js 14+ if you are on Next). See [Installation's prerequisites & framework support table](/docs/getting-started/installation#prerequisites--framework-support) for the full framework matrix.
+
+## Basic usage
+
+### Via the CLI (recommended)
+
+```bash title="Terminal"
+npx @cookieyes/cli init      # npm
+pnpm dlx @cookieyes/cli init # pnpm
+yarn dlx @cookieyes/cli init # yarn
+bunx @cookieyes/cli init     # bun
+```
+
+**Prerequisites:** Node ≥20, and an existing project — the CLI adds consent to a project you already have, it does not scaffold a new app.
+
+The CLI detects your framework, your layout file, and your package manager, then writes the setup for you — including the `styles.css` import that is easy to forget. It asks a short series of questions, in this order:
+
+1. Which framework you're using (detected automatically, pre-selected, never forced)
+2. Backend mode — **Cookie-only** (no backend, stored in a browser cookie) or **Self-hosted**
+3. Backend URL, the full POST endpoint — **only if you chose Self-hosted**
+4. Which privacy regulation applies
+5. Color scheme
+6. Extra languages, beyond English
+7. Confirmation before it installs the package
+
+**Overwrite behavior.** The CLI never *replaces* a file wholesale, but it does edit two kinds of file differently. Files it would **generate** (`components/consent-manager/provider.tsx` and `index.tsx`) are skipped if they already exist — it prints `"<label> already exists — skipped."` and leaves your version untouched. Your **layout or entry file** (`app/layout.tsx`, `pages/_app`, or a React entry) is *patched in place*: it inserts the import and wraps your tree, then reports `"Updated <label>"`. That is an edit to a file you own, so commit your work before running it. When it can't patch a file automatically — a Pages Router `_app` it can't find, or no `<App/>` match in a React entry file — it prints a paste-able snippet under "Manual step needed" instead of guessing.
+
+**Telemetry: none.** The CLI collects no analytics, usage data, or telemetry of any kind. There is nothing to opt out of — it runs entirely locally and only touches your project files.
+
+**Time estimate:** about a minute — cold tooling start-up, six prompts (seven if you pick Self-hosted), and the install.
+
+### Manual setup
+
+Install the package for your framework:
+
+```bash title="Terminal"
+npm install @cookieyes/nextjs
+```
+
+For pnpm/yarn/bun, or a different package (`@cookieyes/react`, `@cookieyes/core`), see [Installation](/docs/getting-started/installation#basic-usage).
+
+Then, two files. First, a client module that configures the SDK and renders the components:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookiePreferences, RecallButton, initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  colorScheme: "system",
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </>
+  );
+}
+```
+
+Then mount it in your root layout, and import the stylesheet:
+
+```tsx title="app/layout.tsx"
+import "@cookieyes/react/styles.css";
+import { CookieYesRoot } from "./cookieyes";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <CookieYesRoot />
+      </body>
+    </html>
+  );
+}
+```
+
+That is the whole setup. After a single `initCookieYes()` call, every component and every hook wires up against the registered runtime automatically — there is nothing else to pass around.
+
+## Verify it works
+
+Three concrete things you should see. If any is missing, the setup is not complete.
+
+1. **The banner appears** at the bottom of the page on first load, with Accept All, Reject All, and a Customise button — and it is **styled** (a white card with a blue primary button, not bare text).
+2. **Open DevTools → Application → Cookies.** After clicking Accept All, a cookie named `cookieyes-consent` exists, and its value contains `consent:yes` along with `analytics:yes`, `advertisement:yes`, and the rest.
+3. **Reload the page.** The banner does **not** come back, and a small round recall widget appears in the corner instead. Clicking it reopens the preferences dialog.
+
+If something doesn't match, here's the fast path from symptom to cause (the full list is on [Troubleshooting](/docs/troubleshooting)):
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Banner renders as unstyled text | Stylesheet not imported | `import "@cookieyes/react/styles.css"` |
+| Banner never appears | Already decided in this browser | Clear the cookie, or `reset()` |
+| Banner flashes and vanishes on every load | No `initialConsent` | Pass it via `CookieYesProvider` |
+
+**To re-show the banner while testing.** Clear the `cookieyes-consent` cookie (DevTools → Application → Cookies, or `document.cookie = "cookieyes-consent=; max-age=0; path=/"` then reload), or call `useConsentActions().reset()` from a dev-only button.
+
+**Your location does not hide the banner.** Unlike some consent SDKs, this one does not geo-suppress: the banner shows whenever the visitor has not yet acted, whatever `regulation` resolves to. If you are not seeing it, you have already acted in this browser — clear the cookie as above. What `regulation` does change is the *starting state* of the categories: under `"CCPA"` every non-required category begins granted (opt-out), while under `"GDPR"` and `"DEFAULT"` only required categories begin granted (opt-in). To test the opt-in path from anywhere, set `regulation: "GDPR"` explicitly rather than relying on detection.
+
+## Options
+
+The four options that matter for a first setup. The [full reference](/docs/getting-started/configuration) has the rest.
+
+| Option | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `mode` | `"cookie-only" \| "self-hosted"` | **Yes** | — | `cookie-only` stores consent in a cookie and makes zero network requests. `self-hosted` also POSTs each decision to your backend |
+| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | No | `"DEFAULT"` | Which regulation applies. GDPR is opt-in, CCPA is opt-out |
+| `colorScheme` | `"light" \| "dark" \| "system"` | No | `"system"` | Theme mode |
+| `theme` | `ThemeConfig` | No | — | Colors, radius, font. See [Theme tokens](/docs/styling/theme-tokens) |
+
+## Behaviour and trade-offs
+
+### `mode` — start with `cookie-only`
+
+`cookie-only` is the right default. Consent lives entirely in the `cookieyes-consent` cookie, no network request is ever made, and there is no backend to run. Move to `self-hosted` only when you have a legal or internal requirement to keep a server-side consent log. Switching later is a one-line change plus an `apiUrl`.
+
+<Callout type="info">
+  `mode: "offline"` is a **deprecated alias** for `cookie-only`. It still works and behaves identically, but it logs a one-time deprecation warning. Use `cookie-only` in new code.
+</Callout>
+
+### Where to put `initCookieYes()`
+
+At module scope in a `"use client"` file, not inside a component body. At module scope it runs exactly once when the module is first imported. Inside a component it would re-run on every render.
+
+**Why it matters where, specifically.** `CookieBanner` and `RecallButton` portal into `<body>` (via `useBodyPortalRoot`) — `CookiePreferences` renders inline where you place it — so the runtime needs to be registered before the module tree that defines those components ever renders. Keeping the call — and the components — in one small client island at the bottom of the tree also keeps the banner from interrupting the main content's reading and tab order for screen readers and keyboard users.
+
+**Calling it twice.** A second `initCookieYes()` call doesn't error — it logs `[cookieyes] initCookieYes() called more than once. Replacing the previous runtime.` and **silently replaces** the first runtime, discarding whatever `mode`, `theme`, or `regulation` the first call set. This is usually a sign the config lives somewhere that gets imported/executed more than once; put it in exactly one module.
+
+### `"use client"` applies to the components too
+
+It's not just `initCookieYes()` that needs a client module — `CookieBanner`, `CookiePreferences`, and `RecallButton` do too, since they use hooks internally. That's why both examples on this page put the call *and* the components in one small `app/cookieyes.tsx` file, rather than adding `"use client"` to the root layout itself.
+
+If isolating a client file feels awkward for your app's structure, `@cookieyes/nextjs`'s `getServerConsent()` + `CookieYesProvider` (shown in [Complete example](#complete-example) below) let the root layout **stay** a Server Component while still avoiding the hydration flash — that's the specific problem those two exports solve.
+
+## Complete example
+
+A realistic setup: dark mode, custom brand color, a gated analytics script, and a server-rendered banner that never flashes for returning visitors.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import {
+  CookieBanner,
+  CookiePreferences,
+  GatedScript,
+  RecallButton,
+  ReloadNotice,
+  initCookieYes,
+} from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  colorScheme: "system",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+  },
+  reloadOnRevoke: true,
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+      <ReloadNotice />
+      <GatedScript
+        id="ga4"
+        src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"
+        category="analytics"
+      />
+    </>
+  );
+}
+```
+
+```tsx title="app/layout.tsx"
+import { CookieYesProvider } from "@cookieyes/nextjs";
+import { getServerConsent } from "@cookieyes/nextjs/server";
+import "@cookieyes/react/styles.css";
+import { CookieYesRoot } from "./cookieyes";
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialConsent = await getServerConsent({ regulation: "GDPR" });
+
+  return (
+    <html lang="en">
+      <body>
+        <CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+          {children}
+          <CookieYesRoot />
+        </CookieYesProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+## Common mistakes
+
+**Nothing renders anywhere — no banner, no recall widget, and no error.**
+`initCookieYes()` has not run by the time a component rendered — usually the config lives in a module nothing imports, or in a Server Component. This fails silently: every hook and every styled component reads the runtime through a non-throwing accessor, so a missing runtime never crashes the render, it just produces nothing. Put `initCookieYes()` at module scope in the same `"use client"` file that exports your components, as above. Remember that `"use client"` [applies to the components too](#use-client-applies-to-the-components-too), not just the `initCookieYes()` call. The only place you will see a real thrown error is code that calls `getCookieYes()` or `useConsentRuntime()` directly:
+
+```text title="Console error"
+Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
+```
+
+**The banner appears, then disappears on every reload for a visitor who already accepted.**
+The server has no idea what this visitor chose, so it renders the banner for everyone and the client removes it after hydration. Pass `initialConsent` through `CookieYesProvider`, as in the complete example.
+
+**The banner never appears at all.**
+You already accepted in this browser. Clear the `cookieyes-consent` cookie, or call `useConsentActions().reset()` from a dev-only button.
+
+**The banner is a wall of unstyled text.**
+Missing `import "@cookieyes/react/styles.css";`.
+
+**Nothing renders and there is no error.**
+The components are mounted, but the `Banner.Root` inside `CookieBanner` renders nothing because consent was already given. (`CookieBanner` itself still renders a visually-hidden `aria-live` region, which is why nothing is visible but the element is present in the DOM.) That is correct behaviour — see the recall widget in the corner.
+
+## Across the SDK
+
+The same two files work in a plain React app: change every `@cookieyes/nextjs` import to `@cookieyes/react` and drop the `CookieYesProvider`/`getServerConsent` part, which is Next-specific. In vanilla JS, call `initCookieYes()` from `@cookieyes/core` and build the UI against `consentStore` — see [Which API should I use?](/docs/getting-started/which-api).
+
+## See also
+
+- [Configuration (initCookieYes)](/docs/getting-started/configuration) — every option, with defaults
+- [CookieBanner](/docs/components/cookie-banner) — the banner's own props and parts
+- [Styling overview](/docs/styling/overview) — make it match your brand

@@ -1,0 +1,169 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cookieyes.dev/schemas/peer-matrix-results.schema.json",
+  "title": "CookieYes peer-dependency compatibility matrix results",
+  "description": "Contract artifact between DEVP-80 (producer, matrix/) and DEVP-70 (consumer, apps/web/scripts/generate-peer-matrix-reference.mjs). See ai-context/designs/peer-dependency-matrix.md §8.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "schemaVersion",
+    "generatedAt",
+    "commit",
+    "matrixConfigHash",
+    "subset",
+    "dimensions",
+    "combinations",
+    "summary",
+    "coverageLimits"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "commit": { "type": "string", "minLength": 1 },
+    "matrixConfigHash": { "type": "string", "pattern": "^sha256:[0-9a-f]+$" },
+    "subset": { "type": "string", "enum": ["fast", "full"] },
+    "dimensions": {
+      "type": "object",
+      "required": ["varied", "fixed"],
+      "additionalProperties": false,
+      "properties": {
+        "varied": { "type": "array", "items": { "type": "string" } },
+        "fixed": {
+          "type": "object",
+          "required": ["node", "packageManager", "moduleResolution"],
+          "additionalProperties": false,
+          "properties": {
+            "node": { "type": "string" },
+            "packageManager": { "type": "string" },
+            "moduleResolution": { "type": "string" }
+          }
+        }
+      }
+    },
+    "combinations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/combinationResult" }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total", "pass", "fail", "outcome"],
+      "additionalProperties": false,
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "pass": { "type": "integer", "minimum": 0 },
+        "fail": { "type": "integer", "minimum": 0 },
+        "outcome": { "$ref": "#/$defs/outcome" }
+      }
+    },
+    "coverageLimits": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "outcome": { "type": "string", "enum": ["pass", "fail", "skipped"] },
+    "versionSet": {
+      "type": "object",
+      "required": ["next", "react", "reactDom", "typesReact", "typesReactDom"],
+      "additionalProperties": false,
+      "properties": {
+        "next": { "type": "string" },
+        "react": { "type": "string" },
+        "reactDom": { "type": "string" },
+        "typesReact": { "type": "string" },
+        "typesReactDom": { "type": "string" }
+      }
+    },
+    "assertionResult": {
+      "type": "object",
+      "required": ["name", "outcome"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "outcome": { "$ref": "#/$defs/outcome" }
+      }
+    },
+    "simpleStep": {
+      "type": "object",
+      "required": ["outcome"],
+      "additionalProperties": false,
+      "properties": {
+        "outcome": { "$ref": "#/$defs/outcome" }
+      }
+    },
+    "assertionStep": {
+      "type": "object",
+      "required": ["outcome", "assertions"],
+      "additionalProperties": false,
+      "properties": {
+        "outcome": { "$ref": "#/$defs/outcome" },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/assertionResult" }
+        }
+      }
+    },
+    "combinationResult": {
+      "type": "object",
+      "required": [
+        "id",
+        "role",
+        "label",
+        "packagesUnderTest",
+        "requested",
+        "resolved",
+        "node",
+        "packageManager",
+        "moduleResolution",
+        "outcome",
+        "startedAt",
+        "finishedAt",
+        "durationMs",
+        "steps",
+        "notes",
+        "logsArtifact"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "role": { "type": "string", "enum": ["floor", "middle", "newest"] },
+        "label": { "type": "string" },
+        "packagesUnderTest": { "type": "array", "items": { "type": "string" } },
+        "requested": { "$ref": "#/$defs/versionSet" },
+        "resolved": { "$ref": "#/$defs/versionSet" },
+        "node": { "type": "string" },
+        "packageManager": { "type": "string" },
+        "moduleResolution": { "type": "string" },
+        "outcome": { "$ref": "#/$defs/outcome" },
+        "startedAt": { "type": "string", "format": "date-time" },
+        "finishedAt": { "type": "string", "format": "date-time" },
+        "durationMs": { "type": "integer", "minimum": 0 },
+        "steps": {
+          "type": "object",
+          "required": [
+            "install",
+            "typePackageCheck",
+            "typecheck",
+            "build",
+            "ssrRender",
+            "jsdomBehaviour"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "install": { "$ref": "#/$defs/simpleStep" },
+            "typePackageCheck": { "$ref": "#/$defs/simpleStep" },
+            "typecheck": { "$ref": "#/$defs/simpleStep" },
+            "build": { "$ref": "#/$defs/simpleStep" },
+            "ssrRender": { "$ref": "#/$defs/assertionStep" },
+            "jsdomBehaviour": { "$ref": "#/$defs/assertionStep" }
+          }
+        },
+        "notes": { "type": ["string", "null"] },
+        "logsArtifact": { "type": "string" }
+      }
+    }
+  }
+}

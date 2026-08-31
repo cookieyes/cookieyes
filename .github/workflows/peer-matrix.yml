@@ -1,0 +1,223 @@
+name: Peer-dependency matrix
+
+# DEVP-80 — installs, builds, server-renders and behaviourally tests real
+# Next.js/React combinations spanning the SDK's declared peerDependencies
+# range. See ai-context/designs/peer-dependency-matrix.md §5.6 for the full
+# shape: derive-check -> plan -> run (dynamic matrix) -> aggregate ->
+# publish-results (main only, full subset only).
+#
+# References neither `playground/` nor `sdk/react/e2e/` anywhere in this
+# file — both are local-only, untracked paths (Amendment A) that do not
+# exist in a fresh checkout.
+
+on:
+  pull_request:
+    paths:
+      - "sdk/react/**"
+      - "sdk/nextjs/**"
+      - "sdk/core/**"
+      - "matrix/**"
+  schedule:
+    # Weekly full sweep — the periodic, pre-release safety net for the floor
+    # and middle legs (§5.5).
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      subset:
+        description: "Which combinations to run"
+        type: choice
+        options: [fast, full]
+        default: fast
+
+concurrency:
+  group: peer-matrix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  derive-check:
+    name: Derive-from-peerDeps enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm peer-matrix:derive-check
+
+  plan:
+    name: Plan combinations
+    needs: [derive-check]
+    runs-on: ubuntu-latest
+    outputs:
+      subset: ${{ steps.subset.outputs.subset }}
+      combinations: ${{ steps.combinations.outputs.combinations }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+
+      - name: Determine subset
+        id: subset
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "subset=full" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "subset=${{ inputs.subset }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "subset=fast" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Emit combination IDs for this subset
+        id: combinations
+        run: |
+          echo "combinations=$(node matrix/scripts/print-combinations.mjs --subset=${{ steps.subset.outputs.subset }})" >> "$GITHUB_OUTPUT"
+
+  build-sdk:
+    name: Build SDK and pack tarballs
+    needs: [derive-check]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build --filter='./sdk/*'
+      - run: pnpm peer-matrix:pack-tarballs
+
+      - name: Upload tarballs
+        uses: actions/upload-artifact@v4
+        with:
+          name: peer-matrix-tarballs
+          path: matrix/results/tarballs/*.tgz
+          retention-days: 1
+
+  run:
+    name: ${{ matrix.combo }}
+    needs: [plan, build-sdk]
+    runs-on: ubuntu-latest
+    # A leg is ~40s of real work. Generous ceiling, but low enough that a hang
+    # (e.g. an orphaned `next start` holding the process open) fails in minutes
+    # instead of sitting on a runner for GitHub's 6-hour default.
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        combo: ${{ fromJson(needs.plan.outputs.combinations) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # Only the root's own devDependencies (semver etc.) are needed to run
+      # the orchestration scripts — the example app installs its own
+      # dependencies into an isolated scratch directory (D2).
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Download tarballs
+        uses: actions/download-artifact@v4
+        with:
+          name: peer-matrix-tarballs
+          path: matrix/results/tarballs
+
+      - name: Run combination
+        run: |
+          node matrix/scripts/run-combination.mjs \
+            --combo=${{ matrix.combo }} \
+            --tarballs-dir=matrix/results/tarballs \
+            --logs-artifact=run-${{ github.run_id }}/${{ matrix.combo }}.log
+
+      - name: Upload result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: peer-matrix-result-${{ matrix.combo }}
+          path: matrix/results/${{ matrix.combo }}.json
+          retention-days: 90
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: peer-matrix-logs-${{ matrix.combo }}
+          path: matrix/results/logs/${{ matrix.combo }}.log
+          retention-days: 14
+          if-no-files-found: ignore
+
+  aggregate:
+    name: Aggregate results
+    needs: [plan, run]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 20
+
+      - name: Download all per-combination results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: peer-matrix-result-*
+          path: matrix/results
+          merge-multiple: true
+
+      # Fail-closed (aggregate-results.mjs): errors loudly if any combination
+      # configured for this subset is missing from the collected results —
+      # never writes/publishes a partial matrix-results.json.
+      - name: Aggregate
+        run: |
+          node matrix/scripts/aggregate-results.mjs --subset=${{ needs.plan.outputs.subset }} \
+            > matrix-results.aggregated.json
+
+      - name: Upload aggregated results
+        uses: actions/upload-artifact@v4
+        with:
+          name: peer-matrix-results
+          path: matrix-results.aggregated.json
+          retention-days: 90
+
+  publish-results:
+    name: Publish matrix-results.json
+    needs: [plan, aggregate]
+    # Only a successful full run on main is allowed to update the committed
+    # results file — the "never publish a partial or failing run" rule
+    # (§5.5), enforced at the workflow level.
+    if: needs.plan.outputs.subset == 'full' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download aggregated results
+        uses: actions/download-artifact@v4
+        with:
+          name: peer-matrix-results
+          path: .
+
+      - name: Replace matrix/matrix-results.json
+        run: cp matrix-results.aggregated.json matrix/matrix-results.json
+
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "chore(matrix): update peer-dependency matrix results"
+          title: "chore(matrix): update peer-dependency matrix results"
+          body: >
+            Automated update from a successful full peer-dependency matrix run on `main`
+            (run ${{ github.run_id }}). Reviewed here, not bot-committed directly, because this
+            file drives a public README compatibility claim (DEVP-70).
+          branch: peer-matrix/update-results
+          add-paths: matrix/matrix-results.json

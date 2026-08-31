@@ -1,0 +1,414 @@
+---
+title: Configuration (initCookieYes)
+description: Every option initCookieYes accepts, with types, defaults, and what happens if you leave each one out.
+---
+
+`initCookieYes(config)` is the one setup function for the whole SDK, and this page is the complete reference for what it accepts.
+
+## When to use it
+
+Come here when you need to know what an option does, what it defaults to, whether it is required, or what happens if you omit it. If you are setting the SDK up for the first time, [Quick start](/docs/getting-started/quick-start) gets you running and sends you back here for the rest. If your setup is already running and something is wrong, [Troubleshooting](/docs/troubleshooting) is the faster route.
+
+The config object is **identical in every package**. The same object works in `@cookieyes/core`, `@cookieyes/react`, and `@cookieyes/nextjs` with zero edits.
+
+**Prerequisites.** Node 20 or newer, and React 18 or newer for `@cookieyes/react`; `@cookieyes/nextjs` additionally needs Next.js 14 or newer. `@cookieyes/core` has no framework requirement. The full matrix is on [Installation](/docs/getting-started/installation#prerequisites--framework-support).
+
+## Basic usage
+
+The smallest configuration that produces a working banner. `mode` is the only required option:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({ mode: "cookie-only" });
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+```tsx title="app/layout.tsx"
+import "@cookieyes/react/styles.css";
+import { ConsentManager } from "./cookieyes";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <ConsentManager />
+      </body>
+    </html>
+  );
+}
+```
+
+That is the whole thing — those two files render a functioning banner with the built-in five categories. The stylesheet import is not optional; without it the banner renders unstyled with no error at all.
+
+In `@cookieyes/core`, the same call returns the runtime instead of registering it globally:
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+
+const { consentManager, consentStore } = initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+});
+```
+
+## The rule that breaks most first setups
+
+`initCookieYes()` registers a browser-side runtime. **It, and every component that reads it, must live in a file marked `"use client"`.** This is the single most common first-day mistake, and it is deliberately quiet rather than loud: every hook and every styled component reads the runtime through a non-throwing accessor, so getting this wrong produces no error at all — no banner, nothing in the console, hooks returning their safe defaults and actions doing nothing.
+
+Since there is no error to search for, diagnose it by checking, in order:
+
+1. Does the module that calls `initCookieYes()` start with `"use client"` as its first line?
+2. Is that module actually imported on the path that renders your components? A module nobody imports never runs.
+3. Are the components themselves (`CookieBanner`, `CookiePreferences`, ...) also in a `"use client"` file?
+
+The same file, wrong and right — the only difference is the first line:
+
+#### Incorrect — no directive, so this is a Server Component
+
+```tsx title="app/cookieyes.tsx"
+// ❌ No "use client" — this is a Server Component.
+// initCookieYes() runs on the server, registers nothing the browser can see.
+// CookieBanner still renders — just nothing, silently, because its hooks
+// read the runtime through a non-throwing accessor. No error, no banner.
+import { initCookieYes, CookieBanner } from "@cookieyes/nextjs";
+
+initCookieYes({ mode: "cookie-only" });
+
+export function Wrong() {
+  return <CookieBanner />;
+}
+```
+
+#### Correct — the directive makes it a Client Component
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+// ✅ The directive makes this a Client Component. The runtime registers in the
+// browser, where the hooks and components can find it.
+import { initCookieYes, CookieBanner } from "@cookieyes/nextjs";
+
+initCookieYes({ mode: "cookie-only" });
+
+export function Right() {
+  return <CookieBanner />;
+}
+```
+
+**The one place this genuinely throws.** `getCookieYes()` and [`useConsentRuntime()`](/docs/hooks/low-level-hooks) skip the safe-default behaviour on purpose — they are the low-level escape hatch for code that truly cannot proceed without a runtime. Call either before `initCookieYes()` has run and you get a real, loud error:
+
+```text title="Console error"
+Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
+```
+
+Every other hook and every styled component swallows a missing runtime instead of throwing it.
+
+**When your setup naturally lives on the server.** Keep the client island small and let the server pass data into it. `@cookieyes/nextjs` exists for exactly this: read the stored decision on the server with `getServerConsent()` (imported from `@cookieyes/nextjs/server`, not the main entry) and hand it to `CookieYesProvider` as `initialConsent`, so the correct banner state renders on the first paint instead of flashing after hydration. Per-visitor values must travel this way — see [the singleton warning](#common-mistakes) below for why they must never go into the config object.
+
+## Options
+
+`CookieYesConfig` is a flat object **discriminated on `mode`**. Backend keys are a compile-time type error under `mode: "cookie-only"`.
+
+Every table below is generated from `sdk/core/src/types.ts` at build time. An option that exists in the type but is missing here fails the build rather than shipping undocumented, and a row here that no longer matches a real option fails the build too.
+
+### Setup
+
+<ConfigOptionsTable group="setup" />
+
+### Appearance
+
+<ConfigOptionsTable group="appearance" />
+
+### Language
+
+<ConfigOptionsTable group="language" />
+
+### Storage and blocking
+
+<ConfigOptionsTable group="storage" />
+
+### Callbacks
+
+<ConfigOptionsTable group="callbacks" />
+
+### `theme`
+
+Applies only in `@cookieyes/react` and `@cookieyes/nextjs`. `@cookieyes/core` is headless — it accepts `theme` and never reads it.
+
+<ConfigNestedTable path="theme" />
+
+### `region`
+
+<ConfigNestedTable path="region" />
+
+### `i18n`
+
+<ConfigNestedTable path="i18n" />
+
+### `networkBlocker`
+
+<ConfigNestedTable path="networkBlocker" />
+
+Each entry in `rules` takes `id`, `domain`, `category`, and optionally `pathIncludes` and `methods`.
+
+## Behaviour and trade-offs
+
+### Choosing a mode — `cookie-only` vs `self-hosted`
+
+**What differs.** `cookie-only` makes **zero network requests**: the decision lives entirely in the `cookieyes-consent` cookie in the visitor's browser, and nothing is transmitted anywhere. `self-hosted` does everything `cookie-only` does *and* additionally POSTs each decision to your endpoint, giving you a server-side record.
+
+**What does not differ.** The visitor sees exactly the same banner, the same categories, and the same behaviour. `self-hosted` is not a richer experience; it is the same experience plus a fire-and-forget POST.
+
+**Where the record lives.** Under `cookie-only`, only in the visitor's browser — if they clear cookies, the record is gone and they will be asked again. Under `self-hosted`, in the cookie *and* wherever your `apiUrl` or `backend` puts it.
+
+Note the two packages differ when `self-hosted` is misconfigured: `@cookieyes/react` and `@cookieyes/nextjs` **throw** if you set `mode: "self-hosted"` with neither `apiUrl`/`backendURL` nor `backend`. `@cookieyes/core` does not — it silently stores the decision in the cookie and never persists it anywhere.
+
+<Callout type="warn">
+  `mode: "offline"` is a deprecated alias for `"cookie-only"`. Identical behaviour, but it logs a one-time-per-page-load deprecation warning. It will be removed after three release cycles.
+</Callout>
+
+**Recommendation: start with `cookie-only`.** It is the right default for almost every project, needs no backend, and can never leak a visitor's decision over the network. Move to `self-hosted` only when a legal or internal requirement obliges you to keep a server-side consent log. Switching later is a one-line change plus an endpoint.
+
+### Choosing a privacy law — the `regulation` option
+
+`regulation` accepts `"GDPR"`, `"CCPA"`, or `"DEFAULT"`. What actually changes for the visitor:
+
+| | `"GDPR"` / `"DEFAULT"` | `"CCPA"` |
+| --- | --- | --- |
+| Starting state of non-required categories | **off** — opt-in | **on** — opt-out |
+| Does analytics run before the visitor acts? | No | Yes |
+| Banner description text | standard | CCPA-specific wording |
+| Recall widget before the visitor acts | hidden | visible |
+| Global Privacy Control honoured | No | Yes, unless `region.honorGpc` is `false` |
+
+**CCPA requires an extra component.** Under `"CCPA"` the recall widget opens an opt-out dialog rather than the preferences dialog, so you must render [`CookieOptOut`](/docs/components/cookie-opt-out) alongside your banner. Ship `"CCPA"` without it and the widget has nothing to open.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookieOptOut, initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({ mode: "cookie-only", regulation: "CCPA" });
+
+export function ConsentManager() {
+  return (
+    <>
+      <CookieBanner />
+      {/* Required under CCPA — the recall widget opens this dialog. */}
+      <CookieOptOut />
+    </>
+  );
+}
+```
+
+**Recommendation: set `regulation` explicitly to the strictest regime your audience falls under, and ship that for everyone.** For most teams that is `"GDPR"`. It is simpler to reason about than per-visitor detection, it cannot be defeated by a failed lookup, and applying opt-in to a visitor who did not legally require it is never the risky direction. Reach for `region` only when you genuinely serve mixed jurisdictions and have a synchronous signal to detect them with.
+
+### `regulation` vs `region`
+
+A manual `regulation` **always wins** over detection. If you set both, detection is ignored and you get this warning:
+
+```text title="Console warning"
+[cookieyes] `regulation` is set manually, so region detection is ignored. Remove one of them to clear the conflict.
+```
+
+`detect` must be **synchronous**, so it reads something already available — a hosting header you forwarded into the document, a cookie — not a geo-IP API call.
+
+`strictest` defaults to `"GDPR"` on purpose: when you cannot tell where a visitor is, applying the opt-in regime is the safe failure mode.
+
+### `apiUrl` vs `backend`
+
+Use `apiUrl` when your endpoint accepts the SDK's payload shape as-is. The SDK sends `POST` with `Content-Type: application/json`, `keepalive: true`, and an `Authorization: Bearer` header if `apiKey` is set.
+
+Use `backend` when you need anything else — a different body shape, extra headers, batching, retries, or a non-HTTP transport:
+
+```ts title="src/backend-example.ts"
+import { initCookieYes } from "@cookieyes/core";
+
+const tenantId = "acme-eu";
+
+initCookieYes({
+  mode: "self-hosted",
+  backend: {
+    async persist(payload) {
+      await fetch("https://api.example.com/v1/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Tenant": tenantId },
+        body: JSON.stringify({ event: "consent", data: payload }),
+      });
+    },
+  },
+});
+```
+
+**Delivery is best-effort.** Failures are caught and swallowed — a failed POST never breaks the consent flow or shows an error to the visitor. There is no built-in retry and no response parsing. If you need delivery guarantees, implement them inside `backend`.
+
+<Callout type="warn">
+  **`apiKey` is not a secret.** `initCookieYes()` runs in the browser, so anything you pass as `apiKey` ships in your client bundle and is readable by anyone who opens DevTools. Treat it as a coarse routing or rate-limiting token, never as authentication.
+
+  In particular, **`process.env.NEXT_PUBLIC_*` does not make a value safe** — the `NEXT_PUBLIC_` prefix is what tells Next.js to inline the value into the client bundle, so it is the opposite of a secret. A server-only variable (no prefix) is `undefined` here, because this code never runs on the server.
+
+  If the endpoint needs real credentials, point `apiUrl` at your own route handler and attach the secret there, or use `backend` to do the same.
+</Callout>
+
+### `onConsentReady` / `onConsentUpdate` are low-level
+
+These are config-lifetime callbacks — you cannot unsubscribe them. For anything that mounts and unmounts, use [`useOnConsentChange`](/docs/hooks/use-on-consent-change) in React or `consentStore.on()` in core. Those give you a cleanup function and a `changedCategories` list, so a visitor re-confirming the same choices does not re-run your loader.
+
+Reach for `onConsentReady` only for genuine one-shot work at startup.
+
+### Consent categories
+
+Omit `categories` and you get the built-in five: `necessary` (required), `functional`, `analytics`, `performance`, and `advertisement`. Each maps to the Google Consent Mode signals you would expect — `analytics` to `analytics_storage`, `advertisement` to `ad_storage`, `ad_user_data` and `ad_personalization`.
+
+To define your own taxonomy, pass `CategoryDef[]`. Each entry takes an `id`, and optionally `required`, `label`, `description`, and `gcm` signals:
+
+```ts title="src/categories-example.ts"
+import { initCookieYes } from "@cookieyes/core";
+
+initCookieYes({
+  mode: "cookie-only",
+  categories: [
+    { id: "necessary", required: true, label: "Essential" },
+    { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+    { id: "marketing", label: "Marketing", gcm: ["ad_storage", "ad_user_data"] },
+  ],
+});
+```
+
+At least one category must be `{ required: true }`. Ids must be unique, must not contain `,` or `:`, and must not collide with the reserved cookie keys `consentid`, `consent`, `action`, `tax`, or `lastRenewedDate`. An invalid config **falls back to the built-in five with a console warning** rather than throwing.
+
+Changing the taxonomy changes the cookie's `taxonomyHash`, which makes returning visitors re-consent. That is deliberate: you cannot infer what someone agreed to under a different set of categories.
+
+**Recommendation: keep the built-in five unless they genuinely do not fit.** They cover the categories regulators and vendors already expect, they carry correct Google Consent Mode mappings for free, and they come translated. A custom taxonomy means you own the labels, the translations, the signal mappings, and a forced re-consent for every returning visitor.
+
+## Verify it works
+
+After configuring, check all four:
+
+1. **The banner appears** on a fresh browser profile, before you click anything.
+2. **Your choice sticks** — accept or reject, reload, and the banner stays gone.
+3. **The recall control is reachable** afterwards, so a visitor can change their mind.
+4. **Gated scripts respect the decision** — with analytics rejected, no request to your analytics domain appears in the Network tab.
+
+**Your location does not hide the banner.** This SDK does not geo-suppress: the banner shows whenever the visitor has not yet acted, whatever `regulation` resolves to. If you are not seeing it, you have already acted in this browser — not a location problem.
+
+**To make the banner reappear while testing**, clear the decision: DevTools → Application → Cookies → delete `cookieyes-consent`, or run `document.cookie = "cookieyes-consent=; max-age=0; path=/"` and reload, or call `useConsentActions().reset()` from a dev-only button.
+
+**To test the opt-in path from anywhere**, set `regulation: "GDPR"` explicitly rather than relying on detection. Under `"CCPA"` the non-required categories start granted, which looks like "the banner did nothing".
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| Banner never appears | You already acted in this browser | Clear the cookie or call `reset()` |
+| Banner appears but is unstyled | Missing `@cookieyes/react/styles.css` import | Import it once at your app root |
+| Banner never appears, and there is no error anywhere | `initCookieYes()` didn't run, or ran outside `"use client"` — this fails silently, not loudly | See [the rule above](#the-rule-that-breaks-most-first-setups) |
+| Banner flashes then vanishes on every load | No `initialConsent` passed on the server | Pass it via `CookieYesProvider` |
+| Categories missing from the dialog | Custom `categories` was rejected, fell back to the built-in five | Check the console warning; ensure one category is `required: true` |
+| Rejected scripts still load | Script not gated, or wrong category | Use [`GatedScript`](/docs/components/gated-script) or a `networkBlocker` rule |
+
+## Complete example
+
+A realistic project: self-hosted persistence, mixed-jurisdiction detection, custom branding, a gated vendor, and network blocking.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookieOptOut, initCookieYes } from "@cookieyes/nextjs";
+import { segment } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "self-hosted",
+  // Points at our own route handler, which attaches the real credential
+  // server-side. See the apiKey warning above.
+  apiUrl: "https://example.com/api/consent",
+
+  region: {
+    detect: () => document.documentElement.dataset.region,
+    map: { "US-CA": "CCPA", US: "DEFAULT", DE: "GDPR", FR: "GDPR" },
+    strictest: "GDPR",
+    honorGpc: true,
+  },
+
+  colorScheme: "system",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+    fontFamily: "'Inter', sans-serif",
+  },
+
+  i18n: {
+    locale: "en",
+    detectBrowserLanguage: true,
+  },
+
+  integrations: [segment({ writeKey: "abc123" })],
+
+  networkBlocker: {
+    rules: [{ id: "ga", domain: "google-analytics.com", category: "analytics" }],
+  },
+
+  reloadOnRevoke: true,
+
+  onConsentReady: (state) => {
+    console.log("initial consent", state.categories);
+  },
+});
+
+export function ConsentManager() {
+  return (
+    <>
+      <CookieBanner />
+      {/* Detection can resolve to CCPA, so the opt-out dialog must exist. */}
+      <CookieOptOut />
+    </>
+  );
+}
+```
+
+## Common mistakes
+
+**Nothing renders, and there is no error anywhere.**
+`initCookieYes()` ran in a Server Component, so nothing registered in the browser — but the hooks and components read the runtime through a non-throwing accessor, so this fails silently rather than crashing. Add `"use client"` as the first line of the file that calls it, and make sure the components reading it are in a client file too. This is the same rule as [the section above](#the-rule-that-breaks-most-first-setups). You will only see `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.` thrown if code calls `getCookieYes()` or `useConsentRuntime()` directly.
+
+**The banner renders but is completely unstyled — no error anywhere.**
+You are missing `import "@cookieyes/react/styles.css";`. Nothing throws, because the components only ever apply `cy-*` class names; the stylesheet that gives those classes meaning is a separate import. Import it once at your app root, not inside a route that may not mount first.
+
+**The server renders one regulation and the browser another.**
+You passed `regulation` (or `region`) to `initCookieYes()` in client code while the server rendered with a different value, or with none. Nothing validates this — you get a hydration mismatch, or a banner that changes shape after load. Resolve the regulation **once**, on the server, and pass it down through `CookieYesProvider`'s `regulation` prop so both renders agree.
+
+**`error TS2353: Object literal may only specify known properties, and 'apiUrl' does not exist in type 'CookieYesOfflineConfig'.`**
+You passed a backend key under `cookie-only`. The union is discriminated on `mode` precisely to catch this, which is why the error names `CookieYesOfflineConfig` — the branch your `mode` selected — rather than `CookieYesConfig`. Either switch to `mode: "self-hosted"` or drop `apiUrl`. The same error appears for `apiKey`, `backend`, and `backendURL`.
+
+**`[cookieyes] `regulation` is set manually, so region detection is ignored. Remove one of them to clear the conflict.`**
+You set both `regulation` and `region`. Remove `regulation` to let detection decide, or remove `region` if you meant to pin the regulation.
+
+**`[cookieyes] `builtInIntegrations` (formerly the `integrations` field) is deprecated and will be removed in a future release. Use the `integrations` field with a preset from `@cookieyes/scripts` instead.`**
+The `integrations` key changed meaning. It now takes `Integration[]` presets from `@cookieyes/scripts`. The old vendor-stop-handler form moved to `builtInIntegrations`. See [Migration & deprecations](/docs/migration).
+
+**Custom categories silently do not appear.**
+`resolveCategories` rejected the config and fell back to the built-in five, logging a warning. The usual cause is no category marked `required: true`, or an id colliding with a reserved cookie meta key (`consentid`, `consent`, `action`, `tax`, `lastRenewedDate`).
+
+**Consent decisions never reach the backend and there is no error.**
+Either you are in `cookie-only` mode, or you are in `self-hosted` with neither `apiUrl` nor `backend`. In `@cookieyes/core` that combination fails silently by design; in `react`/`nextjs` it throws at setup. The POST is fire-and-forget, so a failing endpoint is also silent — check the Network tab.
+
+<Callout type="warn">
+  **A per-visitor value in the config leaks between visitors on the server.** The runtime is a module-level singleton shared across concurrent server requests, so a region, regulation, or consent value written into the config object can be served to the wrong visitor. Per-request state must go through `CookieYesProvider` — that is why `initialConsent` and the provider's `regulation` prop exist.
+</Callout>
+
+## Across the SDK
+
+The `CookieYesConfig` type lives in `@cookieyes/core` and is re-exported by `react` and `nextjs`, so the object is genuinely identical everywhere. The only package-level difference: in `core`, `initCookieYes()` **returns** `{ consentManager, consentStore }`; in `react`/`nextjs` it registers a module-level singleton that hooks and components find on their own. `@cookieyes/nextjs` adds no config options of its own — its extra surface is `CookieYesProvider` and `getServerConsent()`.
+
+## See also
+
+- [Which API should I use?](/docs/getting-started/which-api) — read consent the right way for your platform
+- [Theme tokens](/docs/styling/theme-tokens) — what each `theme` value maps to in CSS
+- [Troubleshooting](/docs/troubleshooting) — every error message this SDK produces, with causes

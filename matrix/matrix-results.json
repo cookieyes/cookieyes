@@ -1,0 +1,247 @@
+{
+  "$schema": "https://cookieyes.dev/schemas/peer-matrix-results.schema.json",
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-27T17:53:06.093Z",
+  "commit": "d4c4bae8c409f3c150ad24c2286518cf0c7fa656",
+  "matrixConfigHash": "sha256:d22e103be392eac346c780fed533fbb137ad4f9449570006250bf24540c29c04",
+  "subset": "full",
+  "dimensions": {
+    "varied": ["framework"],
+    "fixed": {
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler"
+    }
+  },
+  "combinations": [
+    {
+      "id": "next-14.0.0-react-18.0.0",
+      "role": "floor",
+      "label": "Next 14.0.0 + React 18.0.0 (declared floor)",
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
+      "requested": {
+        "next": "14.0.0",
+        "react": "18.0.0",
+        "reactDom": "18.0.0",
+        "typesReact": "^18.3.0",
+        "typesReactDom": "^18.3.0"
+      },
+      "resolved": {
+        "next": "14.0.0",
+        "react": "18.0.0",
+        "reactDom": "18.0.0",
+        "typesReact": "18.3.31",
+        "typesReactDom": "18.3.7"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-08-27T17:51:46.193Z",
+      "finishedAt": "2026-08-27T17:52:03.048Z",
+      "durationMs": 16855,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "asChild-ref-populated-with-real-dom-node",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-outer-and-inner-ref-composed",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/next-14.0.0-react-18.0.0.log"
+    },
+    {
+      "id": "next-15.5.24-react-18.3.1",
+      "role": "middle",
+      "label": "Next 15.5.24 + React 18.3.1",
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
+      "requested": {
+        "next": "15.5.24",
+        "react": "18.3.1",
+        "reactDom": "18.3.1",
+        "typesReact": "^18.3.0",
+        "typesReactDom": "^18.3.0"
+      },
+      "resolved": {
+        "next": "15.5.24",
+        "react": "18.3.1",
+        "reactDom": "18.3.1",
+        "typesReact": "18.3.31",
+        "typesReactDom": "18.3.7"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-08-27T17:52:31.877Z",
+      "finishedAt": "2026-08-27T17:52:55.831Z",
+      "durationMs": 23953,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "asChild-ref-populated-with-real-dom-node",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-outer-and-inner-ref-composed",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/next-15.5.24-react-18.3.1.log"
+    },
+    {
+      "id": "next-16.3.0-react-19.2.8",
+      "role": "newest",
+      "label": "Next 16.3.0 + React 19.2.8 (matches apps/web today)",
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
+      "requested": {
+        "next": "16.3.0",
+        "react": "19.2.8",
+        "reactDom": "19.2.8",
+        "typesReact": "^19.2.17",
+        "typesReactDom": "^19.2.3"
+      },
+      "resolved": {
+        "next": "16.3.0",
+        "react": "19.2.8",
+        "reactDom": "19.2.8",
+        "typesReact": "19.2.18",
+        "typesReactDom": "19.2.5"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-08-27T17:52:09.504Z",
+      "finishedAt": "2026-08-27T17:52:25.062Z",
+      "durationMs": 15557,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "asChild-ref-populated-with-real-dom-node",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-outer-and-inner-ref-composed",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/next-16.3.0-react-19.2.8.log"
+    }
+  ],
+  "summary": {
+    "total": 3,
+    "pass": 3,
+    "fail": 0,
+    "outcome": "pass"
+  },
+  "coverageLimits": [
+    "No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).",
+    "Node, package-manager and module-resolution dimensions are not yet varied — every combination above ran on Node 20 / pnpm / moduleResolution=bundler."
+  ]
+}

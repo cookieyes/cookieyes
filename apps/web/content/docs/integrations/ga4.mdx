@@ -1,0 +1,125 @@
+---
+title: Google Analytics 4
+description: Load GA4 behind consent, gated by Google Consent Mode v2.
+---
+
+## When to use it
+
+Use this preset if you're loading Google Analytics 4 via `gtag.js` and want it gated by consent from day one, without hand-rolling the script injection and revoke handling yourself. It handles loading, config, and — if you opt into `consentMode: "basic"` — teardown on revoke.
+
+If GA4 is managed *through* a Google Tag Manager container instead of loaded directly, use [Google Tag Manager](/docs/integrations/google-tag-manager) instead — configuring both for the same GA4 property fires an overlap warning and can fire GA4 twice.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { ga4 } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [ga4({ measurementId: "G-XXXXXXX" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+This alone is not the full picture: GA4 goes through Google Consent Mode, and Consent Mode needs a deny-by-default snippet running in your `<head>` before this — see [Google Consent Mode v2 → Basic usage](/docs/integrations/google-consent-mode#basic-usage) for the one component you add once, ahead of every Google product on the page.
+
+## Behaviour and trade-offs
+
+### Config fields
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `measurementId` | `string` | — required | GA4 measurement id, e.g. `"G-XXXXXXX"`. |
+| `category` | `string` | `"analytics"` | Consent category that gates this integration. |
+| `id` | `string` | `"ga4"` | Override the integration id — the registry key; must stay unique. |
+| `params` | `Record<string, unknown>` | — | Extra `gtag('config', …)` params, e.g. `{ send_page_view: false }` for an SPA doing its own page-view tracking, or `{ debug_mode: true }`. |
+| `consentMode` | `"advanced" \| "basic"` | `"advanced"` | See [Google Consent Mode v2](/docs/integrations/google-consent-mode#advanced-vs-basic--the-real-trade-off) for the full trade-off. |
+
+### `gtag.js` is shared, not per-product
+
+`ga4()`, `googleAds()`, and `googleTagManager()` (when it isn't set up as a container) all share one `gtag.js` script and one `dataLayer` — the library is only injected once, the first time any Google product needs it, and re-used by the rest. This is invisible in normal use; it matters mainly for the teardown behavior below.
+
+### What `consentMode` changes for GA4 specifically
+
+The general `advanced`/`basic` trade-off is covered in full on the [Consent Mode page](/docs/integrations/google-consent-mode#advanced-vs-basic--the-real-trade-off) — this is what it means for GA4 in particular:
+
+| | `advanced` (default) | `basic` |
+| --- | --- | --- |
+| `onRevoke` | `"keep"` — nothing happens; Consent Mode's cookieless modelling is the only response | `"remove"` — the shared `gtag.js` (if no other Google product still needs it) and GA4's own cookies are cleared |
+| Cookies cleared on revoke | none | `_ga`, `_gid`, `_gat`, and the per-property `_ga_<measurementId without the "G-">` |
+
+GA4's basic-mode teardown clears only GA4's own cookies — it never touches `_gcl_au` (Google Ads') or anything GTM-managed, even if they share the underlying script.
+
+### SPA page views
+
+`gtag.js` fires a `page_view` automatically on `config`. If your app already tracks route changes itself (a Next.js App Router client-side navigation, for example), pass `params: { send_page_view: false }` to avoid double-counting.
+
+## Complete example
+
+```tsx title="app/layout.tsx"
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { ga4 } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [
+    ga4({
+      measurementId: "G-XXXXXXX",
+      params: { send_page_view: false },
+    }),
+  ],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**GA4 is configured, but no `gtag` requests fire.**
+The `<head>` deny-default snippet is missing. `ensureConsentModeReady()` logs a console warning and falls back to a deny-default late the first time this happens — see [Consent Mode → Basic usage](/docs/integrations/google-consent-mode#basic-usage).
+
+**Revoking analytics consent doesn't stop GA4's requests.**
+That's `advanced` (the default) working as designed — `onRevoke: "keep"` means Consent Mode's cookieless modelling handles the revoked state, the tag itself stays loaded. If you want the tag and its cookies actually torn down on revoke, set `consentMode: "basic"`.
+
+**GA4 fires twice.**
+You likely have both a `googleTagManager()` container and a standalone `ga4()` configured for the same property. See the overlap warning on the [Consent Mode page](/docs/integrations/google-consent-mode#gtm-is-a-special-case).
+
+**The SPA's page-view count is doubled.**
+`gtag.js` sends its own `page_view` on `config` by default. If you also track route changes yourself, pass `params: { send_page_view: false }`.
+
+## Across the SDK
+
+`ga4()` is a `@cookieyes/scripts` export returning an `Integration` — the same shape every preset in this SDK returns, consumed by `@cookieyes/core`'s registry through the `integrations` key on `initCookieYes()`. What GA4 actually does with pre-consent traffic is governed by Consent Mode's broadcast (`@cookieyes/core`'s `google-consent-mode.ts`), not by `ga4()` itself — `ga4()` only loads the tag and registers the measurement id.
+
+To run your own code alongside GA4 when analytics consent changes — for example, to flip a feature that depends on tracking being active — a React host uses `useOnConsentChange("change", listener, { category: "analytics" })` from `@cookieyes/react`; a plain-JavaScript or non-React host uses the `onConsentUpdate` config callback on `CookieYesConfig` instead. Both are real, framework-appropriate versions of the same thing.
+
+## See also
+
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — the full signal list and the `advanced`/`basic` trade-off.
+- [Google Tag Manager](/docs/integrations/google-tag-manager) — if GA4 is (or should be) managed through a container instead.
+- [Google Ads](/docs/integrations/google-ads) — the other gtag product sharing this library.

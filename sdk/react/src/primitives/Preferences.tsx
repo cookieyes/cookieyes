@@ -53,6 +53,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
     const { hidePreferences } = useConsentActions();
     const containerRef = useRef<HTMLDivElement | null>(null);
     const { theme, colorScheme } = useThemeConfig();
+    const t = useTranslations();
 
     useEscapeKey(open, hidePreferences);
     useFocusTrap(open, containerRef);
@@ -71,7 +72,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
           }}
           role="dialog"
           aria-modal="true"
-          aria-label="Cookie preferences"
+          aria-label={t.preferencesDialogLabel}
           tabIndex={-1}
           data-cy-part={CY_PART.dialog.overlay}
           {...props}
@@ -122,8 +123,9 @@ const Close = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesClo
   ref,
 ) {
   const { hidePreferences } = useConsentActions();
+  const t = useTranslations();
   const behavior = {
-    "aria-label": ariaLabel ?? "Close preferences",
+    "aria-label": ariaLabel ?? t.preferencesCloseLabel,
     "data-cy-part": CY_PART.dialog.close,
     onClick: chain(onClick, hidePreferences),
     ...rest,

@@ -1,0 +1,179 @@
+---
+title: RecallButton
+description: The ready-made floating button that lets a visitor reopen, revisit, or change their cookie settings after the banner is gone.
+---
+
+## When to use it
+
+Mount this in every app. GDPR requires withdrawing consent to be as easy as giving it, and once the banner is dismissed there is otherwise no way back to the dialog.
+
+You can skip it only if you provide your own entry point — a footer "Cookie settings" link calling `showPreferences()` is equally valid, and often preferable. What you cannot do is offer no route back at all. If you want to build that entry point yourself instead of using this ready-made button, see [Reopening the preferences dialog](/docs/reopening-preferences).
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookiePreferences, RecallButton, initCookieYes } from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </>
+  );
+}
+```
+
+## Options
+
+`RecallButton` forwards a ref and accepts **every native `<button>` prop**, plus:
+
+<ComponentPropsTable component="RecallButton" />
+
+### Parts
+
+| Part | Element |
+| --- | --- |
+| `recall` | The button root |
+
+## Behaviour and trade-offs
+
+### It hides itself in three situations
+
+The button returns `null` in exactly three cases: while the banner is visible; while either dialog is already open; and while the visitor has not yet acted, unless the regulation is CCPA. So on a first visit under GDPR you see the banner and no widget; after a decision, the widget and no banner.
+
+**Under CCPA it appears immediately**, before any action — there is no "has acted" gate in that branch. That is deliberate: CCPA is an opt-out regime, so a visitor needs a permanent way to opt out at any time, not only after they have already interacted with the banner.
+
+### It opens the right surface for the regulation
+
+Under CCPA it opens [`CookieOptOut`](/docs/components/cookie-opt-out); otherwise it opens [`CookiePreferences`](/docs/components/cookie-preferences). Same button, two destinations. Mount whichever dialogs your regulations need.
+
+### `className` replaces, it does not append
+
+This is the one place in the SDK where that is true. `CookieBanner`, `CookiePreferences`, and `CookieOptOut` all **merge** a `className` you pass with their own built-in classes — a class you pass always wins on a specificity tie, but the built-in styling stays. `RecallButton` does not: the source is literally `className={className ?? "cy-widget"}`, so passing `className` **replaces** `cy-widget` entirely rather than adding to it.
+
+That is the escape hatch for styling the widget entirely with your own classes — but it also means passing `className="ml-2"` silently drops all the default styling and leaves you with an unstyled button, with no error to tell you why. Pass both if you want to keep the defaults:
+
+```tsx title="app/RecallExample.tsx"
+import { RecallButton } from "@cookieyes/react";
+
+export function Example() {
+  return <RecallButton className="cy-widget my-extra-class" />;
+}
+```
+
+A developer coming from any other preset in this SDK, where `className` always merges, is the person this catches. If you have used `className` on `CookieBanner` or either dialog and expect the same here, expect an unstyled button instead.
+
+### `onClick` chains rather than overriding
+
+Your handler runs first, then the dialog opens. You cannot prevent the dialog from opening by omitting a call — the two are chained deliberately (via `chain()`), so an analytics handler cannot accidentally break the consent escape hatch. If you need to intercept the click and decide for yourself whether the dialog should open, call `event.preventDefault()` in your handler.
+
+### Compared to other consent tools
+
+A ready-made, drop-in control that reopens the consent dialog is a capability some other consent tools were asked for and never shipped — teams using them end up wiring their own trigger from scratch just to give a visitor a way back to their choices. `RecallButton` ships that out of the box: mount it, and there is a permanent, correctly-positioned, correctly-routed way back into consent settings with no markup of your own required.
+
+### Position is fixed
+
+The widget sits in the bottom-left corner via a hardcoded `data-pos="bottom-left"` attribute. This is not currently configurable — there is no prop or `theme` key for it. An earlier `theme.widgetPosition` option was removed because nothing in the SDK actually read it; rather than leave a setting that silently did nothing, it was taken out. The position stays consistent with the rest of the SDK's surfaces.
+
+### Its label is translated, in every shipped language
+
+The button's accessible name and its tooltip both read the `recallButtonLabel` translation key — the same key drives `aria-label` and `data-tooltip`, so a screen reader and a mouse-hover tooltip always agree. It ships translated in all five bundled languages (English, German, Spanish, French, Italian), and you can override it like any other translation key via `i18n.messages`.
+
+## Verify it works
+
+1. **It is hidden before the visitor acts** — under GDPR, load the app in a fresh browser profile and confirm no widget is present alongside the banner.
+2. **It appears after a decision** — accept or reject, and confirm the widget shows once the banner is gone.
+3. **It opens the right dialog for the regulation** — `CookiePreferences` under GDPR/DEFAULT, `CookieOptOut` under CCPA.
+4. **Your own class did not silently unstyle it** — if you passed `className`, confirm the button still looks intentional, not bare.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| Widget never appears | The visitor has not acted yet and the banner is showing (GDPR) — this is correct | Accept or reject to see the widget, or check `regulation` is really CCPA if you expected it immediately |
+| Widget is present but completely unstyled | `className` was passed and it **replaced** `cy-widget` rather than adding to it | Include `cy-widget` alongside your class: `className="cy-widget my-class"` |
+| Clicking it does nothing | The dialog it wants to open is not mounted | Mount `CookiePreferences` under GDPR, `CookieOptOut` under CCPA |
+| It sits behind other page content | `z-index` conflict with something else on the page, not a stacking-context problem — it portals into `document.body` | Raise it via `[data-cy-part="recall"]` |
+| It shows in the wrong corner, or you expected to move it | Position is hardcoded, not configurable | None available; the corner is fixed by design |
+
+## Complete example
+
+A custom trigger in your footer, plus the floating widget:
+
+{/* check="false": analytics.track(...) and <ShieldIcon /> below are this developer's
+    own analytics client and icon, not part of @cookieyes/react's typed surface. */}
+```tsx title="app/cookieyes.tsx" check="false"
+"use client";
+
+import {
+  CookieBanner,
+  CookiePreferences,
+  RecallButton,
+  initCookieYes,
+  useConsentActions,
+} from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+});
+
+export function CookieSettingsLink() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <button type="button" className="footer-link" onClick={() => showPreferences()}>
+      Cookie settings
+    </button>
+  );
+}
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton
+        className="cy-widget"
+        aria-label="Manage cookie preferences"
+        onClick={() => analytics.track("consent_reopened")}
+      >
+        <ShieldIcon />
+      </RecallButton>
+    </>
+  );
+}
+```
+
+## Common mistakes
+
+**The widget never appears.**
+Most often the visitor has not acted yet and the banner is showing — that is correct. Otherwise, check you are not rendering it inside a conditional that is false after consent.
+
+**Passing `className` made it unstyled.**
+`className` replaces `cy-widget` here, unlike every other component on this page's family — `CookieBanner`, `CookiePreferences`, and `CookieOptOut` all merge instead. Include `cy-widget` alongside your class.
+
+**Clicking it does nothing.**
+The dialog it wants to open is not mounted — `CookiePreferences` under GDPR, `CookieOptOut` under CCPA.
+
+**It sits behind other page content.**
+It portals into `document.body`, so this is a `z-index` conflict with something else on the page rather than a stacking-context problem. Raise it via `[data-cy-part="recall"]`.
+
+**Both a custom link and the widget open the dialog twice.**
+They cannot — the dialog is a singleton driven by runtime state. Two triggers are fine.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core` there is no widget; call `consentManager.showPreferences()` or `consentManager.showOptOut()` from your own control.
+
+## See also
+
+- [Reopening the preferences dialog](/docs/reopening-preferences) — build your own trigger instead, or alongside this one
+- [useConsentActions](/docs/hooks/use-consent-actions) — build your own trigger
+- [Theme tokens](/docs/styling/theme-tokens) — color, radius, and font tokens for the rest of the SDK's surfaces
+- [Accessibility](/docs/accessibility) — what the SDK guarantees and what you own

@@ -1,0 +1,281 @@
+---
+title: Reopening the preferences dialog
+description: Add a cookie settings trigger or link anywhere — a footer link, a settings page, a nav item — and reopen the consent dialog on demand.
+---
+
+Once a visitor has made a choice, the banner goes away. This page is how you give them a way back to it — from a footer link, a privacy settings page, or anywhere else in your interface.
+
+## When to use it
+
+Come here when you want a permanent "Cookie settings" entry point. If you just want a ready-made floating button and no markup of your own, [`RecallButton`](/docs/components/recall-button) is that, and you can stop reading after the next paragraph.
+
+**We do not ship a dedicated trigger or link component.** Some consent tools ship two — an inline link and a wrapping trigger. We ship one action, and you attach it to your own markup. That is a deliberate choice: a trigger component would own the element, the classes and the label, and every team then fights it to match their own design system. The equivalent is three lines:
+
+```tsx title="app/CookieSettingsLink.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+export function CookieSettingsLink() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <button type="button" className="footer-link" onClick={showPreferences}>
+      Cookie settings
+    </button>
+  );
+}
+```
+
+If you are migrating, the mapping is direct: wherever another tool gave you a trigger component that wraps a child, or a link component that renders its own anchor, you call `showPreferences()` from your own element instead. There is nothing to import beyond the hook.
+
+## Basic usage
+
+`useConsentActions()` returns `showPreferences()` and `showOptOut()`. Both work whether or not the banner is on screen, and whether or not the visitor has ever made a choice.
+
+```tsx title="app/CookieSettings.tsx"
+"use client";
+
+import { useConsentActions, usePreferencesOpen } from "@cookieyes/react";
+
+export function CookieSettings() {
+  const { showPreferences } = useConsentActions();
+  const isOpen = usePreferencesOpen();
+
+  return (
+    <button
+      type="button"
+      className="my-button"
+      onClick={showPreferences}
+      aria-expanded={isOpen}
+    >
+      Cookie settings
+    </button>
+  );
+}
+```
+
+The same call works on a text link. Use a real `<button>` when the control does not navigate — an `<a>` without an `href` is not keyboard-reachable and is not announced as a control:
+
+```tsx title="app/FooterPrivacy.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+export function FooterPrivacy() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <p className="footer-legal">
+      <a href="/privacy">Privacy policy</a>
+      {" · "}
+      <button type="button" className="link-button" onClick={showPreferences}>
+        Cookie settings
+      </button>
+    </p>
+  );
+}
+```
+
+`usePreferencesOpen()` and `useOptOutOpen()` tell you whether each dialog is currently open, if you need to reflect that in your own interface.
+
+## Behaviour and trade-offs
+
+### What a custom trigger is responsible for
+
+Three things, all of which the ready-made button already handles:
+
+- **Be a real control.** A `<button type="button">` or an `<a href>`. A clickable `<div>` is not keyboard-reachable and screen readers do not announce it as actionable.
+- **Have an accessible name.** Visible text is enough. If your trigger is icon-only, add an `aria-label` — and translate it, the same way you translate the rest of your interface.
+- **Be reachable by keyboard.** If you have not removed it from the tab order, a real control already is.
+
+### What happens automatically once it opens
+
+You supply the trigger; the dialog handles the rest:
+
+- Focus moves into the dialog when it opens, so a screen reader announces the dialog rather than page-level context.
+- **Escape** closes it.
+- Closing it — by saving, cancelling, or Escape — returns focus to whatever opened it, including your own control.
+
+That last guarantee is more careful than it looks. The dialog remembers the element that opened it, but that element can **disappear while the dialog is open**: both the banner and the recall button hide themselves whenever a dialog is showing, and they come back as a *new* DOM node afterwards, so the remembered reference is dead. When that happens the SDK re-finds the replacement by matching its accessible name or text, so "Do Not Sell" lands back on "Do Not Sell" rather than on whichever control happens to be first.
+
+That re-find searches the banner and the recall widget. Your own trigger is normally unaffected, because a footer link or a settings-page button does not unmount when a dialog opens — the original element is still connected, so focus returns to it directly.
+
+### Your click handler runs alongside ours
+
+Pass your own `onClick` and it runs first, then ours. Nothing is replaced:
+
+```tsx title="app/TrackedCookieSettings.tsx"
+"use client";
+
+import { Banner, useConsentActions } from "@cookieyes/react";
+
+export function TrackedCookieSettings() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        // Runs before the dialog opens. Call event.preventDefault() here
+        // and the dialog will not open at all.
+        console.log("cookie settings opened", event.type);
+        showPreferences();
+      }}
+    >
+      Cookie settings
+    </button>
+  );
+}
+
+// Inside a custom banner, the primitive wires the same behaviour for you.
+export function CustomBannerCustomiseAction() {
+  return (
+    <Banner.OpenPreferences onClick={() => console.log("customise clicked")}>
+      Customise
+    </Banner.OpenPreferences>
+  );
+}
+```
+
+On the primitives, that chaining is built in: your handler runs, and ours follows **unless** you call `event.preventDefault()`. That is the escape hatch if you need to intercept a click and decide for yourself whether the dialog should open.
+
+### The building block for a custom banner
+
+If you are assembling your own banner from the primitives, use `Banner.OpenPreferences` rather than wiring the hook yourself — the opening behaviour is already attached, so you supply appearance only:
+
+```tsx title="app/CustomBannerActions.tsx"
+"use client";
+
+import { Banner } from "@cookieyes/react";
+
+export function CustomBannerActions() {
+  return (
+    <Banner.Actions>
+      <Banner.OpenPreferences asChild>
+        <button type="button" className="my-design-system-button">
+          Customise
+        </button>
+      </Banner.OpenPreferences>
+      <Banner.RejectAll />
+      <Banner.AcceptAll />
+    </Banner.Actions>
+  );
+}
+```
+
+`asChild` hands the behaviour to your own component instead of rendering our element, so it matches your design system exactly. See [Banner primitives](/docs/headless/banner) for the full set.
+
+## Verify it works
+
+1. Your trigger is reachable by **Tab** and shows a visible focus ring.
+2. Activating it with **Enter** or **Space** opens the preferences dialog.
+3. Focus lands **inside** the dialog, not back at the top of the page.
+4. Closing with **Escape** returns focus to your trigger.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| Trigger is skipped when tabbing | It is a `<div>` or `<span>`, or has `tabindex="-1"` | Use `<button type="button">` |
+| Enter or Space does nothing | Same cause — a non-button element has no default activation | Use a real button |
+| Nothing opens, no error | The dialog component is not mounted anywhere | Render `<CookiePreferences />` at your app root |
+| Nothing opens, and there is no error anywhere | `initCookieYes()` did not run in a `"use client"` module — `showPreferences()` is a silent no-op without a runtime | See [Configuration](/docs/getting-started/configuration#the-rule-that-breaks-most-first-setups) |
+| Focus jumps to the page top on close | Your trigger unmounted while the dialog was open | Keep the trigger mounted, or accept the SDK's re-find fallback |
+
+## Complete example
+
+Three placements, each complete and independently copy-pasteable.
+
+```tsx title="app/components/FooterCookieLink.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+/** The most common request: a "Cookie settings" item in the footer legal row. */
+export function FooterCookieLink() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <button type="button" className="footer-legal__link" onClick={showPreferences}>
+      Cookie settings
+    </button>
+  );
+}
+```
+
+```tsx title="app/privacy/settings/page.tsx"
+"use client";
+
+import { useConsentActions, useConsent } from "@cookieyes/react";
+
+/**
+ * A standalone privacy settings page. This works under every regulation and
+ * whether or not the visitor has ever acted — unlike the recall button, which
+ * hides itself until a choice has been made (except under CCPA).
+ */
+export default function PrivacySettingsPage() {
+  const { showPreferences, reset } = useConsentActions();
+  const snapshot = useConsent();
+
+  return (
+    <main>
+      <h1>Privacy settings</h1>
+      <p>
+        {snapshot.hasActed
+          ? "You have already set your cookie preferences."
+          : "You have not set your cookie preferences yet."}
+      </p>
+      <button type="button" onClick={showPreferences}>
+        Change cookie settings
+      </button>
+      <button type="button" onClick={reset}>
+        Clear my choice
+      </button>
+    </main>
+  );
+}
+```
+
+```tsx title="app/components/AccountMenu.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+/** A nav or account-menu item, sitting alongside your own links. */
+export function AccountMenu() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <ul className="account-menu">
+      <li>
+        <a href="/account">Account</a>
+      </li>
+      <li>
+        <button type="button" className="account-menu__item" onClick={showPreferences}>
+          Cookie settings
+        </button>
+      </li>
+    </ul>
+  );
+}
+```
+
+## Common mistakes
+
+**The trigger is a `<div>` with an `onClick`.**
+It is not keyboard-reachable and screen readers do not announce it as a control. Nothing errors, and a mouse test passes, which is why this survives review. Use `<button type="button">`.
+
+**An icon-only trigger has no accessible name.**
+A screen reader announces "button" with no indication of what it does. Add an `aria-label`, and translate it alongside the rest of your interface.
+
+**Clicking does nothing and there is no error.**
+`showPreferences()` opens a dialog that must actually be mounted. If `<CookiePreferences />` is not rendered anywhere, the state flips and nothing appears. Under CCPA the recall path opens the opt-out dialog instead, so [`CookieOptOut`](/docs/components/cookie-opt-out) must be mounted too.
+
+**Clicking your trigger does nothing, and there is no error anywhere.**
+Your trigger's file — or the file that calls `initCookieYes()` — is a Server Component. `useConsentActions()` returns no-op actions when no runtime is registered, so `showPreferences()` silently does nothing rather than throwing. Add `"use client"` as the first line of both files. See [Configuration](/docs/getting-started/configuration#the-rule-that-breaks-most-first-setups). The only place a missing runtime throws — `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.` — is code that calls `getCookieYes()` or [`useConsentRuntime()`](/docs/hooks/low-level-hooks) directly.
+
+## Across the SDK
+
+`useConsentActions()` is the React wrapper. In `@cookieyes/core` the same operations live on the manager the setup call returns — `consentManager.showPreferences()` and `consentManager.showOptOut()` — so a non-React host attaches them to its own controls the same way. The dialogs themselves are React components, so a plain-JavaScript host renders its own UI against the store instead.
+
+## See also
+
+- [Recall button](/docs/components/recall-button) — the ready-made floating trigger, if you would rather not build one
+- [Cookie preferences](/docs/components/cookie-preferences) — the dialog this opens, and everything configurable about it
+- [Accessibility](/docs/accessibility) — the guarantees the dialogs make, and what a custom trigger owns

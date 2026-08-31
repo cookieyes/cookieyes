@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useTranslations } from "../hooks/useTranslations.js";
 import { Preferences } from "../primitives/Preferences.js";
 import { CY_PART, CY_STATE } from "../styles/parts.js";
 
@@ -11,7 +12,7 @@ export type DialogPart = keyof typeof CY_PART.dialog;
  * Styling passthrough. `className` / `style` target the dialog card;
  * `classNames` / `styles` target individual parts by name (e.g. `toggle`,
  * `save`) — each merged on top of our defaults. A class you pass always wins
- * over ours (our styles sit in the `cookieyes` cascade layer); an inline
+ * over ours (ours are single-class rules with no `!important`, so yours wins on source order when your sheet loads later); an inline
  * `style` wins over any class. Style the checked toggle via the `toggle` part
  * and `[data-cy-state="on"]` (see the styling guide).
  */
@@ -29,6 +30,7 @@ export function CookiePreferences({
   styles,
 }: CookiePreferencesProps = {}) {
   /** Merge a part's default class with the caller's `classNames`/`styles` for that part. */
+  const t = useTranslations();
   const part = (key: DialogPart, base: string) => ({
     className: [base, classNames?.[key]].filter(Boolean).join(" ") || undefined,
     style: styles?.[key],
@@ -64,7 +66,7 @@ export function CookiePreferences({
                           {label}
                         </span>
                         {disabled ? (
-                          <span className="cy-always-active">Always Active</span>
+                          <span className="cy-always-active">{t.alwaysActive}</span>
                         ) : (
                           <label
                             {...part("toggle", "cy-toggle")}

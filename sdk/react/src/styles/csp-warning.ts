@@ -1,5 +1,4 @@
-const DOCS_URL =
-  "https://github.com/cookieyes/cookieyes/tree/main/sdk/react#content-security-policy";
+const DOCS_URL = "https://developer.cookieyes.com/docs/styling/csp";
 
 // This SDK's own styling — the static stylesheet (a real <link>) and
 // theme colors (set via the CSSOM, not a <style> block) — doesn't need

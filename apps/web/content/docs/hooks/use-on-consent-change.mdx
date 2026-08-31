@@ -1,0 +1,176 @@
+---
+title: useOnConsentChange
+description: Subscribe to consent changes.
+---
+
+## When to use it
+
+This is the recommended way to react to consent in React. Use it whenever consent changing should *cause* something: initialising an SDK, starting a session recorder, syncing a decision to your own analytics.
+
+You do not need it to gate an element's rendering — that is [`useConsentCategory()`](/docs/hooks/focused-hooks). You do not need it to load a `<script>` tag — [`GatedScript`](/docs/components/gated-script) does that without you writing a listener.
+
+The config's `onConsentReady` / `onConsentUpdate` callbacks cover the same ground at a lower level, but they live for the lifetime of the config and cannot be unsubscribed. This hook cleans up on unmount.
+
+## Basic usage
+
+```tsx title="components/Analytics.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+
+export function Analytics() {
+  useOnConsentChange("change", ({ changedCategories }) => {
+    if (changedCategories.includes("analytics")) loadAnalytics();
+  });
+
+  return null;
+}
+```
+
+## Options
+
+```ts title="Signature"
+useOnConsentChange(
+  type: ConsentEventType,
+  listener: ConsentEventListener,
+  options?: ConsentEventOptions,
+): void
+```
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `type` | `"change" \| "save"` | **Yes** | — | Which event to listen for. See below |
+| `listener` | `(payload: ConsentEventPayload) => void` | **Yes** | — | Called on the event, and once on mount |
+| `options` | `{ category?: ConsentCategory }` | No | — | Restrict to a single category |
+
+The listener receives:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `categories` | `Record<string, boolean>` | The full **committed** map in effect when the event fired |
+| `changedCategories` | `ConsentCategory[]` | Ids whose value differed from before. **Empty on the initial replay** |
+| `isInitial` | `boolean` | `true` for the one-off replay on attach, `false` when the visitor just acted |
+
+## Behaviour and trade-offs
+
+### `"change"` vs `"save"`
+
+| Type | Fires | Use for |
+| --- | --- | --- |
+| `"change"` | Only when a category's value actually differs | (Re)loading a script — a visitor re-confirming the same choices will not run it again |
+| `"save"` | On every save, including an unchanged re-confirm | A "your preferences were saved" toast |
+
+Pick `"change"` for side effects that should be idempotent-by-avoidance. Pick `"save"` when the visitor's *act* of saving is what matters, regardless of outcome.
+
+### Every listener fires once immediately
+
+On mount, your listener is called with the current state and `isInitial: true`. This is deliberate: a component that mounts late still learns what the visitor already chose, instead of silently missing a decision made before it existed.
+
+`changedCategories` is **empty** on that replay — nothing changed, you are just being told the current state. Code that only checks `changedCategories.includes(...)` will therefore skip the initial call, which is usually wrong for a loader:
+
+```tsx title="components/Analytics.tsx"
+useOnConsentChange("change", ({ categories, changedCategories, isInitial }) => {
+  // Handles both the initial replay and later changes.
+  if (isInitial ? categories.analytics : changedCategories.includes("analytics")) {
+    loadAnalytics();
+  }
+});
+```
+
+Simpler, when your loader is safe to call twice:
+
+```tsx title="Simpler alternative"
+useOnConsentChange("change", ({ categories }) => {
+  if (categories.analytics) loadAnalyticsOnce();
+});
+```
+
+### `{ category }` narrows the listener
+
+Pass `{ category: "analytics" }` and the listener fires only when that category changes — plus the initial replay. It saves a manual `includes` check, nothing more.
+
+### It reads committed values
+
+`categories` is the committed map. An unsaved dialog toggle never triggers this hook, which is what you want for anything that loads code.
+
+### SSR-safe, and cleans up on unmount
+
+On the server there is no mounted runtime, so the hook does nothing. The subscription is removed on unmount automatically — no cleanup function to return.
+
+### The listener is not in a dependency array
+
+Pass a stable function or accept that the current render's closure is used. Do not wrap the hook in a conditional — it is a hook and must run on every render.
+
+## Complete example
+
+```tsx title="components/ConsentEffects.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+import { useState } from "react";
+
+export function ConsentEffects() {
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Load analytics whenever it is granted — including for a returning visitor,
+  // whose grant arrives via the initial replay.
+  useOnConsentChange(
+    "change",
+    ({ categories }) => {
+      if (categories.analytics) {
+        window.dataLayer = window.dataLayer || [];
+        window.gtag?.("consent", "update", { analytics_storage: "granted" });
+      }
+    },
+    { category: "analytics" },
+  );
+
+  // Confirm every save, even an unchanged re-confirm.
+  useOnConsentChange("save", ({ isInitial }) => {
+    if (isInitial) return;
+    setToast("Your preferences were saved.");
+    setTimeout(() => setToast(null), 4000);
+  });
+
+  return toast ? (
+    <div role="status" className="toast">
+      {toast}
+    </div>
+  ) : null;
+}
+```
+
+## Common mistakes
+
+**Analytics never loads for a returning visitor who already accepted.**
+Your listener checks only `changedCategories`, which is empty on the initial replay. Handle `isInitial`, or read `categories` directly.
+
+**A "preferences saved" toast appears on every page load.**
+You did not guard `isInitial`. The listener always fires once on mount.
+
+**The loader runs twice when someone re-confirms the same choices.**
+You used `"save"`. Switch to `"change"`, which fires only on a real difference.
+
+**The listener fires when a toggle is flipped but not saved.**
+It cannot — this hook reads committed values. If you are seeing that, you are subscribed to `consentStore.subscribe`, which does fire on transient state.
+
+**The listener never fires, and there is no error.**
+The component rendered before `initCookieYes()` ran, or the component is a Server Component. Neither throws: on the server, or before a runtime is registered, `useOnConsentChange` does nothing rather than crashing — see [SSR-safe, and cleans up on unmount](#ssr-safe-and-cleans-up-on-unmount) above. Confirm `initCookieYes()` runs in a `"use client"` module that is actually imported on the path to this component, and that this component is itself in a `"use client"` file. You will only see `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.` thrown from code that calls `getCookieYes()` or [`useConsentRuntime()`](/docs/hooks/low-level-hooks) directly.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. The core equivalent is `consentStore.on(type, listener, options?)`, with the same payload and the same initial replay, returning an unsubscribe function:
+
+```ts title="Core equivalent"
+const off = consentStore.on("change", ({ changedCategories }) => {
+  if (changedCategories.includes("analytics")) loadAnalytics();
+});
+```
+
+Note `consentStore.subscribe(listener)` is a *different*, lower-level thing — it fires on every state change including transient toggles. `on()` is the one you want.
+
+## See also
+
+- [GatedScript](/docs/components/gated-script) — gate a script tag without writing a listener
+- [useConsent](/docs/hooks/use-consent) — read state rather than react to it
+- [Configuration](/docs/getting-started/configuration) — `onConsentReady` and `onConsentUpdate`

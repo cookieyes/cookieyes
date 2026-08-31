@@ -1,0 +1,208 @@
+---
+title: GatedScript
+description: Load a third-party script only after its category is granted.
+---
+
+## When to use it
+
+Use this for every third-party tag you can reference in code: analytics, ad pixels, session recorders, chat widgets. It is the primary consent mechanism in the SDK and it costs effectively nothing — one conditional and a `Map` lookup.
+
+You need [`networkBlocker`](/docs/getting-started/configuration) instead only for code you cannot register: a tag hard-coded into HTML you do not control, or a beacon fired by another vendor's script. Reaching for the blocker when `GatedScript` would do means paying a global `fetch`/XHR patch for something a conditional already handles.
+
+<Callout type="warn">
+  `networkBlocker` **cannot** stop a `<script src="...">` element — the browser fetches those through a path that patching `fetch` and XHR does not touch. If you need a script gated, register it here.
+</Callout>
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { GatedScript } from "@cookieyes/react";
+
+<GatedScript
+  id="ga4"
+  src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"
+  category="analytics"
+/>;
+```
+
+The component renders `null` — it registers the script and nothing else. Place it anywhere inside your client tree.
+
+## Options
+
+<ComponentPropsTable component="GatedScript" />
+
+## Behaviour and trade-offs
+
+### It does nothing without a mounted runtime
+
+Before registering the script, `GatedScript` looks up the mounted CookieYes runtime through the SDK's internal `_tryGetCookieYes()` accessor. If nothing is mounted yet, that lookup returns `null` and the component returns immediately — no script, no warning, no error:
+
+```text title="What GatedScript does internally, simplified"
+const runtime = _tryGetCookieYes();
+if (!runtime) return;
+```
+
+This is a silent no-op, not a fallback of any kind. It matters most in two situations: `GatedScript` rendering before `initCookieYes()` has run in a client component, or tests that render `GatedScript` in isolation without setting up the runtime first. In either case the fix is the same — make sure `initCookieYes()` has already run, in the same client tree, before `GatedScript` mounts.
+
+### It gates on committed consent
+
+An unsaved toggle in the preferences dialog never loads a script. Injection happens on a real decision — Accept All, Reject All, or Save.
+
+### Which category for which kind of tool
+
+The category you pass is only meaningful if it exists in your active taxonomy, and it should describe what the tool actually does, not which vendor makes it:
+
+| Kind of tool | Typical category |
+| --- | --- |
+| Analytics platforms (GA4, Hotjar's tracking pixel, Mixpanel) | `analytics` |
+| Ad and retargeting pixels (Meta Pixel, LinkedIn Insight Tag, TikTok Pixel) | `advertisement` |
+| Session replay / heatmaps | `analytics` or `performance`, depending on how you've drawn that line in your own taxonomy |
+| Chat widgets and other preference-storage tools (Intercom, Crisp) | `functional` |
+| Anything that only makes the page work (no third-party data collection) | `necessary` — but reconsider whether it needs gating at all |
+
+If you're not sure, ask what the tool does with the visitor's data once loaded, not what it's commonly filed under elsewhere — a heatmap tool that only aggregates anonymised UX metrics is a defensible `performance` call even though its vendor markets it as "analytics."
+
+### `id` must be unique and stable
+
+It is the registry key. Two `GatedScript`s sharing an `id` means the second silently overwrites the first. The injector also checks `document.getElementById(id)` before injecting, so an `id` that collides with an existing element on your page will prevent injection entirely.
+
+### Injection is one-way within a page load
+
+Once injected, a script **stays**. Revoking consent does not unload it, because unloading cannot undo what already ran — the tag has already set its cookies and sent its first beacon. The block takes effect on the next page load, when the category starts denied.
+
+Two things exist for exactly this situation: [`ReloadNotice`](/docs/components/reload-notice) offers the visitor a reload when a revoked tool has no clean runtime stop, and the integrations route (below) can additionally silence or remove a tool on withdrawal without a reload at all, for the vendors it has a preset for.
+
+### Timing after consent
+
+Measured on an emulated Pixel 5 with 4× CPU throttling and a ~1.6 Mbps / 150 ms RTT connection: **~4–5 ms** from the Accept click to the gated tag's request starting. Time until the tag has actually *executed* depends on the third party's CDN — in the same runs that was ~170 ms, almost all of it the vendor's own round trip.
+
+### GatedScript vs the integrations route
+
+`GatedScript` is one of two ways to bring a third-party tool into this SDK's consent lifecycle, and they solve different problems.
+
+`GatedScript` **injects and stops there** — it puts a `<script src>` on the page once its category is granted, and nothing more. It has no opinion on whether the tool should load immediately or wait for consent (it always waits), and no opinion on what happens when consent is later withdrawn (nothing — see "Injection is one-way" above).
+
+The **integrations route** — the `integrations` config key in `initCookieYes()`, populated with ready-made presets from `@cookieyes/scripts` — controls a fuller lifecycle for tools it has a preset for:
+
+- **When it loads**: `immediately` (before any consent decision) or `afterConsent` (only once its category is granted).
+- **What happens on withdrawal**: `keep` it running (the vendor manages its own update, as Google Consent Mode does), `remove` it entirely and reload it if consent is re-granted, or `silence` it and `resume` it later without a full reload.
+
+`GatedScript` cannot express any of that — it only injects, once, after consent.
+
+**Recommendation:** use an integrations preset when one exists for your tool, and reach for `GatedScript` for everything else — a vendor with no preset, or an internal script you fully control.
+
+The integrations route produces two warnings worth knowing before you hit them:
+
+- **Configuring the same tool twice** — once as an `integrations` preset and once as a legacy `builtInIntegrations` entry (or twice under `integrations` with the same `id`) — logs a warning and skips the duplicate, rather than running the tool twice and double-counting events.
+- **Gating a preset on a category that isn't in your configured taxonomy** logs a warning and the tool silently never loads — it waits forever for a consent decision on a category the visitor is never asked about. This is an easy trap with a custom `categories` list plus a preset left on its default category (e.g. `segment()` defaults to `"analytics"`, which won't exist if you renamed or removed that category).
+
+See [Configuration](/docs/getting-started/configuration) for the `integrations` key itself, and [Integrations](/docs/integrations) for vendor-specific guides — see "Across the SDK" below for their current status.
+
+## Verify it works
+
+After wiring up a gated script, check all three:
+
+1. **The script does not load before consent.** With the relevant category rejected (or not yet decided), open the Network tab and confirm no request to the script's domain appears.
+2. **The script loads once consent is granted.** Accept the category (or Accept All) and confirm the request now appears, and `onLoad` (if you passed one) fires.
+3. **Withdrawing consent does not unload it.** Reject the category after it has loaded — the script keeps running for the rest of this page load. That's expected; see "Injection is one-way" above.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| Script never loads, even after accepting | `category` is not in your active taxonomy | Check `useCategories()`, or use a category from your configured list |
+| Script loads before consent | Something other than `GatedScript` is loading it — a plain `<script>` tag, `next/script`, or a bundled import | `GatedScript` only controls what it registers; remove the other loading path |
+| Nothing happens at all, no error | No runtime is mounted yet (`_tryGetCookieYes()` returned `null`) | Make sure `initCookieYes()` has run in the same client tree before `GatedScript` mounts |
+| Two scripts, only one loads | Duplicate `id` — the registry is keyed on it | Give each `GatedScript` a unique, stable `id` |
+| `onLoad` never fires | The script 404s or is blocked by CSP, so its `load` event never fires | Check the Network tab and your `script-src` policy |
+
+## Complete example
+
+{/* check="false": window.dataLayer/window.gtag are Google's own gtag.js bootstrap globals, not part of the SDK's typed surface. */}
+
+```tsx title="app/cookieyes.tsx" check="false"
+"use client";
+
+import {
+  CookieBanner,
+  CookiePreferences,
+  GatedScript,
+  RecallButton,
+  ReloadNotice,
+  initCookieYes,
+} from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  // For tags that cannot be registered — a beacon fired by code you don't own
+  networkBlocker: {
+    rules: [{ id: "meta-beacon", domain: "facebook.net", pathIncludes: "/tr", category: "advertisement" }],
+  },
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+      <ReloadNotice />
+
+      <GatedScript
+        id="ga4"
+        src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"
+        category="analytics"
+        onLoad={() => {
+          window.dataLayer = window.dataLayer || [];
+          window.gtag = function gtag() {
+            window.dataLayer.push(arguments);
+          };
+          window.gtag("js", new Date());
+          window.gtag("config", "G-XXXXXXX");
+        }}
+      />
+
+      <GatedScript
+        id="hotjar"
+        src="https://static.hotjar.com/c/hotjar-1234567.js"
+        category="analytics"
+      />
+    </>
+  );
+}
+```
+
+## Common mistakes
+
+**The script never loads, even after accepting.**
+The `category` is not in the active taxonomy. If you set a custom `categories` list, a tag gated on a category that is not shown can never be granted.
+
+**The script loads before the visitor accepts.**
+Something other than `GatedScript` is loading it — a `<script>` tag in your HTML, a `next/script`, or a bundled import. `GatedScript` only controls what it registers.
+
+**Two scripts, only one loads.**
+Duplicate `id`. The registry is keyed on it.
+
+**`onLoad` never fires.**
+It is attached to the injected element's `load` event with `{ once: true }`. If the script 404s or is blocked by CSP, `load` never fires. Check the Network tab and your `script-src` policy.
+
+**Revoking analytics does not stop the tracker.**
+Correct — see "Injection is one-way" above. Mount `ReloadNotice`, or set `reloadOnRevoke: true`.
+
+**`Property 'strategy' does not exist on type ...`**
+`strategy` was removed. It accepted `"afterConsent" | "lazyOnce"`, but nothing ever read it — both values injected the script identically the moment its category was granted. Delete the prop. If you need a real loading distinction — load immediately versus only after consent, and what happens on withdrawal — use the `integrations` config option with a preset from `@cookieyes/scripts`.
+
+## Across the SDK
+
+`GatedScript` is a thin wrapper over `registerScript` from `@cookieyes/core`, which is the same function `consentManager.registerScript(entry)` exposes. In vanilla JS, call that directly with the same `ScriptEntry` shape. For well-known vendors, `@cookieyes/scripts` provides ready-made presets you pass to the `integrations` config key instead — see [GatedScript vs the integrations route](#gatedscript-vs-the-integrations-route) above.
+
+Google Analytics 4 and Google Tag Manager integration guides are planned but not yet written — see [Integrations](/docs/integrations) for what's coming. In the meantime, this SDK already broadcasts Google Consent Mode v2 signals automatically whenever a `dataLayer` is present on the page — no configuration needed.
+
+## See also
+
+- [GatedFrame](/docs/components/gated-frame) — the same idea for iframes
+- [ReloadNotice](/docs/components/reload-notice) — what to show when a revoked tag needs a reload
+- [Configuration](/docs/getting-started/configuration) — `networkBlocker` and `integrations`

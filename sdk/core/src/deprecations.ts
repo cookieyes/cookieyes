@@ -12,7 +12,8 @@ export function _warnOfflineModeDeprecated(): void {
   // eslint-disable-next-line no-console
   console.warn(
     '[cookieyes] mode: "offline" has been renamed to "cookie-only". Both do exactly ' +
-      'the same thing, but "offline" is deprecated and will be removed in 3 releases. ' +
+      'the same thing, but "offline" is deprecated and will be removed after three release cycles. ' +
+      "See https://developer.cookieyes.com/docs/migration for the full migration guide. " +
       'Update to .mode("cookie-only") (or { mode: "cookie-only" }).',
   );
 }
@@ -36,8 +37,9 @@ export function _warnBuiltInIntegrationsDeprecated(): void {
   // eslint-disable-next-line no-console
   console.warn(
     "[cookieyes] `builtInIntegrations` (formerly the `integrations` field) is deprecated " +
-      "and will be removed in a future release. Use the `integrations` field with a preset " +
-      "from `@cookieyes/scripts` instead.",
+      "and will be removed after three release cycles. Use the `integrations` field with a " +
+      "preset from `@cookieyes/scripts` instead. See " +
+      "https://developer.cookieyes.com/docs/migration for the full migration guide.",
   );
 }
 

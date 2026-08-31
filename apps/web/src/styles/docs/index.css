@@ -1,0 +1,5 @@
+/* Docs surface styles — the /docs route only. Token mapping first, then the
+   component styles that depend on it. The landing page is unaffected: it draws on
+   the Figma DS tokens in ../ds. */
+@import "./theme.css";
+@import "./components.css";

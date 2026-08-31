@@ -6,18 +6,20 @@ import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useConsentCategory } from "../hooks/useConsentCategory.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
+import { useTranslations } from "../hooks/useTranslations.js";
 
-type Props = Omit<IframeHTMLAttributes<HTMLIFrameElement>, "src"> & {
+export type GatedFrameProps = Omit<IframeHTMLAttributes<HTMLIFrameElement>, "src"> & {
   src: string;
   category: ConsentCategory;
   placeholder?: ReactNode;
 };
 
-export function GatedFrame({ src, category, placeholder, ...rest }: Props) {
+export function GatedFrame({ src, category, placeholder, ...rest }: GatedFrameProps) {
   const allowed = useConsentCategory(category);
   const { showPreferences } = useConsentActions();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { theme, colorScheme } = useThemeConfig();
+  const t = useTranslations();
   useThemeVars(containerRef, theme, colorScheme);
 
   // Never render a third-party iframe during SSR or the first hydration render:
@@ -41,10 +43,19 @@ export function GatedFrame({ src, category, placeholder, ...rest }: Props) {
       {placeholder ?? (
         <>
           <p>
-            This content requires <strong>{category}</strong> cookies to be enabled.
+            {(() => {
+              const [before = "", after = ""] = t.gatedFrame.placeholder.split("{category}");
+              return (
+                <>
+                  {before}
+                  <strong>{category}</strong>
+                  {after}
+                </>
+              );
+            })()}
           </p>
           <button className="cy-btn cy-btn-primary" type="button" onClick={() => showPreferences()}>
-            Manage Preferences
+            {t.gatedFrame.action}
           </button>
         </>
       )}

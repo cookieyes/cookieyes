@@ -1,0 +1,160 @@
+---
+title: Color scheme
+description: Light, dark, and following the system.
+---
+
+## When to use it
+
+Set `colorScheme` in any app with a dark mode, and in any app that is light-only — because the default is `"system"`, a light-only site will otherwise show a dark banner to visitors whose OS is dark.
+
+You do not need this page to change *which* colors are used — that is [Theme tokens](/docs/styling/theme-tokens). This page is only about which set is active.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+initCookieYes({
+  mode: "cookie-only",
+  colorScheme: "system", // "light" | "dark" | "system"
+});
+```
+
+## Options
+
+| Value | Behaviour |
+| --- | --- |
+| `"system"` | **Default.** Follows `prefers-color-scheme`, and updates live when the OS setting changes |
+| `"light"` | Always light |
+| `"dark"` | Always dark |
+
+Only four tokens differ between schemes:
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--cy-bg` | `#ffffff` | `#161b27` |
+| `--cy-text` | `#212121` | `#f3f4f6` |
+| `--cy-muted` | `#6b7280` | `#9ca3af` |
+| `--cy-border` | `#f4f4f4` | `#2d3748` |
+
+`--cy-primary`, `--cy-primary-hover`, `--cy-widget-bg`, `--cy-radius`, and `--cy-font` are the **same in both schemes**.
+
+## Behaviour and trade-offs
+
+### `"system"` is live, not just initial
+
+Under `"system"` the SDK subscribes to `matchMedia("(prefers-color-scheme: dark)")` and re-applies the tokens when the OS preference changes — a visitor switching their laptop to dark mode sees the banner follow without a reload. Under `"light"` or `"dark"` there is no listener.
+
+### Your brand color does not adapt
+
+`primaryColor` is used unchanged on both surfaces. A color chosen for contrast on white can fail on `#161b27`. Check it, and if it fails, set it per scheme in CSS rather than config:
+
+```css title="app/consent.css"
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    --cy-primary: #4d8ef7;
+  }
+}
+```
+
+### The SDK does not read your app's dark class
+
+If your app toggles dark mode with a class or attribute on `<html>` — Tailwind's class strategy, `next-themes`, a manual toggle — the SDK does not see it. It reads `colorScheme` config and, under `"system"`, the OS media query.
+
+An app where the visitor can choose a theme independently of their OS therefore needs the value passed through. Since `initCookieYes()` runs once at module scope, re-initialising on every toggle is not the answer; drive the four tokens from CSS instead:
+
+```tsx title="app/cookieyes.tsx"
+initCookieYes({ mode: "cookie-only", colorScheme: "light" });
+```
+
+```css title="app/consent.css"
+html.dark [data-cy-part="banner"],
+html.dark [data-cy-part="dialog"],
+html.dark [data-cy-part="optout"],
+html.dark [data-cy-part="recall"],
+html.dark [data-cy-part="reload-notice"] {
+  --cy-bg: #161b27;
+  --cy-text: #f3f4f6;
+  --cy-muted: #9ca3af;
+  --cy-border: #2d3748;
+}
+```
+
+Set `colorScheme` to the scheme your class-based toggle treats as default, so the two never disagree.
+
+### First paint follows the OS regardless
+
+The stylesheet includes a `prefers-color-scheme: dark` block so the server-rendered banner paints with sensible colors before JavaScript runs. That block applies on the first frame **even when `colorScheme` is `"light"`** — a light-configured banner on a dark-preference device paints dark for one frame, then corrects once `useThemeVars` runs.
+
+This is a deliberate trade: a brief mismatch beats painting with no colors at all. If it bothers you, pin the tokens in your own `:root` to match your configured scheme.
+
+### Config values still win
+
+Any `theme` key you set is applied on top of the resolved scheme. `theme.backgroundColor: "#fff"` with `colorScheme: "dark"` gives you a white surface with dark-mode text — an unreadable combination the SDK will not stop you from creating. If you override scheme-sensitive tokens, override all four.
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+import "./consent.css";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  colorScheme: "system",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "10px",
+  },
+});
+```
+
+```css title="app/consent.css"
+/* Match the config so first paint isn't the default blue. */
+:root {
+  --cy-primary: #1863dc;
+}
+
+/* Lift the primary for contrast on the dark surface. */
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"],
+  [data-cy-part="optout"] {
+    --cy-primary: #5b9bff;
+    --cy-primary-hover: #7db0ff;
+  }
+}
+```
+
+## Common mistakes
+
+**A light-only site shows a dark banner to some visitors.**
+`colorScheme` defaults to `"system"`. Set `"light"`.
+
+**The app is dark but the banner is light.**
+Your app uses a class-based toggle the SDK cannot see. Drive the tokens from CSS, as above.
+
+**The brand color is unreadable in dark mode.**
+Only four tokens switch. Override `--cy-primary` per scheme.
+
+**The banner flashes dark then turns light.**
+First paint uses the stylesheet's media query. Pin the tokens in `:root`.
+
+**Text is invisible after overriding `backgroundColor`.**
+You changed one scheme-sensitive token and left the other three. Override all four together.
+
+**Switching the OS theme does not update the banner.**
+`colorScheme` is `"light"` or `"dark"`. Only `"system"` subscribes to the media query.
+
+## Across the SDK
+
+`ColorScheme` is defined in `@cookieyes/core` and re-exported, so the config value is identical across packages. The resolution and the media-query listener live in `@cookieyes/react`, used unchanged by `@cookieyes/nextjs`. `@cookieyes/core` ships no CSS, so `colorScheme` has no effect there.
+
+## See also
+
+- [Styling overview](/docs/styling/overview) — where color scheme fits among the other layers
+- [Theme tokens](/docs/styling/theme-tokens) — every token and its per-scheme default
+- [Tailwind](/docs/styling/tailwind) — matching a class-based dark mode
+- [Custom CSS](/docs/styling/custom-css) — overriding tokens per surface

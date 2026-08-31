@@ -1,0 +1,426 @@
+/* Styles for the docs-only MDX components in src/components/docs.
+
+   Every block below exists in the `docs.html` prototype; the class names follow
+   the `cy-doc-*` prefix rather than the prototype's two-letter names (.hk, .cmp,
+   .cl-entry) so they read at the call site. Mapping, prototype → here:
+
+     .hk / .hk-hd / .hk-nm / .hk-rt / .hk-bd  → .cy-doc-hook*
+     .arch / .arch-row / .arch-box / .arch-arr → .cy-doc-arch*
+     .cl-entry / .cl-ver / .cl-grp             → .cy-doc-log*
+     .cmp / .ck / .cx / .cp2                  → .cy-doc-cmp*
+     .ov-hero / .ov-title / .ov-b             → .cy-doc-hero*
+     .pb                                      → .cy-doc-pkg
+     .req / .opt                              → .cy-doc-flag*
+
+   Colours come only from the --cy-doc-* tokens in ./theme.css so both themes
+   follow from one definition. */
+
+/* ── Hook card ───────────────────────────────────────────────────────────── */
+
+.cy-doc-hook {
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-lg);
+  margin: 14px 0;
+  overflow: hidden;
+  background: var(--cy-doc-surface);
+}
+
+.cy-doc-hook-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 11px 15px;
+  background: var(--cy-doc-bg2);
+  border-bottom: 1px solid var(--cy-doc-bd);
+}
+
+.cy-doc-hook-name {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-hook-returns {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--cy-doc-tx3);
+}
+
+.cy-doc-hook-body {
+  padding: 13px 15px;
+}
+
+/* .hk-bd p (docs.html:272) — Tier B's `#nd-page .prose p:not([class*="cy-doc-"])`
+   rule would otherwise apply here (same (1,2,1) specificity; the <p> itself carries
+   no cy-doc-* class even though its ancestor does), giving 14.5px/14px instead of
+   the design's 13.5px/8px. No live consumer today (§3/§8.2) — HookCard is
+   registered but unused in content/docs. */
+#nd-page .prose .cy-doc-hook-body p {
+  font-size: 13.5px;
+  margin-bottom: 8px;
+}
+
+/* Fumadocs' prose adds a top margin to the first child of any block; inside a
+   card that reads as a stray gap. */
+.cy-doc-hook-body > :first-child {
+  margin-top: 0;
+}
+
+.cy-doc-hook-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* ── Architecture diagram ────────────────────────────────────────────────── */
+
+.cy-doc-arch {
+  background: var(--cy-doc-surface);
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-lg);
+  padding: 24px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.cy-doc-arch-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+
+.cy-doc-arch-box {
+  padding: 8px 16px;
+  border-radius: var(--cy-doc-radius-sm);
+  border: 1px solid var(--cy-doc-bd);
+  background: var(--cy-doc-bg3); /* was --cy-doc-bg — Drift 4, design doc §2.1/§8.8 */
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--cy-doc-tx);
+  white-space: nowrap;
+}
+
+/* Drift 3: .ac moved from accent-blue to aqua; new --cy-doc-aq* tokens (theme.css). */
+.cy-doc-arch-box[data-tone="accent"] {
+  border-color: var(--cy-doc-aq-bd);
+  background: var(--cy-doc-aq-bg);
+  color: var(--cy-doc-aq);
+}
+
+/* Drift 3: .gr moved from green to citron; new --cy-doc-ci* tokens (theme.css). */
+.cy-doc-arch-box[data-tone="success"] {
+  border-color: var(--cy-doc-ci-bd);
+  background: var(--cy-doc-ci-bg);
+  color: var(--cy-doc-ci);
+}
+
+.cy-doc-arch-box[data-tone="idea"] {
+  border-color: var(--cy-doc-pu-bd);
+  background: var(--cy-doc-pu-bg);
+  color: var(--cy-doc-pu);
+}
+
+.cy-doc-arch-arrow {
+  color: var(--cy-doc-tx3);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.cy-doc-arch-caption {
+  font-size: 12px;
+  color: var(--cy-doc-tx3);
+  margin-top: 12px;
+}
+
+/* ── Changelog ───────────────────────────────────────────────────────────── */
+
+.cy-doc-log {
+  border-left: 2px solid var(--cy-doc-bd);
+  padding-left: 20px;
+  margin-bottom: 36px;
+  position: relative;
+}
+
+.cy-doc-log::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cy-doc-bd2);
+}
+
+.cy-doc-log[data-major="true"]::before {
+  background: var(--cy-doc-ac);
+}
+
+.cy-doc-log-version {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--cy-doc-tx);
+  margin-bottom: 4px;
+}
+
+.cy-doc-log-pkgs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 14px; /* new */
+}
+
+.cy-doc-log-date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--cy-doc-tx3);
+  margin-bottom: 4px; /* was 12px */
+}
+
+.cy-doc-log-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--cy-doc-tx2);
+  margin: 0 0 14px;
+}
+
+#nd-page .prose .cy-doc-log-pkgs code {
+  font-size: 11px;
+  color: var(--cy-doc-tx3);
+}
+
+.cy-doc-log-grp {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cy-doc-tx3);
+  margin: 14px 0 6px;
+}
+
+.cy-doc-log-grp:first-child {
+  margin-top: 0;
+}
+
+/* docs.html:194 — `li{…;margin-bottom:4px}` and no top margin. Tailwind prose adds 7.25px on
+   top. Scoped to the changelog rather than fixing `li` globally: the prototype's rule IS global,
+   but every other docs page shipped and was signed off against the current prose spacing, so
+   widening this would be unrequested scope. Specificity (1,2,1) matches the
+   `#nd-page .prose .cy-doc-log-pkgs code` precedent for beating prose. */
+#nd-page .prose .cy-doc-log li {
+  margin-top: 0;
+}
+
+/* ── Comparison table ────────────────────────────────────────────────────── */
+
+.cy-doc-cmp-scroll {
+  overflow-x: auto;
+  margin: 20px 0;
+}
+
+/* ── PropsTable scroll wrapper ───────────────────────────────────────────── */
+/* Not a reuse of .cy-doc-cmp-scroll: that class carries its own `margin: 20px 0`,
+   which would stack with .cy-doc-table's own `margin: 16px 0` (theme.css) once the
+   wrapper's overflow:auto establishes a block-formatting context and stops the two
+   margins from collapsing into one another — 36px of gap instead of the design's
+   16px. This sibling has no margin of its own, so the table's existing margin is
+   the only spacing, same as an unwrapped `.t` in docs.html. */
+.cy-doc-table-scroll {
+  overflow-x: auto;
+}
+
+.cy-doc-cmp {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.cy-doc-cmp th[scope="col"] {
+  padding: 10px 14px;
+  background: var(--cy-doc-bg2);
+  border: 1px solid var(--cy-doc-bd);
+  font-weight: 500;
+  text-align: left;
+  color: var(--cy-doc-tx);
+}
+
+/* Row labels are semantically headers but read as body cells in the design. */
+.cy-doc-cmp th[scope="row"] {
+  padding: 9px 14px;
+  border: 1px solid var(--cy-doc-bd);
+  font-weight: 500;
+  text-align: left;
+  vertical-align: middle;
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-cmp th[data-highlight="true"] {
+  background: var(--cy-doc-ac-bg);
+  color: var(--cy-doc-ac);
+  border-color: var(--cy-doc-ac-bd);
+}
+
+.cy-doc-cmp td {
+  padding: 9px 14px;
+  border: 1px solid var(--cy-doc-bd);
+  vertical-align: middle;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-doc-cmp tbody tr:hover td,
+.cy-doc-cmp tbody tr:hover th[scope="row"] {
+  background: var(--cy-doc-bg2);
+}
+
+.cy-doc-cmp-mark[data-mark="yes"] {
+  color: var(--cy-doc-gr);
+  font-size: 16px;
+}
+
+.cy-doc-cmp-mark[data-mark="no"] {
+  color: var(--cy-doc-re);
+  font-size: 14px;
+}
+
+.cy-doc-cmp-mark[data-mark="partial"] {
+  color: var(--cy-doc-am);
+  font-size: 13px;
+}
+
+/* ── Overview hero ───────────────────────────────────────────────────────── */
+
+/* .ov-hero — the design dropped its card treatment entirely (was background/
+   border/radius/32px padding/32px margin). This is a REMOVAL, not a restyle —
+   see design doc §2.1, Drift 2. Every child rule below was already correct. */
+.cy-doc-hero {
+  margin-bottom: 4px;
+}
+
+.cy-doc-hero-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-hero-sub {
+  font-size: 15px;
+  color: var(--cy-doc-tx2);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.cy-doc-hero-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cy-doc-hero-badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--cy-doc-radius-sm);
+  border: 1px solid var(--cy-doc-bd);
+  background: var(--cy-doc-bg);
+  color: var(--cy-doc-tx2);
+}
+
+/* ── Package badge ───────────────────────────────────────────────────────── */
+
+.cy-doc-pkg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 2px 7px;
+  border-radius: var(--cy-doc-radius-sm);
+  border: 1px solid var(--cy-doc-bd);
+  background: var(--cy-doc-bg2);
+  color: var(--cy-doc-tx2);
+  vertical-align: middle;
+  margin: 1px;
+}
+
+/* Package initial chip — the sidebar switcher's colour coding, reused inline. */
+.cy-doc-pkg-mark {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.cy-doc-pkg-mark[data-pkg="core"] {
+  background: var(--cy-doc-pu-bg);
+  color: var(--cy-doc-pu);
+}
+
+.cy-doc-pkg-mark[data-pkg="react"] {
+  background: var(--cy-doc-ac-bg);
+  color: var(--cy-doc-ac);
+}
+
+.cy-doc-pkg-mark[data-pkg="nextjs"] {
+  background: var(--cy-doc-tx);
+  color: var(--cy-doc-bg);
+}
+
+.cy-doc-pkg-mark[data-pkg="cli"] {
+  background: var(--cy-doc-gr-bg);
+  color: var(--cy-doc-gr);
+}
+
+.cy-doc-pkg-mark[data-pkg="translations"] {
+  background: var(--cy-doc-am-bg);
+  color: var(--cy-doc-am);
+}
+
+/* ── Required / optional flags ───────────────────────────────────────────── */
+
+.cy-doc-flag {
+  font-size: 10px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid;
+  vertical-align: middle;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+.cy-doc-flag[data-required="true"] {
+  font-weight: 500;
+  background: var(--cy-doc-re-bg);
+  color: var(--cy-doc-re);
+  border-color: var(--cy-doc-re-bd);
+}
+
+.cy-doc-flag[data-required="false"] {
+  background: var(--cy-doc-bg3);
+  color: var(--cy-doc-tx3);
+  border-color: var(--cy-doc-bd);
+}
+
+/* ── Deprecated field marker ─────────────────────────────────────────────── */
+/* docs.html has no `.dep` counterpart — TypeTable itself struck the field name
+   through and dimmed it for a deprecated entry (fumadocs-ui/type-table.js). Keeping
+   that signal on PropsTable's name `<code>` rather than dropping it once TypeTable
+   is gone; config-reference-render.tsx's `deprecated` flag already carries the real
+   generator fact (see `deprecatedReplacement` in config-reference-types.ts). */
+.cy-doc-table code[data-deprecated="true"] {
+  text-decoration: line-through;
+  opacity: 0.6;
+}

@@ -1,0 +1,162 @@
+---
+title: OptOut
+description: Headless opt-out primitive.
+---
+
+## When to use it
+
+Use `OptOut.*` when [`CookieOptOut`](/docs/components/cookie-opt-out) does not fit your design system and your app serves CCPA visitors.
+
+You do not need it in a GDPR-only app — that is [`Preferences`](/docs/headless/preferences). Read [Overview](/docs/headless/overview) first for `asChild` and the shared conventions.
+
+CCPA is an **opt-out** regime, so this dialog is one checkbox, not five toggles. Do not try to reproduce the preferences dialog here.
+
+## Basic usage
+
+```tsx title="components/ConsentOptOut.tsx"
+"use client";
+
+import { OptOut } from "@cookieyes/react";
+
+export function ConsentOptOut() {
+  return (
+    <OptOut.Root className="ds-overlay">
+      <div className="ds-modal">
+        <OptOut.Title className="ds-h2" />
+        <OptOut.Close className="ds-close" />
+        <OptOut.Description className="ds-body" />
+
+        <div className="ds-row">
+          <OptOut.Checkbox id="cy-optout" />
+          <OptOut.CheckboxLabel htmlFor="cy-optout" />
+        </div>
+
+        <OptOut.Buttons className="ds-actions">
+          <OptOut.Cancel className="ds-btn-ghost" />
+          <OptOut.Save className="ds-btn-primary" />
+        </OptOut.Buttons>
+
+        <OptOut.Success className="ds-success" />
+      </div>
+    </OptOut.Root>
+  );
+}
+```
+
+## Options
+
+| Slot | Renders | Part | Behaviour |
+| --- | --- | --- | --- |
+| `OptOut.Root` | `<div>` | `optout` | Open state, focus trap, `Escape`, autofocus, theme vars, `role="dialog"` + `aria-modal`. `null` when closed |
+| `OptOut.Title` | `<h2>` | `title` | Translated `optOut.title` |
+| `OptOut.Description` | `<p>` | `message` | Translated `optOut.description` |
+| `OptOut.Close` | `<button>` | `close` | Closes without saving |
+| `OptOut.Checkbox` | `<input type="checkbox">` | — | The opt-out toggle |
+| `OptOut.CheckboxLabel` | `<label>` | — | Translated label for the checkbox |
+| `OptOut.Cancel` | `<button>` | — | Translated `optOut.cancel`, closes without saving |
+| `OptOut.Save` | `<button>` | `confirm` | Records the choice and enters the success state |
+| `OptOut.Buttons` | `<div>` | — | Layout container |
+| `OptOut.Success` | `<div>` | — | Confirmation message and countdown. Renders only after saving |
+| `OptOut.Branding` | `<a>` | `branding` | "Powered by" link |
+
+Shared props are the same as every primitive — `children`, `className`, `asChild` on action slots, chained `onClick`, forwarded `ref`, native props spread.
+
+## Behaviour and trade-offs
+
+### The checkbox is pre-filled from current state
+
+When the dialog opens it reads whether the visitor is currently opted out — derived from whether `analytics` is granted — and checks the box accordingly. Someone who already opted out sees that reflected rather than a blank form. The state resets to the live value on every open.
+
+### `Success` and the 10-second countdown
+
+After `Save`, the dialog enters a success state: `OptOut.Success` renders, and a **10-second countdown** runs before the dialog closes itself. The countdown text comes from `optOut.successCountdown`, the message from `optOut.successText`.
+
+Render `OptOut.Success` somewhere in your tree. Omit it and the dialog appears to do nothing for ten seconds and then vanishes, which reads as a bug to the visitor.
+
+### `Cancel` and `Close` both discard
+
+Neither records anything. Only `Save` commits. This differs from the preferences dialog, where `AcceptAll` and `RejectAll` also commit.
+
+### GPC may have opted them out already
+
+If the browser sends a Global Privacy Control signal under CCPA, the visitor starts opted out before ever opening this dialog. The checkbox reflects that. See [CookieOptOut](/docs/components/cookie-opt-out).
+
+### Pair `Checkbox` and `CheckboxLabel` with matching ids
+
+`Checkbox` takes native `<input>` props and `CheckboxLabel` native `<label>` props. Give the input an `id` and the label a matching `htmlFor`, or the label will not be clickable and screen readers will not associate them.
+
+## Complete example
+
+```tsx title="components/ConsentOptOut.tsx"
+"use client";
+
+import { OptOut } from "@cookieyes/react";
+import { Button } from "@/components/ui/button";
+
+export function ConsentOptOut() {
+  return (
+    <OptOut.Root className="fixed inset-0 z-50 grid place-items-center bg-black/50">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+        <header className="flex items-start justify-between">
+          <OptOut.Title className="text-xl font-semibold" />
+          <OptOut.Close className="rounded p-1 hover:bg-slate-100" />
+        </header>
+
+        <OptOut.Description className="mt-2 text-sm text-slate-600" />
+
+        <div className="mt-4 flex items-center gap-3 rounded-lg border p-3">
+          <OptOut.Checkbox
+            id="cy-ccpa-optout"
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          <OptOut.CheckboxLabel
+            htmlFor="cy-ccpa-optout"
+            className="text-sm font-medium"
+          />
+        </div>
+
+        <OptOut.Buttons className="mt-6 flex justify-end gap-2">
+          <OptOut.Cancel asChild>
+            <Button variant="ghost">Cancel</Button>
+          </OptOut.Cancel>
+          <OptOut.Save asChild>
+            <Button variant="primary">Confirm</Button>
+          </OptOut.Save>
+        </OptOut.Buttons>
+
+        <OptOut.Success className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-800" />
+      </div>
+    </OptOut.Root>
+  );
+}
+```
+
+## Common mistakes
+
+**`Error: [cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`**
+A slot escaped the root.
+
+**Nothing visible happens after pressing Confirm, then the dialog closes.**
+`OptOut.Success` is not in your tree. The save worked; the confirmation had nowhere to render.
+
+**The dialog closes on its own and it looks like a bug.**
+The 10-second countdown after saving. Reword it via `optOut.successCountdown`.
+
+**Clicking the label does not toggle the checkbox.**
+Mismatched `id` / `htmlFor`.
+
+**The dialog never opens.**
+`regulation` did not resolve to `"CCPA"`, or nothing called `showOptOut()`. Check with `useRegion()`, or turn on `region: { debug: true }`.
+
+**The checkbox starts checked without visitor action.**
+GPC is being honoured, or they previously opted out. Both are correct.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core`, `readGpc()` exposes the raw signal and `consentStore.getRegion()` the regulation decision — enough to build the same surface anywhere.
+
+## See also
+
+- [CookieOptOut](/docs/components/cookie-opt-out) — the styled equivalent
+- [Preferences](/docs/headless/preferences) — the GDPR dialog
+- [Translations (i18n)](/docs/translations) — the `optOut.*` keys

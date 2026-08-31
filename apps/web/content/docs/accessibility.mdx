@@ -1,0 +1,181 @@
+---
+title: Accessibility
+description: The accessibility guarantees the SDK makes, and what you own.
+---
+
+## When to use it
+
+Read this before shipping consent UI — a banner is often the first interactive element on a page, and an inaccessible one blocks the whole site for keyboard and screen-reader users. It is also the section auditors check first.
+
+If you use [`CookieBanner`](/docs/components/cookie-banner) and [`CookiePreferences`](/docs/components/cookie-preferences) unchanged, everything below is already handled and you mainly need the "What you own" section.
+
+## Basic usage
+
+The accessible path is the default path:
+
+```tsx title="app/cookieyes.tsx"
+<CookieBanner />
+<CookiePreferences />
+<RecallButton />
+```
+
+The same guarantees hold when you build on [primitives](/docs/headless/overview), because they live in the `Root` components rather than the styled markup.
+
+## What the SDK guarantees
+
+| Behaviour | Where | Notes |
+| --- | --- | --- |
+| Reachable in the first Tab | Banner, recall widget | Portal root is inserted as `<body>`'s **first child**, so the banner comes before your page content in tab order regardless of where you mount it |
+| `role="dialog"` + `aria-modal="true"` | Both dialogs | On the visible card, not a wrapper |
+| Focus trap | Both dialogs | Tab and Shift+Tab cycle within the dialog |
+| Autofocus on open | Both dialogs | Focus moves into the dialog |
+| `Escape` closes | Both dialogs | |
+| Focus restoration | Both dialogs | Returns to the element that opened it |
+| Live-region announcement | Banner | `aria-live`, deliberately delayed so it does not collide with the page-load announcement |
+| `role="alert"` | Reload notice | Announced immediately |
+| `role="switch"` + `aria-checked` | Category toggles | |
+| `role="list"` / `role="listitem"` | Category list | |
+| `aria-label` | Recall widget, close buttons | Defaults provided, overridable |
+| Text direction | All surfaces | Derived from the active language — see [Translations](/docs/translations) |
+| Typography isolation | All surfaces | Host resets cannot strip the SDK's text styling |
+
+## Behaviour and trade-offs
+
+### The banner is first in tab order on purpose
+
+The portal root is inserted as the **first child of `<body>`**, not appended. Mount `<CookieYesRoot />` at the end of your layout — as the docs and CLI scaffold suggest — and the banner is still reachable within the first Tab rather than after every link on the page.
+
+This also means it renders inline on the server and relocates after mount, matching on the first client pass so hydration does not mismatch.
+
+### The live-region announcement is delayed deliberately
+
+The banner's announcement is populated after a short delay rather than on React's next tick. Screen readers are typically still announcing the page navigation right after load, and a live-region update fired inside that window is commonly dropped rather than queued.
+
+The region also lives **outside** the banner's own mount cycle, so a later appearance — after `reset()`, say — is a change to an element assistive technology has tracked all along rather than a freshly inserted one.
+
+If you rebuild the banner on primitives, you own this. A naive `aria-live` region inside a conditionally mounted banner is announced unreliably.
+
+### The focus trap covers standard focusables
+
+It cycles `button`, `[href]`, `input`, `select`, `textarea`, and `[tabindex]` other than `-1`. A custom control that is focusable by other means — a `div` with a click handler and no `tabindex` — is not in the cycle, and is not keyboard-operable anyway. Use real elements or add `tabindex`.
+
+### Open the dialogs through the action hooks
+
+`useConsentActions().showPreferences()` records the focused element before opening, so focus returns there on close. Calling `runtime.manager.showPreferences()` through [`useConsentRuntime()`](/docs/hooks/low-level-hooks) skips that, and focus jumps to the top of the page instead.
+
+This is easy to introduce and hard to notice. Always use the action hook for anything a visitor triggers.
+
+### Reject must be as easy as accept
+
+Not an SDK guarantee — a design decision you own. Under GDPR, a banner with a prominent Accept All and a buried reject is widely held to be invalid consent. It is easy to create that imbalance accidentally with your own CSS. Style both actions deliberately, using the `cy-*` classes and `--cy-*` custom properties — see [Custom CSS](/docs/styling/custom-css) and [Theme tokens](/docs/styling/theme-tokens) — to give both actions comparable visual weight.
+
+Likewise, offering only a close button with no explicit reject is generally not a valid choice. See [Banner primitives](/docs/headless/banner).
+
+### Contrast is yours
+
+The SDK's defaults are a reasonable starting point, but the moment you set `theme.primaryColor` you own the contrast ratio — including on the dark surface, since the brand color does **not** change between schemes. Check it against both `#ffffff` and `#161b27`. See [Color scheme](/docs/styling/color-scheme).
+
+### Reduced motion
+
+The entry animation mutates opacity only, is capped at 0.2s, and never uses `transform` — all enforced by tests, so it cannot regress into something that moves content. If you add your own animation, honour `prefers-reduced-motion`:
+
+```css title="app/consent.css"
+@media (prefers-reduced-motion: reduce) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    animation: none;
+    transition: none;
+  }
+}
+```
+
+### What you own with hooks
+
+Building on [`useConsent`](/docs/hooks/use-consent) and [`useConsentActions`](/docs/hooks/use-consent-actions) alone means implementing every row of the guarantees table yourself: dialog role and modality, focus trap, autofocus, Escape, focus restoration, the announcement and its timing, switch semantics, and tab-order placement.
+
+This is the strongest argument for primitives over hooks. Primitives give you complete markup control and keep all of it.
+
+## Complete example
+
+Filling in the parts the SDK cannot decide for you:
+
+```tsx title="components/ConsentBanner.tsx"
+"use client";
+
+import { Banner, useRegulation } from "@cookieyes/react";
+import { Button } from "@/components/ui/button";
+
+export function ConsentBanner() {
+  const isCCPA = useRegulation() === "CCPA";
+
+  return (
+    <Banner.Root>
+      <section
+        className="cy-banner-wrap fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-xl border bg-white p-6 shadow-xl"
+        aria-labelledby="consent-title"
+      >
+        <Banner.Title id="consent-title" className="text-lg font-semibold" />
+        <Banner.Description className="mt-2 text-sm" />
+
+        <Banner.Actions className="mt-5 flex flex-wrap gap-3">
+          {isCCPA ? (
+            <Banner.DoNotSell asChild>
+              <Button variant="primary">Do not sell my information</Button>
+            </Banner.DoNotSell>
+          ) : (
+            <>
+              {/* Equal visual weight — reject is as easy as accept. */}
+              <Banner.AcceptAll asChild>
+                <Button variant="primary" className="min-w-32">
+                  Accept all
+                </Button>
+              </Banner.AcceptAll>
+              <Banner.RejectAll asChild>
+                <Button variant="primary" className="min-w-32">
+                  Reject all
+                </Button>
+              </Banner.RejectAll>
+            </>
+          )}
+          <Banner.OpenPreferences asChild>
+            <Button variant="ghost">Customise</Button>
+          </Banner.OpenPreferences>
+        </Banner.Actions>
+      </section>
+    </Banner.Root>
+  );
+}
+```
+
+## Common mistakes
+
+**Focus jumps to the top of the page when a dialog closes.**
+The dialog was opened via the low-level runtime rather than `useConsentActions()`.
+
+**Tab from the address bar reaches every nav link before the banner.**
+You rebuilt the banner without `Banner.Root`, losing the first-child portal placement.
+
+**A screen reader never announces the banner on first load.**
+A custom `aria-live` region inside the conditionally mounted banner, announced during the page-load window. Use `Banner.Root`, or replicate the delay and place the region outside the mount cycle.
+
+**Tab escapes the dialog.**
+Custom focusable elements outside the trap's selector list. Use real interactive elements.
+
+**An audit flags the banner as invalid consent.**
+Reject is visually subordinate to accept, or there is no explicit reject at all. A design issue, not an SDK one.
+
+**Contrast fails in dark mode only.**
+`primaryColor` does not change between schemes. Override it per scheme.
+
+**The banner moves page content as it appears.**
+It is `position: fixed` and out of flow by default, so this means a custom wrapper reintroduced it into the layout.
+
+## Across the SDK
+
+Every guarantee above lives in `@cookieyes/react` and applies unchanged in `@cookieyes/nextjs`. `@cookieyes/core` renders nothing, so building directly on it in another framework means implementing all of it yourself — the same trade as the hooks-only path.
+
+## See also
+
+- [Overview (asChild, part contract)](/docs/headless/overview) — accessible behaviour with your own markup
+- [Translations (i18n)](/docs/translations) — language and text direction
+- [Color scheme](/docs/styling/color-scheme) — contrast across light and dark

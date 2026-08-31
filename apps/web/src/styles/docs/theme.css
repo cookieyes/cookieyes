@@ -1,0 +1,2934 @@
+/* Docs theme — transcribed from the Claude Design prototype `docs.html`
+   (project "Copy of Final cy.dev", export dated 2026-08-24).
+
+   Two layers live here:
+     1. `--cy-doc-*`  the design's own palette, kept verbatim so a change in the
+        prototype maps to exactly one line here.
+     2. `--color-fd-*` / `--fd-*`  Fumadocs' contract, expressed in terms of layer 1.
+
+   Why these sit on :root/.dark rather than scoped to the docs subtree: Fumadocs
+   renders the search dialog and the mobile sidebar through portals at <body> level,
+   which would fall outside a scoped block and lose every colour. Overriding the
+   fd tokens globally is safe because nothing outside /docs consumes them — the
+   landing page draws on the Figma DS tokens in ../ds instead.
+
+   NOTE: the prototype hardcodes #FFFFFF on surfaces (.card, .cb, .hk, .ov-hero,
+   .arch, .ts-q) and #F8F9FA on .sb/.main, outside its own light/dark token set, so
+   its dark mode renders those panels light. That is prototype drift, not intent —
+   the mapping below routes them through --cy-doc-surface so both themes hold. */
+
+:root {
+  /* canvas + surfaces */
+  --cy-doc-bg: #ffffff;
+  --cy-doc-surface: #ffffff;
+  /* Header and sidebar. Light: white, a step above the #F8F9FA canvas. Dark: the
+     design's .hd uses var(--bg), i.e. flat with the canvas — so chrome and canvas
+     converge there rather than the header floating a shade lighter. */
+  --cy-doc-chrome: #ffffff;
+  --cy-doc-bg2: #f8f9fc;
+  --cy-doc-bg3: #f4f5fa;
+
+  /* borders — three steps, rest → hover → strong */
+  --cy-doc-bd: #e3e5f1;
+  --cy-doc-bd2: #c7cade;
+  --cy-doc-bd3: #8f92af;
+
+  /* text — title → body → muted */
+  --cy-doc-tx: #14142a;
+  --cy-doc-tx2: #4e4b66;
+  --cy-doc-tx3: #8f92af;
+  /* .toc-title's own colour (docs.html:115) — a one-off, NOT equal to --cy-doc-tx3 above.
+     Dark mode has no dedicated value of its own; docs.html:117 falls back to --tx3 there,
+     so the dark declaration below simply aliases it. */
+  --cy-doc-toc-title-fg: #5f6368;
+
+  /* semantic ramps: base / .07–.12 tint / .30–.38 border */
+  --cy-doc-ac: #136fe8;
+  --cy-doc-ac-bg: rgba(19, 111, 232, 0.07);
+  --cy-doc-ac-bd: rgba(19, 111, 232, 0.3);
+  --cy-doc-gr: #00754e;
+  --cy-doc-gr-bg: rgba(0, 117, 78, 0.08);
+  --cy-doc-gr-bd: rgba(0, 117, 78, 0.3);
+  --cy-doc-am: #a6742a;
+  --cy-doc-am-bg: rgba(232, 154, 31, 0.12);
+  --cy-doc-am-bd: rgba(232, 154, 31, 0.38);
+  --cy-doc-re: #b9172b;
+  --cy-doc-re-bg: rgba(185, 23, 43, 0.07);
+  --cy-doc-re-bd: rgba(185, 23, 43, 0.3);
+  --cy-doc-pu: #8250df;
+  --cy-doc-pu-bg: rgba(130, 80, 223, 0.07);
+  --cy-doc-pu-bd: rgba(130, 80, 223, 0.3);
+  --cy-doc-co: #1160c6;
+  --cy-doc-co-bg: rgba(17, 96, 198, 0.07);
+  --cy-doc-co-bd: rgba(17, 96, 198, 0.3);
+
+  /* Tier C, Drift 3: .arch-box.ac/.gr moved off the accent-blue/green triads onto
+     these two new families (docs.html:21-22/343). Nothing else in scope consumes
+     them — see design doc §2.2. */
+  --cy-doc-aq: #235146;
+  --cy-doc-aq-bg: #bff6e5;
+  --cy-doc-aq-bd: #6bccb4;
+  --cy-doc-ci: #474c20;
+  --cy-doc-ci-bg: #e6edc0;
+  --cy-doc-ci-bd: #b5c062;
+
+  /* Active sidebar item — a dedicated pair, not a reuse of --cy-doc-ac/--cy-doc-ac-bg. Neither
+     value matches an existing token (light: close to but not equal to --cy-doc-bg3/--cy-doc-ac;
+     dark: --navb happens to equal --cy-doc-surface but --navf does not equal --cy-doc-ac), so a
+     future palette edit to the accent ramp does not silently retint this. */
+  --cy-doc-nav-bg: #edeef2;
+  --cy-doc-nav-fg: #0c3d8b;
+
+  /* code surface */
+  --cy-doc-code-bg: #f4f5fa;
+  --cy-doc-code-bd: #e3e5f1;
+
+  /* Tier D — .pm-menu's inset ring, .pm-tile's inset ring, the open caret's and a
+     hovered row's background (docs.html:165, 168, 171-172). content-tier-a.md
+     deliberately declined to add these for the sidebar (nothing consumed them
+     there); this tier is the first real consumer. Contrast checked in
+     content-tier-d.md §2.5 — tx-on-menu-hover passes AA in both themes;
+     tx3-on-menu-hover does not (≈2.7-2.9:1), consistent with tx3's own
+     already-shipped, already-flagged contrast elsewhere in this design system
+     (breadcrumb, content-tier-c.md §2.2's dark-surface case) — not a new
+     regression, not fixed here. */
+  --cy-doc-menu-bd: #e9ebee;
+  --cy-doc-menu-hover: #f1f3f5;
+
+  /* shape + motion, from :root in the prototype */
+  --cy-doc-radius: 6px;
+  --cy-doc-radius-sm: 4px;
+  --cy-doc-radius-lg: 12px;
+  --cy-doc-transition: 0.15s ease;
+}
+
+.dark {
+  --cy-doc-bg: #15171a;
+  /* The design's literal --sf2 (#313336), the package-switcher's own "raised
+     surface" colour — see the header comment's rationale for why this token, not a
+     re-guessed value, stands in for the design's missing dedicated "card" token.
+     CONSTRAINT: --cy-doc-tx3 (#82868b) on this surface is ~3.46:1, below AA (4.5:1)
+     for body text. Verified no rule in theme.css/components.css pairs
+     background: var(--cy-doc-surface) with color: var(--cy-doc-tx3) — every
+     surface-backed rule that sets its own text colour uses --cy-doc-tx2 or
+     --cy-doc-tx instead. Keep it that way: use tx2 (6.35:1) or brighter for any
+     text colour set directly on a --cy-doc-surface background. */
+  --cy-doc-surface: #313336;
+  --cy-doc-chrome: #15171a;
+  --cy-doc-bg2: #313336;
+  --cy-doc-bg3: #1f2124;
+
+  --cy-doc-bd: rgba(255, 255, 255, 0.1);
+  --cy-doc-bd2: rgba(255, 255, 255, 0.1);
+  --cy-doc-bd3: #82868b;
+
+  --cy-doc-tx: #f1f3f5;
+  --cy-doc-tx2: #b4b8bd;
+  --cy-doc-tx3: #82868b;
+  --cy-doc-toc-title-fg: var(--cy-doc-tx3);
+
+  --cy-doc-ac: #6c9bea;
+  --cy-doc-ac-bg: #0c2b5e;
+  --cy-doc-ac-bd: rgba(108, 155, 234, 0.35);
+  --cy-doc-gr: #8fe786;
+  --cy-doc-gr-bg: #1c3519;
+  --cy-doc-gr-bd: #2b5d27;
+  --cy-doc-am: #edd2ad;
+  --cy-doc-am-bg: #3e2906;
+  --cy-doc-am-bd: #684918;
+  --cy-doc-re: #eac3c2;
+  --cy-doc-re-bg: #472122;
+  --cy-doc-re-bd: #7d3639;
+  --cy-doc-pu: #d59eff;
+  --cy-doc-pu-bg: #583773;
+  /* Stays alpha (design's own inconsistency, transcribed as-is — see §8.2). */
+  --cy-doc-pu-bd: rgba(213, 158, 255, 0.35);
+  --cy-doc-co: #94dce9;
+  --cy-doc-co-bg: #0a3c44;
+  --cy-doc-co-bd: #126571;
+
+  /* Tier C, Drift 3 — dark. --aq-bd/--ci-bd are identical in both themes (verified
+     against docs.html, not a transcription slip). */
+  --cy-doc-aq: #00cca9;
+  --cy-doc-aq-bg: #005040;
+  --cy-doc-aq-bd: #6bccb4;
+  --cy-doc-ci: #b0bc51;
+  --cy-doc-ci-bg: #404a00;
+  --cy-doc-ci-bd: #b5c062;
+
+  --cy-doc-nav-bg: #313336;
+  --cy-doc-nav-fg: #bfcfe9;
+
+  --cy-doc-code-bg: #1f2124;
+  --cy-doc-code-bd: rgba(255, 255, 255, 0.1);
+
+  --cy-doc-menu-bd: rgba(255, 255, 255, 0.1);
+  --cy-doc-menu-hover: #3c3f43;
+}
+
+/* ── Fumadocs token contract ─────────────────────────────────────────────── */
+
+:root,
+.dark {
+  --color-fd-background: var(--cy-doc-bg);
+  --color-fd-foreground: var(--cy-doc-tx);
+  --color-fd-muted: var(--cy-doc-bg2);
+  --color-fd-muted-foreground: var(--cy-doc-tx3);
+  --color-fd-card: var(--cy-doc-surface);
+  --color-fd-card-foreground: var(--cy-doc-tx);
+  --color-fd-popover: var(--cy-doc-surface);
+  --color-fd-popover-foreground: var(--cy-doc-tx);
+  --color-fd-border: var(--cy-doc-bd);
+  --color-fd-primary: var(--cy-doc-ac);
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-secondary: var(--cy-doc-bg3);
+  --color-fd-secondary-foreground: var(--cy-doc-tx);
+  --color-fd-accent: var(--cy-doc-bg3);
+  --color-fd-accent-foreground: var(--cy-doc-tx);
+  --color-fd-ring: var(--cy-doc-ac);
+  --color-fd-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Callout ramps. The design's five variants map 1:1 onto Fumadocs' types:
+     info→ac, warn/warning→am, error→re, success→gr, idea(tip)→pu. */
+  --color-fd-info: var(--cy-doc-ac);
+  --color-fd-warning: var(--cy-doc-am);
+  --color-fd-error: var(--cy-doc-re);
+  --color-fd-success: var(--cy-doc-gr);
+  --color-fd-idea: var(--cy-doc-pu);
+}
+
+/* ── Layout metrics ──────────────────────────────────────────────────────── */
+
+:root {
+  --fd-nav-height: 64px;
+  /* Kept for documentation/consistency; not sufficient alone — see the cascade note below. */
+  --fd-sidebar-width: 294px;
+  --fd-toc-width: 224px;
+  --fd-page-width: 800px;
+}
+
+/* --fd-sidebar-width cascade fix (verified against the installed package, not assumed): setting
+   the :root value alone has no visual effect. fumadocs-ui/dist/layouts/notebook/slots/container.js
+   sets [--fd-sidebar-width:0px] as a Tailwind utility directly on #nd-notebook-layout, and
+   fumadocs-ui/dist/layouts/notebook/slots/sidebar.js re-declares
+   md:layout:[--fd-sidebar-width:268px] on [data-sidebar-placeholder] — the nearest ancestor
+   declaration that #nd-sidebar's own `width: var(--fd-sidebar-width)` rule (below) actually
+   inherits. A custom property resolves to the nearest declaration that targets the element, not
+   the highest-specificity one across different elements, so both local declarations beat the
+   :root value regardless of specificity — each needs its own override, following the same
+   !important precedent already used for --fd-toc-width below. */
+/* Scoped to md and up on purpose. Fumadocs only declares the 268px value at
+   `md:layout:[--fd-sidebar-width:268px]`; its BASE value is 0px, which is what
+   collapses the sidebar column on mobile. Declaring 294px unconditionally clobbered
+   that collapse: at 375px the grid still reserved 294px for a sidebar that does not
+   render, squeezing the article to 105px (measured). The override must therefore
+   only apply where Fumadocs itself gives the sidebar a width. */
+@media (min-width: 768px) {
+  #nd-notebook-layout {
+    --fd-sidebar-width: 294px !important;
+  }
+
+  [data-sidebar-placeholder] {
+    --fd-sidebar-width: 294px !important;
+  }
+}
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+
+/* The prototype sets html{font-size:15px} and sizes everything against it. Rather
+   than move the global root — which would rescale every Tailwind spacing unit on
+   the landing page too — the same ratio is applied through Fumadocs' own prose
+   scale: 14.5/16 = 0.90625 reproduces the design's 14.5px body exactly, and every
+   em-derived child (lists, blockquotes, captions) follows. */
+#nd-page .prose {
+  --tw-prose-size: 0.90625;
+  font-family: var(--font-ui);
+}
+
+#nd-page .prose p,
+#nd-page .prose li {
+  line-height: 1.7;
+}
+
+/* Display headings are Poppins 500 with negative tracking; body headings stay Inter.
+   Sizes are the design's px values, held outside the prose scale so they do not
+   drift when --tw-prose-size is retuned.
+
+   The :not() guard lets a docs component own its heading styling: a heading inside
+   OverviewHero or a future card carries a cy-doc-* class and opts out here, so the
+   component's own rule applies without having to out-specify this one. */
+#nd-page h1:not([class*="cy-doc-"]) {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 40px;
+  letter-spacing: -0.32px;
+}
+
+#nd-page .prose h2:not([class*="cy-doc-"]) {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.4px;
+  margin-block: 40px 14px;
+}
+
+#nd-page .prose h3:not([class*="cy-doc-"]) {
+  font-size: 15.5px;
+  font-weight: 500;
+  margin-block: 28px 10px;
+}
+
+#nd-page .prose h4:not([class*="cy-doc-"]) {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--cy-doc-tx2);
+  margin-block: 20px 8px;
+}
+
+/* Micro-labels — breadcrumb, TOC eyebrow, page meta — are mono in the design. */
+#nd-page .prose code,
+#nd-page pre,
+.cy-doc-mono {
+  font-family: var(--font-mono);
+}
+
+#nd-page .prose :not(pre) > code {
+  font-size: 12.5px;
+  background: var(--cy-doc-code-bg);
+  border: 1px solid var(--cy-doc-code-bd);
+  border-radius: 3px;
+  padding: 2px 5px;
+  color: var(--cy-doc-tx);
+}
+
+/* ── Prose typography (Tier B) ────────────────────────────────────────────
+   docs.html:189-199. Fights plain (non-`!important`) typography-plugin `.prose`
+   rules and the `scroll-m-28` heading utility — Trap 3 (§8.5 of the design doc):
+   a plain author rule already wins, same as the existing h1-h4 rules above. */
+
+#nd-page .prose p:not([class*="cy-doc-"]) {
+  margin-bottom: 14px;
+  /* docs.html:192 — `p{color:var(--tx2)}`. Without this, body paragraphs inherit
+     Fumadocs' prose foreground (a 90%-alpha near-white) instead of the design's
+     muted body colour. Callout paragraphs override this with their own color-mix
+     via a higher-specificity rule further down. */
+  color: var(--cy-doc-tx2);
+}
+
+#nd-page .prose ul:not([class*="cy-doc-"]),
+#nd-page .prose ol:not([class*="cy-doc-"]) {
+  padding-left: 20px;
+  margin-bottom: 14px;
+}
+
+#nd-page .prose li:not([class*="cy-doc-"]) {
+  margin-bottom: 4px;
+  /* docs.html:195 — `li{color:var(--tx2)}`, same reasoning as the p rule above. */
+  color: var(--cy-doc-tx2);
+}
+
+/* :not([data-card]) excludes the invisible anchor Heading() wraps every heading's own text in —
+   without it every h2/h3/h4 would render in link-blue. */
+#nd-page .prose a:not([class*="cy-doc-"]):not([data-card]) {
+  color: var(--cy-doc-ac);
+  text-decoration: none;
+}
+
+#nd-page .prose a:not([class*="cy-doc-"]):not([data-card]):hover {
+  text-decoration: underline;
+}
+
+#nd-page .prose hr:not([class*="cy-doc-"]) {
+  border: none;
+  border-top: 1px solid var(--cy-doc-bd);
+  margin: 32px 0;
+}
+
+/* Deliberately NOT porting docs.html's .ca strong (display:block) here — this is the SITEWIDE
+   strong rule; callouts get no rule of their own, see design doc §2.3's fourth finding. */
+#nd-page .prose strong:not([class*="cy-doc-"]) {
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+}
+
+/* Fumadocs' Heading() applies scroll-m-28 (112px) to every heading uniformly; the design wants
+   80px on h2/h3 only (h1 is Tier A's concern, h4 has none in docs.html). */
+#nd-page .prose h2:not([class*="cy-doc-"]),
+#nd-page .prose h3:not([class*="cy-doc-"]) {
+  scroll-margin-top: 80px;
+}
+
+/* ── Header chrome ───────────────────────────────────────────────────────── */
+
+/* Transcribed from the design's .hd / .hd-in / .hd-nav / .hd-r rules. The order of
+   the controls is set by DocsHeader, which replaces Fumadocs' header slot; these
+   rules only dress it. Class map, design → here:
+     .hd-in → .cy-doc-hd        .hd-div → .cy-doc-hd-div
+     .logo  → .cy-doc-hd-logo   .hd-nav → .cy-doc-hd-nav
+     .hd-r  → .cy-doc-hd-right  .sb-btn → .cy-doc-hd-search
+     .gh-a  → .cy-doc-hd-icon */
+
+#nd-subnav {
+  height: var(--fd-nav-height);
+  background: var(--cy-doc-chrome);
+  /* docs.html:34 — .hd carries a 1px bottom hairline. */
+  border-bottom: 1px solid var(--cy-doc-bd);
+}
+
+/* Sidebar shares the header's chrome colour and sits on the canvas via its right
+   border — .sb in the design, whose background moved from #F8F9FA to #FFFFFF in the
+   current revision. */
+#nd-sidebar {
+  background: var(--cy-doc-chrome);
+  border-right: 1px solid var(--cy-doc-bd);
+}
+
+/* Neutral preset re-tints the sidebar in dark mode; the design does not. */
+.dark #nd-sidebar {
+  --color-fd-muted: var(--cy-doc-bg2);
+  --color-fd-secondary: var(--cy-doc-bg3);
+  --color-fd-muted-foreground: var(--cy-doc-tx3);
+}
+
+.cy-doc-hd {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  width: 100%;
+  height: 100%;
+  padding: 0 28px;
+  /* Fumadocs draws the bottom border here; recolour rather than add a second. */
+  border-bottom: 1px solid var(--cy-doc-bd);
+}
+
+/* Logo lockup: wordmark baseline-aligned with a muted suffix.
+   --cy-doc-wordmark recolours the lettering; the blue glyph is fixed brand. */
+:root {
+  --cy-doc-wordmark: #404041;
+}
+
+.dark {
+  --cy-doc-wordmark: #ecedef;
+}
+
+.cy-doc-hd-logo {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--cy-doc-tx);
+  text-decoration: none;
+}
+
+.cy-doc-logo {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.cy-doc-logo svg {
+  display: block;
+  flex-shrink: 0;
+  transform: translateY(-3px);
+}
+
+.cy-doc-logo-suffix {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: 16.5px;
+  line-height: 20px;
+  letter-spacing: -0.1px;
+  color: var(--cy-doc-tx2);
+  white-space: nowrap;
+  transform: translateY(-1px);
+}
+
+.cy-doc-hd-div {
+  width: 1px;
+  height: 24px;
+  background: var(--cy-doc-bd2);
+  flex-shrink: 0;
+}
+
+/* Section nav: 34px gaps, stretched full height so the active bar can seat on the
+   header's bottom edge. */
+.cy-doc-hd-nav {
+  display: flex;
+  gap: 34px;
+  height: 100%;
+  align-items: stretch;
+}
+
+.cy-doc-hd-nav-a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--cy-doc-tx2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--cy-doc-transition);
+}
+
+.cy-doc-hd-nav-a:hover {
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-hd-nav-a[data-active="true"] {
+  color: var(--cy-doc-ac);
+  font-weight: 500;
+}
+
+.cy-doc-hd-nav-a[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--cy-doc-ac);
+}
+
+/* Transcribed from the design's `.hd-r` (docs.html:47): `margin-left: auto` alone,
+   no flex-grow. None of `.cy-doc-hd`'s other children (logo, divider, nav) grow
+   either, so nothing claims the row's free space — `margin-left: auto` on this
+   cluster pulls it flush right by consuming that space as margin instead, exactly
+   like the design. A previous revision here set `flex: 1 1 auto`, which grows the
+   cluster to fill the leftover width; that gave `.cy-doc-hd-search`'s `flex: 0 1
+   360px` room to reach its full 360px basis (measured 960px wide at 1600px) where
+   the design's own un-grown `.hd-r` only measures 254px, sizing the search pill
+   down to its `min-width: 150px` floor instead (docs.html:47-48). Not growing this
+   cluster is the fix — `flex: 0 1 360px; min-width: 150px` on the search pill was
+   already correct and needed no change once this stopped over-supplying it width. */
+.cy-doc-hd-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+/* Search follows the LANDING page's treatment, not docs.html's.
+   The design file draws two different search bars — a 40px/10px-radius, 360px-wide
+   pill in docs.html, and a compact 32px square-cornered control in the landing nav.
+   The landing one is the house style, so the docs adopt it and the two surfaces
+   match. Geometry and type below are transcribed from the landing's
+   [data-nav-search] block; only the colours are re-expressed in docs tokens. */
+.cy-doc-hd-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  flex: 0 1 360px;
+  min-width: 150px;
+  width: auto;
+  padding: 0 8px 0 14px;
+  border: 1px solid var(--cy-doc-bd2);
+  border-radius: 10px;
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx3);
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 18px;
+  cursor: text;
+  transition: border-color var(--cy-doc-transition);
+}
+
+.cy-doc-hd-search:hover {
+  border-color: var(--cy-doc-bd3);
+}
+
+/* The landing renders ⌘K as plain mono text pushed right, not as a boxed chip. */
+.cy-doc-hd-search kbd {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: 6px;
+  background: var(--cy-doc-surface);
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 1;
+  color: var(--cy-doc-tx3);
+}
+
+/* The GitHub button keeps the header's own square geometry alongside it. */
+.cy-doc-hd-icon {
+  height: 40px;
+  width: 40px;
+  border: 1px solid var(--cy-doc-bd2);
+  border-radius: 10px;
+  background: var(--cy-doc-bg);
+  transition: border-color var(--cy-doc-transition);
+}
+
+.cy-doc-hd-icon:hover {
+  border-color: var(--cy-doc-bd3);
+}
+
+.cy-doc-hd-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--cy-doc-tx);
+  text-decoration: none;
+}
+
+/* Fumadocs normally sizes this icon through buttonVariants, which the className
+   above replaces — without a size the GitHub mark fills the whole 40px button. */
+.cy-doc-hd-icon svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Compact controls replace the search pill and section nav on small screens. */
+.cy-doc-hd-compact {
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The design sheds the suffix and divider at 1100px and narrows search, then drops
+   the sidebar at 900px. Below 900 the section nav gives way to the drawer. */
+@media (max-width: 1100px) {
+  .cy-doc-hd {
+    gap: 14px;
+  }
+
+  .cy-doc-logo-suffix,
+  .cy-doc-hd-div {
+    display: none;
+  }
+
+  .cy-doc-hd-nav {
+    gap: 18px;
+  }
+}
+
+/* The design never hides the section nav — it stays at every width, and only the
+   search pill narrows. Below 900px the sidebar becomes a drawer, so the trigger
+   appears and the wide search pill gives way to the compact icon. */
+@media (max-width: 900px) {
+  .cy-doc-hd-search {
+    display: none;
+  }
+
+  .cy-doc-hd-compact {
+    display: flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .cy-doc-hd-nav {
+    gap: 14px;
+    font-size: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .cy-doc-hd-nav::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Code blocks: 12px radius, surface fill, muted header bar. */
+#nd-page figure[data-rehype-pretty-code-figure],
+#nd-page .prose pre {
+  border-radius: var(--cy-doc-radius-lg);
+}
+
+#nd-page .prose pre {
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+
+/* Transcribed from the design's .sb / .psw / .pdrop / .vsel / .sb-rule / .sb-sec /
+   .sb-a / .sb-par / .sb-br rules. Class map, design → here:
+     .psw    → .cy-doc-psw    .pdrop  → .cy-doc-pdrop  .pdi → .cy-doc-pdi
+     .vsel   → .cy-doc-vsel   .sb-rule → .cy-doc-sb-rule
+     .sb-a   → Fumadocs' tree links, restyled below
+     .sb-par → Fumadocs' folder trigger <button>, restyled below (only rendered for
+               folders with collapsible: true — Getting Started's is a plain <div>)
+     .sb-br/.sb-br-rule → Fumadocs' own folder-content connector rail, restyled below
+     .bx-*   → .cy-doc-sb-badge[data-status] */
+
+#nd-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cy-doc-bd) transparent;
+}
+
+#nd-sidebar::-webkit-scrollbar {
+  width: 3px;
+}
+
+#nd-sidebar::-webkit-scrollbar-thumb {
+  background: var(--cy-doc-bd);
+  border-radius: 2px;
+}
+
+/* Zero the padding Fumadocs adds around the banner (psw/vsel/rule) — .cy-doc-sb-controls
+   below now owns the design's full .sb{padding:24px 12px 40px} top/side share itself, so any
+   padding left on this wrapper would double up. */
+#nd-sidebar > div:has(> .cy-doc-sb-controls) {
+  padding: 0;
+}
+
+/* Zero Fumadocs' own vertical padding around the page tree (nav items, folder headings) and
+   replace it with the design's own .sb{padding:24px 12px 40px} side/bottom share — the top 24px
+   lives on .cy-doc-sb-controls instead, since the banner renders before this viewport. Radix's
+   own scroll-area viewport attribute is the stable hook — not a guess, confirmed in
+   fumadocs-ui/dist/components/ui/scroll-area.js. */
+#nd-sidebar [data-radix-scroll-area-viewport] {
+  padding: 0 12px 40px;
+}
+
+.cy-doc-sb-controls {
+  display: flex;
+  flex-direction: column;
+  /* Owns the design's .sb{padding:24px 12px 40px} top/side share for the banner region — the
+     viewport rule above owns the side/bottom share for the tree below it. */
+  padding: 24px 12px 0;
+}
+
+/* Package switcher */
+.cy-doc-psw-root {
+  position: relative;
+  /* .psw{width:100%;margin:0 0 16px} (docs.html:65) — horizontal margin is 0 because the
+     12px gutter now comes from .cy-doc-sb-controls' own padding, not this element's margin. */
+  margin: 0 0 16px;
+}
+
+.cy-doc-psw {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--cy-doc-bd2);
+  border-radius: 8px;
+  /* The design's .psw sits on --sf2 (docs.html:65), which maps to --cy-doc-surface.
+     Before the palette swap chrome and surface were near-identical so this read the
+     same either way; they now differ sharply (#15171A vs #313336), so the token has
+     to be the right one. */
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color var(--cy-doc-transition);
+}
+
+.cy-doc-psw:hover {
+  border-color: var(--cy-doc-bd3);
+}
+
+.cy-doc-psw-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  /* The docs base line-height renders this label 20px tall, making the switcher
+     42px. The design's .psw-l inherits `normal` and renders 17px, so its .psw is
+     10 + 17 + 10 + 2(border) = 39px. Pinned to 17px to land on the design's height
+     exactly rather than at the ~16.5px `normal` resolves to in our font stack. */
+  line-height: 17px;
+  min-width: 0;
+}
+
+.cy-doc-psw-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cy-doc-pdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 3px);
+  background: var(--cy-doc-chrome);
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 300;
+  overflow: hidden;
+}
+
+.cy-doc-pdi {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 11px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  text-align: left;
+  color: var(--cy-doc-tx);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background var(--cy-doc-transition);
+}
+
+.cy-doc-pdi:hover {
+  background: var(--cy-doc-bg3);
+}
+
+.cy-doc-pdi[data-selected="true"] {
+  background: var(--cy-doc-ac-bg);
+  color: var(--cy-doc-ac);
+}
+
+.cy-doc-pdi small {
+  color: var(--cy-doc-tx3);
+  font-size: 11px;
+  margin-left: auto;
+}
+
+/* The switcher's chips are 21px in the sidebar; the inline PackageBadge reuses the
+   same colour keys at 14px. */
+.cy-doc-pdi .cy-doc-pkg-mark {
+  width: 21px;
+  height: 21px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+/* Version select */
+.cy-doc-vsel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  /* .vsel{margin:0 12px 16px} (docs.html:83) — literal transcription. .vsel sits 12px
+     further in than .psw (which now has 0 horizontal margin, above); this asymmetry is
+     the design's own choice, not something to fix here. */
+  margin: 0 12px 16px;
+}
+
+.cy-doc-vsel-label {
+  font-size: 13px;
+  color: var(--cy-doc-tx3);
+}
+
+.cy-doc-vsel-select {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 3px 0;
+  border: none;
+  background: transparent;
+  color: var(--cy-doc-tx);
+  cursor: pointer;
+  text-align: right;
+}
+
+.cy-doc-vsel-select:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+/* Divider under the version row — .sb-rule (docs.html:66). Rendered by SidebarControls
+   itself (new markup, §5); .cy-doc-sb-controls is a flex column so this just needs its own
+   box, no positioning. */
+.cy-doc-sb-rule {
+  height: 1px;
+  margin: 0 0 4px;
+  background: var(--cy-doc-bd);
+}
+
+/* Tree items — .sb-a in the design: 6px radius, 10px/12px padding, explicit 20px line-height
+   (10 + 20 + 10 = 40px row), tinted when active rather than underlined. */
+/* No `display` here on purpose. Fumadocs marks some sidebar links `lg:hidden`
+   (0,1,0); an id-scoped `display: flex` (1,0,1) would out-specify that and force
+   them visible on desktop. The links are already flex containers, so only the
+   design's spacing, shape and colour are set. */
+/* `padding-inline-start` is set !important to defeat Fumadocs' inline
+   `style={{ paddingInlineStart: getItemOffset(depth) }}` (20px at top-level depth) —
+   an inline style beats any stylesheet rule regardless of specificity; !important is
+   the documented escape hatch for exactly this case (same reasoning as
+   --fd-toc-width below). */
+#nd-sidebar a[href] {
+  gap: 11px;
+  margin: 2px 0;
+  padding: 10px 12px;
+  padding-inline-start: 12px !important;
+  border-radius: 6px;
+  font-size: 14px;
+  /* Explicit, so the 40px row (10 + 20 + 10) is a real design value rather than a
+     browser-metric coincidence (docs.html:89). Was 42px before this pin existed. */
+  line-height: 20px;
+  /* Full-strength --tx, not the muted --tx2: the revised prototype changed this
+     (docs.html:89, `.sb-a{...color:var(--tx)}`). The old prototype used --tx2. */
+  color: var(--cy-doc-tx);
+  text-decoration: none;
+  transition: all var(--cy-doc-transition);
+}
+
+#nd-sidebar a[href]:hover {
+  color: var(--cy-doc-tx);
+  background: var(--cy-doc-bg3);
+}
+
+/* Active item colour now comes from its own dedicated pair (--cy-doc-nav-bg/-fg), not the
+   generic accent ramp — docs.html:92, `.sb-a.on{color:var(--navf);background:var(--navb)}`. */
+#nd-sidebar a[data-active="true"] {
+  color: var(--cy-doc-nav-fg);
+  background: var(--cy-doc-nav-bg);
+  font-weight: 500;
+}
+
+/* The design marks the active item with background + accent text + weight 500 only —
+   there is no vertical rail (docs.html:91-92, `.sb-a`/`.sb-a.on`). Fumadocs' notebook sidebar
+   bakes one into SidebarItem as utility classes on the element itself
+   (`data-[active=true]:before:content-[''] before:w-px before:bg-fd-primary ...`, see
+   fumadocs-ui/dist/layouts/notebook/slots/sidebar.js), so it cannot be removed by
+   omitting a rule — it has to be switched off explicitly. */
+#nd-sidebar a[data-active="true"]::before {
+  content: none;
+}
+
+/* Fumadocs also draws a 1px vertical connector rail down every folder's items, baked into
+   CollapsibleContent as `before:content-[''] before:w-px before:bg-fd-border before:inset-s-2.5`.
+   Under the mixed flat/collapsible model this now needs to go two different ways depending on
+   which folder it belongs to — both keyed off the same Radix discriminator: Collapsible.Root
+   (the folder itself) carries no `id`; only CollapsibleContent (the items region) does, so
+   `[id]` isolates the rail's real element from its folder's own wrapper.
+
+   Getting Started (`collapsible: false`) is the one folder still `disabled` — its Content is
+   the only one matching `[data-disabled][id]`, so the design's rail-less flat list is achieved
+   by suppressing the rail there, unchanged from the previous pass. */
+#nd-sidebar [data-disabled][id]::before {
+  content: none;
+}
+
+/* The four collapsible folders (Components, Headless primitives, Hooks, Styling) are never
+   `disabled`, so their Content never carries `[data-disabled]` — `[data-state][id]:not([data-disabled])`
+   selects exactly their four Content divs and none of Getting Started's. Restyle, don't rebuild
+   (§2.2): Fumadocs' own rail already exists as a `position:relative` container + absolutely
+   positioned `::before` on exactly this element; only the box model needs to change, from
+   Fumadocs' 1px/10px-inset/4px-inset default to the design's 2px/18px/full-height rail
+   (docs.html:101-103, `.sb-br{padding:0 0 0 18px}` `.sb-br-rule{width:2px}`, no top/bottom
+   inset). `#nd-sidebar`'s id-rooted specificity (1,0,0) beats Fumadocs' class-based Tailwind
+   utilities without needing `!important`. */
+#nd-sidebar [data-state][id]:not([data-disabled])::before {
+  width: 2px;
+  background: var(--cy-doc-bd);
+  /* `left` and `inset-inline-start` both map to the same physical box edge in our LTR-only
+     docs; when both are declared, the one that comes LAST in source order wins (they don't
+     merge). `left: auto` has to come first here so `inset-inline-start: 18px` — the one that
+     actually needs to apply — is the one left standing. */
+  left: auto;
+  inset-inline-start: 18px;
+  top: 0;
+  bottom: 0;
+}
+
+/* Item indentation under the mixed model (§2.3): Fumadocs assigns padding-inline-start by
+   folder *depth* only, and Getting Started's items and the four collapsible folders' items are
+   both depth 1 — depth alone cannot tell "flat" from "nested with a rail gutter" apart. Keying
+   off the same [data-state][id]:not([data-disabled]) discriminator as the rail above adds the
+   rail-gutter margin only for a real collapsible folder's children. The 30px is the prototype's
+   own box model: .sb-br 18px + .sb-br-rule 2px + .sb-br-items 10px = 30px (docs.html:101,104),
+   reproduced as a single margin since Fumadocs has no equivalent wrapper divs to hang three
+   separate paddings off. margin-inline-start is not touched by Fumadocs' inline style, so it
+   needs no !important; padding-inline-start still does, for the same inline-beats-stylesheet
+   reason as the base rule above. */
+#nd-sidebar [data-state][id]:not([data-disabled]) a[href] {
+  margin-inline-start: 30px;
+  padding-inline-start: 12px !important;
+}
+
+/* Getting Started's heading — the one folder still rendered as a plain, static <div> label
+   (collapsible: false → SidebarFolderTrigger renders no button/chevron, base.js). Matched to
+   .sb-sec's size, colour and rhythm (docs.html:87, `.sb-sec{padding:22px 12px 8px}`). Radix's
+   Collapsible.Root (the folder's ancestor) stamps [data-disabled] on itself once
+   `disabled={!collapsible}` is true — a stable, documented Radix hook, not a guess. `:not([id])`
+   is load-bearing: Radix stamps [data-disabled] on BOTH Collapsible.Root (the folder, which we
+   want) and CollapsibleContent (the items region, which we do not). Only CollapsibleContent
+   carries an id — Radix must generate one for the trigger's aria-controls — so :not([id])
+   selects the folder alone. Without it the rule also padded the items wrapper, stacking extra
+   padding on top of each item's own and pushing every nav item's text down. */
+#nd-sidebar [data-disabled]:not([id]) > div:first-child {
+  padding: 22px 12px 8px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--cy-doc-tx3);
+  padding-inline-start: 12px !important;
+}
+
+/* .sb-sec for a `--- Label ---` separator, which Fumadocs renders as a <p> rather than
+   a folder trigger. This rule was dropped when the root nav's "Guides" separator was
+   removed and it looked dead — but integrations/meta.json still uses one, so its heading
+   fell back to Fumadocs' own 14px/--tx and became indistinguishable from the nav links
+   beside it. Matched to the folder-heading treatment above so both kinds of section
+   heading read identically. `margin: 0` cancels Fumadocs' own mt-6/mb-1.5 utilities,
+   which would otherwise stack on the padding here. */
+#nd-sidebar p:not([class*="cy-doc-"]) {
+  margin: 0;
+  padding: 22px 12px 8px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--cy-doc-tx3);
+  padding-inline-start: 12px !important;
+}
+
+/* The bare 18px spacer that replaces the removed "Guides" label (docs.html:461,
+   `<div style="height:18px"></div>`) — content/docs/meta.json no longer lists
+   "--- Guides ---", so no <p> SidebarSeparator renders at all. Verified against the actual
+   rendered DOM (not the direct-child shape assumed in the design doc): every folder's
+   Collapsible.Root (no `id`) and every root-level link are siblings one level *below*
+   [data-radix-scroll-area-viewport] — Fumadocs wraps the whole top-level list in one
+   unstyled <div>, so the combinator here has to be a descendant selector, not `>`. Styling's
+   folder-Root is the only one immediately followed by an <a> (Translations) once "Guides" is
+   gone, so this still fires exactly once, content-agnostically — it survives future
+   reordering within the trailing page list. */
+#nd-sidebar [data-radix-scroll-area-viewport] div[data-state]:not([id]) + a[href] {
+  margin-top: 18px;
+}
+
+/* Collapsible folder trigger — .sb-par (docs.html:96-99), the real <button> Fumadocs renders
+   for a folder with collapsible: true. `button[data-state]` matches only these four folders'
+   triggers: Getting Started's own trigger is a <div>, which this attribute selector cannot
+   match at all. Chevron rotation, its 16px size (Fumadocs' own `[&_svg]:size-4`), and the
+   open/close animation are already correct via Fumadocs/Radix; only colour and box model need
+   overriding here. */
+#nd-sidebar button[data-state] {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 2px 0;
+  padding: 10px 8px 10px 12px;
+  padding-inline-start: 12px !important;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--cy-doc-tx);
+  cursor: pointer;
+}
+
+#nd-sidebar button[data-state]:hover {
+  background: var(--cy-doc-bg3);
+}
+
+#nd-sidebar button[data-state] svg {
+  color: var(--cy-doc-tx3);
+}
+
+/* ── Breadcrumb + page meta row ──────────────────────────────────────────── */
+
+/* .bc in the design: a sans, muted trail above the h1. Fumadocs renders it as a
+   bare div with no stable hook, so the class is passed in from DocsPage's
+   breadcrumb options rather than guessed at with a structural selector. */
+.cy-doc-bc {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--cy-doc-tx3);
+  margin-bottom: 16px;
+  gap: 6px;
+}
+
+.cy-doc-bc a {
+  color: var(--cy-doc-tx3);
+  text-decoration: none;
+  transition: color var(--cy-doc-transition);
+}
+
+.cy-doc-bc a:hover {
+  color: var(--cy-doc-tx2);
+}
+
+/* .bc-cur — the current-page (last) breadcrumb segment. Fumadocs' own
+   `text-fd-primary font-medium` resolves to --cy-doc-ac (accent blue), not the
+   design's full title colour; verified reachable via a structural :last-child
+   selector against the real Breadcrumb()/getBreadcrumbItemsFromPath output — see
+   design doc §2.4. The current page renders as a real, navigable <a>, unlike the
+   design's inert <span>, so the :hover guard below keeps it from dimming beneath
+   its resting colour under the generic .cy-doc-bc a:hover rule above. */
+.cy-doc-bc > a:last-child,
+.cy-doc-bc > span:last-child {
+  color: var(--cy-doc-tx);
+  font-weight: 500;
+}
+
+.cy-doc-bc > a:last-child:hover {
+  color: var(--cy-doc-tx);
+}
+
+/* .ptitle — h1 + page actions row (docs.html:144). .cy-doc-page-actions holds the
+   real .pm-split split-button (see design doc content-tier-d.md). */
+.cy-doc-ptitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.cy-doc-ptitle h1 {
+  min-width: 0;
+  text-wrap: pretty;
+}
+
+.cy-doc-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* .pm-split split-button + .pm-menu dropdown (docs.html:157-179), replacing the
+   old bordered-pill .cy-doc-page-action buttons this wrapper used to hold. See
+   design doc content-tier-d.md §8.3 for the full rule-by-rule mapping. */
+.cy-doc-pm-split {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-radius: 8px;
+  background: var(--cy-doc-surface);
+  box-shadow: inset 0 0 0 1px var(--cy-doc-bd3);
+}
+
+.cy-doc-pm-main,
+.cy-doc-pm-caret {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--cy-doc-tx);
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition:
+    background var(--cy-doc-transition),
+    color var(--cy-doc-transition);
+}
+
+.cy-doc-pm-main {
+  gap: 8px;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 7px 0 0 7px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cy-doc-pm-caret {
+  justify-content: center;
+  width: 32px;
+  border-left: 1px solid var(--cy-doc-bd3);
+  border-radius: 0 7px 7px 0;
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-pm-main:hover,
+.cy-doc-pm-caret:hover {
+  background: var(--cy-doc-bg3);
+}
+
+.cy-doc-pm-main[data-copied] {
+  color: var(--cy-doc-gr);
+}
+
+.cy-doc-pm-caret svg {
+  transition: transform var(--cy-doc-transition);
+  pointer-events: none;
+}
+
+.cy-doc-pm-split[data-open] .cy-doc-pm-caret svg {
+  transform: rotate(180deg);
+}
+
+.cy-doc-pm-split[data-open] .cy-doc-pm-caret {
+  background: var(--cy-doc-menu-hover);
+}
+
+/* Width-pinning for the "Copy as Markdown" -> "Copied" swap — a CSS grid overlap,
+   not a JS measurement. See design doc §2.4. */
+.cy-doc-pm-main-stack {
+  display: grid;
+}
+
+.cy-doc-pm-main-state {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  /* Both overlaid states share the stack's box width — pinned to the wider "Copy as
+     Markdown" state's own intrinsic width (see the comment above). Without this, the
+     narrower "Copied" state's own flex row defaults to justify-content:flex-start and
+     hugs the left edge of that reserved width instead of sitting centred in it. */
+  justify-content: center;
+  gap: 8px;
+  visibility: hidden;
+}
+
+.cy-doc-pm-main-state[data-active="true"] {
+  visibility: visible;
+}
+
+.cy-doc-pm-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 336px;
+  padding: 8px;
+  background: var(--cy-doc-surface);
+  border: none;
+  border-radius: var(--cy-doc-radius-lg);
+  box-shadow:
+    inset 0 0 0 1px var(--cy-doc-menu-bd),
+    0 6px 16px rgba(0, 0, 0, 0.14),
+    0 1px 3px rgba(0, 0, 0, 0.1);
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 60;
+}
+
+.cy-doc-pm-menu[data-open] {
+  display: flex;
+}
+
+.cy-doc-pm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  font-family: var(--font-ui);
+  color: var(--cy-doc-tx);
+  cursor: pointer;
+  transition: background var(--cy-doc-transition);
+  align-self: stretch;
+}
+
+.cy-doc-pm-row:hover {
+  background: var(--cy-doc-menu-hover);
+}
+
+.cy-doc-pm-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--cy-doc-surface);
+  box-shadow: inset 0 0 0 1px var(--cy-doc-menu-bd);
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-pm-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cy-doc-pm-t {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.cy-doc-pm-t svg {
+  opacity: 0.6;
+}
+
+.cy-doc-pm-d {
+  font-size: 13px;
+  color: var(--cy-doc-tx3);
+  line-height: 18px;
+}
+
+.cy-doc-pm-row[data-copied] .cy-doc-pm-t,
+.cy-doc-pm-row[data-copied] .cy-doc-pm-tile {
+  color: var(--cy-doc-gr);
+}
+
+/* docs.html:178 sets border-color on .pm-tile, which has no `border` (only a
+   box-shadow ring) — a no-op in the prototype itself. Recolouring the box-shadow
+   is the evidently-intended fix; see design doc §2.6. */
+.cy-doc-pm-row[data-copied] .cy-doc-pm-tile {
+  background: var(--cy-doc-gr-bg);
+  box-shadow: inset 0 0 0 1px var(--cy-doc-gr-bd);
+}
+
+/* .phr — hairline after .pmeta (docs.html:147). .cy-doc-pd (below) keeps its own
+   border-bottom, so the reordered header paints two hairlines in quick succession
+   — one under the description, one under the meta row. That is the prototype's
+   own assembly, not an authoring accident to collapse away (design doc §2.6). */
+.cy-doc-phr {
+  height: 1px;
+  background: var(--cy-doc-bd);
+  margin: 0 0 28px;
+}
+
+/* .pmeta — now holds only the last-updated stamp; the Markdown actions moved into
+   .cy-doc-ptitle above (docs.html:150). */
+.cy-doc-pmeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--cy-doc-tx3);
+  margin: 0 0 20px;
+}
+
+.cy-doc-pmeta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--cy-doc-tx3);
+}
+
+.cy-doc-pmeta .cy-doc-pmeta-item {
+  margin-right: 6px;
+}
+
+/* No forced width/height here (docs.html:153-154, .pm-i svg): the new calendar
+   icon (LastUpdated.tsx) sets its own 14x14 size directly on the <svg>, and
+   forcing 13px here would fight that literal size for no reason. The .pm-split
+   button's own icons are sized separately, above (.cy-doc-pm-* rules). */
+.cy-doc-pmeta-item svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+/* ── Markdown viewer modal ───────────────────────────────────────────────── */
+
+/* The design's .mdov overlay and .mdbx panel. Built on a native <dialog>, so the
+   overlay is ::backdrop and the panel is a child of the dialog; the dialog element
+   itself is the full-viewport click target that closes on a backdrop press. */
+.cy-doc-mdov {
+  max-width: none;
+  max-height: none;
+  width: 100vw;
+  height: 100dvh;
+  margin: 0;
+  padding: 40px 24px;
+  border: none;
+  background: transparent;
+  overflow: hidden;
+}
+
+.cy-doc-mdov:not([open]) {
+  display: none;
+}
+
+.cy-doc-mdov[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cy-doc-mdov::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.cy-doc-mdbx {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  max-height: 80vh;
+  background: var(--cy-doc-surface);
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-lg);
+  overflow: hidden;
+}
+
+.cy-doc-mdbx-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--cy-doc-bd);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cy-doc-tx3);
+}
+
+.cy-doc-mdbx-x {
+  background: none;
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-sm);
+  color: var(--cy-doc-tx2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: all var(--cy-doc-transition);
+}
+
+.cy-doc-mdbx-x:hover {
+  border-color: var(--cy-doc-bd2);
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-mdbx-pre {
+  margin: 0;
+  padding: 20px;
+  overflow: auto;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--cy-doc-tx2);
+  white-space: pre-wrap;
+}
+
+/* ── Search modal ────────────────────────────────────────────────────────── */
+
+/* Transcribed value-for-value from the landing design's search overlay. Not scoped
+   to /docs: search opens from the landing nav too. Colours use the landing's own
+   tokens where they exist so the modal reads identically on both surfaces, with
+   docs tokens as the fallback for pages that do not load landing.css. */
+
+.cy-search-ov {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10vh 24px 0;
+  box-sizing: border-box;
+  background: rgba(20, 20, 42, 0.45);
+}
+
+.cy-search-box {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 640px;
+  max-height: 80vh;
+  overflow: hidden;
+  background: var(--cy-surface, var(--cy-doc-surface));
+  border: 1px solid var(--cy-border, var(--cy-doc-bd));
+  box-shadow: var(--cy-nav-shadow, 0 16px 40px rgba(20, 20, 42, 0.12));
+}
+
+/* Labels the dialog for assistive tech; the design shows no visible heading. */
+.cy-search-a11y-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Query row */
+.cy-search-query {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--cy-border, var(--cy-doc-bd));
+  color: var(--cy-muted, var(--cy-doc-tx2));
+}
+
+.cy-search-query > svg {
+  flex-shrink: 0;
+}
+
+.cy-search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  line-height: 24px;
+  color: var(--cy-fg, var(--cy-doc-tx));
+}
+
+.cy-search-input::placeholder {
+  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.6);
+}
+
+.cy-search-esc {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.7);
+  transition: border-color 0.15s ease;
+}
+
+.cy-search-esc:hover {
+  border-color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.65);
+}
+
+/* Section eyebrow above the list */
+.cy-search-section {
+  padding: 12px 20px 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.45);
+}
+
+/* Result list */
+.cy-search-results {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(400px, 55vh);
+  overflow-y: auto;
+}
+
+.cy-search-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-radius: 0;
+  background: transparent;
+  text-align: start;
+  cursor: pointer;
+}
+
+.cy-search-row[data-active="true"] {
+  background: var(--cy-track, var(--cy-doc-bg3));
+}
+
+.cy-search-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cy-search-row-title {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 0.9375rem;
+  line-height: 20px;
+  color: var(--cy-fg, var(--cy-doc-tx));
+}
+
+.cy-search-row-desc {
+  font-family: var(--font-ui);
+  font-weight: 400;
+  font-size: 0.8125rem;
+  line-height: 18px;
+  color: var(--cy-muted, var(--cy-doc-tx2));
+}
+
+.cy-search-row-cat {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 20px;
+  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.5);
+}
+
+.cy-search-empty {
+  padding: 24px 20px;
+  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.6);
+}
+
+/* Keyboard legend pinned under the result list. */
+.cy-search-hints {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.5);
+}
+
+/* ── Table of contents ───────────────────────────────────────────────────── */
+
+/* "On this page" / "Was this helpful?" — shared title (.toc-title, docs.html:115).
+   Sans, flex row with an icon slot, 12px/500/0.08em tracking, no left padding — the
+   rail below carries its own inset instead. */
+#toc-title,
+.cy-doc-toc-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: var(--cy-doc-toc-title-fg);
+  margin-bottom: 12px;
+}
+
+/* The design's own glyph here (docs.html's <div class="toc-col"> markup) is a
+   document/file icon, not Fumadocs' built-in lucide `Text` icon TOC() renders in the
+   same slot (notebook/page/slots/toc.js: `jsx(Text, {className:"size-4"})` inside
+   this same <h3 id="toc-title">). TOC()'s only nearby slot is `header`, which
+   renders BEFORE this h3 — it cannot replace content already inside it, and there is
+   no supported way to swap this one icon without forking TOC() itself. Restyled via
+   CSS instead, the same "restyle, don't rebuild" call already made for the sidebar's
+   connector rail and the per-item TOC-rail SVGs above: the lucide svg is hidden, and
+   the exact glyph from docs.html is painted as a `mask-image` on a `::before` so it
+   still themes through `currentColor` (background-color + the mask's alpha channel),
+   taking the same first-child flex slot and gap the hidden svg held. Scoped to the ID
+   alone (not .cy-doc-toc-title) so "Was this helpful?" — which the design gives no
+   icon at all — is untouched. */
+#toc-title svg {
+  display: none;
+}
+
+#toc-title::before {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3v4a1 1 0 0 0 1 1h4'/%3E%3Cpath d='M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3v4a1 1 0 0 0 1 1h4'/%3E%3Cpath d='M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
+/* docs.html:1957 — a page whose tocData is empty (`compare`, `changelog`) hides BOTH the
+   "On this page" title and the link list, keeping only the feedback/edit/report footer.
+   Fumadocs instead always renders the <h3> plus a "No Headings" placeholder; the placeholder
+   is already display:none, but its wrapper still takes vertical space, leaving an orphan label
+   over a gap. Keyed off "the list has no anchors" rather than a page name, so it reproduces the
+   prototype's real condition and generalises to any heading-less page. */
+#nd-toc:not(:has([data-cy-toc-list] a[href^="#"])) #toc-title,
+#nd-toc:not(:has([data-cy-toc-list] a[href^="#"])) :has(> [data-cy-toc-list]) {
+  display: none;
+}
+
+/* TOC links — .toc-a (docs.html:116-118). Decision 1: the rail is a static
+   border-left, not Fumadocs' animated SVG path/dot — both SVG surfaces are
+   suppressed below, not recoloured (see §2.2/§8.2 of the design doc). */
+#nd-toc a[href^="#"] {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--cy-doc-tx3);
+  text-decoration: none;
+  transition: all var(--cy-doc-transition);
+  border-left: 2px solid var(--cy-doc-bd);
+  padding-block: 6px;
+  /* Fumadocs sets padding-inline-start as a per-item *inline* style
+     (getItemOffset: 20/32/44px) — only !important beats an inline style, layer
+     or no layer. This is the same trap as --fd-toc-width above, not the
+     layered-Tailwind-utility trap the "Sidebar row rhythm" block fights. */
+  padding-inline-start: 12px !important;
+}
+
+/* Per-item rail SVG (curve/step drawn by Fumadocs' TOCItem) — suppressed, not
+   recoloured; the design's rail is the static border-left above. */
+#nd-toc a[href^="#"] > svg {
+  display: none;
+}
+
+/* Container-level "ThumbTrack" overlay: TOCItems() renders an animated
+   connecting-path + travelling dot as a <div> sibling before the <a> list. It
+   has no class of its own; data-cy-toc-list is our own hook (page.tsx). Every
+   other child of this container is an <a>, so `> div` unambiguously means the
+   overlay. */
+#nd-toc [data-cy-toc-list] > div {
+  display: none;
+}
+
+/* Depth-3/4 headings → design's .toc-a.sub, collapsed to one indent bucket.
+   Fumadocs exposes depth only via this inline pixel value (getItemOffset:
+   20/32/44) — attribute-contains is the only available hook; verify the exact
+   serialized string in-browser if fumadocs-ui is ever upgraded. */
+#nd-toc a[href^="#"][style*="32px"],
+#nd-toc a[href^="#"][style*="44px"] {
+  padding-inline-start: 24px !important;
+  font-size: 12px;
+}
+
+/* Verified against docs.html:337/340, not the naive docs.html:117 reading:
+   later same-specificity (dark) and higher-specificity (light) rules override
+   :117's --tx2 to --tx in both themes. */
+#nd-toc a[href^="#"]:hover {
+  color: var(--cy-doc-tx);
+  border-left-color: var(--cy-doc-bd2);
+}
+
+#nd-toc a[href^="#"][data-active="true"] {
+  color: var(--cy-doc-ac);
+  font-weight: 500;
+  border-left-color: var(--cy-doc-ac);
+}
+
+/* ── TOC footer: feedback vote + page links ──────────────────────────────── */
+
+.cy-doc-tocft {
+  margin-top: 44px;
+  padding-top: 0;
+  border-top: none;
+  padding-left: 0;
+}
+
+/* Override of the shared .toc-title rule above (docs.html:124): the footer title
+   has no icon (§2.2), so it resets the tracking/inset that rule adds for the icon
+   row and keeps only the shared size/weight. */
+.cy-doc-tocft .cy-doc-toc-title {
+  letter-spacing: 0;
+  padding-left: 0;
+  margin-bottom: 14px;
+}
+
+.cy-doc-fb-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.cy-doc-fb-b {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 18px;
+  border: 1px solid var(--cy-doc-bd2);
+  border-radius: 10px;
+  /* --cy-doc-surface, not --cy-doc-bg2: the two are equal in dark (#313336)
+     but differ in light (#ffffff vs #f8f9fc) — the design's --sf2 is
+     --cy-doc-surface, verified against docs.html:125. */
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx);
+  font-family: var(--font-ui);
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: all var(--cy-doc-transition);
+}
+
+.cy-doc-fb-b:hover {
+  border-color: var(--cy-doc-bd2);
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-fb-b[data-picked="true"] {
+  border-color: var(--cy-doc-ac-bd);
+  background: var(--cy-doc-ac-bg);
+  color: var(--cy-doc-ac);
+}
+
+.cy-doc-fb-b svg {
+  flex-shrink: 0;
+}
+
+/* New wrapper (§5): the divider that used to sit on .toc-ft moves here. */
+.cy-doc-tocft-links {
+  margin-top: 34px;
+  padding-top: 32px;
+  border-top: 1px solid var(--cy-doc-bd);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cy-doc-tocft-a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--cy-doc-ac);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--cy-doc-transition);
+}
+
+.cy-doc-tocft-a:hover {
+  color: var(--cy-doc-ac);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cy-doc-tocft-a svg {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+}
+
+/* ── Prev / next page footer ─────────────────────────────────────────────── */
+
+/* .pnav in the design: borderless, underline-on-hover, label above title.
+   `#nd-page footer`/`#nd-page [data-footer]` matched nothing — Fumadocs' real
+   default Footer renders neither a <footer> tag nor a data-footer attribute
+   (verified against fumadocs-ui@16.15.1's layouts/notebook/page/slots/footer.js).
+   Retargeted onto the real class page.tsx now attaches via `footer={{ className:
+   "cy-doc-pnav" }}` — see design doc §2.6/§8.4. Trap 3 (plain Tailwind utilities,
+   no `!important`, no layering needed). */
+.cy-doc-pnav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--cy-doc-bd);
+}
+
+/* Fumadocs' real DOM (verified in-browser, both links): `a > div.inline-flex(svg,
+   p.title) + a > p.label` — the label <p> is a direct child of the LINK, rendered
+   AFTER the icon+title <div>, which is exactly why it painted below the title
+   (source order = paint order for two block-level siblings). The design wants the
+   opposite stacking (label on top, title beneath) with a chevron centred across
+   both lines at the side — reordering the actual DOM would fight Fumadocs' own
+   FooterItem, so this promotes the icon row's `div` to `display: contents` (its
+   children join the link's own layout directly, and its `flex-row-reverse`
+   utility — meant for its own now-discarded flex box — becomes inert) and lays the
+   three real elements (svg, title, label) out on an explicit 2-column grid instead:
+   column 1 is the chevron, spanning both rows so `align-items: center` centres it
+   across the label+title block; column 2 holds the label (row 1) over the title
+   (row 2). `.text-end` is FooterItem's own real class for the "next" item (index
+   === 1, docs.html:279's `.nt`/`.nl` pair mirrored) — not a guessed hook — so it
+   flips the column order and right-aligns the text for that one case only. */
+/* `row-gap` is stated explicitly (0) rather than left to inherit: Fumadocs' real
+   FooterItem link carries its own Tailwind `gap-*` utility (shorthand, sets both
+   axes), and the `column-gap: 10px` below only overrides the column axis, leaving
+   that utility's row-gap (8px) live between the label and title rows. The design
+   has no inter-row gap at all — `.nl`'s own `margin-bottom: 2px` (docs.html:281,
+   restated below on the label `<p>`) is the ONLY spacing between them. */
+.cy-doc-pnav > a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 0;
+  max-width: 48%;
+  padding: 12px 0;
+  border: none;
+  border-radius: var(--cy-doc-radius);
+  background: none;
+  color: var(--cy-doc-tx2);
+  font-size: 13.5px;
+  text-decoration: none;
+  transition: all var(--cy-doc-transition);
+}
+
+.cy-doc-pnav > a.text-end {
+  margin-left: auto;
+  grid-template-columns: 1fr auto;
+}
+
+.cy-doc-pnav > a > div {
+  display: contents;
+}
+
+/* The chevron: column 1 normally, column 2 (the far side) once `.text-end` flips
+   the track order — spans both rows either way so centring lands across the whole
+   label+title block, not just the title's own line. */
+.cy-doc-pnav > a > div > svg {
+  grid-row: 1 / span 2;
+}
+
+.cy-doc-pnav > a:not(.text-end) > div > svg {
+  grid-column: 1;
+}
+
+.cy-doc-pnav > a.text-end > div > svg {
+  grid-column: 2;
+}
+
+/* .nl — Fumadocs' real, direct-child muted <p> — now placed in row 1 (on top),
+   the column beside the chevron. Previously an accepted content-model gap (this
+   line rendered the neighbouring page's real frontmatter description, not the
+   design's literal "Previous"/"Next" caption — design doc §2.6, finding 3): now
+   fixed via page.tsx's `footer.items`, which forces `description` to the literal
+   caption via `findNeighbour()` instead of leaving Fumadocs to compute it (and pull
+   in the real description) itself. */
+.cy-doc-pnav > a > p {
+  grid-row: 1;
+  font-size: 11px;
+  color: var(--cy-doc-tx3);
+  margin-bottom: 2px;
+}
+
+.cy-doc-pnav > a:not(.text-end) > p {
+  grid-column: 2;
+}
+
+.cy-doc-pnav > a.text-end > p {
+  grid-column: 1;
+  text-align: right;
+}
+
+/* .nt — Fumadocs' real title <p>, nested one level inside the icon row's own
+   (now `display: contents`) `<div>` — placed in row 2 (beneath the label), same
+   column. */
+.cy-doc-pnav > a > div > p {
+  grid-row: 2;
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-pnav > a:not(.text-end) > div > p {
+  grid-column: 2;
+}
+
+.cy-doc-pnav > a.text-end > div > p {
+  grid-column: 1;
+  text-align: right;
+}
+
+.cy-doc-pnav > a:hover > div > p {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Content blocks ──────────────────────────────────────────────────────── */
+
+/* Every selector below keys off a class we attach ourselves (see components/mdx)
+   or a class Fumadocs owns outright (figure.shiki). Structural selectors were
+   tried and removed: Fumadocs stamps `data-card` on heading anchor links as well
+   as on Card, so `[data-card]` turned all 13 headings on a page into boxes. */
+
+/* .pd — the page description, ruled off from the body beneath it. */
+.cy-doc-pd {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--cy-doc-tx2);
+  margin-bottom: 32px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--cy-doc-bd);
+}
+
+/* docs.html:195 — `a{color:var(--ac);text-decoration:none}`. .pd sits outside .prose, so
+   Tailwind typography never styles these anchors and they would otherwise fall back to the
+   UA's blue-and-underlined default. */
+.cy-doc-pd a {
+  color: var(--cy-doc-ac);
+  text-decoration: none;
+}
+
+.cy-doc-pd a:hover {
+  text-decoration: underline;
+}
+
+/* .ca — callouts: 12px radius, tighter than Fumadocs' default. */
+.cy-doc-callout {
+  border-radius: var(--cy-doc-radius-lg);
+  padding: 13px 15px;
+  margin: 18px 0;
+  gap: 11px;
+  font-size: 14px;
+  line-height: 1.6;
+  /* Fallback box colours — every real variant below overrides these (Trap 3, §8.5: plain
+     utilities `bg-fd-card border text-fd-card-foreground`, no !important needed). */
+  background: var(--cy-doc-surface);
+  border-color: var(--cy-doc-bd);
+}
+
+.cy-doc-callout[data-cy-variant="info"] {
+  background: var(--cy-doc-ac-bg);
+  border-color: var(--cy-doc-ac-bd);
+  color: var(--cy-doc-ac);
+}
+
+.cy-doc-callout[data-cy-variant="warn"],
+.cy-doc-callout[data-cy-variant="warning"] {
+  background: var(--cy-doc-am-bg);
+  border-color: var(--cy-doc-am-bd);
+  color: var(--cy-doc-am);
+}
+
+.cy-doc-callout[data-cy-variant="success"],
+.cy-doc-callout[data-cy-variant="ok"] {
+  background: var(--cy-doc-gr-bg);
+  border-color: var(--cy-doc-gr-bd);
+  color: var(--cy-doc-gr);
+}
+
+/* "tip" is a documented content-authoring mistake, not the correct prop value (design doc §2.3) —
+   this rule and the --callout-color rescue below keep a mistyped type="tip" from looking totally
+   broken, but the ICON SHAPE stays Info, not Lightbulb, because Fumadocs itself resolves "tip" to
+   "info" before this CSS ever runs. Author type="idea" to get this correctly. */
+.cy-doc-callout[data-cy-variant="idea"],
+.cy-doc-callout[data-cy-variant="tip"] {
+  background: var(--cy-doc-pu-bg);
+  border-color: var(--cy-doc-pu-bd);
+  color: var(--cy-doc-pu);
+  /* Overrides an INLINE style={{"--callout-color": ...}} Fumadocs sets on this same element —
+     Trap 2 (§8.5), plain !important, not layering. */
+  --callout-color: var(--cy-doc-pu) !important;
+}
+
+.cy-doc-callout[data-cy-variant="error"],
+.cy-doc-callout[data-cy-variant="err"] {
+  background: var(--cy-doc-re-bg);
+  border-color: var(--cy-doc-re-bd);
+  color: var(--cy-doc-re);
+}
+
+/* The decorative accent bar (role="none") has no equivalent in docs.html's .ca — the container's
+   own border+background already carry the type colour. */
+.cy-doc-callout > [role="none"] {
+  display: none;
+}
+
+.cy-doc-callout > svg {
+  width: 15px;
+  height: 15px;
+  margin: 1px 0 0;
+  flex-shrink: 0;
+}
+
+/* .ca-ic — the callout's literal glyph character (docs.html:225), replacing
+   Fumadocs' lucide icon for the variants mdx.tsx's calloutGlyph() covers. `error`
+   has no glyph of its own (see the Callout wrapper's comment) and keeps rendering
+   through the `> svg` rule above instead. */
+.cy-doc-callout > .cy-doc-ca-ic {
+  flex-shrink: 0;
+  font-size: 15px;
+  margin-top: 1px;
+}
+
+/* `#nd-page .prose` prefix is load-bearing, not decorative — same fight as the `.st` step-title
+   rule above. A callout's <p> is also matched by `#nd-page .prose p:not([class*="cy-doc-"])`
+   (specificity 1,2,1: the <p> itself carries no cy-doc-* class, only its ancestor does), which
+   sets its own `margin-bottom: 14px`. Without this prefix, `.cy-doc-callout p`'s specificity
+   (0,1,1) loses outright and the callout paragraph rendered with a stray 14px bottom margin
+   instead of 0 — verified in-browser before adding the prefix. Matching specificity (1,2,1) here
+   and winning on source order (declared after the prose block) is the same, already-documented
+   precedent this file uses for `#nd-page .prose .cy-doc-card h3` above. */
+#nd-page .prose .cy-doc-callout p {
+  margin: 0;
+  font-size: 14px;
+}
+
+#nd-page .prose .cy-doc-callout[data-cy-variant="info"] p {
+  color: color-mix(in srgb, var(--cy-doc-ac) 80%, var(--cy-doc-tx));
+}
+
+#nd-page .prose .cy-doc-callout[data-cy-variant="warn"] p,
+#nd-page .prose .cy-doc-callout[data-cy-variant="warning"] p {
+  color: color-mix(in srgb, var(--cy-doc-am) 80%, var(--cy-doc-tx));
+}
+
+#nd-page .prose .cy-doc-callout[data-cy-variant="success"] p,
+#nd-page .prose .cy-doc-callout[data-cy-variant="ok"] p {
+  color: color-mix(in srgb, var(--cy-doc-gr) 80%, var(--cy-doc-tx));
+}
+
+#nd-page .prose .cy-doc-callout[data-cy-variant="idea"] p,
+#nd-page .prose .cy-doc-callout[data-cy-variant="tip"] p {
+  color: color-mix(in srgb, var(--cy-doc-pu) 80%, var(--cy-doc-tx));
+}
+
+#nd-page .prose .cy-doc-callout[data-cy-variant="error"] p,
+#nd-page .prose .cy-doc-callout[data-cy-variant="err"] p {
+  color: color-mix(in srgb, var(--cy-doc-re) 80%, var(--cy-doc-tx));
+}
+
+/* .t — tables: ruled grid, tracked header on the muted surface, row hover.
+   Fumadocs' own typography plugin ships `.prose :where(table):not(:where([class~=
+   "not-prose"], ...))` — same (0,1,0) specificity as this class, so whichever
+   property THIS rule doesn't set still falls through to that one. It declares
+   `border-collapse: separate` (this rule's own `collapse` wins, since we set it
+   too), plus `background: var(--color-fd-card)`, `border: 1px solid
+   var(--color-fd-border)`, `border-radius: var(--radius-lg)` (8px) and `overflow:
+   hidden` — none of which we were setting, so all four leaked straight through
+   (measured: 8px radius + a 1px table-level border on top of the design's
+   borderless, square-cornered `.t`). `border-collapse: collapse` makes the browser
+   ignore `border-radius` outright, so that 8px was contributing nothing but visual
+   confusion, not even rounded corners — removed rather than left as dead weight.
+   The table itself carries no border/background of its own in the design; the
+   ruled grid and its outer edge come entirely from every th/td's own 1px border
+   below, so the four properties are nulled out explicitly rather than left to
+   depend on cascade order against a same-specificity rule from a dependency. */
+.cy-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13.5px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  overflow: visible;
+}
+
+.cy-doc-table th {
+  text-align: left;
+  padding: 8px 13px;
+  background: var(--cy-doc-bg2);
+  border: 1px solid var(--cy-doc-bd);
+  font-weight: 500;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-doc-table td {
+  padding: 8px 13px;
+  border: 1px solid var(--cy-doc-bd);
+  vertical-align: top;
+  line-height: 1.5;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-doc-table tbody tr:hover td {
+  background: var(--cy-doc-bg2);
+}
+
+/* PropsTable's description cells compose plain <p> tags (option.description +
+   "If omitted:") that carry no cy-doc-* class, so `#nd-page .prose p:not([class*=
+   "cy-doc-"])` (Tier B, above) claims them and adds its own `margin-bottom: 14px`.
+   Matches the prose-code/hook-body-p specificity precedent above (1,2,1), winning
+   on source order against that Tier B rule — same fight as `.cy-doc-callout p` and
+   `.cy-doc-ts-q p`. A small explicit gap between the two stacked paragraphs reads
+   better in a table cell than the browser default or TypeTable's old zero-margin
+   `prose-no-margin` disclosure layout. */
+#nd-page .prose .cy-doc-table p {
+  margin: 0 0 6px;
+}
+
+#nd-page .prose .cy-doc-table p:last-child {
+  margin-bottom: 0;
+}
+
+/* .cg / .card — two-up grid, accent-tinted on hover. */
+.cy-doc-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+/* .cg.three — 3-column grid variant, opt-in via <Cards className="cy-doc-cards-three">.
+   No live content uses it today — design doc §5/§8.1. */
+.cy-doc-cards-three {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.cy-doc-card {
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-lg);
+  padding: 16px;
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx);
+  transition: all var(--cy-doc-transition);
+  /* Real, live gap: without these, every real card (/docs, /docs/integrations)
+     shows a browser-default underline through its title/description text and a
+     text cursor over any icon-less card — design doc §8.1. `display: block` is
+     already achieved today via Fumadocs' own `block` utility class; stated here
+     too so the rule is self-sufficient (Trap 3, harmless restatement). */
+  text-decoration: none;
+  cursor: pointer;
+  /* docs.html:260 — `.card-title{display:flex;align-items:center;gap:8px}` puts the icon
+     INSIDE the title row, inline with the text. Every icon in the prototype does this,
+     both the tinted `.ci` chips and the integrations' bare brand marks (verified: all 9
+     `.ci` uses sit inside `.card-title`). Fumadocs instead renders the icon as a sibling
+     BEFORE the <h3> with `mb-2`, stacking it above. Wrapping flex reproduces the design
+     without touching Card's markup: icon + h3 share row 1, the description wraps to row 2.
+     An icon-less card is unaffected — the h3 simply starts the row. */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 5px;
+  /* The grid stretches every card to the tallest in its row. A multi-line flex
+     container's default `align-content: stretch` then hands that slack to the gaps
+     BETWEEN its lines, so a short card's title-to-description gap measured 14.8px
+     instead of 5px. Packing the lines to the top keeps row-gap literal and leaves the
+     slack below the description, which is what the prototype's `display: block` card
+     does naturally. */
+  align-content: flex-start;
+}
+
+.cy-doc-card:hover {
+  border-color: var(--cy-doc-ac);
+  background: var(--cy-doc-ac-bg);
+  text-decoration: none;
+}
+
+/* .card-title / .card-desc. These must match the prose h3 rule's specificity
+   (1,2,1) to win on source order — otherwise the card title takes the prose h3
+   size of 15.5px instead of the card's 14px. */
+#nd-page .prose .cy-doc-card h3 {
+  font-size: 14px;
+  font-weight: 500;
+  /* No margin-bottom: `align-items: center` on the card centres the h3's MARGIN box,
+     so a 5px bottom margin pushed that centre 2.5px below the visual text centre and
+     the icon read low against it (measured: icon centre 497.7 vs text centre 495.2).
+     The 5px gap to the description now comes from the card's row-gap instead. */
+  margin: 0;
+  color: var(--cy-doc-tx);
+}
+
+#nd-page .prose .cy-doc-card h3 + * {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cy-doc-tx3);
+  /* Full-width so it wraps beneath the icon+title row rather than joining it. */
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* .card-desc code (docs.html:262) — destyle inline code inside a card description.
+   Matches the prose-code override's (1,2,1) specificity precedent above; no live
+   content has one today (§8.1), but the rule is self-sufficient once one does. */
+#nd-page .prose .cy-doc-card h3 + * code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--cy-doc-tx2);
+}
+
+/* .ci — Fumadocs' own icon wrapper (`div.not-prose.mb-2.w-fit.shadow-md.rounded-lg
+   .border.bg-fd-muted.p-1.5...`), only present as Card's first child when `icon`
+   is passed (verified: fumadocs-ui/dist/components/card.js). Real, live consumer:
+   /docs/integrations. Trap 3 — plain Tailwind utilities, no `!important`. */
+/* Fumadocs' icon wrapper (`div.not-prose.mb-2.w-fit.shadow-md.rounded-lg.border
+   .bg-fd-muted.p-1.5`, present only when `icon` is passed — verified in
+   fumadocs-ui/dist/components/card.js). The prototype's integration cards carry a bare
+   brand mark at its natural size with no chip behind it, so strip the box entirely and
+   let the icon size itself. The tinted 26px chip is still available opt-in below via
+   data-cy-tone, matching the design's `.ci` variants. */
+.cy-doc-card > div:first-child {
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+/* `.ci` proper — the design's tinted chip is 26x26 (docs.html:263). Only applies to a
+   card whose author opted in with data-cy-tone. */
+.cy-doc-card > div:first-child:has([data-cy-tone]) {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--cy-doc-radius-sm);
+}
+
+/* .ci.bl/.gr/.pu/.am/.co/.re — opt-in: an MDX author adds data-cy-tone to their own
+   icon markup inside `icon={}`. No live consumer today (real icons carry their own
+   brand colour instead) — design doc §2.3. */
+.cy-doc-card [data-cy-tone="bl"] {
+  background: var(--cy-doc-ac-bg);
+}
+
+.cy-doc-card [data-cy-tone="gr"] {
+  background: var(--cy-doc-gr-bg);
+}
+
+.cy-doc-card [data-cy-tone="pu"] {
+  background: var(--cy-doc-pu-bg);
+}
+
+.cy-doc-card [data-cy-tone="am"] {
+  background: var(--cy-doc-am-bg);
+}
+
+.cy-doc-card [data-cy-tone="co"] {
+  background: var(--cy-doc-co-bg);
+}
+
+.cy-doc-card [data-cy-tone="re"] {
+  background: var(--cy-doc-re-bg);
+}
+
+/* .ts-q — each question its own bordered card; neutralises Accordions' own shared
+   border/background/divider (Fumadocs' `divide-y divide-fd-border border bg-fd-card`
+   utilities) so the per-item boxes below don't double up against the container's
+   chrome — design doc §2.8/§8.6. Trap 3, none of the fought utilities carry `!`. */
+.cy-doc-accordions {
+  border-radius: var(--cy-doc-radius-lg);
+  overflow: hidden;
+  border: none;
+  background: none;
+}
+
+.cy-doc-accordions > .cy-doc-ts-q {
+  border-top: none;
+}
+
+/* AccordionItem, via `Accordion: withClass(Accordion, "cy-doc-ts-q")` (mdx.tsx). No
+   live consumer today — troubleshooting.mdx still uses plain headings (§2.8/§3). */
+.cy-doc-ts-q {
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-lg);
+  margin: 12px 0;
+  overflow: hidden;
+  background: var(--cy-doc-surface);
+}
+
+/* .ts-qh — AccordionHeader is always the item's first child (accordion.js). */
+.cy-doc-ts-q > :first-child {
+  padding: 13px 16px;
+  background: var(--cy-doc-bg2);
+  border-bottom: 1px solid var(--cy-doc-bd);
+  gap: 10px;
+  justify-content: space-between;
+}
+
+/* .ts-qt — AccordionTrigger is the header's only child, a real <button>. */
+.cy-doc-ts-q > :first-child button {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+  gap: 10px;
+}
+
+/* .ts-err-tag — opt-in: an author places this inside `title={}` next to the
+   question text. No live consumer today (troubleshooting.mdx, §2.8). */
+.cy-doc-ts-err-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--cy-doc-re-bg);
+  color: var(--cy-doc-re);
+  border: 1px solid var(--cy-doc-re-bd);
+}
+
+/* .ts-qb — AccordionContent is always the item's second child; its own inner div
+   is Fumadocs' `px-4 pb-2 text-[0.9375rem] prose-no-margin` wrapper. The open/
+   closed toggle itself is Radix's own data-state + height animation, accepted as
+   an equivalent rather than ported (§2.8) — not a binary display:none/block. */
+.cy-doc-ts-q > :last-child > div {
+  padding: 14px 16px;
+}
+
+/* Matches the prose-code/hook-body-p specificity precedent above (1,2,1),
+   winning on source order against Tier B's `#nd-page .prose p:not([class*="cy-doc-"])`. */
+#nd-page .prose .cy-doc-ts-q p {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+/* .steps — 32px rhythm on the connector rail. Restyle, don't rebuild (design doc §2.5): Fumadocs'
+   own .fd-steps/.fd-step already provide the counter/circle mechanism correctly — only their box
+   model changes here, following the same precedent as the TOC rail pass. None of the Tailwind
+   classes fought below carry `!important` (Trap 3, §8.5), so no layering is needed. */
+.cy-doc-steps {
+  margin: 20px 0;
+}
+
+.cy-doc-steps .fd-steps {
+  padding-inline-start: 0;
+  margin-inline-start: 0;
+  border-inline-start: none;
+}
+
+.cy-doc-steps .fd-step {
+  position: relative;
+  /* 27px circle + 16px gap — docs.html's .step is display:flex with gap:16px; .fd-step has no
+     separate icon/body wrapper to flex against, so the same visual indent is reproduced as
+     padding on the one element that exists. */
+  padding-inline-start: 43px;
+  padding-bottom: 32px;
+}
+
+.cy-doc-steps .fd-step:last-child {
+  padding-bottom: 0;
+}
+
+/* The numbered badge — Fumadocs' own ::before (CSS counter), restyled. */
+.cy-doc-steps .fd-step::before {
+  inset-inline-start: 0;
+  top: 2px;
+  width: 27px;
+  height: 27px;
+  background: var(--cy-doc-tx);
+  color: var(--cy-doc-bg);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--font-ui);
+}
+
+/* The connector rail — ::before is Fumadocs' own counter badge, so the rail is a NEW ::after,
+   not a restyle of an existing element. Stops before the last item, unlike Fumadocs' own
+   continuous border-inline-start (killed above). */
+.cy-doc-steps .fd-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 30px;
+  bottom: 0;
+  width: 1px;
+  background: var(--cy-doc-bd);
+}
+
+/* .st — a step's own title. No existing content uses <Steps> yet (design doc §2.1); this is the
+   authoring convention this styling assumes (lead each <Step> with a heading) — verify against
+   the first real page that uses it.
+
+   `#nd-page` prefix is load-bearing, not decorative: without it this selector's specificity
+   (0,3,1) loses outright to the pre-existing `#nd-page .prose h3:not([class*="cy-doc-"])` rule
+   (1,2,1) — an ID beats any number of classes regardless of count. Verified in-browser: without
+   the prefix the step's own h3 rendered at 15.5px/28px-top-margin (the prose h3's own values),
+   not this rule's 15px/0. Trap 3 still applies (no `!important`) — this is a same-Trap-3 fight
+   the design doc's own §8.5 selector just didn't carry enough specificity to win by itself. */
+#nd-page .cy-doc-steps .fd-step > :is(h3, h4):first-child {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 10px;
+  color: var(--cy-doc-tx);
+}
+
+/* .cb — code block: the design's 12px radius; Fumadocs' own figure.shiki hook.
+   .bg-fd-secondary distinguishes a figure nested inside a CodeBlockTabs group (flush, no
+   margin of its own) from a top-level one (16px margin, its own rounded corners). This
+   replaces a bug (design doc §2.4): the previous unconditional `margin: 16px 0` here matched
+   every figure.shiki, including nested tab panels meant to sit flush (`-mx-px -mb-px`, no
+   margin) against their own tab bar — inserting a visible seam on every tabbed block
+   (installation.mdx, quick-start.mdx).
+
+   The border-radius/border-color/background/box-shadow treatment below is scoped to
+   `:not(.bg-fd-secondary)` — i.e. the standalone block only. Applied unconditionally (the
+   previous revision here), it ALSO landed on every nested tab-panel figure, forcing full
+   12px radius on all four of its corners regardless of position — breaking Fumadocs' own
+   working default for the nested case (`last:rounded-b-xl` rounds only the bottom corners of
+   whichever pane is actually mounted; Radix unmounts inactive panes, so the mounted one is
+   always both the sole and the last child, and every other corner is meant to stay square,
+   flush under the tab bar). That alone read as a second, floating rounded box nested inside
+   the outer `.cy-doc-cb-tabs` one.
+
+   The nested panel's own `border` (a Tailwind utility, 1px, colour bridged through
+   --color-fd-border — equal to --cy-doc-code-bd in both themes) is removed outright below
+   rather than left to Fumadocs' own `-mx-px -mb-px` overlap trick: that trick cancels the
+   MARGIN on the x-axis and bottom only, never the top, so the panel's own top border stayed
+   as a real, separately-rendered 1px line sitting directly under the tab bar's own
+   `border-bottom` (`.cy-doc-ct`, below) — a visible doubled rule at exactly the seam the
+   design wants to be a single line. The design's own `pre` (docs.html:207) carries no border
+   at all, on any side; matched literally here rather than relying on the overlap coincidence.
+   `border-radius` stays untouched (not restated to 0) so `last:rounded-b-xl` keeps rounding
+   the bottom corners of whichever panel is actually mounted — needed even with no border,
+   since `overflow-hidden` (also Tailwind's, also untouched) still clips the panel's own
+   `bg-fd-secondary` fill to that radius, and without it a square-cornered fill would poke
+   past the outer box's rounded bottom corners (the outer `.cy-doc-cb-tabs` div itself does
+   not clip). `bg-fd-secondary` (equal to --cy-doc-code-bg in both themes) needs no override
+   either — Tailwind's own value already matches. */
+#nd-page figure.shiki:not(.bg-fd-secondary) {
+  margin: 16px 0;
+  border-radius: var(--cy-doc-radius-lg);
+  border-color: var(--cy-doc-code-bd);
+  background: var(--cy-doc-code-bg);
+  box-shadow: none;
+}
+
+#nd-page figure.shiki.bg-fd-secondary {
+  margin: 0;
+  border: none;
+  /* Tailwind's own `shadow-sm` utility on this element would otherwise still show —
+     dropped the same way the standalone rule above drops it. */
+  box-shadow: none;
+}
+
+/* .ch — the filename header row, only present when a fence has title="...". */
+.cy-doc-cb > div:first-child:has(figcaption) {
+  background: var(--cy-doc-bg2);
+}
+
+/* .cf — the filename itself. */
+.cy-doc-cb figcaption {
+  font-size: 11.5px;
+  font-family: var(--font-mono);
+  color: var(--cy-doc-tx3);
+}
+
+/* pre — Fumadocs splits the design's single padded/scrolling <pre> into an outer role="region"
+   viewport (owns scroll + vertical padding) and an inner, unpadded <pre>. --padding-left/-right
+   are consumed by every .line inside (fumadocs-ui/css/lib/shiki.css) and are set as an INLINE
+   style on this same element for titleless blocks (codeblock.js's --padding-right:
+   "calc(var(--spacing) * 8)" when !title) — !important here is fighting that inline declaration
+   (Trap 2, §8.5), not a layered-utility fight. */
+.cy-doc-cb [role="region"] {
+  padding-block: 16px;
+  --padding-left: 20px !important;
+  --padding-right: 20px !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cy-doc-bd) transparent;
+}
+
+.cy-doc-cb [role="region"]::-webkit-scrollbar {
+  height: 3px;
+}
+
+.cy-doc-cb [role="region"]::-webkit-scrollbar-thumb {
+  background: var(--cy-doc-bd);
+  border-radius: 2px;
+}
+
+/* .ct / .ct-b — the package-manager tab bar (remarkNpm's CodeBlockTabs). */
+.cy-doc-cb-tabs {
+  border-color: var(--cy-doc-code-bd);
+}
+
+.cy-doc-ct {
+  padding: 0 10px;
+  gap: 2px;
+  background: var(--cy-doc-bg2);
+  border-bottom: 1px solid var(--cy-doc-code-bd);
+}
+
+/* .ct-b (docs.html:204): borderless text, no box of its own — `border-top/-left/
+   -right:none` plus a `border-bottom:2px solid transparent` that only turns accent
+   once active. This used to render as a bordered, backgrounded 4px-radius box: the
+   trigger is a real `<button>` inside the same `.cy-doc-cb`-classed root the
+   icon-only standalone copy button (`.cy-doc-cb button`, formerly above) targeted,
+   and that rule's (0,1,1) beat this one's (0,1,0) on every shared property. Now that
+   every copy control is its own dedicated `.cy-doc-cp` class (see below and
+   CodeTabsCopy.tsx) rather than a bare `<button>`, `.cy-doc-cb button` has no reason
+   to exist — removed outright instead of out-specifying it, so the trigger falls
+   through to Tailwind's own preflight (`button{border-radius:0}`, transparent
+   background) for the box model and only needs its own type/colour/spacing stated
+   here. */
+.cy-doc-ct-b {
+  gap: 5px;
+  padding: 7px 11px;
+  font-size: 12.5px;
+  font-family: var(--font-ui);
+  color: var(--cy-doc-tx3);
+  background: none;
+  border: none;
+}
+
+.cy-doc-ct-b:hover {
+  color: var(--cy-doc-tx);
+}
+
+/* Text stays full colour when active; only the underline (next rule) carries the accent. */
+.cy-doc-ct-b[data-state="active"] {
+  color: var(--cy-doc-tx);
+}
+
+/* The active-tab underline Fumadocs already renders as this trigger's own first child, already
+   coloured via --color-fd-primary (bridged to --cy-doc-ac, theme.css:148) — only its geometry
+   needs to change, not its colour. */
+.cy-doc-ct-b > div:first-child {
+  inset-inline: 0;
+  height: 2px;
+  margin-bottom: -1px;
+}
+
+/* .cp (docs.html:209-211): the bordered "Copy"/"Copied!" text button, shared by
+   every code block now — standalone (`StandaloneCopyActions`, CodeTabsCopy.tsx) and
+   tabbed (`CodeTabsCopyButton`, pushed right into the tab bar) alike, both rendering
+   the same `.cy-doc-cp` element. Qualified with `.cy-doc-cb` (0,2,0) rather than left
+   bare (0,1,0): the button sits inside a `.cy-doc-cb`-classed root in both cases
+   (CodeBlockTabs carries `cy-doc-cb cy-doc-cb-tabs` together), and `:hover`/
+   `[data-copied]` below need the same margin over any future `.cy-doc-cb`-scoped
+   button rule the same way this one no longer has to fight `.cy-doc-cb button`
+   (removed above) for the base state.
+
+   `line-height: normal` is stated explicitly, not implied by the design's own
+   `.cp` (docs.html:209-211, which never sets it either): measured in-browser,
+   this button sits inside `#nd-page .prose`, whose `--tw-prose-size` scaling
+   (theme.css:244) resolves Tailwind Typography's line-height to a FIXED px
+   length at the `.prose` root (14.5px × 1.75 ≈ 25.4px) rather than a unitless
+   ratio — so it inherits as that same 25.4px length regardless of this button's
+   own smaller 11px font-size, not the ~13px `normal` would give it. That alone
+   (not `align-items`, see the note on `.cy-doc-ct .cy-doc-cp` below) was the
+   real source of the reported 35px-tall button: padding (4+4) + inherited
+   line-height (25.4) + border (1+1) ≈ 35. Resetting to `normal` here lands the
+   natural height at the reported ~23px. */
+.cy-doc-cb .cy-doc-cp {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-sm);
+  background: var(--cy-doc-bg);
+  color: var(--cy-doc-tx3);
+  font-size: 11px;
+  line-height: normal;
+  font-family: var(--font-ui);
+  cursor: pointer;
+  transition: all var(--cy-doc-transition);
+}
+
+.cy-doc-cb .cy-doc-cp:hover {
+  border-color: var(--cy-doc-bd2);
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-cb .cy-doc-cp[data-copied] {
+  color: var(--cy-doc-gr);
+  border-color: var(--cy-doc-gr-bd);
+}
+
+/* Right-aligns the copy button inside the tab bar's flex row (docs.html:539's
+   `style="margin-left:auto"`). The standalone case sits inside Fumadocs' own
+   absolutely-positioned `Actions` wrapper instead (codeblock.js), which needs no
+   extra positioning here.
+
+   `align-self: center` (not `align-items: center` on `.cy-doc-ct` itself) is a
+   deliberate departure from the design's own `.ct` (docs.html:203), which sets
+   `align-items: center` on the bar so EVERY child — tabs included — renders at
+   natural height. That does not transfer here: Fumadocs' real tab trigger
+   (codeblock.js's `CodeBlockTabsTrigger`) paints its active-state underline as an
+   `absolute inset-x-2 bottom-0` child of the TRIGGER's own box, not the bar's —
+   it lands on the bar's real bottom border only because `.cy-doc-ct`'s default
+   `align-items: normal` (= stretch) stretches the trigger to the bar's full
+   height, making the trigger's own bottom edge coincide with the bar's. Centring
+   `.cy-doc-ct` would shrink the triggers to content height too, lifting that
+   underline off the divider (`.cy-doc-ct-b > div:first-child`'s `margin-bottom:
+   -1px` nudges it, but only back onto the TRIGGER's now-shorter box, not the
+   bar's real edge). Leaving `.cy-doc-ct` stretched and pulling only the copy
+   button out of that stretch gets the same compact ~23px pill (docs.html:209's
+   `padding: 4px 8px` + 11px text) without that regression. */
+.cy-doc-ct .cy-doc-cp {
+  align-self: center;
+  margin-left: auto;
+}
+
+@media (max-width: 700px) {
+  .cy-doc-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Page column metrics ─────────────────────────────────────────────────── */
+
+/* .content in the design: an 800px column with 52px gutters, 40px above and 100px
+   below, centred in the space left of the TOC. Fumadocs' own padding is 32px with
+   no max width, which left the column wider and tighter to its edges. */
+#nd-page {
+  max-width: 800px;
+  padding: 40px 52px 100px;
+  /* Fumadocs lays the article out as a flex column with a 16px gap, which stacks on
+     top of every child's own margin — the design's rhythm is margin-only, so a 12px
+     h1 margin was rendering as 28px. Zeroing the gap hands spacing back to the
+     margins below. */
+  gap: 0;
+}
+
+/* Vertical rhythm through the page head now comes from the header's own wrapper
+   margins (.cy-doc-ptitle: 16px, .cy-doc-pd: 32px, .cy-doc-pmeta: 20px, .cy-doc-phr:
+   28px), not from h1 directly — the design's h1 itself has margin-bottom: 0
+   (docs.html:143). */
+#nd-page h1 {
+  margin-bottom: 0;
+}
+
+.cy-doc-pd {
+  margin-top: 0;
+}
+
+/* The sidebar and TOC stick to row offsets the layout computes inline as
+     --fd-docs-row-2: calc(row-1 + var(--fd-header-height))
+     --fd-docs-row-3: calc(row-2 + var(--fd-toc-popover-height))
+   Fumadocs' own header declares --fd-header-height through a utility class on
+   itself; our replacement header (see components/docs/DocsHeader) does not, so it
+   resolved to 0 and both rails stuck to the top of the viewport, sliding *behind*
+   the 64px header — which is what hid the package switcher and the first TOC
+   entries. Declaring it here restores the offsets, and with them the design's
+   behaviour: .sb fixed below the header, .toc sticky below it, each scrolling
+   internally instead of with the page. Unconditional (not media-guarded): this
+   offset is needed at every width, unlike --fd-toc-width below. */
+#nd-notebook-layout {
+  --fd-header-height: var(--fd-nav-height);
+}
+
+/* ── Layout gutters: sidebar flush left, TOC flush right (intentional deviation) ──
+   Measured against the prototype (docs.html) at wide viewports: the design CENTRES
+   content+TOC as a pair, with matching outer gutters — 136px/146px at 1600px width,
+   301px/301px at 1920px. The previous pass here (a --fd-layout-width cap, removed
+   below) reproduced that closely: 141px/141px at 1600, 301px/301px at 1920. The user
+   has since asked, deliberately, for the OPPOSITE: no outer gutters at all, sidebar
+   flush to the left edge (already true — #nd-sidebar's own absolute positioning,
+   below, does not depend on this grid's column widths), content immediately after
+   the sidebar, and the TOC flush against the right viewport edge. THIS IS A
+   DEVIATION FROM THE MEASURED PROTOTYPE, made on direct instruction — do not
+   "correct" it back to centred/gutter'd in a future pass without re-confirming.
+
+   Fumadocs sets grid-template-columns via an *inline* style (notebook's
+   container.js): `minmax(min-content,1fr) sidebarCol minmax(0,pageCol) tocWidth
+   minmax(min-content,1fr)`. The two outer `1fr` tracks are the gutters; they claim
+   free space purely because they carry an `fr` unit, not because anything paints in
+   them — the sidebar's own grid area overlaps the first one, but #nd-sidebar is
+   absolutely positioned inside it and contributes no intrinsic size. Overriding
+   grid-template-columns — a distinct longhand from grid-template-areas/-rows, which
+   stay exactly as Fumadocs' inline style set them — wins over that inline value
+   because an !important stylesheet declaration beats a non-!important inline one for
+   the same property, the same reasoning already relied on for --fd-sidebar-width and
+   --fd-toc-width elsewhere in this file. Zeroing the two outer tracks and turning the
+   content track into `minmax(0, 1fr)` (instead of a capped `minmax(0, pageCol)`)
+   removes the gutters at every width this rule applies to, and lets the content grow
+   to fill exactly the space between the sidebar and the TOC. This replaces the old
+   --fd-layout-width cap entirely — nothing in this stylesheet reads that variable
+   any more. */
+@media (min-width: 1280px) {
+  #nd-notebook-layout {
+    grid-template-columns: 0px var(--fd-sidebar-col) minmax(0, 1fr) var(--fd-toc-width) 0px !important;
+  }
+}
+
+/* .toc-col only carries width once the TOC itself actually renders. Fumadocs hides
+   #nd-toc with `max-xl:hidden` (notebook/page/slots/toc.js) — the real breakpoint is
+   Tailwind's `xl`, 1280px, not the 900px this used to guard on. That mismatch left a
+   224px TOC grid track reserved across the whole 900–1280px range, in which #nd-toc
+   measures 0×0 — a dead gap between the content and the right edge (verified
+   in-browser at 1200px). Matching this threshold to 1280px — the same breakpoint the
+   no-gutter rule above now uses, since both need the TOC to actually be present —
+   removes the dead track: below 1280px, --fd-toc-width now correctly falls back to
+   Fumadocs' own default (0px, a baseline utility class on #nd-notebook-layout
+   itself), matching the TOC's real, invisible width there instead of a fictitious
+   one that never renders. */
+@media (min-width: 1280px) {
+  #nd-notebook-layout {
+    --fd-toc-width: 224px !important;
+  }
+}
+
+/* Column chrome (docs.html:113-114, .toc-col + .toc combined onto Fumadocs'
+   single #nd-toc element — see §2.1 of the design doc). top/max-height are
+   overridden directly rather than through --fd-docs-row-3: that var is set
+   inline on #nd-notebook-layout and shared by sidebar-collapse/toc-popover
+   math, an unnecessarily wide blast radius for a TOC-only change, and it
+   still wouldn't reproduce the design's -68px (vs -44px) max-height formula.
+   `top` beats Tailwind's `top-(--fd-docs-row-3)` *utility class* (not an
+   inline style) — an unlayered author rule already wins there without
+   !important, per the existing #nd-toc a[href^="#"] colour overrides above. */
+#nd-toc {
+  padding: 16px 16px 0 28px;
+  top: calc(var(--fd-nav-height) + 44px);
+  max-height: calc(100vh - var(--fd-nav-height) - 68px);
+  overflow-y: auto;
+}
+
+/* The design's hairline belongs to .toc-col (docs.html:113), a full-height flex
+   column. Fumadocs' #nd-toc is NOT that column — it is a sticky, self-sized box
+   (868px against a page many times that height), so a border-left there stops
+   short of the top and bottom of the page. A border-right on #nd-page was tried
+   here previously, but #nd-page's right edge and the TOC's left edge are NOT the
+   same x — the no-gutter deviation above (grid-template-columns) leaves a gap
+   between the content column and the TOC column (measured: #nd-page right edge
+   1094px, #nd-toc left edge 1376px at 1600px viewport), so a border on #nd-page
+   floated in empty space instead of sitting against "On this page".
+
+   Painted instead as a background on the full-height grid container, positioned
+   from the container's own right edge inward by --fd-toc-width — the same
+   distance the TOC column itself reserves — so it always lands on the TOC's left
+   edge regardless of viewport width, and background-size: 1px 100% spans the
+   whole scrollable height (#nd-notebook-layout's height equals the document's).
+   Scoped to the same `min-width: 1280px` breakpoint as the two rules above:
+   below it Fumadocs' own default takes --fd-toc-width back to 0 (the TOC is
+   `max-xl:hidden`), which would otherwise paint this at the container's bare
+   right edge instead of omitting it. */
+@media (min-width: 1280px) {
+  #nd-notebook-layout {
+    background-image: linear-gradient(to right, var(--cy-doc-bd) 0 1px, transparent 1px);
+    background-repeat: no-repeat;
+    background-position: right var(--fd-toc-width) top;
+    background-size: 1px 100%;
+  }
+}
+
+/* A heading containing inline code (`mode`, `initCookieYes()`) puts a <code> inside
+   its TOC entry, which Fumadocs' prose styling boxes. Against the entry rail that
+   box reads as a second vertical line. The design's TOC entries are plain text. */
+#nd-toc code {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Fumadocs' own grid-template-areas confine the header to the content+TOC columns
+   only (`"sidebar sidebar header header ."`) — never the sidebar's own columns —
+   regardless of how those columns are sized, so the header needs to bleed left over
+   the sidebar (and, before the no-gutter rule above, right past a trailing gutter
+   too) at every width it renders at. The design has both full-bleed: .hd is fixed
+   left:0/right:0, and .sb is a fixed 294px panel at left:0. */
+
+/* The header keeps Fumadocs' own grid area. Spanning it across the outer gutter
+   columns (grid-column: 1 / -1) looks like the obvious way to bleed it edge to edge,
+   but those columns are `minmax(min-content, 1fr)` and a spanning item pushes its
+   min-content into every track it crosses — that inflated the gutters to 156px and
+   squeezed the article from 788px to 476px at 1280. `min-width: 0` does not undo it.
+
+   So the chrome is painted instead: an absolutely-positioned layer extends past the
+   cell on both sides. Out-of-flow boxes contribute nothing to track sizing, so the
+   grid is untouched, and #nd-notebook-layout already clips overflow-x. */
+#nd-subnav::before {
+  content: "";
+  position: absolute;
+  inset: 0 -50vw;
+  z-index: -1;
+  background: var(--cy-doc-chrome);
+  border-bottom: 1px solid var(--cy-doc-bd);
+  pointer-events: none;
+}
+
+/* …and the header's contents bleed with it. The chrome above only painted the
+   background; the row itself stayed inside the grid cell, so once the layout was
+   capped the logo and GitHub button sat 154px in from the edges instead of the
+   design's 28px. `.hd` is fixed left:0/right:0 with `.hd-in` at width:100%, so the
+   row spans the viewport. Verified this leaves the grid tracks untouched — an
+   explicit width plus a negative start margin does not change the item's
+   contribution the way spanning columns did. */
+#nd-subnav > [data-header-body] {
+  width: 100vw;
+  margin-inline-start: calc(50% - 50vw);
+}
+
+/* The sidebar cell spans the leading gutter as well, and Fumadocs right-aligns its
+   294px content inside it (`items-end`). Sizing the panel to the sidebar width and
+   aligning to the start puts it — and its right border — back on the left edge. */
+#nd-sidebar {
+  width: var(--fd-sidebar-width);
+  align-items: flex-start;
+}
+
+/* ── Layering ────────────────────────────────────────────────────────────── */
+
+/* The design's header sits above everything (.hd { z-index: 100 }). Fumadocs gives
+   the header z-10 but the sidebar's wrapper z-20, so the sidebar rode over the
+   header on scroll, while the TOC had no z-index at all and slid under the content.
+   Putting the header above both, and the TOC on the sidebar's level, makes the two
+   rails behave the same way. */
+#nd-subnav {
+  z-index: 30;
+}
+
+#nd-toc {
+  z-index: 20;
+}
+
+/* The header's theme toggle (docs.html:335, #themeBtn) — permanent. Sized to match
+   the adjacent GitHub icon's house style rather than the design's literal 40px
+   .gh-a, for the same reason the search pill does (see the note above
+   .cy-doc-hd-search). `display: flex` + `align-items` are stated explicitly here
+   now that DocsHeader.tsx renders a plain `<button>` (a real element, not
+   Fumadocs' `ThemeSwitch`, whose own `inline-flex items-center` classes used to
+   supply this). `flex-shrink: 0` matches `.cy-doc-hd-icon` (the GitHub button
+   right beside it): both sit in `.cy-doc-hd-right`, which no longer over-grows
+   (Fix 2, above) and can now genuinely run short of space, and without this the
+   default `flex-shrink: 1` let this button compress well under its fixed 40px
+   box instead of `.cy-doc-hd-search` alone absorbing the squeeze. */
+.cy-doc-hd-theme {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 40px;
+  width: 40px;
+  border: 1px solid var(--cy-doc-bd2);
+  border-radius: 10px;
+  background: var(--cy-doc-bg);
+  color: var(--cy-doc-tx);
+  padding: 0;
+  cursor: pointer;
+  transition: border-color var(--cy-doc-transition);
+}
+
+.cy-doc-hd-theme:hover {
+  border-color: var(--cy-doc-bd3);
+}
+
+/* ── Muted text on card surfaces ─────────────────────────────────────────── */
+
+/* --cy-doc-surface (#313336 in dark) is light enough that --cy-doc-tx3 (#82868B) on it is
+   3.46:1 — below AA, and the constraint recorded above the token definition. Our own
+   .cy-doc-* rules honour it, but Fumadocs' built-in components reach the same pair through
+   the fd bridge (--color-fd-card -> surface, --color-fd-muted-foreground -> tx3): the TOC's
+   "No Headings" placeholder is one such card. Lift muted text to tx2 (6.35:1) wherever it
+   sits on a card, and leave tx3 alone on the page canvas, where the design intends it and
+   it measures 4.90:1. */
+.bg-fd-card.text-fd-muted-foreground,
+.bg-fd-card .text-fd-muted-foreground {
+  color: var(--cy-doc-tx2);
+}
+
+/* ── Sidebar row rhythm: match the design's block-flow gaps ───────────────── */
+
+/* The design lays its nav out in normal block flow (`#sbDocs` is a plain div), so
+   adjacent `.sb-a{margin:2px 0}` margins COLLAPSE into a single 2px gap. Fumadocs
+   instead stacks everything in flex containers, where margins do not collapse and a
+   `gap` is added on top — measured 6px between rows against the design's 2px.
+
+   Two containers produce it, and both are forced by Tailwind utilities carrying
+   `!important` on the scroll viewport (`*:flex! *:flex-col! *:gap-0.5!`):
+     1. the page-tree root — Radix sets `display:table` inline; the viewport's `*:`
+        utilities override that to flex + 2px gap
+     2. each folder's item wrapper (`flex flex-col gap-0.5 pt-0.5`)
+
+   These overrides MUST sit inside a cascade layer. For `!important` declarations the
+   layer order reverses — a layered `!important` beats an unlayered one regardless of
+   specificity — so an unlayered rule here loses to Tailwind's utilities layer no
+   matter how specific it is. Verified in-browser: unlayered fails, layered wins.
+
+   Restoring block flow reproduces the design's collapsed margins exactly: item→item
+   2px, group-header→first-child 4px, last-child→next-header 4px, label→first-item 2px. */
+@layer components {
+  #nd-sidebar [data-radix-scroll-area-viewport] > div {
+    display: block !important;
+    gap: 0 !important;
+  }
+
+  /* `pt-0.5` adds 2px above each folder's first item on top of that item's own 2px
+     margin; the design has no such padding. */
+  #nd-sidebar [data-radix-scroll-area-viewport] div.flex.flex-col.gap-0\.5 {
+    display: block !important;
+    gap: 0 !important;
+    padding-top: 0 !important;
+  }
+}

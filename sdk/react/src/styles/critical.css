@@ -23,6 +23,9 @@
   --cy-widget-bg: #0056a7;
   --cy-radius: 6px;
   --cy-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --cy-focus: var(--cy-primary);
+  --cy-on-primary: #ffffff;
+  --cy-on-widget-bg: #ffffff;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -30,6 +33,8 @@
     --cy-text: #f3f4f6;
     --cy-muted: #9ca3af;
     --cy-border: #2d3748;
+    --cy-widget-bg: #1f6fd1;
+    --cy-on-widget-bg: #ffffff;
   }
 }
 .cy-banner-wrap,
@@ -203,13 +208,18 @@
   opacity: 0.8;
 }
 .cy-btn:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 .cy-btn-primary {
   background: var(--cy-primary);
-  color: #fff;
+  color: var(--cy-on-primary);
   border: 2px solid var(--cy-primary);
+}
+.cy-btn-primary:hover {
+  opacity: 1;
+  background: var(--cy-primary-hover);
+  border-color: var(--cy-primary-hover);
 }
 .cy-btn-outline {
   background: transparent;
@@ -257,7 +267,7 @@
   opacity: 0.6;
 }
 .cy-banner-close:focus-visible {
-  outline: 2px solid var(--cy-primary);
+  outline: 2px solid var(--cy-focus);
   outline-offset: 2px;
 }
 .cy-banner-footer {

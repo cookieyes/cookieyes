@@ -1,0 +1,116 @@
+---
+title: CSS variables reference
+description: Every --cy-* custom property, generated from the SDK's own source — defaults, dark-mode values, and every element each one controls.
+---
+
+This is a reference, not a guide — for *why* precedence, sanitization, dark-mode conditionality, and auto-contrast work the way they do, see [Theme tokens](/docs/styling/theme-tokens).
+
+## When to use it
+
+Use this page to look up one token's default, its dark-mode value, or every visible element it controls. For precedence, sanitization, dark-mode conditionality, or the auto-contrast derivation, see [Theme tokens](/docs/styling/theme-tokens) — this page doesn't repeat that.
+
+## Basic usage
+
+Every token this SDK reads is `--cy-`-prefixed, with zero exceptions — the table below is the complete list, not a sample.
+
+<CssVariableReferenceTable />
+
+## Behaviour and trade-offs
+
+### Where each token applies
+
+The full reverse index — every selector that consumes each token, and the property it sets — walked mechanically from `cookieyes.css` so it can't drift from the code. Where a change to one token also moves another (an alias, like `--cy-focus` defaulting to `--cy-primary`'s value), that's called out too.
+
+#### `--cy-primary`
+
+<CssVariableConsumers token="--cy-primary" />
+
+#### `--cy-primary-hover`
+
+<CssVariableConsumers token="--cy-primary-hover" />
+
+#### `--cy-bg`
+
+<CssVariableConsumers token="--cy-bg" />
+
+#### `--cy-text`
+
+<CssVariableConsumers token="--cy-text" />
+
+#### `--cy-muted`
+
+<CssVariableConsumers token="--cy-muted" />
+
+#### `--cy-border`
+
+<CssVariableConsumers token="--cy-border" />
+
+#### `--cy-widget-bg`
+
+<CssVariableConsumers token="--cy-widget-bg" />
+
+#### `--cy-radius`
+
+<CssVariableConsumers token="--cy-radius" />
+
+#### `--cy-font`
+
+<CssVariableConsumers token="--cy-font" />
+
+#### `--cy-focus`
+
+<CssVariableConsumers token="--cy-focus" />
+
+#### `--cy-on-primary`
+
+<CssVariableConsumers token="--cy-on-primary" />
+
+#### `--cy-on-widget-bg`
+
+<CssVariableConsumers token="--cy-on-widget-bg" />
+
+### Things no variable controls
+
+Seventeen colour declarations in `cookieyes.css` paint something visible with no `--cy-*` token behind them at all — a harder case than a shared token, because there's no near-miss name to almost find. Each row below names the element in plain language and a working override selector, verified to beat the SDK's own rule outright rather than merely tie on import order.
+
+<HardcodedColorsTable />
+
+The dialog backdrop (first row above) is the strongest candidate for a future `--cy-overlay-bg` token — it's the one most people search for and don't find. Adding a token expands the public contract, so that's out of scope here; it's flagged as a follow-up rather than added silently.
+
+### Machine-readable format (design tools, AI coding assistants)
+
+The table above is also published as a [W3C Design Tokens Community Group](https://design-tokens.github.io/community-group/format/) JSON file, generated from the exact same in-memory data — there is no second parse of `cookieyes.css` and no second sidecar, so the two cannot drift from each other:
+
+**[`https://developer.cookieyes.com/design-tokens/cookieyes.tokens.json`](/design-tokens/cookieyes.tokens.json)**
+
+Point a design tool or a coding assistant at that URL to generate CSS, Figma variables, or a theme object without inventing token names. Two tokens are represented honestly rather than as plain literals: `--cy-focus` is a genuine, untransformed reference (`"$value": "{cy.primary}"`), and `--cy-primary-hover` is a reference *plus* a documented deviation — its `$description` states plainly that the real value is a runtime `color-mix()` transform of `--cy-primary`, with the formula machine-readable under `$extensions.cookieyes.transform`. `--cy-on-primary` and `--cy-on-widget-bg` are marked `computed: true` for the same reason: they're JS-derived at runtime, not static colours, and the shipped default is only accurate for the SDK's own default primary/widget-background colour.
+
+## Complete example
+
+Every token at its default, light and dark — copy either block as a starting point for a `:root` override that survives first paint (see [First paint uses the stylesheet, not your config](/docs/styling/theme-tokens#first-paint-uses-the-stylesheet-not-your-config)).
+
+<TokenDefaultsBlock scheme="light" />
+
+<TokenDefaultsBlock scheme="dark" />
+
+## Common mistakes
+
+**Assuming every visible colour is variable-controlled.**
+Seventeen aren't — see [Things no variable controls](#things-no-variable-controls) above before concluding a colour is unsupported.
+
+**Looking for a `--cy-*` token that isn't `--cy-`-prefixed.**
+There isn't one. Every token this SDK reads carries the prefix, with zero exceptions — the table in [Basic usage](#basic-usage) is the complete list.
+
+**Treating the default shown here as what's currently rendered.**
+The values on this page are the SDK's shipped defaults. Your own `theme` config, if you've set one, already overrides some of them — this page doesn't know what you configured, only what ships without it.
+
+## Across the SDK
+
+The tokens live in `@cookieyes/react` and are used identically by `@cookieyes/nextjs`. The `ThemeConfig` type — the `theme` keys nine of these twelve tokens read from — is defined in `@cookieyes/core` and re-exported, though `core` ships no CSS to apply it to.
+
+## See also
+
+- [Theme tokens](/docs/styling/theme-tokens) — precedence, sanitization, dark-mode conditionality, and scoping different values to different instances
+- [Part & state contract](/docs/styling/part-and-state-contract) — the `data-cy-part`/`data-cy-state` selectors used throughout the override selectors above
+- [Custom CSS](/docs/styling/custom-css) — everything neither tokens nor parts can express
+- [`cookieyes.tokens.json`](/design-tokens/cookieyes.tokens.json) — the machine-readable file described above

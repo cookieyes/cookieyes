@@ -10,8 +10,8 @@ export type OptOutPart = keyof typeof CY_PART.optOut;
 /**
  * Styling passthrough. `className` / `style` target the opt-out card;
  * `classNames` / `styles` target individual parts by name — each merged on top
- * of our defaults. A class you pass always wins over ours (our styles sit in the
- * `cookieyes` cascade layer); an inline `style` wins over any class.
+ * of our defaults. A class you pass always wins over ours (ours are single-class rules with no
+ * `!important`, so yours wins on source order when your sheet loads later); an inline `style` wins over any class.
  */
 export type CookieOptOutProps = {
   className?: string;

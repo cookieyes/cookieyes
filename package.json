@@ -22,6 +22,10 @@
     "dev": "turbo run dev --filter='./sdk/*'",
     "test": "turbo run test --filter='./sdk/*'",
     "typecheck": "turbo run typecheck --filter='./sdk/*'",
+    "dev:web": "pnpm --filter @cookieyes/web dev",
+    "build:web": "turbo run build --filter=@cookieyes/web",
+    "typecheck:web": "pnpm --filter @cookieyes/web typecheck",
+    "check-examples:web": "turbo run check-examples --filter=@cookieyes/web",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format .",
@@ -29,7 +33,13 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter='./sdk/*' && changeset publish"
+    "release": "turbo run build --filter='./sdk/*' && changeset publish",
+    "peer-matrix:derive-check": "node matrix/scripts/derive-check.mjs",
+    "peer-matrix:pack-tarballs": "node matrix/scripts/pack-tarballs.mjs",
+    "peer-matrix:plan": "node matrix/scripts/print-combinations.mjs",
+    "peer-matrix:run": "node matrix/scripts/run-combination.mjs",
+    "peer-matrix:aggregate": "node matrix/scripts/aggregate-results.mjs",
+    "peer-matrix:test": "vitest run matrix/scripts/__tests__"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
@@ -40,6 +50,7 @@
     "rollup": "^4.62.2",
     "rollup-plugin-dts": "^6.4.1",
     "rollup-plugin-esbuild": "^6.2.1",
+    "semver": "^7.7.3",
     "turbo": "^2.10.5",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"

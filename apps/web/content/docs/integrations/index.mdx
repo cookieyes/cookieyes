@@ -1,0 +1,166 @@
+---
+title: Integrations
+description: Popular third-party integrations with CookieYes SDK.
+---
+
+Every integration here is a preset from `@cookieyes/scripts` — a script that stays out of the DOM
+until its category is granted, and that tears itself down (or silences itself) the same way on
+revoke. Start with Google Consent Mode v2 if you run any Google product; it underlies three of the
+vendor pages below. Otherwise, pick your vendor.
+
+<Cards>
+  <Card
+    title="Google Consent Mode v2"
+    description="The seven signals GA4, Google Ads, and Google Tag Manager broadcast automatically, and the advanced/basic trade-off."
+    href="/docs/integrations/google-consent-mode"
+  />
+  <Card
+    icon={
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-block",
+          width: 18,
+          height: 18,
+          backgroundColor: "#E37400",
+          WebkitMaskImage: "url(/figma-logos/ga4.svg)",
+          maskImage: "url(/figma-logos/ga4.svg)",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+    }
+    title="Google Analytics 4"
+    description="Gate GA4 behind analytics consent and push to Google Consent Mode v2."
+    href="/docs/integrations/ga4"
+  />
+  <Card
+    icon={
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-block",
+          width: 18,
+          height: 18,
+          backgroundColor: "#246FDB",
+          WebkitMaskImage: "url(/figma-logos/google-tag-manager.svg)",
+          maskImage: "url(/figma-logos/google-tag-manager.svg)",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+    }
+    title="Google Tag Manager"
+    description="Load GTM after consent and forward category state to the dataLayer."
+    href="/docs/integrations/google-tag-manager"
+  />
+  <Card
+    icon={
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-block",
+          width: 18,
+          height: 18,
+          backgroundColor: "currentColor",
+          WebkitMaskImage: "url(/figma-logos/google-ads.svg)",
+          maskImage: "url(/figma-logos/google-ads.svg)",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+    }
+    title="Google Ads"
+    description="Gate conversion tracking behind advertisement consent and push to Google Consent Mode v2."
+    href="/docs/integrations/google-ads"
+  />
+  <Card
+    icon={
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-block",
+          width: 20,
+          height: 20,
+          backgroundImage: "url(/figma-logos/meta-infinity.png)",
+          backgroundPosition: "50% 53%",
+          backgroundSize: "148%",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+    }
+    title="Meta Pixel"
+    description="Gate the Meta Pixel behind advertisement consent with GatedScript."
+    href="/docs/integrations/meta-pixel"
+  />
+  <Card
+    icon={
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-block",
+          width: 18,
+          height: 18,
+          backgroundColor: "#52BD94",
+          WebkitMaskImage: "url(/figma-logos/microsoft-clarity.svg)",
+          maskImage: "url(/figma-logos/microsoft-clarity.svg)",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+    }
+    title="Microsoft Clarity"
+    description="Hold Clarity's script until analytics consent — it never loads for visitors who decline."
+    href="/docs/integrations/microsoft-clarity"
+  />
+  <Card
+    icon={<img src="/figma-logos/posthog.svg" width={18} height={18} alt="" />}
+    title="PostHog"
+    description="Toggle capture with opt_in_capturing() / opt_out_capturing() from onConsentUpdate."
+    href="/docs/integrations/posthog"
+  />
+  <Card
+    icon={
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-block",
+          width: 18,
+          height: 18,
+          backgroundColor: "currentColor",
+          WebkitMaskImage: "url(/figma-logos/segment.svg)",
+          maskImage: "url(/figma-logos/segment.svg)",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+    }
+    title="Segment"
+    description="Load Segment after analytics consent and clear its anonymous/user IDs on revoke."
+    href="/docs/integrations/segment"
+  />
+</Cards>
+
+Don't see your vendor? [Build a custom integration](/docs/integrations/custom-integration) covers
+gating any script with `customScript()`, or writing a full `Integration` for vendor-managed consent
+APIs — using Mixpanel, which ships no preset here, as the worked example.

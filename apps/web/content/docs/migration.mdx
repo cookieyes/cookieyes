@@ -1,0 +1,343 @@
+---
+title: Migration & deprecations
+description: Move between major versions, and what is deprecated in each.
+---
+
+## When to use it
+
+Read this if you see a `[cookieyes]` deprecation warning in your console, or if you are upgrading from the `createCookieYes()` builder.
+
+You do not need it for a fresh install — [Quick start](/docs/getting-started/quick-start) already uses the current API throughout.
+
+## Basic usage
+
+The single most common migration, builder to config:
+
+```tsx title="app/cookieyes.before.tsx"
+"use client";
+import { createCookieYes } from "@cookieyes/react";
+
+createCookieYes()
+  .mode("self-hosted")
+  .backendURL("https://api.example.com/consent")
+  .regulation("GDPR")
+  .theme({ primaryColor: "#6366F1" })
+  .mount();
+```
+
+```tsx title="app/cookieyes.after.tsx"
+"use client";
+import { initCookieYes } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "self-hosted",
+  apiUrl: "https://api.example.com/consent",
+  regulation: "GDPR",
+  theme: { primaryColor: "#6366F1" },
+});
+```
+
+## Options
+
+Everything deprecated today.
+
+| Deprecated | Replacement | Warns | Removal |
+| --- | --- | --- | --- |
+| `mode: "offline"` | `mode: "cookie-only"` | Once per page load | After 3 releases |
+| `createCookieYes()` builder | `initCookieYes(config)` | Once per session | After 3 releases |
+| `backendURL` | `apiUrl` | Silent | After 3 releases |
+| `overrides.regulation` | top-level `regulation` | Silent | After 3 releases |
+| `builtInIntegrations` | `integrations` with a `@cookieyes/scripts` preset | Once per page load | After 3 releases |
+| `ConsentRuntimeOptions` (type) | `CookieYesConfig` | — (type alias) | After 3 releases |
+
+For the three config-key pairs above (`mode`, `backendURL`, `overrides.regulation`), setting both the old and the new key is safe: the canonical one wins. `builtInIntegrations` is the one exception — see [below](#the-canonical-key-usually-wins).
+
+### Retired builder reference
+
+<Callout type="warn">
+  **Retired.** The chainable `createCookieYes()` builder is deprecated. New setups should call `initCookieYes(config)` and read [Configuration](/docs/getting-started/configuration) instead. This table stays only as a lookup for developers migrating an existing builder-based setup.
+</Callout>
+
+The builder has fifteen setter methods plus `.mount()`. Three of the fifteen actually rename something on the way to a config key — those are flagged below; the rest are a straight 1:1 move from a chained call to an object key.
+
+| Builder method | Config key | Notes |
+| --- | --- | --- |
+| `.mode(m)` | [`mode`](/docs/getting-started/configuration#setup) | Required. Use `"cookie-only"`, not `"offline"` — see the rename below |
+| `.regulation(r)` | [`regulation`](/docs/getting-started/configuration#setup) | Which privacy law applies |
+| `.colorScheme(s)` | [`colorScheme`](/docs/getting-started/configuration#appearance) | Light / dark / system |
+| `.theme(t)` | [`theme`](/docs/getting-started/configuration#theme) | Colors and radius for the built-in UI |
+| `.i18n(i)` | [`i18n`](/docs/getting-started/configuration#i18n) | Translations and language detection |
+| `.backend(b)` | [`backend`](/docs/getting-started/configuration#storage-and-blocking) | Custom persistence adapter |
+| `.backendURL(url)` | [`apiUrl`](/docs/getting-started/configuration#storage-and-blocking) | **Renamed.** Where consent decisions are POSTed |
+| `.apiKey(k)` | [`apiKey`](/docs/getting-started/configuration#storage-and-blocking) | Sent with self-hosted requests |
+| `.blockNetwork(c)` | [`networkBlocker`](/docs/getting-started/configuration#networkblocker) | **Renamed.** Blocks matching requests until consent |
+| `.reloadOnRevoke(v)` | [`reloadOnRevoke`](/docs/getting-started/configuration#callbacks) | Reload the page when a category is revoked |
+| `.integrations(list)` | writes the deprecated `builtInIntegrations`, **not** current `integrations` | **Renamed — and a trap.** Stopped a few built-in vendors cleanly on revoke; see below |
+| `.customStopHandlers(list)` | [`customStopHandlers`](/docs/getting-started/configuration#callbacks) | Stop instructions for your own scripts |
+| `.categories(list)` | [`categories`](/docs/getting-started/configuration#consent-categories) | Your own category taxonomy |
+| `.onConsentReady(fn)` | [`onConsentReady`](/docs/getting-started/configuration#callbacks) | Fires once, after initial state is known |
+| `.onConsentUpdate(fn)` | [`onConsentUpdate`](/docs/getting-started/configuration#callbacks) | Fires on every saved change |
+| `.mount()` | — | No equivalent. `initCookieYes(config)` registers directly — there is no terminal call |
+
+### What the builder never had
+
+Three capabilities exist only in the config object. The builder chain has no method for any of them, at any version — they aren't things migration removes, they're things migration unlocks:
+
+- **[`region`](/docs/getting-started/configuration#region)** — automatic, geo-based detection of which privacy law applies, instead of one hardcoded `regulation` for every visitor. This is the biggest single reason to move off the builder even if nothing else about your setup needs to change.
+- **`googleConsentMatch`** — how to combine multiple categories that map to the same Google Consent Mode signal (`"all"` vs `"any"`); documented in [Storage and blocking](/docs/getting-started/configuration#storage-and-blocking).
+- **`integrations: Integration[]`**, the current preset-based shape — ready-made loaders like `metaPixel()` and `segment()` from [`@cookieyes/scripts`](/docs/integrations). The builder's `.integrations(list)` only ever wrote the old stop-handler shape (see below); it has no path to this one.
+
+## Behaviour and trade-offs
+
+### The canonical key usually wins
+
+Set both a deprecated key and its replacement and the **canonical one wins**, with a single warning logged — true for `backendURL`/`apiUrl`, `overrides.regulation`/`regulation`, and `mode: "offline"`/`"cookie-only"`. So you can add the new key before removing the old one — useful when the config is assembled from several places.
+
+**`integrations` and `builtInIntegrations` are the one exception.** Setting both doesn't pick a winner — **both take effect at the same time**, independently. See [Setting both at once](#setting-both-integrations-and-builtinintegrations) below.
+
+### `"offline"` → `"cookie-only"` is a pure rename
+
+Identical behaviour. The rename exists because "offline" implied the SDK stopped working without a network, when it actually means consent is stored only in a cookie. Nothing else changes — same events, same storage, same everything, just a clearer name.
+
+A minimal before-and-after, in both forms:
+
+```tsx title="app/mode.before.tsx"
+"use client";
+import { createCookieYes } from "@cookieyes/react";
+import { initCookieYes } from "@cookieyes/nextjs";
+
+// Builder form
+createCookieYes().mode("offline").mount();
+
+// Config-object form
+initCookieYes({ mode: "offline" });
+```
+
+```tsx title="app/mode.after.tsx"
+"use client";
+import { createCookieYes } from "@cookieyes/react";
+import { initCookieYes } from "@cookieyes/nextjs";
+
+// Builder form
+createCookieYes().mode("cookie-only").mount();
+
+// Config-object form
+initCookieYes({ mode: "cookie-only" });
+```
+
+```text title="Deprecation warning"
+[cookieyes] mode: "offline" has been renamed to "cookie-only". Both do exactly the same thing, but "offline" is deprecated and will be removed in 3 releases. Update to .mode("cookie-only") (or { mode: "cookie-only" }).
+```
+
+<Callout type="warn">
+  Some older material still shows `mode: "offline"` as the canonical value. It is not — `"cookie-only"` is. Both work today.
+</Callout>
+
+This warning fires **once per page load**, not on every `.mode("offline")` call or every render. A quiet console after the first load doesn't mean the value has been fixed — it means the warning already ran once this page load. Removal is **after 3 releases**, same as everything else on this page.
+
+### `integrations` changed meaning — read this one carefully
+
+This is the only deprecation where a key was **reused** rather than renamed, so a config that keeps compiling can change behaviour. There have been three states of this field; know which one your config is in.
+
+1. **Original** — `integrations: BuiltInIntegration[]`, e.g. `{ vendor: "meta" }`. A list of first-party vendors to stop cleanly (no reload) when their category is revoked.
+2. **Renamed (deprecated today)** — the exact same shape, moved to `builtInIntegrations`. If your config still has `builtInIntegrations: [{ vendor: "meta" }]`, this is where a first migration left you.
+3. **Current** — `integrations: Integration[]`, built from presets in `@cookieyes/scripts` (e.g. `metaPixel({ pixelId: "..." })`). The name `integrations` was reused for this new, unrelated shape — landing here is not "go back to state 1," it's a different value entirely.
+
+If you're coming from the builder table above: `.integrations(list)` only ever wrote state 2. It has no way to reach state 3 — that's the trap.
+
+| Field | Then | Now |
+| --- | --- | --- |
+| `integrations` | `BuiltInIntegration[]` — vendor stop-handlers, e.g. `{ vendor: "meta" }` | `Integration[]` — loader presets from `@cookieyes/scripts` |
+| `builtInIntegrations` | did not exist | the old vendor-stop-handler form, deprecated |
+
+{/* check="false": this is the OLD shape being migrated away from. `integrations`
+    now expects `Integration[]`, so by design this no longer type-checks — that is
+    what the migration is for. */}
+```tsx title="app/integrations.before.tsx" check="false"
+"use client";
+
+import { initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [{ vendor: "meta" }],
+});
+```
+
+```tsx title="app/integrations.after.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/nextjs";
+import { metaPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [metaPixel({ pixelId: "123456" })],
+});
+```
+
+If you only need the stop behaviour and not the loader, move the old value to `builtInIntegrations` — it still works, with a warning:
+
+```tsx title="app/stop-only.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "cookie-only",
+  // Legacy shape: stop-handling only, no loading.
+  builtInIntegrations: [{ vendor: "meta" }],
+});
+```
+
+The new `integrations` presets both load the vendor after consent and stop it on withdrawal, so most apps want the preset.
+
+```text title="Deprecation warning"
+[cookieyes] `builtInIntegrations` (formerly the `integrations` field) is deprecated and will be removed after three release cycles. Use the `integrations` field with a preset from `@cookieyes/scripts` instead.
+```
+
+This warning fires once per page load, same as the `mode` one above. Removal is **after three release cycles** — this one isn't open-ended, it's on the same clock as every other deprecation on this page.
+
+### Setting both `integrations` and `builtInIntegrations`
+
+Unlike every other pair on this page, these two don't have a "canonical wins" rule. Set both, and **both run** — independently:
+
+- `builtInIntegrations` still drives the legacy stop-handler path (through the consent manager).
+- `integrations` still drives the new loader engine (through the script-integration runner).
+
+Nothing picks between them. If the same vendor id shows up in both lists, you get a separate warning:
+
+```text title="Overlap warning"
+[cookieyes] "meta" is configured as both a script integration and a built-in integration — remove one to avoid loading it twice (e.g. double-counted events).
+```
+
+That's not a hypothetical — it's exactly what happens if you add `metaPixel()` to `integrations` without also deleting the matching `{ vendor: "meta" }` entry from `builtInIntegrations`. Remove whichever one you didn't mean to keep; don't rely on one silently overriding the other, because neither does.
+
+### Core users: unwrap `overrides` and rename `backendURL`
+
+```diff title="Core config diff"
+-getOrCreateConsentRuntime({
++initCookieYes({
+   mode: "self-hosted",
+-  backendURL: "https://api.example.com/consent",
++  apiUrl: "https://api.example.com/consent",
+-  overrides: { regulation: "GDPR" },
++  regulation: "GDPR",
+ });
+```
+
+`getOrCreateConsentRuntime` is **not** deprecated — `initCookieYes` is an alias of it in core, same singleton and same return value. Either name works; `initCookieYes` is preferred for consistency with the React packages.
+
+### The builder throws before it warns
+
+The builder validates on `.mount()`:
+
+```text title="Builder errors"
+Error: createCookieYes(): .mode() is required before .mount(). Call .mode('cookie-only') or .mode('self-hosted').
+Error: createCookieYes(): .mode('self-hosted') requires either .backend(...) or .backendURL(...).
+Error: [cookieyes] initCookieYes() called more than once.
+```
+
+`initCookieYes` has no `.mount()`, so the first two cannot happen — `mode` is a required field the type system enforces.
+
+### Deprecation policy
+
+Deprecated surface is removed **after three release cycles**, and every removal is a breaking change with a changeset and a major bump. Warnings fire once per page load (or session, for the builder) so a deprecated key does not flood the console.
+
+The styling contract — `data-cy-part`, `data-cy-state`, `--cy-*`, `.cy-*` — is public API under the same policy. Renames there are breaking.
+
+## Complete example
+
+A fully migrated config with every deprecated form removed:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/nextjs";
+import { metaPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  // was mode: "offline"
+  mode: "cookie-only",
+
+  // was overrides: { regulation: "GDPR" }
+  regulation: "GDPR",
+
+  // was builtInIntegrations / the old integrations shape
+  integrations: [metaPixel({ pixelId: "123456" })],
+
+  // was .blockNetwork(...)
+  networkBlocker: {
+    rules: [{ id: "ga", domain: "google-analytics.com", category: "analytics" }],
+  },
+
+  colorScheme: "system",
+  theme: { primaryColor: "#1863dc" },
+  reloadOnRevoke: true,
+});
+```
+
+Self-hosted, migrated:
+
+```tsx title="app/cookieyes-self-hosted.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "self-hosted",
+  // was backendURL
+  apiUrl: "https://api.example.com/v1/consent",
+  apiKey: process.env.NEXT_PUBLIC_CONSENT_KEY,
+  regulation: "GDPR",
+});
+```
+
+## Common mistakes
+
+**`[cookieyes] mode: "offline" has been renamed to "cookie-only".`**
+Rename the value. Nothing else changes.
+
+**`[cookieyes] initCookieYes() called more than once.`**
+Two modules call the builder, or it is inside a component body rather than at module scope. `initCookieYes` at module scope avoids this.
+
+**`[cookieyes] \`builtInIntegrations\` (formerly the \`integrations\` field) is deprecated`**
+Move to an `@cookieyes/scripts` preset, or keep the old value under `builtInIntegrations` for now.
+
+**A vendor stopped loading after upgrading, with no error.**
+The `integrations` key changed shape. An old `{ vendor: ... }` value there is no longer a stop-handler registration.
+
+**A vendor's events look double-counted after adding a script integration.**
+The same vendor id is configured in both `integrations` and `builtInIntegrations` — unlike other pairs on this page, they don't have a "canonical wins" rule, so both ran. Remove the vendor from whichever list you didn't mean to keep.
+
+**Both `apiUrl` and `backendURL` set, and `backendURL` seems ignored.**
+Correct — the canonical key wins. Remove `backendURL`.
+
+**`Error: createCookieYes(): .mode() is required before .mount().`**
+Builder-only. Migrating to `initCookieYes` makes it impossible.
+
+**A type error on `ConsentRuntimeOptions`.**
+It is an alias of `CookieYesConfig`. Rename the import.
+
+## Across the SDK
+
+Deprecation warnings live in `@cookieyes/core` and are called by both `core` and `react`, so wording and once-per-page behaviour are identical no matter which package reads the setting. `@cookieyes/nextjs` mirrors the `react` surface — a public export added to one is added to the other, enforced by a test — so migrations apply equally to both.
+
+### What doesn't change
+
+Migrating touches configuration, not the rest of your setup:
+
+- **Components, hooks, styling, translations, and category configuration are unaffected.** `<CookieBanner />`, `useConsent()`, the `data-cy-*` styling contract, `i18n`, and `categories` all work exactly as they do today — none of that is part of this migration.
+- **Most settings keep their exact name.** Of the fifteen builder methods, only three rename anything on the way to a config key (`backendURL`, `blockNetwork`, and the `integrations` trap above) — everything else is a straight move from a chained call to an object key with the same name.
+- **The same `CookieYesConfig` object works, unchanged, across `@cookieyes/core`, `@cookieyes/react`, and `@cookieyes/nextjs`.** Migrating for one package is migrating for all three — there's nothing package-specific to relearn.
+
+### How long this takes
+
+For a typical setup — one `createCookieYes()` call, no custom `backend` adapter, no old-style `integrations` vendor list — migrating is a rename-and-flatten exercise: swap the chain for an object literal, rename `backendURL` → `apiUrl` and `blockNetwork` → `networkBlocker`, drop `.mount()`. Budget **15–30 minutes**. It runs longer only if you're also carrying an old `integrations: [{ vendor: ... }]` or `builtInIntegrations` list that needs a real preset swap, not just a rename.
+
+## See also
+
+- [Configuration](/docs/getting-started/configuration) — the current option reference
+- [Integrations](/docs/integrations) — the preset-based loader shape `integrations` now expects
+- [Troubleshooting](/docs/troubleshooting) — other console messages
+- [Installation](/docs/getting-started/installation) — current package versions
