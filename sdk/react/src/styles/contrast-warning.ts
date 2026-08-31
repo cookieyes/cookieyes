@@ -2,7 +2,7 @@ import type { ThemeVars } from "./tokens.js";
 import { contrastRatio } from "./tokens.js";
 
 const AA_NORMAL_TEXT = 4.5;
-const DOCS_URL = "https://developer.cookieyes.com/docs/styling/css-variables#contrast";
+const DOCS_URL = "https://developer.cookieyes.com/docs/accessibility#contrast-is-yours";
 const warned = new Set<string>();
 
 /**
