@@ -2,9 +2,14 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, integration/next-release]
   pull_request:
-    branches: [main]
+    # `integration/next-release` is included so a feature PR aimed at the
+    # integration branch still gets lint/typecheck/build/test — without it,
+    # only the path-filtered peer-matrix workflow (which has no `branches:`
+    # filter) runs, and the integration branch accumulates merges that this
+    # pipeline never checked.
+    branches: [main, integration/next-release]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
