@@ -103,6 +103,10 @@ jobs:
     name: ${{ matrix.combo }}
     needs: [plan, build-sdk]
     runs-on: ubuntu-latest
+    # A leg is ~40s of real work. Generous ceiling, but low enough that a hang
+    # (e.g. an orphaned `next start` holding the process open) fails in minutes
+    # instead of sitting on a runner for GitHub's 6-hour default.
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:

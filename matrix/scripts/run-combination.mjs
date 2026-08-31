@@ -98,13 +98,47 @@ async function waitForServer(port, timeoutMs) {
   return false;
 }
 
+/**
+ * Tears down the `next start` server tree.
+ *
+ * `pnpm run start` is a wrapper: it spawns `next start` as its own child, so
+ * signalling only the direct child left `next-server` orphaned, still holding
+ * this process's stdout/stderr pipes open. Node then kept its event loop alive
+ * and the job hung after every step had already passed — 37s of work followed
+ * by an 18-minute stall, ended only by the runner's own orphan cleanup. So:
+ * drop the pipes, signal the whole process group (negative pid, available
+ * because the child was spawned `detached`), and escalate to SIGKILL if the
+ * group ignores SIGTERM.
+ */
 function killProcessTree(child) {
-  if (!child || child.killed || child.exitCode !== null) return;
-  try {
-    child.kill("SIGTERM");
-  } catch {
-    // Already gone.
+  if (!child) return;
+  // Release the pipes first — this alone is what unblocks process exit.
+  child.stdout?.destroy();
+  child.stderr?.destroy();
+  if (child.killed || child.exitCode !== null) return;
+
+  const signalGroup = (signal) => {
+    try {
+      process.kill(-child.pid, signal);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  if (!signalGroup("SIGTERM")) {
+    try {
+      child.kill("SIGTERM");
+    } catch {
+      // Already gone.
+    }
   }
+
+  // Don't hold the event loop open waiting for the escalation timer, or for
+  // the child itself, if the group is slow to die.
+  const escalation = setTimeout(() => signalGroup("SIGKILL"), 5_000);
+  escalation.unref();
+  child.unref();
 }
 
 /** Runs the jsdom behaviour test (Test B) via vitest's JSON reporter, mapped to named assertions. */
@@ -253,6 +287,9 @@ export async function runCombination({ comboId, tarballsPath, tarballsDir, logsA
     serverProcess = spawn("pnpm", ["run", "start"], {
       cwd: appDir,
       stdio: ["ignore", "pipe", "pipe"],
+      // Process-group leader, so killProcessTree can signal `next start` too
+      // and not just the `pnpm run start` wrapper — see there for why.
+      detached: true,
     });
     let serverLog = "";
     serverProcess.stdout?.on("data", (d) => {
