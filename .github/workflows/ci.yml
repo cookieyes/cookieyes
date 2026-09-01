@@ -15,6 +15,10 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege for GITHUB_TOKEN: both jobs only read the repository.
+permissions:
+  contents: read
+
 jobs:
   peer-deps-derive-check:
     name: Peer-dependency matrix derive-check

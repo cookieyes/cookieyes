@@ -33,6 +33,12 @@ concurrency:
   group: peer-matrix-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege for GITHUB_TOKEN: every job here only reads the repository.
+# Any job needing more declares it itself (see publish-results below), which
+# also keeps that elevation visible in one place.
+permissions:
+  contents: read
+
 jobs:
   derive-check:
     name: Derive-from-peerDeps enforcement
