@@ -57,6 +57,7 @@ export function renderPackageJson(packageJsonText, { tarballs, versions }) {
     __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
     __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
     __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+    __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
     __NEXT_VERSION__: versions.next,
     __REACT_VERSION__: versions.react,
     __REACT_DOM_VERSION__: versions.reactDom,

@@ -30,6 +30,10 @@ const PACKAGES = [
   { name: "@cookieyes/react", dir: join(repoRoot, "sdk", "react") },
   { name: "@cookieyes/nextjs", dir: join(repoRoot, "sdk", "nextjs") },
   { name: "@cookieyes/test", dir: join(repoRoot, "sdk", "test") },
+  // Not imported by the example app, but @cookieyes/nextjs depends on it, so it
+  // must be packed and pinned like the rest — otherwise pnpm resolves that one
+  // nested dependency from the registry (see scaffold-example-app.mjs's header).
+  { name: "@cookieyes/scripts", dir: join(repoRoot, "sdk", "scripts") },
 ];
 
 function parseArgs(argv) {
