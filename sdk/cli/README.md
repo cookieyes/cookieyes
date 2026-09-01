@@ -27,7 +27,7 @@
 
 ---
 
-> Once scaffolded, see the [decision tree](https://developer.cookieyes.com/docs/getting-started/which-api)
+> Once scaffolded, see the [decision tree](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/which-api.mdx)
 > for which API to use to read consent status in your code.
 
 ## Why use the CLI?
@@ -130,7 +130,7 @@ renders `<CookieBanner />`, `<CookiePreferences />`, and `<RecallButton />`.
 1. Start your dev server. The consent banner appears on first load.
 2. Review the generated `consent-manager` component and tune the `initCookieYes({...})` config —
    theming, `i18n`, self-hosted persistence. Full options:
-   [Configuration](https://developer.cookieyes.com/docs/getting-started/configuration).
+   [Configuration](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx).
 3. For framework-specific details (SSR, Pages Router, CCPA opt-out), see the adapter README:
    [`@cookieyes/nextjs`](https://github.com/cookieyes/cookieyes/tree/main/sdk/nextjs) ·
    [`@cookieyes/react`](https://github.com/cookieyes/cookieyes/tree/main/sdk/react).
@@ -168,7 +168,7 @@ Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
 
 - [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
 - Email — [support@cookieyes.com](mailto:support@cookieyes.com).
-- [Full documentation](https://developer.cookieyes.com/docs/getting-started/configuration).
+- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx).
 
 _(A community chat channel is on the roadmap.)_
 

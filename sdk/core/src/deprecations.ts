@@ -13,7 +13,7 @@ export function _warnOfflineModeDeprecated(): void {
   console.warn(
     '[cookieyes] mode: "offline" has been renamed to "cookie-only". Both do exactly ' +
       'the same thing, but "offline" is deprecated and will be removed after three release cycles. ' +
-      "See https://developer.cookieyes.com/docs/migration for the full migration guide. " +
+      "See https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx for the full migration guide. " +
       'Update to .mode("cookie-only") (or { mode: "cookie-only" }).',
   );
 }
@@ -39,7 +39,7 @@ export function _warnBuiltInIntegrationsDeprecated(): void {
     "[cookieyes] `builtInIntegrations` (formerly the `integrations` field) is deprecated " +
       "and will be removed after three release cycles. Use the `integrations` field with a " +
       "preset from `@cookieyes/scripts` instead. See " +
-      "https://developer.cookieyes.com/docs/migration for the full migration guide.",
+      "https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx for the full migration guide.",
   );
 }
 

@@ -134,7 +134,7 @@ export type CookieYesRuntime = {
  * {@link initCookieYes}, which takes one canonical `CookieYesConfig` object.
  * The builder still works but will be removed after three release cycles, per
  * the SDK deprecation policy. Migration guide:
- * https://developer.cookieyes.com/docs/migration
+ * https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx
  */
 export type Builder = {
   mode: (m: RuntimeMode) => Builder;
@@ -195,7 +195,7 @@ function warnBuilderDeprecated(): void {
         "SDK with `initCookieYes(config)` — one canonical config object instead of a " +
         "chain. The builder will be removed after three release cycles, per the SDK " +
         "deprecation policy. Migration guide: " +
-        "https://developer.cookieyes.com/docs/migration",
+        "https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx",
     );
   }
 }
@@ -204,7 +204,7 @@ function warnBuilderDeprecated(): void {
  * @deprecated Use {@link initCookieYes} with a canonical `CookieYesConfig`
  * object instead of the builder chain. Still functional, but removed after
  * three release cycles per the SDK deprecation policy. Migration guide:
- * https://developer.cookieyes.com/docs/migration
+ * https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx
  */
 export function createCookieYes(): Builder {
   warnBuilderDeprecated();
