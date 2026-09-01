@@ -22,7 +22,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#pages-router">Pages Router</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="https://developer.cookieyes.com/docs/getting-started/configuration">Docs</a>
+  <a href="https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx">Docs</a>
 </p>
 
 ---
@@ -83,7 +83,7 @@ Because `initCookieYes()` and the components are client-side, this file **must**
 > `@cookieyes/react` verbatim, so the same guidance applies: **`useConsent()`**
 > in client components, and for Server Components or route handlers (no React
 > hooks available), read the raw cookie with `parseCookie` from
-> `@cookieyes/core`. See the [shared decision tree](https://developer.cookieyes.com/docs/getting-started/which-api)
+> `@cookieyes/core`. See the [shared decision tree](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/which-api.mdx)
 > and [`@cookieyes/react`'s Hooks section](../react/README.md#hooks) for the
 > full low-level surface.
 
@@ -328,7 +328,7 @@ It also adds **server-only** exports on their own subpath, kept out of the `"use
 | `@cookieyes/nextjs/server` | `getServerConsent(options?)` | Reads the request's cookies and returns a returning visitor's stored decision (or `null`), for `<CookieYesProvider initialConsent>` |
 | `@cookieyes/nextjs/server` | `<GoogleConsentMode />` | Renders the Google Consent Mode deny-by-default into the page `<head>` (see below) |
 
-- Full option reference: **[Configuration](https://developer.cookieyes.com/docs/getting-started/configuration)**.
+- Full option reference: **[Configuration](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx)**.
 - Component/hook reference: the **[`@cookieyes/react` README](https://github.com/cookieyes/cookieyes/tree/main/sdk/react#readme)**.
 
 ## Troubleshooting
@@ -355,7 +355,7 @@ Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
 
 - [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
 - Email — [support@cookieyes.com](mailto:support@cookieyes.com).
-- [Full documentation](https://developer.cookieyes.com/docs/getting-started/configuration).
+- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx).
 
 _(A community chat channel is on the roadmap.)_
 

@@ -82,7 +82,7 @@ This is a genuine tension with consent: you must pre-authorise in your CSP a ven
 The SDK listens for `securitypolicyviolation` events and logs a warning on any `style-src` violation:
 
 ```text title="Console warning"
-[cookieyes] A style was blocked by your Content-Security-Policy (style-src). CookieYes's own styling doesn't require "unsafe-inline" or a nonce, so this is likely unrelated to this SDK — check your own inline styles or third-party scripts. See https://developer.cookieyes.com/docs/styling/csp for the exact policy this SDK needs.
+[cookieyes] A style was blocked by your Content-Security-Policy (style-src). CookieYes's own styling doesn't require "unsafe-inline" or a nonce, so this is likely unrelated to this SDK — check your own inline styles or third-party scripts. See https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/styling/csp.mdx for the exact policy this SDK needs.
 ```
 
 This is a safety net, not an error report. Since the SDK's styling cannot itself violate `style-src`, a violation means something else on the page — your own inline styles, a third-party script, or a regression in the SDK. The warning surfaces it rather than letting it fail silently.
