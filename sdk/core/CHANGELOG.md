@@ -1,5 +1,78 @@
 # @cookieyes/core
 
+## 0.5.0
+
+### Minor Changes
+
+- e2baba4: Remove three configuration options that were declared in the public types but read by nothing: `consentCategories`, `theme.buttonVariant`, and `theme.widgetPosition`.
+
+  None of the three ever had any effect. `consentCategories` was copied into the normalized config and then never consulted; `buttonVariant` and `widgetPosition` appeared only in the `ThemeConfig` declaration — no component, hook, or stylesheet rule read either. Because they were inert, **removing them changes no runtime behaviour**: code that set them behaved exactly as code that omitted them.
+
+  TypeScript users who passed any of the three will now see a type error. The fix is to delete the property — there is no replacement, because there was never an implementation. For the two theme fields, the styling you may have been attempting is available through the `cy-*` classes and `--cy-*` custom properties; see the styling documentation.
+
+  Also removes a dead `.cy-widget[data-pos="bottom-right"]` rule from the stylesheet. `RecallButton` always emits `data-pos="bottom-left"`, so the rule could never match. The recall widget's position is unchanged (bottom-left) and remains non-configurable.
+
+- e2baba4: Remove the `strategy` prop from `<GatedScript />` and the matching `strategy` field from `ScriptEntry`.
+
+  The prop accepted `"afterConsent" | "lazyOnce"` and was passed all the way through `registerScript` into the script registry — where nothing ever read it. Both values produced identical behaviour: the script is injected once its category is granted, and injection happens the same way regardless. There was no lazy path.
+
+  Because the two values were indistinguishable at runtime, **removing the prop changes no behaviour**. Code that set either value behaved exactly as code that set neither. TypeScript users passing `strategy` will now see a type error; the fix is to delete the prop.
+
+  If you need a genuine loading distinction — load immediately versus only after consent, and what happens when consent is withdrawn — that is what the `integrations` config option and the `@cookieyes/scripts` presets provide.
+
+- e2baba4: Explicit theme colors now survive dark mode, and three new styling tokens.
+
+  **Behaviour change.** `backgroundColor`, `textColor`, `mutedTextColor` and `borderColor` were
+  previously discarded whenever dark mode was active — the SDK's dark palette overwrote them
+  unconditionally, and there was no way to set a dark-mode value at all. They are now respected in
+  both color schemes. If you set any of those four _and_ relied on dark mode replacing them, your
+  banner will render differently after this release; remove the setting to get the old dark palette
+  back.
+
+  **New tokens.** A dedicated focus-ring token (`--cy-focus` / `theme.focusColor`) so the keyboard
+  focus indicator can be set independently of the brand color; a configurable, dark-mode-aware
+  background for the floating recall widget (`--cy-widget-bg` / `theme.widgetBackgroundColor`); and
+  two derived readable-text tokens (`--cy-on-primary`, `--cy-on-widget-bg`) so a brand color set
+  without a matching foreground still produces legible text rather than white-on-white.
+
+  All new tokens default to values that reproduce today's rendering exactly.
+
+- e2baba4: Make nine previously hardcoded English strings translatable. Until now a fully translated site still announced these in English to screen reader users, and showed English text inside an otherwise translated interface.
+
+  The strings are: the visible "Always Active" label shown on a required category; the accessible names of the preferences dialog, the opt-out dialog and the floating recall button; both pieces of `<GatedFrame />`'s blocked-content placeholder; and the accessible names of the three close buttons — on the banner (rendered under CCPA), the preferences dialog and the opt-out dialog.
+
+  The close buttons were the most consequential of the nine. Each renders only an `aria-hidden` icon, so the hardcoded English label was the button's entire accessible name — on a fully translated site, a screen reader still announced "Close".
+
+  Nine keys are added to `TranslationMap` — `alwaysActive`, `preferencesDialogLabel`, `optOutDialogLabel`, `recallButtonLabel`, `bannerCloseLabel`, `preferencesCloseLabel`, `optOutCloseLabel`, and a `gatedFrame` group holding `placeholder` and `action` — and all five shipped languages (English, German, Spanish, French, Italian) supply them. `gatedFrame.placeholder` substitutes `{category}`, following the same placeholder convention as `optOut.successCountdown`'s `{seconds}`.
+
+  The recall button's tooltip was a second, separate hardcoded copy of its label; it now reads the same key.
+
+  Because the keys are required on `TranslationMap`, every shipped language must supply them — a missing translation is a build error rather than a silent English fallback. If you declare a full `TranslationMap` of your own you will need to add the nine keys; if you pass a partial object to `i18n.messages` (the usual case) nothing changes, and anything you omit still falls back to English.
+
+### Patch Changes
+
+- ae888a9: Give every documentation link a working destination.
+
+  Three deprecation warnings previously gave a reader nowhere useful to go: the `mode: "offline"` rename and the `builtInIntegrations` warning carried no link at all, and the builder deprecation pointed at a raw Markdown file in the GitHub repository. All three now link to the [migration guide](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx).
+
+  The package READMEs linked to a repository copy of the "Which API should I use?" decision tree that had drifted out of date — it still told Next.js users to read server-side consent with `parseCookie()` from `@cookieyes/core`, when the correct API is `getServerConsent()` from `@cookieyes/nextjs/server`. Every README now links to the maintained copy, and the older repository copy is a pointer rather than a second source of truth.
+
+  Links point at the documentation sources in this repository. They will move to the documentation site once it is published.
+
+  Documentation links only; no behaviour or API changes.
+
+- e2baba4: State a concrete removal timeline everywhere a deprecation promises one.
+
+  The `builtInIntegrations` warning said "a future release" while the other two warnings committed to three release cycles. Every deprecation now says "after three release cycles" — the runtime warnings _and_ the `@deprecated` TSDoc on `mode: "offline"` and `builtInIntegrations`, which is what shows in an editor hover tooltip and had been left saying "a future release". Message and doc-comment text only — no behaviour change.
+
+- e2baba4: `resetConsentRuntime()` now un-patches `fetch`, `XMLHttpRequest` and `navigator.sendBeacon` before dropping the runtime.
+
+  The network blocker is a module-level singleton, and installing a second one while the first is active is a deliberate no-op. Because `resetConsentRuntime()` cleared the runtime without uninstalling the blocker, an application that reset and re-initialised was left in a state that looked correct and was not: the previously patched transports stayed in place, still consulting the **old** manager's committed-consent closure, while the new `initCookieYes()` call's `networkBlocker` rules were silently discarded. Nothing was logged.
+
+  Only `@cookieyes/test`'s `resetConsentTestState()` uninstalled the blocker, so test suites were unaffected — this reached applications that call the public `resetConsentRuntime()` themselves, for example when tearing down and rebuilding consent on a route change.
+
+  The uninstall is idempotent, so calling it when nothing was installed remains a no-op, and `resetConsentTestState()`'s existing uninstall-first ordering is unchanged.
+
 ## 0.4.0
 
 ### Minor Changes
