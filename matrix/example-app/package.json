@@ -32,7 +32,8 @@
       "@cookieyes/core": "__TARBALL_CORE__",
       "@cookieyes/react": "__TARBALL_REACT__",
       "@cookieyes/nextjs": "__TARBALL_NEXTJS__",
-      "@cookieyes/test": "__TARBALL_TEST__"
+      "@cookieyes/test": "__TARBALL_TEST__",
+      "@cookieyes/scripts": "__TARBALL_SCRIPTS__"
     }
   }
 }
