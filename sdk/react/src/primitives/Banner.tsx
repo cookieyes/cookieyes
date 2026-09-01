@@ -196,8 +196,9 @@ const Close = forwardRef<HTMLButtonElement, ActionProps>(function BannerClose(
   ref,
 ) {
   const { acceptAll } = useConsentActions();
+  const t = useTranslations();
   const behavior = {
-    "aria-label": ariaLabel ?? "Close",
+    "aria-label": ariaLabel ?? t.bannerCloseLabel,
     "data-cy-part": CY_PART.banner.close,
     onClick: chain(onClick, acceptAll),
     ...rest,

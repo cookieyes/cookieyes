@@ -1,0 +1,169 @@
+{
+  "$schema": "https://cookieyes.dev/schemas/peer-matrix-results.schema.json",
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-27T10:14:00.000Z",
+  "commit": "9c27140abc1234def5678aaaaaaaaaaaaaaaaaa",
+  "matrixConfigHash": "sha256:fixturehash0000000000000000000000000000000000000000000000000",
+  "subset": "full",
+  "dimensions": {
+    "varied": ["framework"],
+    "fixed": { "node": "20", "packageManager": "pnpm@10.22.0", "moduleResolution": "bundler" }
+  },
+  "combinations": [
+    {
+      "id": "next-14.0.0-react-18.0.0",
+      "role": "floor",
+      "label": "Next 14.0.0 + React 18.0.0 (declared floor)",
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
+      "requested": {
+        "next": "14.0.0",
+        "react": "18.0.0",
+        "reactDom": "18.0.0",
+        "typesReact": "^18.3.0",
+        "typesReactDom": "^18.3.0"
+      },
+      "resolved": {
+        "next": "14.0.0",
+        "react": "18.0.0",
+        "reactDom": "18.0.0",
+        "typesReact": "18.3.12",
+        "typesReactDom": "18.3.5"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-08-27T10:00:12.000Z",
+      "finishedAt": "2026-08-27T10:03:41.000Z",
+      "durationMs": 209000,
+      "steps": {
+        "install": { "outcome": "pass" },
+        "typePackageCheck": { "outcome": "pass" },
+        "typecheck": { "outcome": "pass" },
+        "build": { "outcome": "pass" },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            { "name": "fresh-visitor-banner-html-present", "outcome": "pass" },
+            { "name": "returning-visitor-banner-absent", "outcome": "pass" },
+            { "name": "returning-visitor-cookie-value-correct", "outcome": "pass" }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            { "name": "asChild-ref-populated-with-real-dom-node", "outcome": "pass" },
+            { "name": "asChild-outer-and-inner-ref-composed", "outcome": "pass" }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "run-118/next-14.0.0-react-18.0.0.log"
+    },
+    {
+      "id": "next-15.5.4-react-18.3.1",
+      "role": "middle",
+      "label": "Next 15.5.4 + React 18.3.1",
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
+      "requested": {
+        "next": "15.5.4",
+        "react": "18.3.1",
+        "reactDom": "18.3.1",
+        "typesReact": "^18.3.0",
+        "typesReactDom": "^18.3.0"
+      },
+      "resolved": {
+        "next": "15.5.4",
+        "react": "18.3.1",
+        "reactDom": "18.3.1",
+        "typesReact": "18.3.12",
+        "typesReactDom": "18.3.5"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-08-27T10:03:45.000Z",
+      "finishedAt": "2026-08-27T10:07:02.000Z",
+      "durationMs": 197000,
+      "steps": {
+        "install": { "outcome": "pass" },
+        "typePackageCheck": { "outcome": "pass" },
+        "typecheck": { "outcome": "pass" },
+        "build": { "outcome": "pass" },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            { "name": "fresh-visitor-banner-html-present", "outcome": "pass" },
+            { "name": "returning-visitor-banner-absent", "outcome": "pass" },
+            { "name": "returning-visitor-cookie-value-correct", "outcome": "pass" }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            { "name": "asChild-ref-populated-with-real-dom-node", "outcome": "pass" },
+            { "name": "asChild-outer-and-inner-ref-composed", "outcome": "pass" }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "run-118/next-15.5.4-react-18.3.1.log"
+    },
+    {
+      "id": "next-16.3.0-react-19.2.8",
+      "role": "newest",
+      "label": "Next 16.3.0 + React 19.2.8 (matches apps/web today)",
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
+      "requested": {
+        "next": "16.3.0",
+        "react": "19.2.8",
+        "reactDom": "19.2.8",
+        "typesReact": "^19.2.17",
+        "typesReactDom": "^19.2.3"
+      },
+      "resolved": {
+        "next": "16.3.0",
+        "react": "19.2.8",
+        "reactDom": "19.2.8",
+        "typesReact": "19.2.17",
+        "typesReactDom": "19.2.3"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-08-27T10:07:05.000Z",
+      "finishedAt": "2026-08-27T10:10:22.000Z",
+      "durationMs": 197000,
+      "steps": {
+        "install": { "outcome": "pass" },
+        "typePackageCheck": { "outcome": "pass" },
+        "typecheck": { "outcome": "pass" },
+        "build": { "outcome": "pass" },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            { "name": "fresh-visitor-banner-html-present", "outcome": "pass" },
+            { "name": "returning-visitor-banner-absent", "outcome": "pass" },
+            { "name": "returning-visitor-cookie-value-correct", "outcome": "pass" }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            { "name": "asChild-ref-populated-with-real-dom-node", "outcome": "pass" },
+            { "name": "asChild-outer-and-inner-ref-composed", "outcome": "pass" }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "run-118/next-16.3.0-react-19.2.8.log"
+    }
+  ],
+  "summary": { "total": 3, "pass": 3, "fail": 0, "outcome": "pass" },
+  "coverageLimits": [
+    "No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).",
+    "Node, package-manager and module-resolution dimensions are not yet varied — every combination above ran on Node 20 / pnpm / moduleResolution=bundler."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Headless primitives",
+  "pages": [
+    "overview",
+    "banner",
+    "preferences",
+    "opt-out"
+  ],
+  "defaultOpen": true,
+  "collapsible": true
+}

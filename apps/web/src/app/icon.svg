@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="CookieYes">
+  <title>CookieYes</title>
+  <rect width="32" height="32" fill="#0C0D10"/>
+  <path d="M8 17.5l5 5L24 9.5" fill="none" stroke="#4A8AF5" stroke-width="4"
+        stroke-linecap="square" stroke-linejoin="miter"/>
+  <rect x="8" y="20.5" width="4.5" height="4.5" fill="#4A8AF5"/>
+</svg>

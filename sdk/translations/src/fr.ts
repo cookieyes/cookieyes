@@ -16,6 +16,10 @@ export const fr: TranslationMap = {
   preferencesTitle: "Personnaliser les préférences en matière de consentement",
   preferencesIntro:
     "Nous utilisons des cookies pour vous aider à naviguer efficacement et à exécuter certaines fonctionnalités. Vous trouverez des informations détaillées sur tous les cookies sous chaque catégorie de consentement ci-dessous.",
+  alwaysActive: "Toujours actif",
+  preferencesDialogLabel: "Préférences en matière de cookies",
+  optOutDialogLabel: "Préférences de désinscription",
+  recallButtonLabel: "Préférences de consentement",
   categories: {
     necessary: {
       label: "Nécessaire",
@@ -50,6 +54,13 @@ export const fr: TranslationMap = {
     cancel: "Annuler",
     successText: "Votre choix de désinscription a été enregistré et pris en compte.",
     successCountdown: "La bannière se ferme automatiquement dans {seconds} s...",
+  },
+  bannerCloseLabel: "Fermer",
+  preferencesCloseLabel: "Fermer les préférences",
+  optOutCloseLabel: "Fermer",
+  gatedFrame: {
+    placeholder: "Ce contenu nécessite l'activation des cookies {category}.",
+    action: "Gérer les préférences",
   },
   reloadNotice: {
     message:

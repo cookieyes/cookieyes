@@ -1,0 +1,162 @@
+---
+title: Microsoft Clarity
+description: Consent-gate Microsoft Clarity with clarity() — and the dashboard setting that silently defeats it if you skip it.
+---
+
+## When to use it
+
+Use `clarity()` when you want Microsoft Clarity (session recording + heatmaps) loaded only after consent, with withdrawal handled through Clarity's own Consent v2 API instead of a hard teardown.
+
+Skip it if Clarity is loaded through a GTM container you already gate with a `googleTagManager()` preset — the container's own tags are opaque to this SDK; see [Google Consent Mode v2](/docs/integrations/google-consent-mode#gtm-is-a-special-case). Clarity does not read Google Consent Mode either way — it has its own `consentv2` API, which is what `clarity()` drives.
+
+<Callout type="warn">
+  **You must turn the Cookies toggle off in Clarity itself**, or this preset does nothing. In your Clarity project: **Settings → Setup → Advanced settings → Cookies**. That toggle is Clarity's own Consent Mode switch — with it left on (Clarity's default), Clarity sets cookies and starts recording the moment its script loads, before `clarity()` ever calls `consentv2`. This is the single most common reason "the gate doesn't seem to work" for this integration — check it before anything else.
+</Callout>
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { clarity } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [clarity({ projectId: "abc123def" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+Nothing loads until `analytics` (the default category) is granted. Once it is, `clarity()` injects Clarity's tag, tells it consent is granted via `consentv2`, and resolves once the tag has actually loaded.
+
+## Behaviour and trade-offs
+
+### Config fields
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `projectId` | `string` | — required | The id in `clarity.ms/tag/<id>`. |
+| `category` | `string` | `"analytics"` | See below — consider a dedicated category. |
+| `id` | `string` | `"clarity"` | Only change this if you run more than one Clarity project. |
+
+### Why `onRevoke` is `"silence"`, not `"remove"`
+
+Clarity ships its own Consent v2 API (`window.clarity('consentv2', { ad_Storage, analytics_Storage })`), and the preset is built directly on it — the same shape Meta Pixel's `fbq('consent', ...)` and Mixpanel's `opt_in_tracking()`/`opt_out_tracking()` use (see [Build a custom integration](/docs/integrations/custom-integration)). Because Clarity already knows how to run in a no-consent state, `clarity()` never removes the tag:
+
+- **On grant**, it calls `consentv2` with both signals set to `"granted"`.
+- **On withdrawal**, it calls `consentv2` with both set to `"denied"` — Clarity itself deletes its own `_clck`/`_clsk` cookies and keeps running in Clarity's own cookie-free, no-consent mode. It does **not** stop sending entirely; it stops using persistent identifiers.
+
+Both signals (`ad_Storage`, `analytics_Storage` — note the capital `S`, Clarity's own key names) move together with the single gating category. There is no way to grant one and not the other through this preset.
+
+### A dedicated category is worth considering
+
+Session recording and heatmaps are a materially different kind of data collection from counting page views — it can capture form interactions, mouse movement, and (with masking misconfigured) visible page content. The source comment on `ClarityConfig` calls this out directly: if your taxonomy distinguishes ordinary analytics from session recording, gate Clarity on that category instead of the shared `analytics` default.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { clarity } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  categories: [
+    { id: "necessary", required: true },
+    { id: "session_recording" },
+  ],
+  integrations: [clarity({ projectId: "abc123def", category: "session_recording" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+### Guard calls made before Clarity has loaded
+
+`window.clarity` isn't defined until `clarity()`'s setup has run at least once. Guard any custom event you send yourself:
+
+```ts title="app/track-signup.ts"
+declare global {
+  interface Window {
+    clarity?: (...args: unknown[]) => void;
+  }
+}
+
+export function trackSignup(): void {
+  window.clarity?.("event", "signup_completed");
+}
+```
+
+### Reacting to consent changes yourself
+
+Use [`useOnConsentChange`](/docs/hooks/use-on-consent-change) in React if your own code needs to know when the gating category changes — this is separate from `clarity()` itself, which already reacts to consent internally:
+
+```tsx title="app/recording-indicator.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+import { useState } from "react";
+
+export function RecordingIndicator() {
+  const [recording, setRecording] = useState(false);
+
+  useOnConsentChange(
+    "change",
+    ({ categories }) => setRecording(categories.analytics === true),
+    { category: "analytics" },
+  );
+
+  if (!recording) return null;
+  return <span>Session recording active</span>;
+}
+```
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { clarity } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [clarity({ projectId: "abc123def", id: "clarity" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**Analytics is accepted, but Clarity isn't recording anything.**
+Check the Clarity dashboard first: **Settings → Setup → Advanced settings → Cookies** must be **off**. This is the precondition, not just a config nuance — with it on, Clarity ignores `consentv2` entirely and behaves as if consent were irrelevant.
+
+**After revoking consent, Clarity is still in the Network tab and still making requests.**
+That's expected. `onRevoke: "silence"` never removes the script — Clarity is told to stop via `consentv2` and switches to its own cookie-free mode, but the tag itself stays loaded. If you need it physically removed, `clarity()` isn't the tool for that; see [Build a custom integration](/docs/integrations/custom-integration).
+
+**Calling `window.clarity(...)` right after `initCookieYes()` does nothing.**
+`clarity` isn't defined until the gating category is granted and the tag has loaded. Guard the call: `window.clarity?.("event", "…")`.
+
+**Session recording is too broad to sit under a generic `analytics` toggle.**
+That's a real, defensible position, not a misconfiguration — see "A dedicated category is worth considering" above.
+
+## Across the SDK
+
+`clarity` is a `@cookieyes/scripts` export, built on the same `Integration` shape as every other preset (`id`, `category`, `load`, `onRevoke`, `setup` — see `sdk/core/src/integrations.ts`). All the Clarity-specific knowledge (the tag loader, the `consentv2` calls) lives inside the preset, not the engine.
+
+For reacting to consent changes outside a preset: React code uses [`useOnConsentChange`](/docs/hooks/use-on-consent-change); a framework-agnostic host with no React tree uses the `onConsentUpdate` config callback on `CookieYesConfig` instead (see [Configuration](/docs/getting-started/configuration#callbacks)).
+
+## See also
+
+- [Build a custom integration](/docs/integrations/custom-integration) — the raw `Integration` shape `clarity()` itself is built on
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — for the three Google products; Clarity is not part of it
+- [PostHog](/docs/integrations/posthog) — another analytics vendor with its own opt-in/opt-out API, same `"silence"`/`"remove"` split, worked through in more detail

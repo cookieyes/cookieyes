@@ -1,0 +1,289 @@
+---
+title: Part & state contract (data-cy-part)
+description: The data-cy-part and state attributes the SDK guarantees, and the stability promise on them.
+---
+
+## When to use it
+
+Use part selectors whenever you need to style or test a specific element: a button's weight, a dialog's width, an end-to-end test asserting the banner appeared.
+
+You do not need them for colors, radius, or font — [theme tokens](/docs/styling/theme-tokens) cover those with less code. And you never need them to *change behaviour*; parts are identification only.
+
+<Callout type="info">
+  Parts are exported as constants too — `CY_PART` and `CY_STATE`, with `CyPart` and `CyState` types — so tests can reference them without hard-coding strings.
+</Callout>
+
+## Basic usage
+
+```css title="app/consent.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+```
+
+Two things about that selector are deliberate. The colour of the switch is painted by a `.cy-toggle-track` child that sits absolutely positioned over the whole control, so setting `background` on the toggle part itself is covered up and has no visible effect — you have to reach the track. And the SDK's own rule for the track is slightly more specific than a plain part selector, so the `[data-cy-part]` is repeated to lift specificity above it. Everything else on this page needs neither trick; the toggle is the one control with a painted child.
+
+```ts title="e2e/consent.spec.ts"
+import { CY_PART } from "@cookieyes/react";
+
+await page.locator(`[data-cy-part="${CY_PART.banner.acceptAll}"]`).click();
+```
+
+## Options
+
+### Part names describe a role, not a single element
+
+Five part names repeat across components — `title`, `close`, `accept-all`, `reject-all`, and `branding` — because a part name identifies a role ("the heading", "the accept button"), not one specific element. A bare rule for `title` hits the banner's heading *and* both dialog headings: three different elements from one selector. Nothing about the name warns you of that on its own, which is why this comes before the list rather than after it.
+
+The tables below mark every shared name with **†**, so the point is visible even if you skip straight to the list.
+
+Scope a rule to a single component by default — treat scoping as the normal way to write a part rule, not a fix you reach for only after being surprised:
+
+```css title="app/consent.css"
+/* Matches the banner heading and both dialog headings */
+[data-cy-part="title"] { letter-spacing: -0.01em; }
+
+/* Matches only the banner's heading */
+[data-cy-part="banner"] [data-cy-part="title"] { font-size: 1.125rem; }
+```
+
+This is the single most common source of surprise on this page.
+
+### Banner
+
+| Part | Element |
+| --- | --- |
+| `banner` | Banner root |
+| `title` † | Heading |
+| `description` | Body text |
+| `actions` | Button container |
+| `accept-all` † | Accept All |
+| `reject-all` † | Reject All |
+| `customise` | Opens preferences |
+| `do-not-sell` | CCPA opt-out action |
+| `close` † | Close |
+| `branding` † | "Powered by" link |
+
+### Preferences dialog
+
+| Part | Element |
+| --- | --- |
+| `overlay` | Backdrop |
+| `dialog` | Dialog surface |
+| `title` † | Heading |
+| `close` † | Close |
+| `intro` | Intro text |
+| `category` | One category row |
+| `category-label` | Category name |
+| `category-description` | Category description |
+| `toggle` | On/off switch |
+| `accept-all` † | Accept All |
+| `reject-all` † | Reject All |
+| `save` | Save Preferences |
+| `branding` † | "Powered by" link |
+
+### Opt-out dialog
+
+| Part | Element |
+| --- | --- |
+| `optout` | Dialog root |
+| `title` † | Heading |
+| `message` | Explanatory text |
+| `confirm` | Confirm / save |
+| `close` † | Close |
+
+† Shared with at least one other component — see [above](#part-names-describe-a-role-not-a-single-element).
+
+### Recall widget
+
+| Part | Element |
+| --- | --- |
+| `recall` | The widget button |
+
+### Reload notice
+
+| Part | Element |
+| --- | --- |
+| `reload-notice` | Notice root |
+| `reload-message` | Message text |
+| `reload-dismiss` | Dismiss button |
+
+### States
+
+| Attribute | Values | On |
+| --- | --- | --- |
+| `data-cy-state` | `"on"`, `"off"` | Toggle switches |
+
+<Callout type="warn">
+  `data-cy-state` is emitted by the **styled `CookiePreferences`** component. The [`Preferences.Category`](/docs/headless/preferences) primitive hands you `checked` through a render prop and you build the switch — so if you want this attribute on a custom toggle, emit it yourself:
+
+```tsx title="components/CustomToggle.tsx"
+<span data-cy-part="toggle" data-cy-state={checked ? "on" : "off"} />
+```
+</Callout>
+
+## Behaviour and trade-offs
+
+### Parts survive `className`
+
+Passing `className` to a component or primitive never removes its part attribute — your class is applied alongside. A stylesheet written against parts keeps working whether you use the styled presets or rebuild with primitives, which makes parts the right target for anything that should outlive a refactor.
+
+### Renames are breaking changes
+
+These names are versioned as public API. A rename requires a changeset and a major bump. That is what makes them safe for end-to-end tests, where a silently renamed selector produces a test that passes by finding nothing.
+
+### The `cy-*` classes are also public, but prefer parts
+
+`.cy-banner`, `.cy-dialog`, `.cy-widget` and the rest are part of the styling contract too. Prefer `data-cy-part`: it is more specific about intent, it is available as typed constants, and the class list carries layout responsibilities that make it easier to break something by overriding.
+
+`.cy-frame-placeholder` is the exception — it has no part attribute, so it is the only way to style a [`GatedFrame`](/docs/components/gated-frame) placeholder.
+
+### Copy the stylesheet as a redesign starting point
+
+`@cookieyes/react/styles.css` is plain, unlayered CSS — no preprocessor syntax, no build-time class hashing. If you're planning a full visual redesign rather than incremental overrides, copying the file into your own project and editing it directly is a supported starting point: every rule still targets the same `data-cy-part` and `cy-*` hooks, so nothing about the part contract stops working just because the rule bodies changed.
+
+### Your rule wins without forcing it
+
+An equally simple rule from your stylesheet beats the SDK's own styling. That's deliberate, not an accident of low specificity, and it comes with exactly one condition: **your stylesheet must load after `@cookieyes/react/styles.css`.**
+
+The mechanism is single-class selectors, nothing more exotic. An attribute selector like `[data-cy-part="accept-all"]` has the same specificity as a class (0,1,0), and the SDK's own rules are themselves mostly single classes — so a same-specificity rule from you ties, and the tie is decided by source order:
+
+```css title="app/consent.css"
+/* Wins on order if imported after styles.css */
+[data-cy-part="accept-all"] { font-weight: 600; }
+
+/* Wins regardless of import order */
+[data-cy-part="banner"] [data-cy-part="accept-all"] { font-weight: 600; }
+```
+
+Descendant resets inside the SDK use `:where()`, which is specificity 0, so those never fight you either.
+
+Forcing a rule with `!important` is never necessary to win a part-selector contest, and the only place these docs use it is [Theme tokens](/docs/styling/theme-tokens#theme-values-win-over-css), for the two theme tokens the SDK writes inline — which is the one case where a normal rule genuinely cannot win. If a rule needs `!important` to apply, something else is going on — almost always that `theme` config is writing the same property inline (see [Theme tokens](/docs/styling/theme-tokens#theme-values-win-over-css)), which has a different fix: drop the key from `theme` rather than forcing the CSS.
+
+### Why not cascade layers
+
+An earlier version of the stylesheet wrapped its rules in `@layer cookieyes`, on the assumption that a dedicated layer would make host-site overrides more predictable. It backfired: an unlayered author rule always outranks a layered one regardless of specificity, so the ubiquitous `* { margin: 0; padding: 0; }` reset that most sites carry — itself unlayered — silently stripped the banner's own padding and other defaults. The layer was removed for exactly that reason. The shipped stylesheet has zero `@layer` blocks today; single-class selectors and import order, described above, are the only mechanism doing this work. [Theme tokens](/docs/styling/theme-tokens), [Tailwind](/docs/styling/tailwind), and the [styling overview](/docs/styling/overview) all describe this same unlayered stylesheet, so there's nothing to reconcile between them.
+
+### What's promised, and what isn't
+
+`data-cy-part`, `data-cy-state`, and the `cy-*` class names are the public, versioned contract — a rename to any of them is a breaking change. Everything else about the rendered markup — element tags, nesting depth, the number of wrapper `div`s, attribute order — is an implementation detail and can change in a minor or patch release. Write selectors against parts and classes; avoid tag or structural selectors (`.cy-banner > div:nth-child(2)`) for anything you want to survive an upgrade.
+
+### Verifying a rule is actually applying
+
+Open your browser's element inspector, select the target element, and check the computed value plus the "winning" declaration the panel shows you:
+
+- **The rule isn't listed at all** — the selector doesn't match. Check for a typo, or that the part is scoped correctly (see above).
+- **The rule is listed but struck through** — it lost the cascade. Check import order first (`styles.css` must load before your sheet), then check whether `theme` config is writing the same property inline, since an inline style beats a *normal* stylesheet rule regardless of order. An author rule marked `!important` does still win, because the cascade weighs importance before it considers where a declaration came from — that is the escape hatch, and the only case where forcing is the right answer.
+- **The rule wins but the value still looks wrong** — you're editing a CSS custom property (like `--cy-primary`) rather than the resolved property; confirm the token name against [Theme tokens](/docs/styling/theme-tokens).
+
+### Two stylesheets, one import for part styling
+
+The SDK ships `styles.css` (the full stylesheet, every part covered) and `critical.css` (a byte-identical subset meant only for inlining in `<head>` for faster first paint). Part selectors you write should assume `styles.css` is loaded — it's the one with complete coverage. See [Installation](/docs/getting-started/installation#stylescss-vs-criticalcss) for when `critical.css` is worth adding on top, and [CSP](/docs/styling/csp) if you inline it under a strict policy.
+
+## Complete example
+
+```css title="app/consent.css"
+/* Imported after @cookieyes/react/styles.css */
+
+[data-cy-part="banner"] {
+  max-width: 34rem;
+  box-shadow: 0 20px 40px -12px rgb(0 0 0 / 0.25);
+}
+
+[data-cy-part="banner"] [data-cy-part="title"] {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+
+[data-cy-part="accept-all"],
+[data-cy-part="reject-all"] {
+  min-width: 8rem;
+  font-weight: 600;
+}
+
+[data-cy-part="dialog"] {
+  max-width: 40rem;
+}
+
+[data-cy-part="category"] + [data-cy-part="category"] {
+  border-top: 1px solid var(--cy-border);
+}
+
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+
+[data-cy-part="toggle"][data-cy-part][data-cy-state="off"] .cy-toggle-track {
+  background: var(--cy-muted);
+}
+
+[data-cy-part="recall"] {
+  z-index: 60;
+}
+
+.cy-frame-placeholder {
+  min-height: 315px;
+  border-radius: 0.5rem;
+}
+```
+
+```ts title="e2e/consent.spec.ts"
+import { CY_PART, CY_STATE } from "@cookieyes/react";
+
+const part = (p: string) => `[data-cy-part="${p}"]`;
+
+await expect(page.locator(part(CY_PART.banner.root))).toBeVisible();
+await page.locator(part(CY_PART.banner.customise)).click();
+await expect(page.locator(part(CY_PART.dialog.root))).toBeVisible();
+
+const analyticsToggle = page
+  .locator(part(CY_PART.dialog.category))
+  .filter({ hasText: "Analytics" })
+  .locator(part(CY_PART.dialog.toggle));
+
+await analyticsToggle.click();
+await expect(analyticsToggle).toHaveAttribute("data-cy-state", CY_STATE.on);
+await page.locator(part(CY_PART.dialog.save)).click();
+```
+
+## Common mistakes
+
+**A rule meant for the banner also restyled both dialog headings.**
+`title` is shared. Scope it with an ancestor part.
+
+**A part rule does nothing.**
+Same specificity as the SDK's class rules, losing on source order. Import your sheet after `styles.css`, or add an ancestor.
+
+**A `--cy-*` override inside a part rule is ignored.**
+`theme` config writes the token inline on the container, which wins. Remove the key from `theme`.
+
+**A test passes but asserts nothing.**
+A selector that matches zero elements. Use the `CY_PART` constants so a rename is a type error rather than a silent miss.
+
+**Styling `.cy-frame-placeholder` via a part selector fails.**
+It has no part attribute — use the class.
+
+**A toggle's state style never applies.**
+`data-cy-state` is only on toggle switches, not on buttons or rows.
+
+## Across the SDK
+
+`CY_PART` and `CY_STATE` are exported from `@cookieyes/react` and `@cookieyes/nextjs`. `data-cy-part` is emitted by the styled presets **and** the headless primitives, so a stylesheet or test suite written against parts works with both. `data-cy-state` is the exception — see the callout above. `@cookieyes/core` renders nothing and has no part contract.
+
+## See also
+
+- [Styling overview](/docs/styling/overview) — where part selectors fit among the other layers
+- [Tailwind](/docs/styling/tailwind) — `@apply` against these same selectors
+- [Custom CSS](/docs/styling/custom-css) — patterns for restyling with these selectors

@@ -18,7 +18,6 @@ describe("_normalizeConfig — regulation alias", () => {
       colorScheme: "dark",
       theme: { primaryColor: "#123456" },
       i18n: { locale: "en" },
-      consentCategories: ["analytics"],
       networkBlocker: { rules: [] },
       reloadOnRevoke: true,
       onConsentReady,

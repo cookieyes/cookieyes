@@ -39,6 +39,7 @@ const SELECTORS = [
   ".cy-btn:hover",
   ".cy-btn:focus-visible",
   ".cy-btn-primary",
+  ".cy-btn-primary:hover",
   ".cy-btn-outline",
   ".cy-btn-do-not-sell",
   ".cy-btn-do-not-sell:hover",

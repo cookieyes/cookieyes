@@ -1,0 +1,14 @@
+/* Fumadocs presets load first so the CookieYes design system below can override
+   them. Reversing this order lets Fumadocs' theme win and the docs drift off-brand —
+   keep the DS import last in this block. */
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "../styles/ds/index.css";
+/* Docs theme last: it remaps Fumadocs' --color-fd-* tokens onto the docs design's
+   palette, so it must win over the neutral preset imported above. */
+@import "../styles/docs/index.css";
+
+html {
+  scrollbar-gutter: stable;
+}

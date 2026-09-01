@@ -43,11 +43,12 @@ import {
   warnOverlappingVendors,
   warnUnknownCategories,
 } from "@cookieyes/core";
+import { warnOnUntestedReactVersion } from "./diagnostics/peer-version-warning.js";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
 
 /**
  * @deprecated Use `"cookie-only"` instead — identical behavior, clearer name.
- * `"offline"` still works but will be removed in a future release.
+ * `"offline"` still works but will be removed after three release cycles.
  */
 type DeprecatedOfflineMode = "offline";
 
@@ -133,7 +134,7 @@ export type CookieYesRuntime = {
  * {@link initCookieYes}, which takes one canonical `CookieYesConfig` object.
  * The builder still works but will be removed after three release cycles, per
  * the SDK deprecation policy. Migration guide:
- * https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md
+ * https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx
  */
 export type Builder = {
   mode: (m: RuntimeMode) => Builder;
@@ -194,7 +195,7 @@ function warnBuilderDeprecated(): void {
         "SDK with `initCookieYes(config)` — one canonical config object instead of a " +
         "chain. The builder will be removed after three release cycles, per the SDK " +
         "deprecation policy. Migration guide: " +
-        "https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md",
+        "https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx",
     );
   }
 }
@@ -203,7 +204,7 @@ function warnBuilderDeprecated(): void {
  * @deprecated Use {@link initCookieYes} with a canonical `CookieYesConfig`
  * object instead of the builder chain. Still functional, but removed after
  * three release cycles per the SDK deprecation policy. Migration guide:
- * https://github.com/cookieyes/cookieyes/blob/main/docs/migration/builder-to-config.md
+ * https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx
  */
 export function createCookieYes(): Builder {
   warnBuilderDeprecated();
@@ -366,6 +367,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   }
 
   warnOnStyleCspViolations();
+  warnOnUntestedReactVersion();
 
   // Owns the active language + live switching; re-renders the UI via notify.
   const language = createLanguageController(cfg.i18n, notify);
@@ -430,8 +432,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (_instance && typeof console !== "undefined") {
     // eslint-disable-next-line no-console
     console.warn(
-      "[cookieyes] createCookieYes().mount() called more than once. " +
-        "Replacing the previous runtime.",
+      "[cookieyes] initCookieYes() called more than once. " + "Replacing the previous runtime.",
     );
   }
   // Run the configured script integrations (Segment, Google, Meta, …) against
@@ -464,7 +465,7 @@ export function getCookieYes(): CookieYesRuntime {
   if (!_instance) {
     throw new Error(
       "[cookieyes] No runtime is registered. " +
-        "Call createCookieYes().mode(...).mount() in a 'use client' module before using hooks or components.",
+        "Call initCookieYes(...) in a 'use client' module before using hooks or components.",
     );
   }
   return _instance;

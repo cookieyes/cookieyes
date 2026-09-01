@@ -1,0 +1,231 @@
+---
+title: Build a custom integration
+description: Gate any vendor CookieYes doesn't ship a preset for — a script tag, or a vendor with its own consent API — using customScript() or a raw Integration.
+---
+
+## When to use it
+
+If a preset already exists for your vendor — [GA4](/docs/integrations/ga4), [Google Tag Manager](/docs/integrations/google-tag-manager), [Google Ads](/docs/integrations/google-ads), [Meta Pixel](/docs/integrations/meta-pixel), [Microsoft Clarity](/docs/integrations/microsoft-clarity), [PostHog](/docs/integrations/posthog), [Segment](/docs/integrations/segment) — use that instead. This page is the escape hatch, not the first stop.
+
+Otherwise, two different situations, two different tools:
+
+- You just need a `<script src>` loaded after consent, with no vendor-specific lifecycle beyond "load it" and "remove it (or don't) on revoke." → [`customScript()`](#basic-usage).
+- The vendor has its own opt-in/opt-out consent API and you want real lifecycle control — when it loads, and a genuine response to revoke rather than a page reload. → [a raw `Integration`](#when-customscript-isnt-enough--write-a-raw-integration).
+
+**Mixpanel ships no preset in `@cookieyes/scripts`** — it is the worked example for the second case throughout this page, precisely because it's a real vendor this SDK doesn't cover out of the box.
+
+## Basic usage
+
+`customScript()` covers the common case: gate a third-party `<script src>` behind one or more categories.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { customScript } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [
+    customScript({ id: "widget", src: "https://cdn.example.com/widget.js", category: "functional" }),
+  ],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Behaviour and trade-offs
+
+### `customScript()`'s constraints
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `id` | `string` | — required | Unique registry key; also used for de-duplication and the debug view. |
+| `src` | `string` | — required | The script URL, loaded once consent is granted. |
+| `category` | `string \| string[]` | — required | One or more categories. An array requires `match` to decide how they combine. |
+| `match` | `"all" \| "any"` | `"all"` | Ignored for a single category. |
+| `onRevoke` | `"remove" \| "keep"` | `"remove"` | See below. |
+| `attrs` | `Record<string, string>` | — | Extra attributes set on the `<script>` element (e.g. `data-id`). |
+| `stub` | `{ global: string; methods: string[] }` | — | Pre-registers a queue stub (via [`createQueue`](#createqueue-and-flushqueue)) so calls made before the script loads aren't lost. |
+
+Two things `customScript()` deliberately does **not** offer:
+
+- **`load: "immediately"` is never an option.** `customScript()` always waits for consent before loading — its own doc comment is explicit that an immediately-loaded *gated* script would defeat the point of gating it. If you genuinely need a script to load before consent (because the vendor itself gates behind its own API once loaded), that's the raw `Integration` case below.
+- **`onRevoke: "silence"` doesn't exist here.** Only `"remove"` (default — the script element is taken off the page) or `"keep"` (nothing happens on revoke; only choose this if the vendor manages its own consent, or it keeps running after a "no"). `customScript()` has no way to know a vendor-specific pause/resume API even exists, so it can't offer a silence mode — that's exactly the gap a raw `Integration` fills.
+
+### `createQueue` and `flushQueue`
+
+Most third-party scripts follow the same queue/stub pattern — a placeholder array that records calls made before the real library loads, replayed once it arrives (Segment's `analytics`, Meta's `fbq`, Google's `dataLayer` all work this way). `customScript()`'s `stub` option wires this up for you via `createQueue`, also exported from `@cookieyes/scripts`:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { customScript } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [
+    customScript({
+      id: "widget",
+      src: "https://cdn.example.com/widget.js",
+      category: "functional",
+      stub: { global: "myWidget", methods: ["track", "identify"] },
+    }),
+  ],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+Calling `window.myWidget?.track("event")` before the real script has loaded queues the call instead of throwing or being lost; the vendor's own script (if it follows the same convention) replays the queue once it initializes. If you're writing a raw `Integration` yourself and need to flush a queue once your vendor's real library is ready, call `flushQueue(globalName, handle)` from inside `setup` — also a `@cookieyes/scripts` export.
+
+### When `customScript()` isn't enough — write a raw `Integration`
+
+This is the reason this page exists past `customScript()`. Mixpanel ships its own consent API — `mixpanel.opt_in_tracking()` / `mixpanel.opt_out_tracking()` — structurally the same shape as Clarity's `consentv2` call or Meta's `fbq('consent', ...)`. That's exactly why the *built-in* presets for those vendors aren't built on `customScript()` either — [`clarity()`](/docs/integrations/microsoft-clarity) and [`metaPixel()`](/docs/integrations/meta-pixel) are raw `Integration` objects, the same shape you'd write for Mixpanel.
+
+`Integration` (from `@cookieyes/core`) is the shared contract every preset in `@cookieyes/scripts` is written against:
+
+```text title="Integration shape (simplified — see sdk/core/src/integrations.ts for the real, documented types)"
+type SetupCtx = {
+  granted: () => boolean;
+  onConsentChange: (fn: () => void) => () => void;
+  region: RegionDecision;
+};
+type Cleanup = () => void;
+type SilenceControl = { silence: () => void; resume: () => void };
+
+type Integration = {
+  id: string;
+  category: ConsentCategory | ConsentCategory[];
+  match?: "all" | "any";
+  version: number;
+  load: "immediately" | "afterConsent";
+} & (
+  | { onRevoke: "keep"; setup: (ctx: SetupCtx) => void | Promise<void> }
+  | { onRevoke: "remove"; setup: (ctx: SetupCtx) => Cleanup | Promise<Cleanup> }
+  | { onRevoke: "silence"; setup: (ctx: SetupCtx) => SilenceControl | Promise<SilenceControl> }
+);
+```
+
+Field by field, for Mixpanel:
+
+- **`id`** — a unique registry key, same rule as every other integration and `customScript()`'s `id`.
+- **`category`** — whichever category should gate Mixpanel, e.g. `"analytics"`.
+- **`load: "immediately"`** — nothing forces `afterConsent` here. Mixpanel can start opted-out and flip live via its own API, so there's no reason to delay loading the library itself; only the *tracking state* needs to reflect consent.
+- **`onRevoke: "silence"`** — Mixpanel has a real pause/resume API, so use it rather than tearing the library down and re-loading it on every re-grant.
+- **`setup(ctx)`** — loads Mixpanel's snippet, calls `ctx.granted()` to decide the *initial* opt-in/opt-out state (a returning, already-decided visitor shouldn't start opted-in by default), and returns `{ silence, resume }` wired to `opt_out_tracking()`/`opt_in_tracking()`. The return type is tied to `onRevoke: "silence"` by the discriminated union above — returning anything else fails to type-check.
+
+### Reacting to Mixpanel-specific consent changes from your own code
+
+The `setup(ctx)` above already reacts to consent changes internally through `SetupCtx` — you don't need anything more to make the integration itself work. But if a separate part of your app needs to know when the gating category changes (to show a UI indicator, for example), the tool depends on what's calling it:
+
+- Inside a React component, use [`useOnConsentChange`](/docs/hooks/use-on-consent-change) — it subscribes on mount and cleans up on unmount automatically.
+- Outside React entirely (a plain script, a non-React framework), use the `onConsentUpdate` callback on `CookieYesConfig` instead — see [Across the SDK](#across-the-sdk).
+
+```tsx title="app/mixpanel-indicator.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+import { useState } from "react";
+
+export function MixpanelIndicator() {
+  const [tracking, setTracking] = useState(false);
+
+  useOnConsentChange(
+    "change",
+    ({ categories }) => setTracking(categories.analytics === true),
+    { category: "analytics" },
+  );
+
+  if (!tracking) return null;
+  return <span>Mixpanel tracking active</span>;
+}
+```
+
+## Complete example
+
+A full, self-contained raw `Integration` for Mixpanel:
+
+{/* check="false": window.mixpanel — even with the declare global augmentation below — is
+consumer-authored, not part of @cookieyes/*'s exported types. The harness type-checks against
+the real, built SDK types; a page-local global augmentation is correct in a real consumer app
+but not something this harness asserts on. Integration and SilenceControl themselves are real
+imports from @cookieyes/core and do resolve — the escape hatch is scoped to the window.mixpanel
+augmentation only. */}
+
+```tsx title="app/cookieyes.tsx" check="false"
+"use client";
+
+import type { Integration, SilenceControl } from "@cookieyes/core";
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+
+declare global {
+  interface Window {
+    mixpanel?: {
+      init: (token: string) => void;
+      opt_in_tracking: () => void;
+      opt_out_tracking: () => void;
+    };
+  }
+}
+
+function mixpanel(token: string): Integration {
+  return {
+    id: "mixpanel",
+    category: "analytics",
+    version: 1,
+    load: "immediately",
+    onRevoke: "silence",
+    setup: (ctx) => {
+      window.mixpanel?.init(token);
+      if (ctx.granted()) window.mixpanel?.opt_in_tracking();
+      else window.mixpanel?.opt_out_tracking();
+      const control: SilenceControl = {
+        silence: () => window.mixpanel?.opt_out_tracking(),
+        resume: () => window.mixpanel?.opt_in_tracking(),
+      };
+      return control;
+    },
+  };
+}
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [mixpanel("YOUR_PROJECT_TOKEN")],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**`customScript()` is used, but consent withdrawal doesn't stop tracking.**
+`customScript()` only offers `"remove"`/`"keep"` — if the vendor has its own pause/resume API, you want `"silence"` via a raw `Integration`, not `customScript()`. `customScript()` has no way to know the vendor's API exists.
+
+**A raw `Integration`'s `onRevoke: 'silence'` case doesn't type-check.**
+`setup`'s return type is positionally tied to `onRevoke` — a discriminated union. `"silence"` requires returning `SilenceControl | Promise<SilenceControl>`, not `void` or a `Cleanup` function. Match the return type to the `onRevoke` value you declared.
+
+**Two `customScript()` calls share an `id`, and only one loads.**
+Same registry-key rule as every other integration; `id` must be unique across every entry in `integrations`, custom or preset.
+
+**`customScript()`'s `load` field is ignored.**
+There's no `load` field on `CustomScriptConfig` at all — it's always `afterConsent`, deliberately, and isn't configurable. If you need immediate load, write a raw `Integration`.
+
+## Across the SDK
+
+`customScript`, `createQueue`, `flushQueue`, and `safeCall` are all `@cookieyes/scripts` exports. `Integration`, `SetupCtx`, `Cleanup`, and `SilenceControl` are `@cookieyes/core` exports — the exact same types every built-in preset in this SDK (`ga4`, `metaPixel`, `clarity`, `posthog`, `segment`, and `customScript` itself) is written against. There is no separate "custom integration API" — a hand-written `Integration` and, say, `clarity()`'s return value are the same shape, which is why writing one is a supported, documented path rather than a workaround.
+
+For reacting to consent changes from outside an `Integration`'s own `setup`: React code uses [`useOnConsentChange`](/docs/hooks/use-on-consent-change) (`@cookieyes/react`); a framework-agnostic host with no React tree uses the `onConsentUpdate` callback on `CookieYesConfig` (`@cookieyes/core`) instead — see [Configuration](/docs/getting-started/configuration#callbacks). `onConsentUpdate` is the only option if you're not on React at all.
+
+## See also
+
+- The vendor pages — [GA4](/docs/integrations/ga4), [Google Tag Manager](/docs/integrations/google-tag-manager), [Google Ads](/docs/integrations/google-ads), [Meta Pixel](/docs/integrations/meta-pixel), [Microsoft Clarity](/docs/integrations/microsoft-clarity), [PostHog](/docs/integrations/posthog), [Segment](/docs/integrations/segment) — in case a preset covers your vendor after all
+- [GatedScript](/docs/components/gated-script) — for a script with no vendor-managed consent API at all, the simpler case `customScript()` already covers well
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — a worked example of a `"keep"`-style vendor-managed integration, from this SDK's own presets

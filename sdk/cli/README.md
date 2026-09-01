@@ -27,7 +27,7 @@
 
 ---
 
-> Once scaffolded, see the [decision tree](../../docs/which-api-should-i-use.md)
+> Once scaffolded, see the [decision tree](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/which-api.mdx)
 > for which API to use to read consent status in your code.
 
 ## Why use the CLI?
@@ -93,7 +93,7 @@ $ npx @cookieyes/cli init
 │  ○ Vanilla JS / Other
 │
 ◆  Backend mode?
-│  ● Offline — no backend, cookie-only
+│  ● Cookie-only — no backend — stored in a browser cookie
 │  ○ Self-hosted — sync consent to your backend
 │
 ◆  Which privacy regulation applies?
@@ -130,7 +130,7 @@ renders `<CookieBanner />`, `<CookiePreferences />`, and `<RecallButton />`.
 1. Start your dev server. The consent banner appears on first load.
 2. Review the generated `consent-manager` component and tune the `initCookieYes({...})` config —
    theming, `i18n`, self-hosted persistence. Full options:
-   [Configuration](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md).
+   [Configuration](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx).
 3. For framework-specific details (SSR, Pages Router, CCPA opt-out), see the adapter README:
    [`@cookieyes/nextjs`](https://github.com/cookieyes/cookieyes/tree/main/sdk/nextjs) ·
    [`@cookieyes/react`](https://github.com/cookieyes/cookieyes/tree/main/sdk/react).
@@ -148,9 +148,11 @@ just pick the correct option at the "Which framework are you using?" prompt — 
 only pre-selected, never forced. Run the CLI from your project root (where `package.json` lives).
 
 **No files were created or modified.**
-The CLI **skips files that already exist** (it won't overwrite your work) and prints
-`… already exists — skipped` for each. If you re-ran it, that's expected. To regenerate, remove
-or rename the existing `consent-manager` files first. If your entry/layout file couldn't be
+The CLI **skips generated files that already exist** and prints `… already exists — skipped` for
+each. If you re-ran it, that's expected. To regenerate, remove or rename the existing
+`consent-manager` files first. Note this skip applies to the files the CLI *generates*: your
+layout or entry file is patched in place instead (reported as `Updated <file>`), so commit your
+work before running it. If your entry/layout file couldn't be
 patched automatically, the CLI prints a manual snippet to paste — follow that note.
 
 **The banner doesn't render after install.**
@@ -166,7 +168,7 @@ Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
 
 - [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
 - Email — [support@cookieyes.com](mailto:support@cookieyes.com).
-- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/docs/configuration.md).
+- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx).
 
 _(A community chat channel is on the roadmap.)_
 

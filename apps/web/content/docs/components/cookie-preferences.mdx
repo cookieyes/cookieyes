@@ -1,0 +1,325 @@
+---
+title: CookiePreferences
+description: The per-category preferences dialog.
+---
+
+## When to use it
+
+Render this alongside `CookieBanner` in any GDPR setup. The banner's Customise button opens it, and [`RecallButton`](/docs/components/recall-button) reopens it after a decision — neither works without this component mounted.
+
+Skip it only if you are building your own dialog on the [`Preferences` primitives](/docs/headless/preferences). Under `regulation: "CCPA"` you want [`CookieOptOut`](/docs/components/cookie-opt-out) instead — that is the surface CCPA calls for.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookiePreferences, initCookieYes } from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+    </>
+  );
+}
+```
+
+## Options
+
+<ComponentPropsTable component="CookiePreferences" />
+
+### What's configured elsewhere
+
+Everything about *what* the dialog shows and says lives in [configuration](/docs/getting-started/configuration), not in these props:
+
+- **Which categories appear, and in what order** — [`categories`](/docs/getting-started/configuration#consent-categories) in your config. Omit it and you get the built-in five.
+- **All wording** — title, intro, category labels and descriptions, button text — via [`i18n`](/docs/translations).
+- **Colours, radius, and font** — via [theme tokens](/docs/styling/theme-tokens), not a prop on this component.
+
+None of these are `CookiePreferences` props. If you're looking for a prop to set a category label or a brand colour, it does not exist — you set it once, upstream, and every surface that renders categories (this dialog, the banner, the opt-out dialog) picks it up.
+
+### Branding is a plan setting, not a prop
+
+There is no prop to remove the "Powered by CookieYes" link. `Preferences.Branding` renders unconditionally — no `hideBranding` config key exists anywhere in the SDK, not on this component and not on `CookieYesConfig`. Branding removal is governed by your CookieYes plan, not by anything you configure in code. If you came here looking for a setting to turn it off, stop looking — it isn't one.
+
+### Parts
+
+| Part | Element |
+| --- | --- |
+| `overlay` | Backdrop behind the dialog |
+| `dialog` | The dialog surface |
+| `title` | Dialog heading |
+| `close` | Close button |
+| `intro` | Introductory text |
+| `category` | One category row |
+| `category-label` | Category name |
+| `category-description` | Category description |
+| `toggle` | The on/off switch — pairs with `data-cy-state="on" \| "off"` |
+| `accept-all` | Accept All button |
+| `reject-all` | Reject All button |
+| `save` | Save Preferences button |
+| `branding` | "Powered by" link |
+
+## Behaviour and trade-offs
+
+### Restyling: start here
+
+Reach for these in order, cheapest and broadest-reaching first:
+
+1. **[Theme tokens](/docs/styling/theme-tokens)** — colour, radius, and font as CSS custom properties. Covers most brand alignment with no component code, and applies consistently across every SDK surface, not just this dialog.
+2. **`className` / `style`** — for something tokens don't expose on the dialog card as a whole: a shadow, a max-width, a specific spacing value.
+3. **`classNames` / `styles` per part** — when the change is scoped to one piece, like the save button or a category row, rather than the whole card.
+4. **[`data-cy-part` selectors](/docs/styling/part-and-state-contract)** — for anything that reads better as a stylesheet than as inline React props: media queries, pseudo-classes, animations, or rules you want to keep out of component code.
+5. **Build your own on the [`Preferences` primitives](/docs/headless/preferences)** — only when your design system demands markup this preset does not produce.
+
+Most projects stop at step 1. This is the same order the [banner page](/docs/components/cookie-banner) uses, deliberately — the escalation is the same everywhere in the SDK.
+
+### `className` and `style` are additive
+
+`className` and `style` merge with our own — they never replace them. Our rules are single classes with no `!important`, so a class you pass ties with ours and the tie is settled by source order — import your stylesheet after `@cookieyes/react/styles.css` and yours wins. An inline `style` beats any class, including your own. See [Part and state contract](/docs/styling/part-and-state-contract#your-rule-wins-without-forcing-it). The same is true of `classNames` and `styles`, per part.
+
+This is different from [`RecallButton`](/docs/components/recall-button), whose `className` *replaces* rather than merges — check each component's own page rather than assuming one rule applies to all of them.
+
+### Toggling is not saving
+
+Flipping a switch updates the **live** value only. Nothing is committed until the visitor presses Save (or Accept All / Reject All). This is why gating code must read committed values via [`useConsentCategory`](/docs/hooks/focused-hooks) — a half-finished dialog session must not load your trackers.
+
+### A required category has no toggle at all
+
+Any category defined with `required: true` — `necessary` in the built-in taxonomy — renders **a text label, not a switch**. There is no disabled toggle and no `role="switch"` element for it in the DOM at all; the row shows the translated `alwaysActive` string instead. If you are inspecting the dialog or writing a test that looks for a disabled switch, you will not find one.
+
+It is always treated as granted and the visitor cannot change it, which is correct: strictly necessary cookies do not need consent under GDPR. Whether a category is required comes from `required: true` in your configuration — it is never inferred from the category's name, so you can rename or translate it freely without changing the behaviour.
+
+### At least one category must be required
+
+A custom `categories` config needs at least one entry with `required: true` — the built-in five have `necessary`. A config with none is invalid and falls back to the built-in five (see [the five validation rules](#custom-categories-the-five-validation-rules) below). There's no such thing as a preferences dialog where every category is optional: something must always be granted, because the SDK needs a stable, persisted record of the visitor's choice to work at all.
+
+### Where category text comes from
+
+**The built-in five**, used whenever you don't configure `categories`: `necessary` (required), `functional`, `analytics`, `performance`, `advertisement`.
+
+**Order is whatever you defined**, not alphabetical and not some internal ranking. The category list iterates the resolved taxonomy in declaration order — category three in your `categories` array renders as the third row, every time.
+
+**Text resolves through four levels**, most specific first:
+
+1. The active language's **translation** (`i18n.messages[locale].categories[id]`), if you provided one.
+2. The category's own configured **`label`** / **`description`**.
+3. Our **built-in English default** for that id (only meaningful for the built-in five).
+4. The raw **id** itself, as a last resort.
+
+A translation deliberately beats a configured `label` — it lets you set one default label in `categories` and still translate it per language without the English label leaking through. The category list itself is marked up as a real list for assistive technology: `role="list"` on the wrapper, `role="listitem"` on each row.
+
+### Opening and closing is imperative, not a prop
+
+There is no `open` prop. Use `useConsentActions()`:
+
+```tsx title="app/PreferencesTrigger.tsx"
+"use client";
+
+import { useConsentActions, usePreferencesOpen } from "@cookieyes/react";
+
+export function PreferencesTrigger() {
+  const { showPreferences, hidePreferences } = useConsentActions();
+  const isOpen = usePreferencesOpen();
+
+  return (
+    <button type="button" onClick={isOpen ? hidePreferences : showPreferences}>
+      {isOpen ? "Close" : "Cookie settings"}
+    </button>
+  );
+}
+```
+
+or read the current state with `usePreferencesOpen()`. `showPreferences()` also records the currently focused element, so focus returns there when the dialog closes.
+
+If you're coming from a tool that shipped a dedicated trigger or link component, there isn't one here by design — you call `showPreferences()` from your own button, link, footer item, or settings page. [Reopening the preferences dialog](/docs/reopening-preferences) covers building your own trigger, plus a standalone privacy-settings-page pattern, in full. [`RecallButton`](/docs/components/recall-button) is the ready-made floating alternative if you'd rather not build one.
+
+### Focus and keyboard behaviour are handled
+
+The dialog traps focus while open, restores focus to the trigger on close, closes on `Escape`, and carries `role="dialog"` with `aria-modal`. Tab order follows the dialog's DOM order — close button, then each category row, then Reject All / Save / Accept All. Each toggle carries `role="switch"` with `aria-label` set to that category's resolved label — the same text the visible label shows, so a screen reader announces exactly what a sighted visitor sees. You do not need to add any of it. See [Accessibility](/docs/accessibility).
+
+### Custom categories: the five validation rules
+
+Passing your own `categories` array replaces the built-in five, so it's validated. In order — the first rule that fails wins:
+
+1. **Every id must be a non-empty string.**
+2. **An id must not contain `,` or `:`.** This is the one to get right, and the reason the ticket calls it the single most important thing on this page. Those two characters are the field and key delimiters in the stored consent cookie — a category id containing either would corrupt every visitor's saved choices on the next round-trip, silently, with no error anywhere. Nothing else here will hide a mistake this invisibly.
+3. **Ids must be unique.**
+4. **An id must not collide with a reserved cookie key** — `consentid`, `consent`, `action`, `tax`, `lastRenewedDate` — the SDK's own metadata fields stored in the same cookie.
+5. **At least one category must be `{ required: true }`.**
+
+**Invalid config does not throw.** It's caught, a warning is logged, and the SDK falls back to the built-in five — your custom categories silently do not appear, rather than the app crashing:
+
+```text title="Console warning"
+[cookieyes] Invalid categories config (${error}). Falling back to the default five (necessary, functional, analytics, performance, advertisement).
+```
+
+`${error}` is replaced with whichever rule above failed first, in the same words listed there — search the console for exactly that string if a category you configured is missing.
+
+A complete, valid taxonomy that passes all five rules:
+
+```ts title="src/categories-example.ts"
+import { initCookieYes } from "@cookieyes/core";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  categories: [
+    { id: "necessary", required: true, label: "Essential" },
+    {
+      id: "functional",
+      label: "Functional",
+      gcm: ["functionality_storage", "personalization_storage"],
+    },
+    { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+    {
+      id: "marketing",
+      label: "Marketing",
+      gcm: ["ad_storage", "ad_user_data", "ad_personalization"],
+    },
+  ],
+});
+```
+
+### Changing categories re-prompts every returning visitor
+
+<Callout type="warn">
+  Editing your `categories` array can force **every returning visitor** to see the banner and preferences dialog again, discarding what they already told you.
+</Callout>
+
+The taxonomy carries a fingerprint built from three things per category: its `id`, its `required` flag, and its `gcm` mapping. Change any of the following and the fingerprint changes, which invalidates every stored decision:
+
+- **Adding or removing a category.**
+- **Renaming a category's `id`.**
+- **Changing which category is `required`.**
+- **Changing a category's Google Consent Mode (`gcm`) mapping.**
+
+These do **not** re-prompt anyone — they change nothing the fingerprint tracks:
+
+- Changing a category's `label`.
+- Changing a category's `description`.
+
+That's deliberate: relabeling "Marketing" to "Advertising" is a wording change, not a change to what the visitor actually agreed to. Renaming the `id` itself, though, is treated as a different category entirely — there's no way to infer what someone consented to under an id that no longer exists.
+
+**Plan taxonomy changes deliberately.** Treat `id`, `required`, and `gcm` as the stable, load-bearing parts of a category, and iterate freely on `label` and `description` — those cost nothing.
+
+### Google Consent Mode
+
+This SDK broadcasts Google Consent Mode v2 signals automatically whenever a `dataLayer` is present on the page — no configuration needed, and nothing to wire up in this component. If GA4, GTM, or another Google service has put a `dataLayer` on the page, a consent update is pushed on load and on every change; with no `dataLayer` present, the broadcast is a no-op.
+
+The built-in five map to signals like this:
+
+| Category | Google Consent Mode signal(s) |
+| --- | --- |
+| `necessary` | none — required categories aren't consentable, so nothing to signal |
+| `functional` | `functionality_storage`, `personalization_storage` |
+| `analytics` | `analytics_storage` |
+| `performance` | **none** — no Google signal corresponds to it |
+| `advertisement` | `ad_storage`, `ad_user_data`, `ad_personalization` |
+
+A custom category supplies its own mapping via `gcm: [...]` in its definition — see the [validation rules](#custom-categories-the-five-validation-rules) above for a complete example.
+
+`security_storage` is always broadcast as `granted`, for every visitor, regardless of any category's state — it isn't consentable, so no category maps to it.
+
+## Verify it works
+
+1. **Clicking Customise on the banner opens this dialog.** If nothing happens, `<CookiePreferences />` is not mounted.
+2. **Every configured category appears**, in the order you defined it, each with a working toggle.
+3. **The required category has no toggle** — just the translated "always active" text, no switch element in the DOM.
+4. **Toggling categories and pressing Save persists your choice.** Reload the page — the dialog should reflect the same values you saved, not the defaults.
+
+If a check fails:
+
+| Check that failed | Cause | Fix |
+| --- | --- | --- |
+| Customise does nothing | `<CookiePreferences />` is not mounted | Render it alongside `<CookieBanner />` |
+| A category is missing | Custom `categories` was rejected and fell back to the built-in five | Check the console for the `[cookieyes] Invalid categories config` warning |
+| The required category shows a toggle | It's missing `required: true` in your `categories` config | Add `required: true` to that category's definition |
+| Choices don't persist after reload | You toggled but never called Save / Accept All / Reject All | Toggling alone never commits — see [Toggling is not saving](#toggling-is-not-saving) |
+| Every returning visitor sees the banner again unexpectedly | A taxonomy change (`id`, `required`, or `gcm`) invalidated the stored consent | Expected — see [re-prompts](#changing-categories-re-prompts-every-returning-visitor) above, or revert the change if it was unintended |
+
+## Complete example
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import {
+  CookieBanner,
+  CookiePreferences,
+  RecallButton,
+  initCookieYes,
+} from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  i18n: {
+    locale: "en",
+    messages: {
+      en: {
+        preferencesTitle: "Your privacy choices",
+        preferencesIntro: "Choose which cookies we may use. You can change this any time.",
+        categories: {
+          analytics: {
+            label: "Analytics",
+            description: "Helps us understand which pages are useful.",
+          },
+        },
+      },
+    },
+  },
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </>
+  );
+}
+```
+
+```css title="app/consent.css"
+[data-cy-part="dialog"] {
+  max-width: 40rem;
+}
+
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: var(--brand-success);
+}
+```
+
+## Common mistakes
+
+**Clicking Customise on the banner does nothing.**
+`<CookiePreferences />` is not mounted. The banner only requests the dialog; this component renders it.
+
+**A category is missing from the dialog.**
+Your custom `categories` config was rejected and fell back to the built-in five — check the console for a warning.
+
+**Toggling a switch immediately loads a tracker.**
+Your gating reads the live value. Use `useConsentCategory(category)`, which reads the committed value.
+
+**The `necessary` toggle cannot be switched off.**
+Correct and intentional — it is `required: true`.
+
+**Custom category labels do not appear.**
+Category text lives under `i18n.messages[locale].categories[id]`, keyed by category id. A typo in the id falls back silently to the default text.
+
+## Across the SDK
+
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core`, `consentStore.categories` gives you the resolved taxonomy and `getCategoryText(id)` the translated text — enough to build the same dialog in any framework.
+
+## See also
+
+- [CookieOptOut](/docs/components/cookie-opt-out) — the CCPA equivalent
+- [RecallButton](/docs/components/recall-button) — the ready-made floating trigger that reopens this dialog
+- [Preferences primitives](/docs/headless/preferences) — your own dialog markup. The category pieces work a little differently there: `Preferences.Category` hands you `disabled` and `toggle` as raw render-prop values you wire up yourself, rather than this preset's built-in "no toggle at all" treatment for required categories.
+- [Translations (i18n)](/docs/translations) — category labels in every locale
+- [Integrations](/docs/integrations) — Google Analytics 4 and Google Tag Manager guides are planned but not yet written; in the meantime, [Google Consent Mode](#google-consent-mode) above already works with no configuration needed.

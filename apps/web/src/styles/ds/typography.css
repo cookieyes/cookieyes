@@ -1,0 +1,132 @@
+/* Typography scale — built from the Figma `--typography-*` and `--fontsize/lineheight` tokens.
+   Display headings (H1–H6) use Poppins; text sizes use Inter. Float tokens are unitless,
+   so lengths are wrapped in calc(var(--x) * 1px). */
+
+.cy-h1 {
+  font-family: var(--font-display);
+  font-weight: var(--fontweight-bold);
+  font-size: calc(var(--typography-h1-fontsize) * 1px);
+  line-height: calc(var(--typography-h1-lineheight) * 1px);
+  color: var(--color-text-title);
+}
+.cy-h2 {
+  font-family: var(--font-display);
+  font-weight: var(--fontweight-bold);
+  font-size: calc(var(--typography-h2-fontsize) * 1px);
+  line-height: calc(var(--typography-h2-lineheight) * 1px);
+  color: var(--color-text-title);
+}
+.cy-h3 {
+  font-family: var(--font-display);
+  font-weight: var(--fontweight-bold);
+  font-size: calc(var(--typography-h3-fontsize) * 1px);
+  line-height: calc(var(--typography-h3-lineheight) * 1px);
+  color: var(--color-text-title);
+}
+.cy-h4 {
+  font-family: var(--font-display);
+  font-weight: var(--fontweight-bold);
+  font-size: calc(var(--typography-h4-bold-fontsize) * 1px);
+  line-height: calc(var(--typography-h4-bold-lineheight) * 1px);
+  color: var(--color-text-title);
+}
+.cy-h5 {
+  font-family: var(--font-display);
+  font-weight: var(--fontweight-semibold);
+  font-size: calc(var(--typography-h5-semibold-fontsize) * 1px);
+  line-height: calc(var(--typography-h5-semibold-lineheight) * 1px);
+  color: var(--color-text-title);
+}
+.cy-h6 {
+  font-family: var(--font-display);
+  font-weight: var(--fontweight-semibold);
+  font-size: calc(var(--typography-h6-semibold-fontsize) * 1px);
+  line-height: calc(var(--typography-h6-semibold-lineheight) * 1px);
+  color: var(--color-text-title);
+}
+
+/* Body / UI text — Inter. Suffix = weight. */
+.cy-text-xl {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-regular);
+  font-size: calc(var(--fontsize-18) * 1px);
+  line-height: calc(var(--lineheight-27) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-xl-semi {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-semibold);
+  font-size: calc(var(--fontsize-18) * 1px);
+  line-height: calc(var(--lineheight-27) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-lg {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-regular);
+  font-size: calc(var(--fontsize-16) * 1px);
+  line-height: calc(var(--lineheight-24) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-lg-medium {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-medium);
+  font-size: calc(var(--fontsize-16) * 1px);
+  line-height: calc(var(--lineheight-24) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-lg-bold {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-bold);
+  font-size: calc(var(--fontsize-16) * 1px);
+  line-height: calc(var(--lineheight-24) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-md {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-regular);
+  font-size: calc(var(--fontsize-14) * 1px);
+  line-height: calc(var(--lineheight-20) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-md-medium {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-medium);
+  font-size: calc(var(--fontsize-14) * 1px);
+  line-height: calc(var(--lineheight-20) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-md-bold {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-bold);
+  font-size: calc(var(--fontsize-14) * 1px);
+  line-height: calc(var(--lineheight-20) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-sm {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-regular);
+  font-size: calc(var(--fontsize-13) * 1px);
+  line-height: calc(var(--lineheight-18) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-sm-medium {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-medium);
+  font-size: calc(var(--fontsize-13) * 1px);
+  line-height: calc(var(--lineheight-18) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-xs {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-regular);
+  font-size: calc(var(--fontsize-12) * 1px);
+  line-height: calc(var(--lineheight-16) * 1px);
+  color: var(--color-text-body);
+}
+.cy-text-xs-medium {
+  font-family: var(--font-ui);
+  font-weight: var(--fontweight-medium);
+  font-size: calc(var(--fontsize-12) * 1px);
+  line-height: calc(var(--lineheight-16) * 1px);
+  color: var(--color-text-body);
+}

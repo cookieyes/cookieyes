@@ -16,6 +16,10 @@ export const en: TranslationMap = {
   preferencesTitle: "Customise Consent Preferences",
   preferencesIntro:
     "We use cookies to help you navigate efficiently and perform certain functions. You will find detailed information about all cookies under each consent category below.",
+  alwaysActive: "Always Active",
+  preferencesDialogLabel: "Cookie preferences",
+  optOutDialogLabel: "Opt-out preferences",
+  recallButtonLabel: "Consent Preferences",
   categories: {
     necessary: {
       label: "Necessary",
@@ -50,6 +54,13 @@ export const en: TranslationMap = {
     cancel: "Cancel",
     successText: "Your opt-out preference has been honored.",
     successCountdown: "Banner closes automatically in {seconds} s...",
+  },
+  bannerCloseLabel: "Close",
+  preferencesCloseLabel: "Close preferences",
+  optOutCloseLabel: "Close",
+  gatedFrame: {
+    placeholder: "This content requires {category} cookies to be enabled.",
+    action: "Manage Preferences",
   },
   reloadNotice: {
     message:

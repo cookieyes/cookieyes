@@ -1,0 +1,15 @@
+{
+  "title": "Styling",
+  "pages": [
+    "overview",
+    "theme-tokens",
+    "css-variables",
+    "part-and-state-contract",
+    "custom-css",
+    "tailwind",
+    "color-scheme",
+    "csp"
+  ],
+  "defaultOpen": true,
+  "collapsible": true
+}

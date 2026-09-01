@@ -1,0 +1,126 @@
+---
+title: Google Tag Manager
+description: Load a GTM container behind consent, gated by Google Consent Mode v2.
+---
+
+## When to use it
+
+Use this preset when GA4, Google Ads, or other tags are managed *through* a GTM container, rather than loaded directly by this SDK. It gates the container script itself and broadcasts Consent Mode signals for the tags inside it to read — it does not, and cannot, gate the individual tags inside your container one by one.
+
+If you're loading GA4 or Google Ads directly (not through a container), use [Google Analytics 4](/docs/integrations/ga4) or [Google Ads](/docs/integrations/google-ads) instead. Configuring both a container and a standalone GA4/Ads preset for the same product fires an overlap warning, because if the container also loads that product, it'll fire twice.
+
+## Basic usage
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { googleTagManager } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [googleTagManager({ containerId: "GTM-XXXXXXX" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+GTM goes through Google Consent Mode like every other Google product here — see [Google Consent Mode v2 → Basic usage](/docs/integrations/google-consent-mode#basic-usage) for the `<head>` deny-default snippet this preset relies on.
+
+## Behaviour and trade-offs
+
+### Config fields
+
+| Field | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `containerId` | `string` | — required | GTM container id, e.g. `"GTM-XXXXXXX"`. |
+| `category` | `string` | `"analytics"` | Consent category gating the container script itself. |
+| `id` | `string` | `"gtm"` | Override the integration id — the registry key; must stay unique. |
+| `consentMode` | `"advanced" \| "basic"` | `"advanced"` | See [Google Consent Mode v2](/docs/integrations/google-consent-mode#advanced-vs-basic--the-real-trade-off) for the full trade-off. |
+
+### The container's own tags are opaque to this SDK
+
+This is the single most important thing to understand about gating GTM here: `googleTagManager()` controls only the container script (`gtm.js`) itself. It cannot see, gate, or individually control the tags configured *inside* your container — Google Tag Manager's admin UI, not this SDK, is where each tag's own consent behavior is set. This SDK's job stops at loading the container and broadcasting the seven Consent Mode signals; whether an individual tag inside GTM actually respects those signals depends on that tag's own trigger and consent settings inside GTM. See [Consent Mode → GTM is a special case](/docs/integrations/google-consent-mode#gtm-is-a-special-case) for the full explanation.
+
+### What `consentMode` changes for the container itself
+
+The general `advanced`/`basic` trade-off lives on the [Consent Mode page](/docs/integrations/google-consent-mode#advanced-vs-basic--the-real-trade-off) — here's what it means for the container script specifically:
+
+| | `advanced` (default) | `basic` |
+| --- | --- | --- |
+| When `gtm.js` loads | Immediately, before any consent decision | Only after the category is granted |
+| `onRevoke` | `"keep"` — the container script stays loaded | `"remove"` — removes the container script only |
+
+Removing the container script on `basic` revoke does not, and cannot, unload or reset whatever tags the container already fired while it was loaded — the same "injection is one-way" limitation any script-based tool has.
+
+### Overlap with a standalone GA4 or Google Ads preset
+
+Configuring `googleTagManager()` alongside `ga4()` or `googleAds()` fires a one-time dev warning, because if your container is also set up to load GA4 or Ads, the same product ends up firing twice — once from the container, once from the standalone preset:
+
+```text title="Console output when both are configured"
+[cookieyes] both Google Tag Manager and a gtag product (GA4/Ads) are configured. If your
+container also loads GA4/Ads, they will fire twice — use googleTagManager() OR ga4()/googleAds()
+for the same product, not both.
+```
+
+Pick one path per product: either manage it through the container, or load it directly with the matching preset — not both.
+
+## Complete example
+
+```tsx title="app/layout.tsx"
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { googleTagManager } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [googleTagManager({ containerId: "GTM-XXXXXXX", consentMode: "basic" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**Tags inside the container aren't reacting to consent.**
+This SDK only broadcasts the Consent Mode signals — it doesn't configure your container's individual tag triggers. Check each tag's own consent settings inside the GTM admin UI; see [The container's own tags are opaque to this SDK](#the-containers-own-tags-are-opaque-to-this-sdk) above.
+
+**A GTM container and a standalone GA4/Ads preset fire the same product twice.**
+That's the overlap warning's exact scenario — your container is probably also configured to load the same product a standalone preset already loads. Use one path or the other, not both.
+
+**Revoking analytics doesn't stop the container.**
+That's `advanced` (the default) working as designed — `onRevoke: "keep"` leaves the container script loaded; Consent Mode's signals are the only response. Set `consentMode: "basic"` if you want the container script itself removed on revoke.
+
+**No `gtm.js` requests fire at all.**
+The `<head>` deny-default snippet is likely missing — see [Consent Mode → Basic usage](/docs/integrations/google-consent-mode#basic-usage).
+
+## Across the SDK
+
+`googleTagManager()` is a `@cookieyes/scripts` export returning an `Integration`, the same shape every preset in this SDK returns, consumed through the `integrations` key on `initCookieYes()`. What the tags inside your container actually do with pre-consent traffic is governed by Consent Mode's broadcast (`@cookieyes/core`'s `google-consent-mode.ts`) and by each tag's own trigger configuration inside GTM — `googleTagManager()` itself only loads the container script and registers it in the consent lifecycle.
+
+To run your own code when a category the container depends on changes, a React host uses `useOnConsentChange` from `@cookieyes/react`; a plain-JavaScript or non-React host uses the `onConsentUpdate` config callback on `CookieYesConfig`.
+
+## See also
+
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode) — the full signal list, the `advanced`/`basic` trade-off, and the GTM special case in full.
+- [Google Analytics 4](/docs/integrations/ga4), [Google Ads](/docs/integrations/google-ads) — the standalone presets, for when a product isn't managed through a container.

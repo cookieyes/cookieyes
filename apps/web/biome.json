@@ -1,0 +1,31 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
+  "root": false,
+  "extends": "//",
+  "files": {
+    "includes": [
+      "**",
+      "!.next",
+      "!public",
+      "!src/app/sections",
+      "!src/app/motion/design-motion.js",
+      "!src/app/MobileMenu.tsx",
+      "!src/app/landing.css",
+      "!.source",
+      "!content"
+    ]
+  },
+  "linter": {
+    "domains": {
+      "next": "recommended",
+      "react": "recommended"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}

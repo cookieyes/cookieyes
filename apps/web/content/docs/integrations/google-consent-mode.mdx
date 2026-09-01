@@ -1,0 +1,244 @@
+---
+title: Google Consent Mode v2
+description: How the SDK broadcasts Google's seven Consent Mode v2 signals, and the advanced/basic trade-off.
+---
+
+Google Consent Mode is not a per-vendor setting you turn on. It's a standing broadcast this SDK runs for you the moment any Google product is on the page — GA4, Google Ads, or a GTM container — and this page is the one place it's explained in full, so [GA4](/docs/integrations/ga4), [Google Tag Manager](/docs/integrations/google-tag-manager), and [Google Ads](/docs/integrations/google-ads) can each link here instead of re-deriving it.
+
+## When to use it
+
+This applies the moment *any* Google product is on the page. It is not optional per-vendor configuration: the broadcast (`broadcastGoogleConsent`) runs automatically inside `createConsentManager`, on load and on every consent change, gated only on one condition — does `window.dataLayer` exist. There's nothing to opt into.
+
+What *is* a real decision, and what the rest of this page covers:
+
+- Whether to set the deny-by-default snippet in `<head>` — you must, for correct first-paint behavior. See [Basic usage](#basic-usage).
+- `advanced` vs `basic`, per Google product. See [Behaviour and trade-offs](#behaviour-and-trade-offs).
+- `googleConsentMatch`, if your taxonomy maps more than one category to the same signal. See [Behaviour and trade-offs](#behaviour-and-trade-offs).
+
+If you have no Google product on the page at all, skip this page — the broadcast is a silent no-op with no `dataLayer` present.
+
+## Basic usage
+
+The Consent Mode **default** must run before any Google tag and before `initCookieYes`. In Next.js, render it as an inline `<script>` high in `app/layout.tsx`, inside `<body>` before `{children}`:
+
+```tsx title="app/layout.tsx"
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+`<GoogleConsentMode />` renders `googleConsentModeSnippet()`'s output as an inline, synchronous `<script>` — the standard, documented Google pattern.
+
+Outside Next.js, or in a client-only app, call `bootstrapGoogleConsentMode(options?)` once, before `initCookieYes` — the runtime equivalent. It's idempotent, guarded by an internal `window.__ckyGcmReady` flag, so calling it twice does nothing the second time.
+
+```tsx title="app/bootstrap.ts"
+import { bootstrapGoogleConsentMode } from "@cookieyes/scripts";
+
+bootstrapGoogleConsentMode();
+// initCookieYes(...) goes here, after this call.
+```
+
+Then load a Google product with a preset from `@cookieyes/scripts` via the `integrations` config key — see [GA4](/docs/integrations/ga4), [Google Tag Manager](/docs/integrations/google-tag-manager), and [Google Ads](/docs/integrations/google-ads) for the vendor-specific config; this page doesn't repeat it.
+
+If the `<head>` snippet is skipped, this isn't a silent failure and it doesn't throw. `ensureConsentModeReady()` runs inside the loaders (`ga4()`, `googleAds()`, `googleTagManager()`) the first time a Google script is injected, detects the missing default, logs a console warning, and falls back to a deny-default *late*:
+
+```text title="Console output when the <head> snippet was skipped"
+[cookieyes] Google Consent Mode default was not set before init — add the <head> snippet
+(googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back
+to a deny-by-default now.
+```
+
+That's a documented, observable fallback — the visitor still gets a deny-by-default, just later than the correct first-paint moment.
+
+## Behaviour and trade-offs
+
+### The seven signals, and which two are new in v2
+
+All seven Consent Mode v2 signals are broadcast — always, not only the ones a customer happened to map:
+
+| Signal | Governs |
+| --- | --- |
+| `ad_storage` | Advertising cookies/storage |
+| `ad_user_data` | Sending user data to Google for advertising purposes — **new in v2** |
+| `ad_personalization` | Personalized advertising — **new in v2** |
+| `analytics_storage` | Analytics cookies/storage |
+| `functionality_storage` | Cookies that support site functionality |
+| `personalization_storage` | Cookies that support personalization |
+| `security_storage` | Cookies for security purposes — always `granted`, never gated |
+
+`ad_user_data` and `ad_personalization` are the two signals Consent Mode v2 added over v1. If you're comparing against a v1 integration you had before, those are the ones that are new — Google introduced them specifically to require explicit signals for sending data to Google and for ad personalization, separate from the general `ad_storage` signal.
+
+### The default vs. the update
+
+Consent Mode has two halves, and this SDK owns only one of them:
+
+- **The default** — the customer's responsibility. A deny-by-default set in `<head>`, before any Google tag runs. Covered in [Basic usage](#basic-usage).
+- **The update** — this SDK's responsibility. Broadcast automatically on load and on every consent change, reflecting the visitor's actual saved choice.
+
+The default protects first paint (nothing is granted before you know otherwise); the update is what makes the signals accurate once a decision exists.
+
+### `security_storage` is always granted
+
+`security_storage` is strictly necessary — it's exempt from the category mapping below and is never gated on consent. It's the one signal that's always `"granted"`, unconditionally, in every broadcast this SDK sends.
+
+### Mapping categories to signals
+
+A signal with no mapping category stays `"denied"` forever — by design, not as a bug to work around. The built-in five categories map like this:
+
+| Category | Signal(s) it drives |
+| --- | --- |
+| `necessary` | none |
+| `functional` | `functionality_storage`, `personalization_storage` |
+| `analytics` | `analytics_storage` |
+| `performance` | none |
+| `advertisement` | `ad_storage`, `ad_user_data`, `ad_personalization` |
+
+`necessary` and `performance` map to nothing. If you're relying on `performance` consent to drive a Google signal, it won't — add a `gcm` mapping to a custom category, or use `advertisement`/`analytics`, which already carry one.
+
+### `googleConsentMatch`: resolving overlapping mappings
+
+Google exposes a single on/off per signal. With the default five-category taxonomy above, exactly one category maps to each signal, so this never comes up. It only matters once you customize categories and two of them end up mapping to the same signal — at that point the mapping is lossy, and `googleConsentMatch` on `CookieYesConfig` decides which way it resolves:
+
+- `"any"` (default) — grants the signal if *any* mapping category is granted.
+- `"all"` — requires *every* mapping category to be granted.
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+
+initCookieYes({
+  mode: "cookie-only",
+  googleConsentMatch: "all",
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+An internal `warnOverlappingGcm` check fires a dev console warning automatically the moment two categories collide on the same signal, naming both categories — it's not a public export, there's nothing to call yourself; it just runs.
+
+### `advanced` vs `basic` — the real trade-off
+
+This is the central decision on this page, and every one of `ga4()`, `googleAds()`, and `googleTagManager()` defaults to `"advanced"` — a reader who wants zero pre-consent network activity to Google must set `consentMode: "basic"` themselves; it is not the out-of-the-box behavior.
+
+| | `advanced` (default) | `basic` |
+| --- | --- | --- |
+| When the tag loads | Immediately, before any consent decision | Only after its category is granted |
+| Before consent | Sends Google's own cookieless "conversion modelling" pings, governed by the Consent Mode signals | Sends nothing at all — the tag isn't on the page |
+| On revoke | `onRevoke: "keep"` — Consent Mode handles it, tag stays loaded | `onRevoke: "remove"` — the tag (and its own cookies, per product) is torn down |
+| What you're trading | More complete measurement (Google can model gaps) for a page that talks to Google before an explicit yes | Simpler compliance story, weaker measurement |
+
+**Google's rationale for `advanced`, stated honestly**: it preserves modelled conversions and behavioural measurement even when a visitor denies consent — Google's own attribution and bidding systems fill the gap statistically instead of losing the signal entirely. That's the whole reason `advanced` exists, and it's why Google recommends it as the default in its own documentation.
+
+**The fact that matters most in deciding between them**: `advanced` loads `gtag.js` and contacts Google's servers *before* the visitor has made a consent decision, relying on the denied signal values to constrain what Google does with that request rather than preventing the request itself. Some regulators and DPOs read a pre-consent request to a third party as processing that requires consent, regardless of what the signal values attached to it say. That reading doesn't depend on whether Google's modelling is accurate or privacy-respecting — it turns on the request happening at all before an affirmative yes.
+
+If your organization takes that stricter reading, `consentMode: "basic"` is the one-line way out — nothing loads, and nothing is sent, until the category is granted:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { ga4 } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [ga4({ measurementId: "G-XXXXXXX", consentMode: "basic" })],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+This is a real decision with trade-offs on both sides, not a warning against our own default — `advanced` remains what this SDK ships out of the box, and there are good, honest reasons Google recommends it. Whether the shipped default should change is a product decision outside the scope of this page; if you disagree with it, that's worth raising as its own follow-up rather than something this documentation can resolve in prose.
+
+### GTM is a special case
+
+The GTM container script itself is gated exactly like a gtag product — `advanced` loads it immediately and keeps it on revoke, `basic` waits for consent and removes it on revoke. But the tags *inside* the container are opaque to this SDK: it cannot see or gate them individually, only broadcast the Consent Mode signals for the container's own tags to read. Whether an individual tag inside your container actually respects those signals is a matter of that tag's own trigger configuration inside GTM, not something this SDK controls.
+
+Configuring both a GTM container and a standalone `ga4()`/`googleAds()` fires a one-time dev warning, because if the container *also* loads GA4/Ads, they'll fire twice:
+
+```text title="Console output when both are configured"
+[cookieyes] both Google Tag Manager and a gtag product (GA4/Ads) are configured. If your
+container also loads GA4/Ads, they will fire twice — use googleTagManager() OR ga4()/googleAds()
+for the same product, not both.
+```
+
+## Complete example
+
+A Next.js layout plus client init showing both strategies side by side — `ga4()` left at the `"advanced"` default, `googleAds()` explicitly set to `"basic"` — so the trade-off above is visible as working code, not just prose.
+
+```tsx title="app/layout.tsx"
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { ga4, googleAds } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  integrations: [
+    ga4({ measurementId: "G-XXXXXXX" }), // consentMode defaults to "advanced"
+    googleAds({ conversionId: "AW-XXXXXXXXX", consentMode: "basic" }),
+  ],
+});
+
+export function ConsentManager() {
+  return <CookieBanner />;
+}
+```
+
+## Common mistakes
+
+**Consent Mode signals aren't updating.**
+The deny-default snippet was skipped — check for the `ensureConsentModeReady` console warning, then add `<GoogleConsentMode />` (or call `bootstrapGoogleConsentMode()`) before `initCookieYes`.
+
+**Calling `broadcastGoogleConsent` directly changes nothing.**
+It's already called automatically, on every consent change and on load — there's nothing to call. If a Google tag isn't reacting, check that `window.dataLayer` actually exists at the time you're checking; the broadcast is a no-op without it.
+
+**With `basic` set, Google Ads never loads.**
+That's `basic` working as designed — nothing loads until the category is granted. If you need default-on measurement before an explicit decision, that's `advanced`, not a bug in `basic`.
+
+**A custom category isn't affecting the `advertisement` Google signals.**
+Only categories with a `gcm` mapping (or the default `advertisement`/`analytics`/`functional` ones) drive any signal. A category with no `gcm` array does nothing to Consent Mode, by design.
+
+**A GTM container and GA4 both fire GA4 twice.**
+The overlap warning above exists for exactly this — your container is probably also configured to load GA4. Use one or the other for the same product.
+
+## Across the SDK
+
+- `@cookieyes/core`'s `google-consent-mode.ts` (`broadcastGoogleConsent`, `computeGoogleConsent`, and the internal `warnOverlappingGcm`) is the engine. It's wired into `createConsentManager` and runs on every consent transition — nothing else in `@cookieyes/core` calls it.
+- `@cookieyes/scripts`'s `google.ts` owns the deny-default snippet (`googleConsentModeSnippet`, `bootstrapGoogleConsentMode`) and the three loaders — `ga4`, `googleAds`, `googleTagManager` — that consume `GoogleConsentModeStrategy`.
+- `@cookieyes/nextjs`'s `<GoogleConsentMode>`, from `@cookieyes/nextjs/server`, is a thin wrapper rendering `googleConsentModeSnippet()`'s output as an inline `<script>` — the server-renderable form of the same snippet the client bootstrap produces.
+- `googleConsentMatch` lives on `CookieYesConfig`, passed once at `initCookieYes()` — it's not a per-vendor option.
+
+## See also
+
+- [Google Analytics 4](/docs/integrations/ga4), [Google Tag Manager](/docs/integrations/google-tag-manager), [Google Ads](/docs/integrations/google-ads) — the three vendor pages this page underlies.
+- [Configuration](/docs/getting-started/configuration#storage-and-blocking) — the field reference.
+- [GatedScript](/docs/components/gated-script#across-the-sdk) — general consent-gating, for everything that isn't a Google product.
