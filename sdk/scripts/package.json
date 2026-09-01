@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/scripts",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Ready-made, consent-gated third-party integrations for CookieYes (Segment, Google, Meta, and more)",
   "keywords": [
     "cookie consent",

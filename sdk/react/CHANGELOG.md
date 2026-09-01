@@ -1,5 +1,121 @@
 # @cookieyes/react
 
+## 0.6.0
+
+### Minor Changes
+
+- e2baba4: Dev-mode console warnings for low-contrast theme colours.
+
+  In development builds only (`process.env.NODE_ENV !== "production"`), the SDK now warns in the
+  console when your configured `textColor`/`mutedTextColor` fall below WCAG AA contrast (4.5:1)
+  against `backgroundColor`, checked independently for light and dark mode. Warnings name the exact
+  failing pair and the threshold missed. Values the SDK cannot parse (anything other than 3- or
+  6-digit hex) are skipped silently rather than risk a false warning. Nothing changes in production
+  builds — this is a new export (`contrastRatio`, internal to the package) and a new dev-only side
+  effect, not a behaviour change to any rendered output.
+
+- e2baba4: Dev-mode console warning when the installed React version is newer than anything this SDK's CI
+  peer-dependency matrix has verified.
+
+  In development builds only (`process.env.NODE_ENV !== "production"`), the SDK now warns once per
+  unique React version if `React.version`'s major is higher than the newest major the CI matrix has
+  tested — the SDK likely still works (it avoids version-specific APIs) but this hasn't been
+  verified yet. The warning is silent on any version the matrix already covers, including the
+  declared `>=18.0.0` floor (peerDependencies resolution at install time already enforces that).
+  Next.js version compatibility is intentionally not checked here — `@cookieyes/react` has no
+  dependency on `next`; the published compatibility table in the README is the source of truth for
+  that. No production behaviour change, no new public export — a new dev-only side effect at mount
+  time, same class of change as the existing contrast-warning changeset.
+
+- e2baba4: Remove the `strategy` prop from `<GatedScript />` and the matching `strategy` field from `ScriptEntry`.
+
+  The prop accepted `"afterConsent" | "lazyOnce"` and was passed all the way through `registerScript` into the script registry — where nothing ever read it. Both values produced identical behaviour: the script is injected once its category is granted, and injection happens the same way regardless. There was no lazy path.
+
+  Because the two values were indistinguishable at runtime, **removing the prop changes no behaviour**. Code that set either value behaved exactly as code that set neither. TypeScript users passing `strategy` will now see a type error; the fix is to delete the prop.
+
+  If you need a genuine loading distinction — load immediately versus only after consent, and what happens when consent is withdrawn — that is what the `integrations` config option and the `@cookieyes/scripts` presets provide.
+
+- e2baba4: Explicit theme colors now survive dark mode, and three new styling tokens.
+
+  **Behaviour change.** `backgroundColor`, `textColor`, `mutedTextColor` and `borderColor` were
+  previously discarded whenever dark mode was active — the SDK's dark palette overwrote them
+  unconditionally, and there was no way to set a dark-mode value at all. They are now respected in
+  both color schemes. If you set any of those four _and_ relied on dark mode replacing them, your
+  banner will render differently after this release; remove the setting to get the old dark palette
+  back.
+
+  **New tokens.** A dedicated focus-ring token (`--cy-focus` / `theme.focusColor`) so the keyboard
+  focus indicator can be set independently of the brand color; a configurable, dark-mode-aware
+  background for the floating recall widget (`--cy-widget-bg` / `theme.widgetBackgroundColor`); and
+  two derived readable-text tokens (`--cy-on-primary`, `--cy-on-widget-bg`) so a brand color set
+  without a matching foreground still produces legible text rather than white-on-white.
+
+  All new tokens default to values that reproduce today's rendering exactly.
+
+- a9282dd: Per-part styling for the presets. `CookieBanner`, `CookiePreferences`, and `CookieOptOut` now accept `classNames` / `styles` maps — typed to the part names (`BannerPart` / `DialogPart` / `OptOutPart`) so they autocomplete — alongside the existing `className` / `style` for the card. A `styles` value is inline, so it always wins; a `classNames` value competes like any class.
+
+  Every interactive part is styleable by state: `data-cy-part` with native `:hover` / `:focus-visible` / `:disabled`, plus `data-cy-state="on" | "off"` for a checked toggle. The `--cy-*` design tokens are documented as a supported reference, with recipes for brand colour, dark mode, matching a design system, and styling a checked toggle. Our styles stay low-specificity and isolated so a stray global rule in your app won't accidentally reshape the banner.
+
+- e2baba4: Make nine previously hardcoded English strings translatable. Until now a fully translated site still announced these in English to screen reader users, and showed English text inside an otherwise translated interface.
+
+  The strings are: the visible "Always Active" label shown on a required category; the accessible names of the preferences dialog, the opt-out dialog and the floating recall button; both pieces of `<GatedFrame />`'s blocked-content placeholder; and the accessible names of the three close buttons — on the banner (rendered under CCPA), the preferences dialog and the opt-out dialog.
+
+  The close buttons were the most consequential of the nine. Each renders only an `aria-hidden` icon, so the hardcoded English label was the button's entire accessible name — on a fully translated site, a screen reader still announced "Close".
+
+  Nine keys are added to `TranslationMap` — `alwaysActive`, `preferencesDialogLabel`, `optOutDialogLabel`, `recallButtonLabel`, `bannerCloseLabel`, `preferencesCloseLabel`, `optOutCloseLabel`, and a `gatedFrame` group holding `placeholder` and `action` — and all five shipped languages (English, German, Spanish, French, Italian) supply them. `gatedFrame.placeholder` substitutes `{category}`, following the same placeholder convention as `optOut.successCountdown`'s `{seconds}`.
+
+  The recall button's tooltip was a second, separate hardcoded copy of its label; it now reads the same key.
+
+  Because the keys are required on `TranslationMap`, every shipped language must supply them — a missing translation is a build error rather than a silent English fallback. If you declare a full `TranslationMap` of your own you will need to add the nine keys; if you pass a partial object to `i18n.messages` (the usual case) nothing changes, and anything you omit still falls back to English.
+
+- e2baba4: Primary buttons now visibly darken on hover instead of only fading.
+
+  `--cy-primary-hover` has existed since the theming tokens shipped but was never consumed by any
+  rule — every button's hover state, including primary buttons, only faded to 80% opacity. Primary
+  buttons now also shift to `--cy-primary-hover` (a darker mix of your primary colour) on hover,
+  with the fade disabled so only the colour shift is visible — matching what the token's name always
+  implied it did. If you've customised `--cy-primary-hover` via the documented `!important` override,
+  that customisation is now visible for the first time.
+
+  This covers both primary-styled buttons: the banner's primary action and the CCPA opt-out dialog's Save button, which share the same background and text colours at rest and now share the same hover treatment.
+
+### Patch Changes
+
+- e2baba4: Point the blocked-style console warning at the published CSP documentation instead of a GitHub README anchor.
+
+  When a `style-src` violation is detected the SDK warns and links to the policy it needs. That link pointed at `github.com/cookieyes/cookieyes/tree/main/sdk/react#content-security-policy`; it now points at the documentation site, which covers the same ground plus the case where an inlined `critical.css` needs its own hash or nonce. Message text is otherwise unchanged.
+
+- ae888a9: Give every documentation link a working destination.
+
+  Three deprecation warnings previously gave a reader nowhere useful to go: the `mode: "offline"` rename and the `builtInIntegrations` warning carried no link at all, and the builder deprecation pointed at a raw Markdown file in the GitHub repository. All three now link to the [migration guide](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx).
+
+  The package READMEs linked to a repository copy of the "Which API should I use?" decision tree that had drifted out of date — it still told Next.js users to read server-side consent with `parseCookie()` from `@cookieyes/core`, when the correct API is `getServerConsent()` from `@cookieyes/nextjs/server`. Every README now links to the maintained copy, and the older repository copy is a pointer rather than a second source of truth.
+
+  Links point at the documentation sources in this repository. They will move to the documentation site once it is published.
+
+  Documentation links only; no behaviour or API changes.
+
+- e2baba4: Export the prop types for `<RecallButton />`, `<GatedScript />` and `<GatedFrame />` as `RecallButtonProps`, `GatedScriptProps` and `GatedFrameProps`.
+
+  All three components already accepted these props; the types were simply declared inline and unexported, so there was no public name to reference when typing a wrapper component or a helper that forwards props. The three preset components (`CookieBanner`, `CookiePreferences`, `CookieOptOut`) have always exported theirs — this brings the remaining three into line.
+
+  Additive only: no runtime behaviour changes and no existing import breaks.
+
+- e2baba4: State a concrete removal timeline everywhere a deprecation promises one.
+
+  The `builtInIntegrations` warning said "a future release" while the other two warnings committed to three release cycles. Every deprecation now says "after three release cycles" — the runtime warnings _and_ the `@deprecated` TSDoc on `mode: "offline"` and `builtInIntegrations`, which is what shows in an editor hover tooltip and had been left saying "a future release". Message and doc-comment text only — no behaviour change.
+
+- e2baba4: Remove `buttonVariant` and `widgetPosition` from the README's theme example. Neither key was ever read by any component or stylesheet rule, and both have been removed from `ThemeConfig` in `@cookieyes/core`. Documentation only.
+- e2baba4: Fix the "no runtime is registered" error and the "mounted more than once" warning to name `initCookieYes(...)`, the current API, instead of the deprecated `createCookieYes().mount()` builder they mistakenly still referenced. No behavior change — message text only. If you grep your code or logs for the old wording, update to the new text (see [Troubleshooting](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/troubleshooting.mdx)).
+- Updated dependencies [ae888a9]
+- Updated dependencies [e2baba4]
+- Updated dependencies [e2baba4]
+- Updated dependencies [e2baba4]
+- Updated dependencies [e2baba4]
+- Updated dependencies [e2baba4]
+- Updated dependencies [e2baba4]
+  - @cookieyes/core@0.5.0
+
 ## 0.5.0
 
 ### Minor Changes
