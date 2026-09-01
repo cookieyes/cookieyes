@@ -131,7 +131,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Download tarballs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: peer-matrix-tarballs
           path: matrix/results/tarballs
@@ -172,7 +172,7 @@ jobs:
           node-version: 20
 
       - name: Download all per-combination results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: peer-matrix-result-*
           path: matrix/results
@@ -208,7 +208,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Download aggregated results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: peer-matrix-results
           path: .
