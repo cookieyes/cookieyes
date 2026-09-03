@@ -34,11 +34,11 @@
     "@cookieyes/react": "workspace:*",
     "@cookieyes/scripts": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^26.2.0",
+    "@types/node": "^26.4.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   }
 }
