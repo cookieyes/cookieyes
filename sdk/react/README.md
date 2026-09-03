@@ -238,9 +238,34 @@ exactly these primitives.
 **Read consent state:**
 
 ```tsx
-const snapshot = useConsent();
-// { consentId, hasActed, categories, regulation, lastRenewed, isPreferencesOpen, isOptOutOpen }
+const {
+  consentId,           // string — stable id for this visitor's consent record
+  hasActed,            // boolean — whether a real decision has been made
+  categories,          // Record<string, boolean> — LIVE values, include unsaved dialog toggles
+  committedCategories, // Record<string, boolean> — consent IN EFFECT. Gate on this
+  regulation,          // "GDPR" | "CCPA" | "DEFAULT"
+  lastRenewed,         // number | undefined — timestamp of the last decision
+  taxonomyHash,        // string | undefined — signature of the taxonomy consent was recorded under
+  isPreferencesOpen,   // boolean
+  isOptOutOpen,        // boolean
+  reloadNotice,        // { required: boolean; reasons: string[] }
+} = useConsent();
 ```
+
+> [!IMPORTANT]
+> **`categories` and `committedCategories` are not interchangeable.**
+> `categories` is the *live* value — it changes on every dialog toggle, including
+> ones the visitor never saved. `committedCategories` only changes on a real
+> decision (accept / reject / save / reset).
+>
+> **Gate scripts, embeds, and trackers on `committedCategories`.** Gating on
+> `categories` means a visitor who flips a switch in the preferences dialog and
+> closes it *without saving* has, as far as your code is concerned, granted
+> consent. Use `categories` only to drive the checkboxes in a custom
+> preferences UI.
+>
+> For gating a single category with fewer re-renders, prefer
+> `useConsentCategory(category)`, which reads the committed value.
 
 **Drive consent (accept/reject/save, open or close dialogs):**
 
