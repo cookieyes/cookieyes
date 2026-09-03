@@ -59,10 +59,13 @@ Documented in order so a custom implementation can match it.
 | **Banner** (GDPR) | Preferences → Reject All → Accept All → branding link |
 | **Banner** (CCPA) | Close → Do Not Sell → branding link |
 | **Preferences** | Close → each category toggle, in configured order → Reject All → Save → Accept All → branding link |
-| **Opt-out** | Close → opt-out checkbox → Cancel → Confirm → branding link |
+| **Opt-out** (before saving) | Close → opt-out checkbox → Cancel → Confirm → branding link |
+| **Opt-out** (after saving) | Close → opt-out checkbox → branding link |
 | **Recall button** | A single button |
 
-Category toggles follow the configured taxonomy's declaration order, not alphabetical order. A category marked `required` renders as **plain text rather than a disabled control**, so it is not in the tab order at all.
+Category toggles follow the configured taxonomy's declaration order, not alphabetical order. A category marked `required` renders as **plain text rather than a disabled control**, so it is not in the tab order at all — Tab does not stop on it.
+
+**The opt-out dialog changes shape once the choice is saved.** Cancel and Confirm are removed and a `role="status"` confirmation takes their place, so two stops disappear from the tab order mid-interaction. The dialog then **closes itself after a ten-second countdown**. A keyboard user who is still reading the confirmation will have the dialog close under them and focus returned to the opener — expected, but worth knowing before you time a test around it.
 
 <Callout type="warn">
   **On narrow viewports the banner's visual order differs from its tab order.** Below 440px the actions stack vertically and CSS `order` presents them as Accept All, Preferences, Reject All — while the DOM order, and therefore the keyboard tab order, stays Preferences → Reject All → Accept All.
@@ -82,7 +85,9 @@ The two pop-ups are different: the visitor deliberately opened them, and they ar
 
 `Escape` closes `CookiePreferences` and `CookieOptOut`. The listener is attached to the **document**, not to the dialog element, so it works regardless of where focus currently sits — including if focus has somehow escaped the dialog.
 
-Escape does not dismiss the banner. There is no "dismiss without deciding" action under GDPR.
+Closing with Escape **returns focus exactly as clicking Close does** — the restore runs when the pop-up closes, not from any particular button, so every route out of it behaves the same.
+
+Escape does not dismiss the banner. There is no "dismiss without deciding" action under GDPR: the banner is something you answer, not something you close.
 
 ### Tab wraps inside a pop-up
 
@@ -166,7 +171,9 @@ Both render into a portal root inserted as the **first child of `<body>`** — i
 
 This is an accessibility mechanism, not an implementation detail: it means the banner is reachable within the **first Tab** rather than after every link in your navigation. Mount `<CookieYesRoot />` at the end of your layout, as the docs and CLI scaffold suggest, and it is still first in tab order.
 
-It also renders inline on the server and relocates after mount, matching on the first client pass so hydration does not mismatch.
+It also renders inline on the server and relocates after mount, so the banner is still in the initial HTML and appears just as fast — the move costs nothing in first paint, and matches on the first client pass so hydration does not mismatch.
+
+**If you have ever wondered why the banner is not where you put it, this is why.** You mount `<CookieYesRoot />` at the end of your layout, as our setup guide and the CLI scaffold both tell you to, and then find it elsewhere in the DOM. That is deliberate: left where you put it, a keyboard user would have to Tab through your entire site before reaching the consent prompt. Nothing is broken.
 
 ## Reduced motion
 
@@ -187,6 +194,61 @@ If you replace our CSS, you own this. Preserve it with:
 ```
 
 See [Custom CSS](/docs/styling/custom-css) and the [part and state contract](/docs/styling/part-and-state-contract) for the selectors.
+
+## Check it yourself, in three minutes
+
+Keyboard flow is the part you should verify by hand, because the automated suite does not cover it — see [why](#why-this-is-not-automated) below. Run this with the mouse pushed aside.
+
+### The stock components
+
+Load a page with the banner showing (clear the consent cookie, or call `reset()`), then click once on the address bar so focus starts outside the page.
+
+| # | Do this | Correct result |
+| --- | --- | --- |
+| 1 | Press `Tab` once | Focus lands on the banner's first control — **Preferences** under GDPR, **Close** under CCPA. Not a nav link, not a skip link |
+| 2 | Keep pressing `Tab` | Preferences → Reject All → Accept All → branding link, in that order |
+| 3 | Press `Tab` once more | Focus **leaves the banner** into your page. This is correct — the banner does not trap |
+| 4 | `Shift+Tab` back to Preferences, press `Enter` | The dialog opens. Focus is on the **dialog itself**, not its first button — a screen reader announces the dialog's name here |
+| 5 | Press `Tab` | Focus moves to Close, the dialog's first control |
+| 6 | `Tab` to the last control, then `Tab` once more | Focus **wraps to Close**. It never reaches the page behind |
+| 7 | `Shift+Tab` from Close | Focus wraps backwards to the last control |
+| 8 | Press `Escape` | The dialog closes, and focus is back on **Preferences** — the button you opened it from |
+
+Step 8 is the one that catches most regressions. If focus lands at the top of the page instead, the opener was not captured, or was captured too late.
+
+Repeat steps 4 and 8 with **Save** and with **Cancel**: all three routes out must return focus to the same button.
+
+### Your own banner
+
+If you replaced the banner, run the same check from your own trigger — a footer "Cookie settings" link is the usual case:
+
+| # | Do this | Correct result |
+| --- | --- | --- |
+| 1 | `Tab` to your trigger, press `Enter` | The dialog opens, focus on the dialog itself |
+| 2 | `Tab` around the dialog and past its last control | Focus wraps rather than escaping |
+| 3 | Press `Escape` | Focus returns to **your** trigger |
+| 4 | Open from a trigger that unmounts while the dialog is open | Focus still returns to a control with the same label, not to the first control on the page |
+
+Step 4 is the one custom implementations fail. If you opened the dialog through [`useConsentActions()`](/docs/hooks/use-consent-actions) you get it for free; if you called the runtime directly you will not.
+
+Also confirm, at every step above, that the focused control has a **visible outline**. A CSS reset that removes `:focus-visible` styling passes every automated check and makes the whole flow unusable.
+
+### Why this is not automated
+
+Some of it is, and it is worth being exact about which:
+
+| Behaviour | Covered in CI? |
+| --- | --- |
+| Roles, accessible names, labelling | Yes — the axe suite |
+| `Tab` / `Shift+Tab` wrap inside a pop-up | Yes — unit-tested against the trap directly |
+| Escape closing a pop-up | Yes |
+| **Focus returning to the opener on close** | **No** |
+| **The label-matching fallback when the opener has unmounted** | **No** |
+| **A visible focus outline** | **No** — jsdom has no paint |
+
+So the trap itself is defended, but **the two things most likely to break silently are not**: focus return and its fallback. Both depend on real browser focus semantics and on the timing of a real click, which a simulated DOM only approximates — which is why step 8 above is the step worth actually running.
+
+The missing outline is the other one. A CSS reset that strips `:focus-visible` passes every check in CI and makes the entire flow unusable.
 
 ## What is tested, and what is not
 
