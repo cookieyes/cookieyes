@@ -314,7 +314,24 @@ narrower situation than `useConsent()` / `useConsentActions()`:
 | `.onConsentReady(fn)` (builder) | A one-time callback right after the initial state is known, rather than an ongoing subscription. |
 | `.onConsentUpdate(fn)` (builder) | Fires on every *saved* change only (not transient toggles), registered once at config time. For a dynamic subscribe/unsubscribe instead, use `useConsentRuntime().manager.subscribe` or core's `consentStore.getState().subscribeToConsentChanges`. |
 
-All hooks are SSR-safe — they fall back to a stable snapshot when no runtime is mounted.
+**Every hook that reads state is SSR-safe** — it falls back to a stable
+fresh-visitor snapshot when no runtime is mounted, on the server included.
+
+> [!WARNING]
+> **`useConsentRuntime()` and `getCookieYes()` are the two exceptions: they
+> throw.** There is no meaningful fallback for "give me the runtime" when there
+> isn't one, so both raise rather than hand back something fake:
+>
+> ```
+> [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
+> ```
+>
+> Registration is not guarded by an environment check, so whether a runtime
+> exists during server rendering depends on whether your `initCookieYes()`
+> module was evaluated for the tree being rendered — which makes this succeed on
+> one route and throw on another. Do not read the runtime while server
+> rendering: use `useConsent()` or a focused hook for state, and reach for the
+> runtime only in code that runs after mount.
 
 ### Rendering & selector contract
 
