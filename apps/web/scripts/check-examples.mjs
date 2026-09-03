@@ -39,6 +39,7 @@ const ENABLED_FILES = [
   "components/gated-frame.mdx",
   "components/reload-notice.mdx",
   "reopening-preferences.mdx",
+  "rendering-and-selector-contract.mdx",
   "network-blocking.mdx",
   "styling/overview.mdx",
   "styling/css-variables.mdx",
@@ -187,12 +188,27 @@ function main() {
         writeFileSync(target, f.content);
         checkedFiles++;
       }
-      // Examples that demonstrate `asChild` import the reader's own design-system
-      // component, conventionally `@/components/ui/*`. That path is theirs, not
-      // ours, and cannot resolve here — but the example is still worth checking
-      // for its CookieYes usage. A wildcard ambient module types those imports as
-      // `any` so the rest of the file is checked for real.
-      writeFileSync(join(groupDir, "ds-placeholders.d.ts"), 'declare module "@/*";\n');
+      // Some examples import the reader's own tooling rather than ours: a
+      // design-system component (conventionally `@/components/ui/*`) in the
+      // `asChild` demos, or a test runner in the end-to-end ones. Those belong to
+      // the reader and cannot resolve here, but the examples are still worth
+      // checking for their CookieYes usage. Ambient declarations type only those
+      // imports as `any`, so the rest of each file is checked for real.
+      // The test-runner stub carries just enough of a signature that destructured
+      // fixtures (`{ page }`) are contextually typed rather than implicitly `any`,
+      // which `strict` would otherwise reject.
+      writeFileSync(
+        join(groupDir, "reader-tooling.d.ts"),
+        [
+          'declare module "@/*";',
+          'declare module "@playwright/test" {',
+          "  type Fixtures = Record<string, any>;",
+          "  export const test: (name: string, fn: (fixtures: Fixtures) => unknown) => void;",
+          "  export const expect: (actual: unknown) => Record<string, any>;",
+          "}",
+          "",
+        ].join("\n"),
+      );
       writeFileSync(
         join(groupDir, "tsconfig.json"),
         JSON.stringify({ extends: baseTsconfigPath, include: ["**/*"] }, null, 2),
