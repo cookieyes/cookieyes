@@ -1,5 +1,25 @@
 # @cookieyes/react
 
+## 0.6.1
+
+### Patch Changes
+
+- 99375f0: Reconcile the README's accessibility scope with what the automated suite actually covers. The stated scope named `<CookieBanner />`, `<CookiePreferences />`, `<CookieOptOut />` and `<RecallButton />`, while the axe suite runs four cases across three components — the banner in both GDPR and CCPA modes, the preferences dialog, and the opt-out dialog. `<RecallButton />` has no axe coverage, and `<ReloadNotice />` is announced to screen readers via `role="alert"` but was not named in the scope at all.
+
+  Neither gap is necessarily a defect, but a reviewer who finds one overstated claim stops trusting the rest of the section. The README now names the exact test cases, adds `<ReloadNotice />` to the stated scope, and says plainly which two components the automated suite does not run against.
+
+  Also repoints the accessibility test's `docs/accessibility.md` reference, which pointed at a file that did not exist, at the published page. Documentation only; no behaviour change.
+
+- a709132: Correct the `useConsent()` return shape in the README. It listed seven fields and omitted `committedCategories` entirely, along with `taxonomyHash` and `reloadNotice`. The omission mattered more than the other two: `committedCategories` is the map that only changes on a real decision (accept, reject, save, reset), and it is the one to gate scripts and embeds on. Anyone following the README would have found only `categories` — the live value, which reflects preference-dialog toggles the visitor has not saved — and gated on that, so a visitor who flips a switch and closes the dialog without saving would have been treated as having consented.
+
+  All ten fields are now documented with their types, alongside a note stating which of the two category maps to gate on and what the other is for. Documentation only; no behaviour change.
+
+- 1ae4233: Correct the README's SSR-safety claim. It stated without qualification that all hooks are SSR-safe and fall back to a stable snapshot when no runtime is mounted. That is true of every hook that reads consent state, and false for the two that hand back the runtime itself: `useConsentRuntime()` is a direct pass-through to `getCookieYes()`, which throws when no runtime is registered rather than returning a fallback.
+
+  The distinction is deliberate — there is no honest default for "give me the runtime" when there isn't one, and a fake one would fail later and less clearly. But a developer who trusted the README and called `useConsentRuntime()` in a server-rendered component got a crash where they had been promised a fallback, with nothing in our documentation to suggest the fault was ours.
+
+  Registration is not guarded by an environment check, so whether a runtime exists during a server render depends on whether the `initCookieYes()` module was evaluated for the tree being rendered — which is what makes this succeed on one route and throw on another. The README now states the rule with its two exceptions, quotes the error text so it is searchable, and says plainly not to read the runtime while server rendering. Documentation only; no behaviour change.
+
 ## 0.6.0
 
 ### Minor Changes
