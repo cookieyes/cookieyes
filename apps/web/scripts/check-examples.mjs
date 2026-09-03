@@ -26,6 +26,7 @@ const ENABLED_FILES = [
   "hooks/use-on-consent-change.mdx",
   "hooks/focused-hooks.mdx",
   "hooks/low-level-hooks.mdx",
+  "accessibility.mdx",
   "components/cookie-banner.mdx",
   "components/cookie-preferences.mdx",
   "components/cookie-opt-out.mdx",
