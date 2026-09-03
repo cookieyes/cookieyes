@@ -47,11 +47,11 @@ You will see an actual thrown error only when code calls [`useConsentRuntime()`]
 Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
 ```
 
-### `[cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`
+### `[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`
 
-Also `[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`
+A primitive slot escaped its namespace root — usually after extracting a sub-tree into a component rendered elsewhere. Thrown by the four slots that read the dialog's saved state: `OptOut.Checkbox`, `OptOut.Save`, `OptOut.Buttons` and `OptOut.Success`.
 
-A primitive slot escaped its namespace root — usually after extracting a sub-tree into a component rendered elsewhere. Every `Preferences.*` must be a DOM descendant of `Preferences.Root`.
+The matching `[cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.` exists in our source but is **not currently wired to any slot**, so it does not fire today. If you have a `Preferences.*` slot outside its root the symptom is silent instead: it renders, and toggling or saving does nothing. Every `Preferences.*` must still be a DOM descendant of `Preferences.Root`.
 
 ### `` [cookieyes] `asChild` expects exactly one React element child. ``
 
