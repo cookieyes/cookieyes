@@ -40,6 +40,7 @@ const ENABLED_FILES = [
   "components/reload-notice.mdx",
   "reopening-preferences.mdx",
   "rendering-and-selector-contract.mdx",
+  "troubleshooting.mdx",
   "network-blocking.mdx",
   "styling/overview.mdx",
   "styling/css-variables.mdx",
