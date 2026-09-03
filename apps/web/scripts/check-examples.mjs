@@ -27,6 +27,10 @@ const ENABLED_FILES = [
   "hooks/focused-hooks.mdx",
   "hooks/low-level-hooks.mdx",
   "accessibility.mdx",
+  "headless/overview.mdx",
+  "headless/banner.mdx",
+  "headless/preferences.mdx",
+  "headless/opt-out.mdx",
   "components/cookie-banner.mdx",
   "components/cookie-preferences.mdx",
   "components/cookie-opt-out.mdx",
@@ -183,6 +187,12 @@ function main() {
         writeFileSync(target, f.content);
         checkedFiles++;
       }
+      // Examples that demonstrate `asChild` import the reader's own design-system
+      // component, conventionally `@/components/ui/*`. That path is theirs, not
+      // ours, and cannot resolve here — but the example is still worth checking
+      // for its CookieYes usage. A wildcard ambient module types those imports as
+      // `any` so the rest of the file is checked for real.
+      writeFileSync(join(groupDir, "ds-placeholders.d.ts"), 'declare module "@/*";\n');
       writeFileSync(
         join(groupDir, "tsconfig.json"),
         JSON.stringify({ extends: baseTsconfigPath, include: ["**/*"] }, null, 2),
