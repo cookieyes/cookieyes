@@ -2679,6 +2679,34 @@
   gap: 0;
 }
 
+/* Centers the 800px column per the mock's exact asymmetric formula (design doc
+   §2.4): true viewport-center once there's room, flush against the sidebar
+   otherwise. Reuses --fd-sidebar-width, which already cascades correctly to
+   #nd-page via the two-location fix above — no new layout metric is declared,
+   so the two-location !important pattern does not need repeating here.
+   Scoped to the same ≥1280px breakpoint as the no-gutter grid-template-columns
+   override below: only there does the content cell's left edge sit at exactly
+   var(--fd-sidebar-width), which the formula assumes. */
+@media (min-width: 1280px) {
+  #nd-page {
+    margin-left: max(0px, calc(50vw - (var(--fd-page-width) / 2) - var(--fd-sidebar-width)));
+    margin-right: auto;
+  }
+}
+
+/* Mock's mobile spec (docs.html's implied ≤900px collapse). Independent of the
+   768px/1280px sidebar/TOC breakpoints — those are pre-existing, deliberately
+   corrected elsewhere in this file (see the --fd-toc-width 1280px comment) and
+   are out of scope here; this rule only tightens padding, it reserves no grid
+   track. */
+@media (max-width: 900px) {
+  #nd-page {
+    max-width: 800px;
+    padding: 24px 20px 60px;
+    margin: 0 auto;
+  }
+}
+
 /* Vertical rhythm through the page head now comes from the header's own wrapper
    margins (.cy-doc-ptitle: 16px, .cy-doc-pd: 32px, .cy-doc-pmeta: 20px, .cy-doc-phr:
    28px), not from h1 directly — the design's h1 itself has margin-bottom: 0
