@@ -708,6 +708,35 @@
   margin: 0 0 16px;
 }
 
+/* .psw-h (docs.html:65) — the label heading the switcher. */
+.cy-doc-psw-h {
+  display: block;
+  padding: 0 2px 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--cy-doc-tx3);
+}
+
+/* .pi.lg (docs.html:70-72) — the logo slot, on the trigger and on every list row.
+   The design's letter-chip variant (.pi without .lg) has no user left here now that
+   all three rows carry real logos, so the transparent 21px box folds into one class. */
+.cy-doc-pi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+}
+
+.cy-doc-pi > svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+
 .cy-doc-psw {
   display: flex;
   align-items: center;
@@ -793,15 +822,6 @@
   color: var(--cy-doc-tx3);
   font-size: 11px;
   margin-left: auto;
-}
-
-/* The switcher's chips are 21px in the sidebar; the inline PackageBadge reuses the
-   same colour keys at 14px. */
-.cy-doc-pdi .cy-doc-pkg-mark {
-  width: 21px;
-  height: 21px;
-  border-radius: 4px;
-  font-size: 10px;
 }
 
 /* Version select */
