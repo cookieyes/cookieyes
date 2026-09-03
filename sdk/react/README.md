@@ -603,7 +603,7 @@ const initialConsent = readServerConsent(request.headers.get("cookie") ?? "", {
 
 **Scope of this section:** keyboard operability, focus management, screen-reader
 labelling, and reduced motion for `<CookieBanner />`, `<CookiePreferences />`,
-`<CookieOptOut />`, and `<RecallButton />`. This is **not** a "WCAG 2.1 AA
+`<CookieOptOut />`, `<RecallButton />` and `<ReloadNotice />`. This is **not** a "WCAG 2.1 AA
 compliant" claim — things outside this scope (color contrast, text resizing,
 and anything in your own custom theme/content) aren't covered and shouldn't be
 assumed to be.
@@ -634,12 +634,21 @@ element still appears and works identically, just without motion.
 
 ### Automated testing
 
-`axe-core` runs against `<CookieBanner />`, `<CookiePreferences />`, and
-`<CookieOptOut />` in CI (`src/__tests__/a11y.test.tsx`) and fails the build on
-any violation. **Caveat:** this runs under jsdom, not a real browser — it
-catches structural/ARIA regressions (missing accessible names, wrong roles,
-broken labelling) but can't evaluate layout- or paint-dependent rules like
-color contrast. It's a regression net, not a substitute for manual testing.
+`axe-core` runs in CI (`src/__tests__/a11y.test.tsx`) and fails the build on any
+violation. Coverage is four cases across three components: `<CookieBanner />` in
+both GDPR and CCPA modes, `<CookiePreferences />` open, and `<CookieOptOut />`
+open.
+
+**Caveat:** this runs under jsdom, not a real browser — it catches
+structural/ARIA regressions (missing accessible names, wrong roles, broken
+labelling) but can't evaluate layout- or paint-dependent rules like color
+contrast. It's a regression net, not a substitute for manual testing.
+
+**Scope vs. coverage:** `<RecallButton />` and `<ReloadNotice />` are in the
+scope stated above but have **no axe coverage** — their labelling is covered by
+other tests, but the automated accessibility suite does not run against them.
+Stated so the scope isn't read as a stronger guarantee than the suite gives.
+See [Accessibility](https://developer.cookieyes.com/docs/accessibility).
 
 ### Manual testing
 

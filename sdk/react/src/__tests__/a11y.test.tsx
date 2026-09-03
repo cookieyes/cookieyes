@@ -13,7 +13,8 @@ import { clearCookie, mountOffline, teardown } from "./test-utils.js";
  * paint-dependent rules (color contrast, visible text sizing, etc.) can't be
  * evaluated in jsdom and are skipped — this catches structural/ARIA
  * regressions (missing names, wrong roles, broken labelling), not the full
- * WCAG surface. See docs/accessibility.md for what this does and doesn't cover.
+ * WCAG surface. See https://developer.cookieyes.com/docs/accessibility for what
+ * this does and doesn't cover, including which components are covered here.
  */
 async function expectNoViolations(container: Element): Promise<void> {
   const results = await axe.run(container);
