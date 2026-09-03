@@ -3,6 +3,22 @@ title: Overview (asChild, part contract)
 description: How the headless primitives compose, what asChild does, and the part contract they emit.
 ---
 
+## Two sets of things, almost the same names
+
+Read this before anything else on the page.
+
+| Ready-made components | Building blocks |
+| --- | --- |
+| `CookieBanner` | `Banner` |
+| `CookiePreferences` | `Preferences` |
+| `CookieOptOut` | `OptOut` |
+
+The left column is a finished, styled, accessible UI you drop in. The right column is unstyled parts you assemble yourself. **The names differ by one word, and picking the wrong one gives you a confusing result with no error to explain it** — either a fully styled banner you cannot restyle the way you wanted, or a pile of unstyled parts where you expected a banner.
+
+The presets are built out of **exactly** these building blocks and nothing else, so assembling your own loses no behaviour. What changes is who writes the markup.
+
+**What you take on by assembling your own:** the layout and every style, the keyboard flow, and the screen-reader labelling for anything you replace. `Root` keeps most of the hard parts — see [What Root gives you for free](#what-root-gives-you-for-free) — but the moment you replace a preset you own the result. [Accessibility](/docs/accessibility) is the checklist, and its [hand-check](/docs/accessibility#check-it-yourself-in-three-minutes) is how you confirm you kept it.
+
 ## When to use it
 
 Reach for primitives when the styled presets cannot be made to fit your design system. They are the middle layer: more control than [`CookieBanner`](/docs/components/cookie-banner), far less work than rebuilding on raw hooks.
@@ -67,13 +83,33 @@ Every slot forwards its ref and spreads native props for the element it renders 
 By default an action slot renders a `<button>`. With `asChild`, it renders **your** child instead and merges its behaviour, props, and refs onto it. This is how you use a design-system component that already renders its own element, without ending up with a button inside a button.
 
 ```tsx title="components/ConsentBanner.tsx"
+"use client";
+
+import { Banner } from "@cookieyes/react";
+// Your own design-system component — it renders its own <button>.
 import { Button } from "@/components/ui/button";
 
-<Banner.AcceptAll asChild>
-  <Button variant="primary" size="lg">
-    Accept all cookies
-  </Button>
-</Banner.AcceptAll>;
+export function ConsentBanner() {
+  return (
+    <Banner.Root>
+      <Banner.Title />
+      <Banner.Description />
+      <Banner.Actions>
+        {/* One <button>, yours — not a button inside a button. */}
+        <Banner.AcceptAll asChild>
+          <Button variant="primary" size="lg">
+            Accept all cookies
+          </Button>
+        </Banner.AcceptAll>
+        <Banner.RejectAll asChild>
+          <Button variant="secondary" size="lg">
+            Reject all
+          </Button>
+        </Banner.RejectAll>
+      </Banner.Actions>
+    </Banner.Root>
+  );
+}
 ```
 
 `asChild` requires **exactly one React element child**. A string, a fragment, or two elements throws:
@@ -84,26 +120,78 @@ Error: [cookieyes] `asChild` expects exactly one React element child.
 
 It is available on action slots — the ones that render a button — not on text slots.
 
-### `onClick` chains, it does not override
+### `onClick` chains, and you can cancel ours
 
-Your handler runs first, then the slot's action. You cannot suppress the consent action by omitting a call. This is deliberate: an analytics handler must not be able to silently break Accept All.
+Your handler runs **first**, then the slot's own action. Both run, in that order.
+
+**But calling `preventDefault()` in your handler stops ours from running at all.** That is the escape hatch for interposing your own step — a confirmation, a survey, your own analytics gate — and deciding whether consent goes through:
+
+```tsx title="components/ConfirmedAccept.tsx"
+"use client";
+
+import { Banner, useConsentActions } from "@cookieyes/react";
+import { useState } from "react";
+
+export function ConfirmedAccept() {
+  const [confirming, setConfirming] = useState(false);
+  const { acceptAll } = useConsentActions();
+
+  return (
+    <>
+      <Banner.AcceptAll
+        onClick={(event) => {
+          // Stops the built-in acceptAll() for this click.
+          event.preventDefault();
+          setConfirming(true);
+        }}
+      />
+
+      {confirming ? (
+        <div role="dialog" aria-label="Confirm">
+          <p>Accept all cookies, including advertising?</p>
+          {/* Nothing was committed above — do it here, or not at all. */}
+          <button type="button" onClick={() => acceptAll()}>
+            Yes, accept all
+          </button>
+          <button type="button" onClick={() => setConfirming(false)}>
+            Go back
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
+}
+```
+
+**This works on our own buttons too, not only with `asChild`.** The same rule applies on both paths: a default-prevented click never reaches the consent action. Use it deliberately — a handler that prevents by accident silently stops consent being recorded, and nothing will tell you.
 
 ### Sub-components must live inside their Root
 
-The dialog namespaces use context for open state, category data, and focus management. Using a slot outside its root throws immediately rather than rendering something subtly broken:
+`Root` owns the dialog's open state, focus management, and — in `OptOut` — whether the visitor has saved yet. Always compose slots inside their own `Root`.
+
+**How loudly this fails varies, so do not rely on an error to catch it.** Four `OptOut` slots read that saved state and throw when they cannot find it:
 
 ```text title="Error output"
-Error: [cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.
 Error: [cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.
 ```
 
-`Banner.*` slots are more forgiving, but `Banner.Root` is what controls visibility and portalling — you want it.
+Those four are `OptOut.Checkbox`, `OptOut.Save`, `OptOut.Buttons` and `OptOut.Success`. Every other slot in both namespaces — including **all** of `Preferences.*` — reads only translations and consent, neither of which needs the root. Outside it they render happily and do nothing useful, which is the quiet failure rather than the loud one.
+
+The matching `Preferences` guard exists in our source but is not currently wired to any slot, so the error below never actually fires today. It is documented on [Troubleshooting](/docs/troubleshooting) because older versions could emit it.
+
+`Banner.*` slots have no such context at all, but `Banner.Root` is what controls visibility and portalling — you want it.
 
 ### What Root gives you for free
 
 Each `Root` handles visibility (returning `null` when it should not render), portalling into `document.body`, and applying theme CSS variables. The dialog roots add `role="dialog"`, `aria-modal`, a focus trap, autofocus on open, `Escape` to close, and focus restoration to the element that opened them.
 
 None of this is optional or configurable — it is the accessible behaviour you would otherwise have to write yourself, and it is the main reason to use primitives over hooks.
+
+### The theme is fixed when the SDK starts
+
+Colours, fonts and corner rounding come from the `theme` you pass to `initCookieYes()`, and `Root` applies them as CSS variables to everything inside it. **There is no way to change them afterwards** — no setter, no hook, nothing on the runtime.
+
+If you are building a design with its own light/dark toggle, do not go looking for a runtime theme API; there isn't one. Drive it from CSS instead, which is unaffected by this — see [Colour scheme](/docs/styling/color-scheme) and [Theme tokens](/docs/styling/theme-tokens).
 
 ## The part contract
 
@@ -159,8 +247,8 @@ export function ConsentBanner() {
 **`Error: [cookieyes] \`asChild\` expects exactly one React element child.`**
 You passed text, a fragment, or multiple elements. Wrap in exactly one element.
 
-**`Error: [cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`**
-A slot escaped its root — commonly after extracting a sub-tree into its own component that is rendered elsewhere.
+**A `Preferences.*` slot renders but does nothing.**
+It is outside `Preferences.Root`. Nothing throws — the guard for this is not currently wired — so the symptom is a dialog that renders and ignores you.
 
 **Two nested buttons in the DOM.**
 You wrapped a design-system `Button` in an action slot without `asChild`. Add `asChild`.
@@ -182,4 +270,6 @@ Primitives exist in `@cookieyes/react` and `@cookieyes/nextjs` with identical su
 
 - [Banner](/docs/headless/banner) — every banner slot
 - [Preferences](/docs/headless/preferences) — the category dialog slots
+- [OptOut](/docs/headless/opt-out) — the CCPA dialog slots
+- [Accessibility](/docs/accessibility) — what a custom design must preserve, and how to check it
 - [Part & state contract](/docs/styling/part-and-state-contract) — every selector
