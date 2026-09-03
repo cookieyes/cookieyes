@@ -645,3 +645,98 @@
   color: var(--cy-doc-tx);
   margin: 26px 0 8px;
 }
+
+/* ── Integrations sidebar icons (docs.html #sbInt .sbi) ──────────────────────
+
+   Seven vendor entries in the Integrations sidebar get an 18×18 brand icon before
+   their label, via a ::before pseudo-element — no frontmatter icon field, no
+   loader resolver (design doc §2.1: the schema-stripping cost source.ts already
+   declined once for status badges).
+
+   Scoped to #nd-sidebar, same as the "Changelog sidebar" block above, and NOT by
+   href alone: index.mdx's own Card grid links to these same seven hrefs from the
+   page content, so a bare a[href=...] selector would double-paint an icon into
+   every card too — the card grid is explicitly out of scope (design doc §2.3).
+   Desktop rail only, matching that precedent; #nd-sidebar-mobile is a separate
+   element and can be added later by duplicating the selector list.
+
+   Techniques are matched per asset to what index.mdx's own Card icons already use
+   for these same files (design doc §2.4):
+     - flat mask + brand hex   : ga4, google-tag-manager, microsoft-clarity
+     - flat mask + currentColor: google-ads, segment (no brand hex exists for these)
+     - positioned background   : meta-pixel (not a flat silhouette)
+     - content: url(...)       : posthog (multi-colour mark)
+
+   Brand hexes are fixed in both themes, never a --cy-doc-* token — the same rule
+   SidebarControls.tsx documents for its framework logos: "a brand mark that flips
+   with the colour scheme stops being the brand mark".
+
+   No icon↔label gap is declared here: #nd-sidebar a[href] already sets gap: 11px
+   sitewide, which applies to these rows for the first time now that they have a
+   first flex child. That is 3px over the gap/tight (8px) role — flagged in design
+   doc §2.6 rather than patched, since the rule is shared by every sidebar row. */
+
+#nd-sidebar a[href="/docs/integrations/ga4"]::before,
+#nd-sidebar a[href="/docs/integrations/google-tag-manager"]::before,
+#nd-sidebar a[href="/docs/integrations/google-ads"]::before,
+#nd-sidebar a[href="/docs/integrations/meta-pixel"]::before,
+#nd-sidebar a[href="/docs/integrations/microsoft-clarity"]::before,
+#nd-sidebar a[href="/docs/integrations/posthog"]::before,
+#nd-sidebar a[href="/docs/integrations/segment"]::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+#nd-sidebar a[href="/docs/integrations/ga4"]::before {
+  background-color: #e37400;
+  -webkit-mask: url(/figma-logos/ga4.svg) center / contain no-repeat;
+  mask: url(/figma-logos/ga4.svg) center / contain no-repeat;
+}
+
+#nd-sidebar a[href="/docs/integrations/google-tag-manager"]::before {
+  background-color: #246fdb;
+  -webkit-mask: url(/figma-logos/google-tag-manager.svg) center / contain no-repeat;
+  mask: url(/figma-logos/google-tag-manager.svg) center / contain no-repeat;
+}
+
+#nd-sidebar a[href="/docs/integrations/microsoft-clarity"]::before {
+  background-color: #52bd94;
+  -webkit-mask: url(/figma-logos/microsoft-clarity.svg) center / contain no-repeat;
+  mask: url(/figma-logos/microsoft-clarity.svg) center / contain no-repeat;
+}
+
+/* No brand hex exists for these two — the mock's #sbInt doesn't list them at all.
+   Reuses currentColor exactly as index.mdx's Card icons already do for the same
+   vendors, so the icon tracks the link's own ink (--cy-doc-tx, or
+   --cy-doc-nav-fg when active) rather than a colour invented here. */
+#nd-sidebar a[href="/docs/integrations/google-ads"]::before {
+  background-color: currentColor;
+  -webkit-mask: url(/figma-logos/google-ads.svg) center / contain no-repeat;
+  mask: url(/figma-logos/google-ads.svg) center / contain no-repeat;
+}
+
+#nd-sidebar a[href="/docs/integrations/segment"]::before {
+  background-color: currentColor;
+  -webkit-mask: url(/figma-logos/segment.svg) center / contain no-repeat;
+  mask: url(/figma-logos/segment.svg) center / contain no-repeat;
+}
+
+/* meta-infinity.png is not a flat silhouette — a mask would show a blank shape.
+   Reuses index.mdx's existing Card-icon crop verbatim; the percentages are
+   relative to the box, so they hold at 18px just as at 20px. */
+#nd-sidebar a[href="/docs/integrations/meta-pixel"]::before {
+  background-image: url(/figma-logos/meta-infinity.png);
+  background-position: 50% 53%;
+  background-size: 148%;
+  background-repeat: no-repeat;
+}
+
+/* Multi-colour mark — a mask would flatten it to one fill. content: url(...) makes
+   the pseudo-element a replaced element (the ::before equivalent of index.mdx's
+   plain <img src="/figma-logos/posthog.svg">), sized by the width/height above. */
+#nd-sidebar a[href="/docs/integrations/posthog"]::before {
+  content: url(/figma-logos/posthog.svg);
+}
