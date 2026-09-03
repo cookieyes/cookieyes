@@ -1,15 +1,32 @@
 ---
 title: Focused hooks
-description: Narrow hooks that read one slice of consent state without re-rendering on the rest.
+description: Ten narrow hooks, each answering one question the main read hook does not cover.
 ---
 
 ## When to use it
 
-Reach for these instead of [`useConsent()`](/docs/hooks/use-consent) whenever a component depends on a single value. `useConsent()` re-renders on every consent change, including transient dialog toggles; these do not.
+Start with the two recommended hooks: [`useConsent()`](/docs/hooks/use-consent) to read consent and [`useConsentActions()`](/docs/hooks/use-consent-actions) to change it. Most apps need nothing else.
 
-The most important one is `useConsentCategory()` — it is the correct hook for **gating**, because it reads committed consent rather than live toggles.
+The hooks on this page exist for **narrower questions** — which privacy law applies, what language is showing, whether the banner is on screen, what the configured categories are. None of them is a rival way to do what `useConsent()` does.
 
-You do not need these to build the standard UI: the components and primitives already use them internally.
+**Reaching for one is optional.** `useConsent()` can answer several of these questions itself, just less efficiently: it re-renders on every consent change, including transient dialog toggles. Whether a focused hook actually saves you anything depends on which of [three groups](#three-groups-three-re-render-behaviours) it belongs to — that section is the one to read before choosing on performance grounds.
+
+### Which hook answers which question
+
+| You want to know | Use |
+| --- | --- |
+| Has this visitor agreed to one specific category? | [`useConsentCategory(id)`](#useconsentcategory-reads-committed-not-live) |
+| Which privacy law applies? | [`useRegulation()`](#which-law-applies-and-why) |
+| *Why* is this visitor seeing that law's banner? | [`useRegion()`](#which-law-applies-and-why) |
+| What categories are configured, and which are locked on? | [`useCategories()`](#usecategories-is-a-plain-read-not-a-subscription) |
+| What text is showing right now? | [`useTranslations()`](#reading-and-switching-the-language) |
+| What language is active, and how do I switch it? | [`useLanguage()`](#reading-and-switching-the-language) |
+| Is the banner on screen right now? | [`useBannerVisibility()`](#usebannervisibility-is-three-conditions-not-one) |
+| Is the preferences dialog open? | `usePreferencesOpen()` |
+| Is the CCPA opt-out dialog open? | `useOptOutOpen()` |
+| Does a change need a page reload, and why? | [`useReloadNotice()`](#usereloadnotice-is-for-a-fully-custom-notice) |
+
+Has this visitor been asked yet? That is **not** `useBannerVisibility()` — it is `useConsent().hasActed`. See [below](#usebannervisibility-is-three-conditions-not-one).
 
 ## Basic usage
 
@@ -17,6 +34,10 @@ You do not need these to build the standard UI: the components and primitives al
 "use client";
 
 import { useConsentCategory } from "@cookieyes/react";
+
+function Dashboard() {
+  return <div>Analytics dashboard</div>;
+}
 
 export function AnalyticsWidget() {
   const allowed = useConsentCategory("analytics");
@@ -27,122 +48,330 @@ export function AnalyticsWidget() {
 
 ## Options
 
-Each hook takes no arguments unless noted.
+Each hook takes no arguments except `useConsentCategory`. **Group** is the re-render behaviour — see [Three groups](#three-groups-three-re-render-behaviours).
 
-| Hook | Returns | Description |
-| --- | --- | --- |
-| `useConsentCategory(category)` | `boolean` | One category's **committed** value. Re-renders only when it changes |
-| `useRegulation()` | `Regulation` | The regulation in effect — `"GDPR"`, `"CCPA"`, or `"DEFAULT"` |
-| `useRegion()` | `RegionDecision` | How the regulation was decided — `{ region, regulation, source, confidence }` |
-| `useCategories()` | `ResolvedCategories` | The taxonomy in effect — `{ list, ids, requiredIds }` |
-| `useTranslations()` | `TranslationMap` | Text for the active language, English filling gaps |
-| `useLanguage()` | `UseLanguageResult` | Active language, direction, and a live switcher |
-| `useBannerVisibility()` | `boolean` | Whether the banner should be showing |
-| `usePreferencesOpen()` | `boolean` | Whether the preferences dialog is open |
-| `useOptOutOpen()` | `boolean` | Whether the CCPA opt-out dialog is open |
-| `useReloadNotice()` | `UseReloadNoticeResult` | `{ required, reasons, dismiss }` |
+| Hook | Returns | Group | Exists because |
+| --- | --- | --- | --- |
+| `useConsentCategory(id)` | `boolean` | Own value | Gating needs the **committed** value for one category, without re-rendering on the rest |
+| `useRegulation()` | `Regulation` | Own value | The law in effect is often all a layout needs, and it must be right on the server |
+| `useRegion()` | `RegionDecision` | Never | Answers *why* that law was chosen — a debugging tool, not a render input |
+| `useCategories()` | `ResolvedCategories` | Never | A custom UI must follow the configured taxonomy rather than hard-code the built-in five |
+| `useTranslations()` | `TranslationMap` | Own value | Custom UI text has to come from the same resolved strings the presets use |
+| `useLanguage()` | `UseLanguageResult` | Own value | Building a language switcher needs the active tag, direction, and a setter |
+| `useBannerVisibility()` | `boolean` | Own value | Whether the banner is *on screen* is three conditions, not one — easy to get wrong by hand |
+| `usePreferencesOpen()` | `boolean` | Own value | Reacting to the dialog without subscribing to consent itself |
+| `useOptOutOpen()` | `boolean` | Own value | Same, for the CCPA opt-out dialog |
+| `useReloadNotice()` | `UseReloadNoticeResult` | Any change | Building a custom reload prompt needs the state *and* its dismiss |
 
-`useConsentCategory` is the only one that takes a parameter:
+`useConsentCategory` is the only one with a parameter:
 
 | Parameter | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `category` | `ConsentCategory` | **Yes** | — | The id to read. Any string; the built-in five autocomplete |
 
+### Return shapes
+
+`useRegion()` → `RegionDecision`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `region` | `string \| undefined` | The detected region, e.g. `"DE"` or `"US-CA"`. `undefined` when detection is off or found nothing |
+| `regulation` | `Regulation` | The law that resolved from it |
+| `source` | `"manual" \| "detected" \| "strictest"` | How the decision was reached |
+| `confidence` | `"high" \| "low"` | `"low"` when the region was guessed rather than known |
+
+`useCategories()` → `ResolvedCategories`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `list` | `CategoryDef[]` | The ordered definitions in effect — `{ id, required?, label?, description?, gcm? }` |
+| `ids` | `ConsentCategory[]` | The same ids, in the same order |
+| `requiredIds` | `Set<ConsentCategory>` | Ids that are always granted and cannot be switched off |
+| `taxonomyHash` | `string` | Fingerprint of this category list. A change [re-prompts every returning visitor](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) |
+| `isDefault` | `boolean` | `true` when the built-in five are in effect, configured or by fallback |
+
+`useLanguage()` → `UseLanguageResult`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `language` | `string` | The active language tag |
+| `direction` | `"ltr" \| "rtl"` | Reading direction — lay out a custom UI with it |
+| `languages` | `string[]` | **Only the languages already loaded.** See [the limitation below](#reading-and-switching-the-language) |
+| `setLanguage` | `(tag: string) => Promise<void>` | Switches live; the promise resolves once the new language is applied |
+
+`useReloadNotice()` → `UseReloadNoticeResult`:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `required` | `boolean` | Whether a reload is currently needed |
+| `reasons` | `string[]` | Ids of the tools that could not stop cleanly — what makes this useful for debugging |
+| `dismiss` | `() => void` | Hides the notice until a new revoke needs one |
+
 ## Behaviour and trade-offs
+
+### Three groups, three re-render behaviours
+
+These ten do not behave alike, and nothing in the naming tells you which is which. If you are choosing a focused hook to reduce re-renders, this is the section that decides it.
+
+| Group | Hooks | Re-renders |
+| --- | --- | --- |
+| **Own value only** | `useConsentCategory`, `useRegulation`, `useBannerVisibility`, `usePreferencesOpen`, `useOptOutOpen`, `useTranslations`, `useLanguage` | Only when **that hook's own value** changes |
+| **Any runtime change** | `useReloadNotice` | On **every** update, even when the notice itself has not changed |
+| **Never** | `useRegion`, `useCategories` | Never — a plain read, with no subscription at all |
+
+What separates the first two groups is not how much a hook subscribes to — nearly all of them subscribe to the same runtime — but whether the value it hands React keeps a **stable identity** between updates. React compares with `Object.is` and skips the re-render when the value has not moved.
+
+**The first group is the one that pays off.** Five of them select a primitive — a boolean or a string — which compares equal whenever it is unchanged. `useTranslations()` and `useLanguage()` select objects, but those objects are rebuilt only when the language actually changes, so their identity is stable across every other update. Either way the result is the same: a component using one of these is unaffected by unrelated consent changes, and swapping `useConsent()` for it is a real win.
+
+**`useReloadNotice()` is the exception, for a subtle reason.** It runs through the same selector as the others, but the object it selects is rebuilt on every update, so a fresh reference never matches the previous one and the comparison that makes the first group cheap cannot bite. It therefore re-renders on any runtime change — a dialog opening, a category being saved — even when `required` and `reasons` are identical. Reading the reload notice costs the same as reading everything.
+
+**The third group cannot go stale in a way that matters.** `useCategories()` reads the configured taxonomy, which is fixed when the runtime starts, so there is no update to subscribe to. `useRegion()` reads the decision that produced the current regulation, likewise settled at startup. Neither will ever re-render your component — if you are waiting for one to update, it will not.
 
 ### `useConsentCategory` reads committed, not live
 
 This is the whole point of it. Flipping a switch in the dialog without saving does **not** flip this value. Gate embeds, trackers, and third-party UI on it and an unsaved toggle can never leak data.
 
-`useConsent().categories` is the live value and would flip immediately — which is right for driving a checkbox and wrong for gating.
+`useConsent().categories` is the live value and would flip immediately — right for driving a checkbox, wrong for gating. See [`categories` vs `committedCategories`](/docs/hooks/use-consent#categories-vs-committedcategories).
 
-### `useRegion` works on the server, `useRegulation` mostly does
+### `useBannerVisibility` is three conditions, not one
 
-`useRegion()` reads a `<CookieYesProvider>` if one wraps the tree, falling back to the mounted runtime. That means it is correct during server rendering when you pass `regulation` to the provider — which is exactly why the provider exists. `source` tells you how the decision was made:
+It returns `true` only when **all three** hold:
+
+1. the visitor has not acted yet, **and**
+2. the preferences dialog is not open, **and**
+3. the CCPA opt-out dialog is not open.
+
+So it answers *"is the banner on screen right now"* — not *"has this visitor been asked yet."* Those come apart the moment either dialog opens: a visitor who opens preferences flips this to `false` while still having made no decision.
+
+**For "has this visitor decided yet", use [`useConsent().hasActed`](/docs/hooks/use-consent).** Using banner visibility for that question produces a specific bug: a "we need your consent" prompt that vanishes the instant someone opens preferences, then reappears if they close the dialog without deciding.
+
+What it is genuinely good for is coordinating your own UI with the banner while it is up:
+
+```tsx title="components/ChatLauncher.tsx"
+"use client";
+
+import { useBannerVisibility } from "@cookieyes/react";
+
+export function ChatLauncher() {
+  // Raise the launcher above the banner only while the banner is on screen.
+  const bannerVisible = useBannerVisibility();
+
+  return (
+    <button type="button" className="chat-launcher" data-raised={bannerVisible}>
+      Chat with us
+    </button>
+  );
+}
+```
+
+`usePreferencesOpen()` and `useOptOutOpen()` report conditions 2 and 3 on their own. All three select a boolean, so all three are in the [own-value group](#three-groups-three-re-render-behaviours) and are cheap to use anywhere.
+
+### Which law applies, and why
+
+`useRegulation()` returns the law in effect — `"GDPR"`, `"CCPA"`, or `"DEFAULT"`. **If that is all you need, it is enough**; reach for `useRegion()` only when the answer surprises you.
+
+`useRegion()` returns the whole decision, which makes it the tool for *"why is this visitor seeing the wrong banner?"* — the question this trips people on. `source` is usually the field that explains it:
 
 | `source` | Meaning |
 | --- | --- |
-| `"manual"` | You set `regulation` in config or on the provider |
+| `"manual"` | You set `regulation` in config or on the provider — detection never ran |
 | `"detected"` | `region.detect` returned a region that matched `region.map` |
-| `"strictest"` | Detection failed or the region was unknown; `region.strictest` applied |
+| `"strictest"` | Detection failed or the region was unknown, so `region.strictest` applied |
 
-If you only need the regulation, `useRegulation()` is enough.
+A `confidence` of `"low"` means the region was inferred rather than known — worth checking before concluding detection is broken.
 
-### `useCategories` is how you iterate
-
-`list` is the ordered `CategoryDef[]`, `ids` the ordered ids, `requiredIds` a `Set` of the ones that cannot be turned off. Iterate these rather than hard-coding the built-in five — hard-coding breaks silently the moment someone configures a custom taxonomy.
-
-It is SSR-safe, falling back to the built-in five before mount.
-
-### `useTranslations` returns text, `useLanguage` switches it
-
-`useTranslations()` gives you the resolved `TranslationMap` for the active language, with English filling any gaps. It re-renders when the language changes.
-
-`useLanguage()` returns the active language, its `direction` (`"ltr"` or `"rtl"`), the loaded languages, and a setter that switches live without a reload. Use it to build a language picker in a custom consent UI. See [Translations](/docs/translations).
-
-### `useBannerVisibility` is not `!hasActed`
-
-It accounts for regulation too. Under CCPA the banner shows even before the visitor has acted, because an opt-out regime has no "not yet decided" state to block on. Use this hook rather than deriving visibility yourself.
-
-### `useReloadNotice` includes its own dismiss
-
-`{ required, reasons, dismiss }` — enough to build a custom reload prompt. `reasons` lists the handler ids that triggered it. See [ReloadNotice](/docs/components/reload-notice).
-
-## Complete example
-
-```tsx title="components/ConsentAware.tsx"
+```tsx title="components/RegionDebug.tsx"
 "use client";
 
-import {
-  useCategories,
-  useConsentCategory,
-  useLanguage,
-  useRegion,
-  useReloadNotice,
-} from "@cookieyes/react";
+import { useRegion } from "@cookieyes/react";
 
-// Gating — committed values only, minimal re-renders.
-export function MapEmbed() {
-  const allowed = useConsentCategory("functional");
-  if (!allowed) return <MapPlaceholder />;
-  return <iframe title="Office location" src="https://maps.example.com/embed" />;
+export function RegionDebug() {
+  const { region, regulation, source, confidence } = useRegion();
+
+  return (
+    <dl>
+      <dt>Detected region</dt>
+      <dd>{region ?? "not detected"}</dd>
+      <dt>Regulation in effect</dt>
+      <dd>{regulation}</dd>
+      <dt>Decided by</dt>
+      <dd>{source}</dd>
+      <dt>Confidence</dt>
+      <dd>{confidence}</dd>
+    </dl>
+  );
 }
+```
 
-// A language picker for a custom consent UI.
+**Both of these check `<CookieYesProvider>` first**, falling back to the mounted runtime only when no provider wraps the tree. That is what makes a server-rendered banner correct for a specific visitor rather than generic — see [Rendering & selector contract](/docs/rendering-and-selector-contract#server-rendering-helpers). They are the only two hooks on this page that are provider-aware; see [None of them throw](#none-of-them-throw) for what that means for the rest.
+
+### Reading and switching the language
+
+`useTranslations()` returns the resolved text for the active language, with English filling any gaps, and re-renders when the language changes. It is the same resolved strings the presets use, so a custom UI built on it stays consistent with the built-in one.
+
+`useLanguage()` returns the active tag, its `direction` for right-to-left layouts, the loaded `languages`, and `setLanguage`. The setter switches live with no reload, fetching the language via `i18n.loadLanguage` when it is not bundled; the promise resolves once the new language is applied.
+
+**`languages` contains only the languages already loaded.** Anything reachable through on-demand loading is absent from it until it has been loaded once. This matters precisely for the obvious use case: populate a language switcher from `languages` and it will only ever offer bundled languages, so your on-demand languages stay invisible — the exact thing you set on-demand loading up for.
+
+Drive the menu from **your own** list of offerable languages, and use `languages` only to reflect what is currently loaded:
+
+```tsx title="components/LanguagePicker.tsx"
+"use client";
+
+import { useLanguage } from "@cookieyes/react";
+
+// Your list — the source of truth for the menu, including on-demand languages
+// that are not loaded yet and so will not appear in `languages`.
+const OFFERED = [
+  { tag: "en", label: "English" },
+  { tag: "fr", label: "Français" },
+  { tag: "de", label: "Deutsch" },
+  { tag: "ar", label: "العربية" },
+];
+
 export function LanguagePicker() {
   const { language, languages, setLanguage } = useLanguage();
+
   return (
-    <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-      {languages.map((tag) => (
-        <option key={tag} value={tag}>
-          {tag}
+    <select
+      value={language}
+      onChange={(event) => {
+        // Resolves once the language is applied — await it if you need to
+        // sequence anything after the switch.
+        void setLanguage(event.target.value);
+      }}
+    >
+      {OFFERED.map((option) => (
+        <option key={option.tag} value={option.tag}>
+          {option.label}
+          {languages.includes(option.tag) ? "" : " — loads on demand"}
         </option>
       ))}
     </select>
   );
 }
+```
 
-// A debug panel — useful while wiring up region detection.
-export function ConsentDebug() {
-  const { region, regulation, source, confidence } = useRegion();
-  const { ids, requiredIds } = useCategories();
-  const { required, reasons } = useReloadNotice();
+Both hooks re-render only when the language actually changes — the resolved text and the language info are rebuilt on a switch and left alone otherwise, so unrelated consent activity does not touch them. See [Translations (i18n)](/docs/translations) for the language system itself.
+
+### `useCategories` is a plain read, not a subscription
+
+It returns the customer's configured taxonomy, or the built-in five when nothing is configured (`isDefault` tells you which). Iterate `list` or `ids` rather than hard-coding the built-in five — hard-coding breaks silently the moment someone configures a custom taxonomy.
+
+**It never triggers a re-render, and that is correct.** The configured category list is fixed when the runtime starts and cannot change while the page is alive, so there is no update to subscribe to. Nothing is being missed; there is simply nothing to miss.
+
+`taxonomyHash` is the fingerprint of the list in effect. Changing the categories changes the hash, which invalidates stored consent and [re-prompts every returning visitor](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) — deliberate, because they never agreed to the new list.
+
+```tsx title="components/CustomCategoryList.tsx"
+"use client";
+
+import { useCategories, useConsent, useConsentActions } from "@cookieyes/react";
+
+export function CustomCategoryList() {
+  const { list, requiredIds } = useCategories();
+  // The live values drive the checkboxes — not the committed ones.
+  const { categories } = useConsent();
+  const { updateCategory, save } = useConsentActions();
 
   return (
-    <dl>
-      <dt>Region</dt>
-      <dd>{region ?? "unknown"}</dd>
-      <dt>Regulation</dt>
-      <dd>
-        {regulation} (via {source}, {confidence} confidence)
-      </dd>
-      <dt>Categories</dt>
-      <dd>
-        {ids.map((id) => (requiredIds.has(id) ? `${id}*` : id)).join(", ")}
-      </dd>
-      <dt>Reload needed</dt>
-      <dd>{required ? reasons.join(", ") : "no"}</dd>
-    </dl>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        save();
+      }}
+    >
+      {list.map((category) => {
+        const locked = requiredIds.has(category.id);
+        return (
+          <label key={category.id}>
+            <input
+              type="checkbox"
+              checked={locked || categories[category.id] === true}
+              disabled={locked}
+              onChange={(event) => updateCategory(category.id, event.target.checked)}
+            />
+            {category.label ?? category.id}
+            {locked ? <small>Always active</small> : null}
+          </label>
+        );
+      })}
+      <button type="submit">Save preferences</button>
+    </form>
+  );
+}
+```
+
+### `useReloadNotice` is for a fully custom notice
+
+**Most people should use [`<ReloadNotice />`](/docs/components/reload-notice) instead** — it is already wired, styled and accessible. Reach for this hook only when you are building the notice yourself.
+
+`required` becomes `true` when a revoked tool has no clean runtime stop and can only be fully undone by reloading. `reasons` holds the ids of the tools involved, which is what makes it useful for debugging: it names what is actually blocking. `dismiss` hides the notice until a new revoke needs one. For exactly when a notice appears, see [It appears only when a reload is genuinely needed](/docs/components/reload-notice#it-appears-only-when-a-reload-is-genuinely-needed).
+
+### None of them throw
+
+Every hook here has a defined value when no runtime is mounted — during server rendering, or before `initCookieYes()` has run. This is deliberate: a missing runtime renders safe defaults rather than crashing the page.
+
+| Hook | Value with no runtime |
+| --- | --- |
+| `useConsentCategory(id)` | `false` |
+| `useRegulation()` | `"DEFAULT"` |
+| `useRegion()` | `{ region: undefined, regulation: "DEFAULT", source: "manual", confidence: "high" }` |
+| `useCategories()` | The built-in five |
+| `useTranslations()` | The English defaults |
+| `useLanguage()` | `{ language: "en", direction: "ltr", languages: ["en"] }`; `setLanguage` is a no-op that resolves immediately |
+| `useBannerVisibility()` | `false` |
+| `usePreferencesOpen()` | `false` |
+| `useOptOutOpen()` | `false` |
+| `useReloadNotice()` | `{ required: false, reasons: [] }`; `dismiss` is a no-op |
+
+Some consent libraries scope their hooks to a React provider and throw when one is called outside it. These do not, which is a design choice rather than an oversight: a consent UI that crashes the page when it cannot determine consent is worse than one that renders its safe default. The cost is that a missing `initCookieYes()` surfaces as everything reading as defaults rather than as an exception — see [Common mistakes](#common-mistakes).
+
+**Two are provider-aware, eight are not.** `useRegulation()` and `useRegion()` read a `<CookieYesProvider>` before the runtime, so their server-rendered values can be visitor-specific. The other eight read the runtime only, so on the server they return the generic fresh-visitor defaults in the table above — predictable, but not tailored to the visitor.
+
+Only [`useConsentRuntime()`](/docs/hooks/low-level-hooks) and `getCookieYes()` throw when nothing is registered. That pair is the raw escape hatch, where a crash beats a silent wrong answer.
+
+## Complete example
+
+A settings panel that uses one hook from each group, and a gate that uses the cheapest one:
+
+```tsx title="components/PrivacyPanel.tsx"
+"use client";
+
+import {
+  useCategories,
+  useConsentCategory,
+  useRegion,
+  useRegulation,
+  useTranslations,
+} from "@cookieyes/react";
+
+// Own-value group — re-renders only when this one category's committed value changes.
+export function MapEmbed() {
+  const allowed = useConsentCategory("functional");
+
+  if (!allowed) return <p>Enable functional cookies to see the map.</p>;
+  return <iframe title="Office location" src="https://maps.example.com/embed" />;
+}
+
+export function PrivacyPanel() {
+  const regulation = useRegulation();
+  const { source, confidence } = useRegion();
+  const { ids, requiredIds, isDefault } = useCategories();
+  const t = useTranslations();
+
+  return (
+    <section>
+      <h2>{t.preferencesTitle}</h2>
+
+      <p>
+        {regulation} applies, decided by {source} ({confidence} confidence).
+      </p>
+
+      <p>
+        {isDefault ? "Built-in categories" : "Custom categories"}:{" "}
+        {ids.map((id) => (requiredIds.has(id) ? `${id} (always on)` : id)).join(", ")}
+      </p>
+    </section>
   );
 }
 ```
@@ -150,29 +379,45 @@ export function ConsentDebug() {
 ## Common mistakes
 
 **An embed appears the instant someone toggles a switch, before saving.**
-You used `useConsent().categories`. Use `useConsentCategory()`.
+You read `useConsent().categories`. Use `useConsentCategory()`, which reads the committed value.
 
 **`useConsentCategory("marketing")` is always false.**
 That id is not in the active taxonomy. The built-in advertising category is `advertisement`. Check `useCategories().ids`.
 
+**A "please make a choice" prompt disappears when someone opens preferences.**
+You gated it on `useBannerVisibility()`, which goes `false` while either dialog is open. Use `useConsent().hasActed` for "has this visitor decided yet".
+
+**The language switcher never offers the on-demand languages.**
+You populated it from `useLanguage().languages`, which lists only what is already loaded. Drive the menu from your own list instead.
+
+**A component using `useReloadNotice()` re-renders far more than expected.**
+It re-renders on every runtime change, not only when the notice changes — the value it reads is rebuilt each update, so React cannot skip it. Read it in a small component rather than high in the tree.
+
+**`useCategories()` never updates after a config change.**
+It is not reactive, and cannot be: the taxonomy is fixed when the runtime starts. Changing it requires a new runtime, which means a reload.
+
 **A hard-coded category list drops custom categories.**
-Iterate `useCategories().list` instead.
+Iterate `useCategories().list` instead of assuming the built-in five.
 
 **`useRegulation()` returns `"DEFAULT"` unexpectedly.**
-That is the default when nothing sets it. Set `regulation` in config, or configure `region` detection.
-
-**The banner shows under CCPA even though the visitor acted.**
-Expected. Use `useBannerVisibility()` rather than deriving it from `hasActed`.
+That is the value when nothing sets it — and also the no-runtime fallback. Check `initCookieYes()` actually ran, then set `regulation` in config or configure `region` detection.
 
 **A language switch does not change the text.**
-`setLanguage` is async and loads the language via `i18n.loadLanguage` when it is not bundled. Await it, or make sure the tag is in `i18n.messages`.
+`setLanguage` is async and loads the language via `i18n.loadLanguage` when it is not bundled. Await the promise, or confirm the tag is in `i18n.messages`.
+
+**Everything reads as defaults and there is no error.**
+No runtime is mounted — the component rendered before `initCookieYes()`, or it is a Server Component. None of these hooks throw, by design; see [None of them throw](#none-of-them-throw).
 
 ## Across the SDK
 
-All of these exist in `@cookieyes/react` and `@cookieyes/nextjs`. In `@cookieyes/core` the equivalents live on `consentStore`: `has(category)` for committed reads, `getRegion()`, `categories`, `translations`, `getLanguageInfo()` / `setLanguage()`, and `consentManager.reloadNotice`.
+All of these exist in `@cookieyes/react` and `@cookieyes/nextjs`.
+
+`@cookieyes/core` has no hooks, and no importable store singleton — `consentStore` and `consentManager` come off the runtime that `initCookieYes()` returns. Given that runtime, the equivalents are `consentStore.getState().has(category)` for a committed read (`has` is on the state object, not the store itself), `getRegion()` for the region decision, `categories` for the taxonomy, `translations` and `getLanguageInfo()` / `setLanguage()` for language, and `consentManager.reloadNotice` for the reload state. There is no equivalent of the banner-visibility composition — derive it from the store's `hasActed` and `activeUI`.
 
 ## See also
 
 - [useConsent](/docs/hooks/use-consent) — the full snapshot when you need it
+- [useConsentActions](/docs/hooks/use-consent-actions) — changing consent
+- [Which API should I use?](/docs/getting-started/which-api) — the whole decision in one table
 - [Low-level hooks](/docs/hooks/low-level-hooks) — direct runtime access
 - [Translations (i18n)](/docs/translations) — the language system these read from
