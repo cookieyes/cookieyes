@@ -4,6 +4,15 @@ This documents the guarantees the consent banner is supposed to hold at first pa
 and — importantly — **how they have been broken before**, so the next person changing this code knows
 what to be careful with.
 
+> **Internal. Not published.** The customer-facing version of the *facts* below — the guarantees, the
+> measured figures with their conditions, and which selector to measure — lives at
+> <https://developer.cookieyes.com/docs/rendering-and-selector-contract>.
+>
+> That page deliberately carries none of the regression history or the review tripwires from this
+> file: those are for whoever changes this code next, and sanding them down for a customer audience
+> would cost the thing that makes them useful. **If you change a guarantee or re-take a measurement
+> here, update that page too** — it quotes the figures and states the version they were taken against.
+
 ## Why this file exists
 
 The banner is the first thing a visitor sees, and it is the part of a page most often blamed for a

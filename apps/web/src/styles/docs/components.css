@@ -6,7 +6,8 @@
 
      .hk / .hk-hd / .hk-nm / .hk-rt / .hk-bd  → .cy-doc-hook*
      .arch / .arch-row / .arch-box / .arch-arr → .cy-doc-arch*
-     .cl-entry / .cl-ver / .cl-grp             → .cy-doc-log*
+     .cl-card / .cl-meta / .cl-date / .cl-kind / .cl-title / .cl-go                                → .cy-doc-cl*
+     .rl-badges / .rl-sum / .rl-rule / .rl-sec / .rl-inst                                          → .cy-doc-rl*
      .cmp / .ck / .cx / .cp2                  → .cy-doc-cmp*
      .ov-hero / .ov-title / .ov-b             → .cy-doc-hero*
      .pb                                      → .cy-doc-pkg
@@ -136,85 +137,226 @@
   margin-top: 12px;
 }
 
-/* ── Changelog ───────────────────────────────────────────────────────────── */
+/* ── Changelog: index cards ──────────────────────────────────────────────── */
 
-.cy-doc-log {
-  border-left: 2px solid var(--cy-doc-bd);
-  padding-left: 20px;
-  margin-bottom: 36px;
-  position: relative;
+.cy-doc-cl-card {
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: var(--cy-doc-radius-lg);
+  background: var(--cy-doc-surface);
+  padding: 20px 22px;
+  margin: 0 0 40px;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background 0.14s ease;
 }
 
-.cy-doc-log::before {
-  content: "";
-  position: absolute;
-  left: -6px;
-  top: 5px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--cy-doc-bd2);
+.cy-doc-cl-card:hover {
+  border-color: var(--cy-doc-bd3);
+  background: var(--cy-doc-bg);
 }
 
-.cy-doc-log[data-major="true"]::before {
-  background: var(--cy-doc-ac);
-}
-
-.cy-doc-log-version {
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: 14px;
-  color: var(--cy-doc-tx);
-  margin-bottom: 4px;
-}
-
-.cy-doc-log-pkgs {
+.cy-doc-cl-meta {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 14px; /* new */
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
 }
 
-.cy-doc-log-date {
+.cy-doc-cl-date,
+.cy-doc-cl-kind {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--cy-doc-tx3);
-  margin-bottom: 4px; /* was 12px */
 }
 
-.cy-doc-log-title {
-  font-size: 13.5px;
+.cy-doc-cl-go {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  font-size: 12.5px;
   font-weight: 500;
-  color: var(--cy-doc-tx2);
-  margin: 0 0 14px;
+  color: var(--cy-doc-ac);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.14s ease;
 }
 
-#nd-page .prose .cy-doc-log-pkgs code {
-  font-size: 11px;
-  color: var(--cy-doc-tx3);
+.cy-doc-cl-card:hover .cy-doc-cl-go {
+  opacity: 1;
 }
 
-.cy-doc-log-grp {
+.cy-doc-cl-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 26px;
+  letter-spacing: -0.2px;
+  color: var(--cy-doc-tx);
+  margin: 0 0 4px;
+}
+
+/* Card highlights — one condensed line per change kind. `.cy-doc-cl-grp` is the
+   prototype's `.cl-grp` label verbatim; the line beside it is this design's own,
+   since the prototype's card repeated the full bullet list instead of summarising. */
+
+.cy-doc-cl-hls {
+  margin: 14px 0 0;
+}
+
+.cy-doc-cl-hl + .cy-doc-cl-hl {
+  margin-top: 10px;
+}
+
+.cy-doc-cl-grp {
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--cy-doc-tx3);
-  margin: 14px 0 6px;
+  margin: 0 0 3px;
 }
 
-.cy-doc-log-grp:first-child {
+.cy-doc-cl-hl-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 20px;
+  color: var(--cy-doc-tx2);
+}
+
+/* ── Changelog: index page + month grouping ──────────────────────────────── */
+
+.cy-doc-cl-page h2 {
+  margin: 0 0 16px;
+}
+
+.cy-doc-cl-page h2 + .cy-doc-cl-card {
   margin-top: 0;
 }
 
-/* docs.html:194 — `li{…;margin-bottom:4px}` and no top margin. Tailwind prose adds 7.25px on
-   top. Scoped to the changelog rather than fixing `li` globally: the prototype's rule IS global,
-   but every other docs page shipped and was signed off against the current prose spacing, so
-   widening this would be unrequested scope. Specificity (1,2,1) matches the
-   `#nd-page .prose .cy-doc-log-pkgs code` precedent for beating prose. */
-#nd-page .prose .cy-doc-log li {
-  margin-top: 0;
+/* "Show earlier releases" fold — prototype `.cl-more` (margin-top:20px) wrapping a
+   `.pnav-b`-styled button with `background:none`. The prev/next footer is disabled
+   across the changelog section, so `.cy-doc-pnav`'s rules (which are coupled to
+   Fumadocs' own Footer DOM shape) never apply here — these are standalone, matching
+   the prototype's `.pnav-b` / `.nl` / `.nt` values directly. */
+
+.cy-doc-cl-more {
+  margin-top: 20px;
+}
+
+.cy-doc-cl-more-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  border: none;
+  border-radius: var(--cy-doc-radius);
+  padding: 12px 0;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  color: var(--cy-doc-tx2);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.cy-doc-cl-more-label {
+  display: block;
+  font-size: 11px;
+  color: var(--cy-doc-tx3);
+  margin-bottom: 2px;
+}
+
+.cy-doc-cl-more-title {
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+}
+
+.cy-doc-cl-more-btn:hover .cy-doc-cl-more-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Release notes (per-release detail page) ─────────────────────────────── */
+
+.cy-doc-rl-badges {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 0;
+}
+
+.cy-doc-rl-sum {
+  margin: 18px 0 0;
+  font-size: 15.5px;
+  line-height: 26px;
+  color: var(--cy-doc-tx2);
+  max-width: 64ch;
+}
+
+.cy-doc-rl-sum strong {
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+}
+
+/* MDX wraps the summary's prose in its own <p>. The wrapper is a <div> (nesting a <p> in a
+   <p> is invalid and breaks hydration), so pull that paragraph back inline to keep the bold
+   headline and the prose on one continuous run of text. */
+#nd-page .prose .cy-doc-rl-sum p {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+.cy-doc-rl-rule {
+  height: 1px;
+  background: var(--cy-doc-bd);
+  margin: 28px 0;
+}
+
+.cy-doc-rl-sec {
+  margin: 0 0 26px;
+}
+
+.cy-doc-rl-sec h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--cy-doc-tx);
+  margin: 0 0 8px;
+}
+
+/* No bespoke rule for .cy-doc-rl-sec p, deliberately (Revision 1). A release
+   section's children are now plain prose paragraphs (§2.11/§5.2), not a list, and
+   theme.css's existing #nd-page .prose p:not([class*="cy-doc-"]) rule already
+   gives every other body paragraph on the site its rhythm (14px margin-bottom,
+   --cy-doc-tx2). Matching that instead of inventing a section-specific paragraph
+   style is the correct "prose, not list-item spacing" outcome the mock never had
+   to specify (its own .rl-sec only ever held a reused <ul>, never a <p>). If a
+   future pass wants the section body visually distinct from ordinary docs prose,
+   that is a new decision to flag, not something to bake in silently here. */
+
+.cy-doc-rl-inst {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--cy-doc-bd);
+  border-radius: 8px;
+  background: var(--cy-doc-surface);
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--cy-doc-tx);
+  margin: 0 0 8px;
+}
+
+.cy-doc-rl-inst:last-child {
+  margin-bottom: 0;
 }
 
 /* ── Comparison table ────────────────────────────────────────────────────── */
@@ -423,4 +565,178 @@
 .cy-doc-table code[data-deprecated="true"] {
   text-decoration: line-through;
   opacity: 0.6;
+}
+
+/* ── Changelog sidebar (docs.html `#sbCl`) ───────────────────────────────────
+
+   The prototype gives the changelog its own sidebar treatment, not the standard
+   `.sb-a` pill: a month label, a 2px branch rule, and wrapping muted release
+   links that only change colour on hover/active.
+
+     .sb-clm      → the month label (separator items from changelog/meta.json)
+     .sb-clg      → the month's group box, hairline-separated from the next
+     .sb-br-rule  → the 2px vertical rule beside each group
+     .sb-cla      → the release links themselves
+
+   Fumadocs renders the tree as flat siblings, so there is no per-month wrapper to
+   hang `.sb-clg`/`.sb-br-rule` on. The rule is reproduced instead as a left border
+   on each release link: consecutive links stack into one continuous 2px line, and
+   the following month separator supplies the hairline that ends the group.
+
+   Everything is scoped by `:has(a[href^="/docs/changelog/"])` — `integrations/meta.json`
+   also uses a separator, so styling Fumadocs' separator element globally would
+   restyle that sidebar too. */
+
+/* Month label — prototype `.sb-clm`. */
+#nd-sidebar:has(a[href^="/docs/changelog/"]) [data-separator],
+#nd-sidebar:has(a[href^="/docs/changelog/"]) p:not(:has(a)) {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--cy-doc-tx2);
+  padding: 0 12px 8px;
+  margin: 18px 0 0;
+  border-top: 1px solid var(--cy-doc-bd);
+  padding-top: 18px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* The first month label sits directly under the "Changelog" index link, so it
+   needs no rule above it. */
+#nd-sidebar:has(a[href^="/docs/changelog/"]) [data-separator]:first-of-type,
+#nd-sidebar:has(a[href^="/docs/changelog/"]) p:not(:has(a)):first-of-type {
+  margin-top: 10px;
+}
+
+/* Release links — prototype `.sb-cla`: wrapping, muted, no pill, branch rule. */
+#nd-sidebar a[href^="/docs/changelog/"] {
+  align-items: flex-start;
+  padding: 2px 0 2px 12px;
+  margin: 0 0 0 12px;
+  border-left: 2px solid var(--cy-doc-bd);
+  border-radius: 0;
+  font-size: 13.5px;
+  line-height: 20px;
+  color: var(--cy-doc-tx3);
+  white-space: normal;
+  background: none;
+}
+
+#nd-sidebar a[href^="/docs/changelog/"]:hover {
+  background: none;
+  color: var(--cy-doc-tx);
+}
+
+#nd-sidebar a[href^="/docs/changelog/"][data-active="true"] {
+  background: none;
+  color: var(--cy-doc-nav-fg, var(--cy-doc-ac));
+  font-weight: 500;
+}
+
+/* Release-page section headings — prototype `.rl-sec h3` (16px display face).
+   These are now real MDX `###` headings so they appear in "On this page". */
+#nd-page:has(.cy-doc-rl-badges) .prose h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--cy-doc-tx);
+  margin: 26px 0 8px;
+}
+
+/* ── Integrations sidebar icons (docs.html #sbInt .sbi) ──────────────────────
+
+   Seven vendor entries in the Integrations sidebar get an 18×18 brand icon before
+   their label, via a ::before pseudo-element — no frontmatter icon field, no
+   loader resolver (design doc §2.1: the schema-stripping cost source.ts already
+   declined once for status badges).
+
+   Scoped to #nd-sidebar, same as the "Changelog sidebar" block above, and NOT by
+   href alone: index.mdx's own Card grid links to these same seven hrefs from the
+   page content, so a bare a[href=...] selector would double-paint an icon into
+   every card too — the card grid is explicitly out of scope (design doc §2.3).
+   Desktop rail only, matching that precedent; #nd-sidebar-mobile is a separate
+   element and can be added later by duplicating the selector list.
+
+   Techniques are matched per asset to what index.mdx's own Card icons already use
+   for these same files (design doc §2.4):
+     - flat mask + brand hex   : ga4, google-tag-manager, microsoft-clarity
+     - flat mask + currentColor: google-ads, segment (no brand hex exists for these)
+     - positioned background   : meta-pixel (not a flat silhouette)
+     - content: url(...)       : posthog (multi-colour mark)
+
+   Brand hexes are fixed in both themes, never a --cy-doc-* token — the same rule
+   SidebarControls.tsx documents for its framework logos: "a brand mark that flips
+   with the colour scheme stops being the brand mark".
+
+   No icon↔label gap is declared here: #nd-sidebar a[href] already sets gap: 11px
+   sitewide, which applies to these rows for the first time now that they have a
+   first flex child. That is 3px over the gap/tight (8px) role — flagged in design
+   doc §2.6 rather than patched, since the rule is shared by every sidebar row. */
+
+#nd-sidebar a[href="/docs/integrations/ga4"]::before,
+#nd-sidebar a[href="/docs/integrations/google-tag-manager"]::before,
+#nd-sidebar a[href="/docs/integrations/google-ads"]::before,
+#nd-sidebar a[href="/docs/integrations/meta-pixel"]::before,
+#nd-sidebar a[href="/docs/integrations/microsoft-clarity"]::before,
+#nd-sidebar a[href="/docs/integrations/posthog"]::before,
+#nd-sidebar a[href="/docs/integrations/segment"]::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+#nd-sidebar a[href="/docs/integrations/ga4"]::before {
+  background-color: #e37400;
+  -webkit-mask: url(/figma-logos/ga4.svg) center / contain no-repeat;
+  mask: url(/figma-logos/ga4.svg) center / contain no-repeat;
+}
+
+#nd-sidebar a[href="/docs/integrations/google-tag-manager"]::before {
+  background-color: #246fdb;
+  -webkit-mask: url(/figma-logos/google-tag-manager.svg) center / contain no-repeat;
+  mask: url(/figma-logos/google-tag-manager.svg) center / contain no-repeat;
+}
+
+#nd-sidebar a[href="/docs/integrations/microsoft-clarity"]::before {
+  background-color: #52bd94;
+  -webkit-mask: url(/figma-logos/microsoft-clarity.svg) center / contain no-repeat;
+  mask: url(/figma-logos/microsoft-clarity.svg) center / contain no-repeat;
+}
+
+/* No brand hex exists for these two — the mock's #sbInt doesn't list them at all.
+   Reuses currentColor exactly as index.mdx's Card icons already do for the same
+   vendors, so the icon tracks the link's own ink (--cy-doc-tx, or
+   --cy-doc-nav-fg when active) rather than a colour invented here. */
+#nd-sidebar a[href="/docs/integrations/google-ads"]::before {
+  background-color: currentColor;
+  -webkit-mask: url(/figma-logos/google-ads.svg) center / contain no-repeat;
+  mask: url(/figma-logos/google-ads.svg) center / contain no-repeat;
+}
+
+#nd-sidebar a[href="/docs/integrations/segment"]::before {
+  background-color: currentColor;
+  -webkit-mask: url(/figma-logos/segment.svg) center / contain no-repeat;
+  mask: url(/figma-logos/segment.svg) center / contain no-repeat;
+}
+
+/* meta-infinity.png is not a flat silhouette — a mask would show a blank shape.
+   Reuses index.mdx's existing Card-icon crop verbatim; the percentages are
+   relative to the box, so they hold at 18px just as at 20px. */
+#nd-sidebar a[href="/docs/integrations/meta-pixel"]::before {
+  background-image: url(/figma-logos/meta-infinity.png);
+  background-position: 50% 53%;
+  background-size: 148%;
+  background-repeat: no-repeat;
+}
+
+/* Multi-colour mark — a mask would flatten it to one fill. content: url(...) makes
+   the pseudo-element a replaced element (the ::before equivalent of index.mdx's
+   plain <img src="/figma-logos/posthog.svg">), sized by the width/height above. */
+#nd-sidebar a[href="/docs/integrations/posthog"]::before {
+  content: url(/figma-logos/posthog.svg);
 }

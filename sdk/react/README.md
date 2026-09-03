@@ -238,9 +238,34 @@ exactly these primitives.
 **Read consent state:**
 
 ```tsx
-const snapshot = useConsent();
-// { consentId, hasActed, categories, regulation, lastRenewed, isPreferencesOpen, isOptOutOpen }
+const {
+  consentId,           // string — stable id for this visitor's consent record
+  hasActed,            // boolean — whether a real decision has been made
+  categories,          // Record<string, boolean> — LIVE values, include unsaved dialog toggles
+  committedCategories, // Record<string, boolean> — consent IN EFFECT. Gate on this
+  regulation,          // "GDPR" | "CCPA" | "DEFAULT"
+  lastRenewed,         // number | undefined — timestamp of the last decision
+  taxonomyHash,        // string | undefined — signature of the taxonomy consent was recorded under
+  isPreferencesOpen,   // boolean
+  isOptOutOpen,        // boolean
+  reloadNotice,        // { required: boolean; reasons: string[] }
+} = useConsent();
 ```
+
+> [!IMPORTANT]
+> **`categories` and `committedCategories` are not interchangeable.**
+> `categories` is the *live* value — it changes on every dialog toggle, including
+> ones the visitor never saved. `committedCategories` only changes on a real
+> decision (accept / reject / save / reset).
+>
+> **Gate scripts, embeds, and trackers on `committedCategories`.** Gating on
+> `categories` means a visitor who flips a switch in the preferences dialog and
+> closes it *without saving* has, as far as your code is concerned, granted
+> consent. Use `categories` only to drive the checkboxes in a custom
+> preferences UI.
+>
+> For gating a single category with fewer re-renders, prefer
+> `useConsentCategory(category)`, which reads the committed value.
 
 **Drive consent (accept/reject/save, open or close dialogs):**
 
@@ -289,7 +314,24 @@ narrower situation than `useConsent()` / `useConsentActions()`:
 | `.onConsentReady(fn)` (builder) | A one-time callback right after the initial state is known, rather than an ongoing subscription. |
 | `.onConsentUpdate(fn)` (builder) | Fires on every *saved* change only (not transient toggles), registered once at config time. For a dynamic subscribe/unsubscribe instead, use `useConsentRuntime().manager.subscribe` or core's `consentStore.getState().subscribeToConsentChanges`. |
 
-All hooks are SSR-safe — they fall back to a stable snapshot when no runtime is mounted.
+**Every hook that reads state is SSR-safe** — it falls back to a stable
+fresh-visitor snapshot when no runtime is mounted, on the server included.
+
+> [!WARNING]
+> **`useConsentRuntime()` and `getCookieYes()` are the two exceptions: they
+> throw.** There is no meaningful fallback for "give me the runtime" when there
+> isn't one, so both raise rather than hand back something fake:
+>
+> ```
+> [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
+> ```
+>
+> Registration is not guarded by an environment check, so whether a runtime
+> exists during server rendering depends on whether your `initCookieYes()`
+> module was evaluated for the tree being rendered — which makes this succeed on
+> one route and throw on another. Do not read the runtime while server
+> rendering: use `useConsent()` or a focused hook for state, and reach for the
+> runtime only in code that runs after mount.
 
 ### Rendering & selector contract
 
@@ -561,7 +603,7 @@ const initialConsent = readServerConsent(request.headers.get("cookie") ?? "", {
 
 **Scope of this section:** keyboard operability, focus management, screen-reader
 labelling, and reduced motion for `<CookieBanner />`, `<CookiePreferences />`,
-`<CookieOptOut />`, and `<RecallButton />`. This is **not** a "WCAG 2.1 AA
+`<CookieOptOut />`, `<RecallButton />` and `<ReloadNotice />`. This is **not** a "WCAG 2.1 AA
 compliant" claim — things outside this scope (color contrast, text resizing,
 and anything in your own custom theme/content) aren't covered and shouldn't be
 assumed to be.
@@ -592,12 +634,21 @@ element still appears and works identically, just without motion.
 
 ### Automated testing
 
-`axe-core` runs against `<CookieBanner />`, `<CookiePreferences />`, and
-`<CookieOptOut />` in CI (`src/__tests__/a11y.test.tsx`) and fails the build on
-any violation. **Caveat:** this runs under jsdom, not a real browser — it
-catches structural/ARIA regressions (missing accessible names, wrong roles,
-broken labelling) but can't evaluate layout- or paint-dependent rules like
-color contrast. It's a regression net, not a substitute for manual testing.
+`axe-core` runs in CI (`src/__tests__/a11y.test.tsx`) and fails the build on any
+violation. Coverage is four cases across three components: `<CookieBanner />` in
+both GDPR and CCPA modes, `<CookiePreferences />` open, and `<CookieOptOut />`
+open.
+
+**Caveat:** this runs under jsdom, not a real browser — it catches
+structural/ARIA regressions (missing accessible names, wrong roles, broken
+labelling) but can't evaluate layout- or paint-dependent rules like color
+contrast. It's a regression net, not a substitute for manual testing.
+
+**Scope vs. coverage:** `<RecallButton />` and `<ReloadNotice />` are in the
+scope stated above but have **no axe coverage** — their labelling is covered by
+other tests, but the automated accessibility suite does not run against them.
+Stated so the scope isn't read as a stronger guarantee than the suite gives.
+See [Accessibility](https://developer.cookieyes.com/docs/accessibility).
 
 ### Manual testing
 

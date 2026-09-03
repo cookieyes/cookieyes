@@ -39,7 +39,7 @@ Every slot forwards a ref and spreads native props for the element it renders.
 | --- | --- | --- | --- |
 | `Banner.Root` | `<div>` | `banner` | Visibility, portal into `<body>`, theme variables. Returns `null` when hidden |
 | `Banner.Title` | `<p>` | `title` | Translated `bannerTitle` |
-| `Banner.Description` | `<p>` | `description` | Translated `bannerDescription` |
+| `Banner.Description` | `<p>` | `description` | Translated `bannerDescription` — **swaps to `ccpaDescription` automatically** under CCPA |
 | `Banner.Actions` | `<div>` | `actions` | Layout container only |
 | `Banner.AcceptAll` | `<button>` | `accept-all` | Grants every category |
 | `Banner.RejectAll` | `<button>` | `reject-all` | Denies every non-required category |
@@ -62,7 +62,13 @@ Shared props on every slot:
 
 ### `Banner.Root` is not optional
 
-It owns visibility. Without it, your banner renders unconditionally — including for visitors who already decided. It also portals into `document.body`, so the banner is never clipped by a parent's `overflow: hidden`, and applies the theme CSS variables the slots inherit.
+It owns visibility. Without it, your banner renders unconditionally — including for visitors who already decided. It also applies the theme CSS variables the slots inherit.
+
+**It portals the banner to the very start of the page**, inserting its root as `<body>`'s first child rather than appending it. Two things come from that. The banner is never clipped by a parent's `overflow: hidden`. And, more importantly, it is reachable on the **first press of Tab** — our setup guide and the CLI both tell you to mount the consent components *after* your page content, and left there a keyboard visitor would have to Tab through your entire site to reach the consent prompt. See [Accessibility](/docs/accessibility#the-banner-and-recall-button-are-moved-to-the-top-of-the-page).
+
+This is also why the banner is not where you put it in the DOM. Nothing is broken.
+
+**The banner deliberately does not trap focus**, unlike the two dialog roots. A visitor can Tab straight past it into your page. Trapping someone in a prompt they did not ask for on arrival would be hostile; the dialogs are different because the visitor opened them. See [Accessibility](/docs/accessibility#the-banner-deliberately-does-not-trap-focus).
 
 ### Slot order and grouping are yours
 
@@ -78,7 +84,41 @@ This matters most if you are building your own banner. A close affordance that s
 
 `Close` exists for the opt-out model, where the preset only renders it under CCPA (`CookieBanner` gates it on the regulation). Under an opt-out regime the visitor's categories already start granted, so closing changes nothing about their state and is a legitimate outcome.
 
-If you want a control that records a rejection, use `Banner.RejectAll`. If you want one that genuinely records nothing, there is no primitive for that — leaving the banner untouched is the only way to leave consent unrecorded, which is why the preset offers no dismiss under GDPR.
+If you want a control that records a rejection, use `Banner.RejectAll`.
+
+**If you want one that genuinely dismisses without recording anything**, build it by cancelling our action — `preventDefault()` in your own handler stops `acceptAll()` from running, leaving you to do whatever you want instead:
+
+```tsx title="components/DismissibleBanner.tsx"
+"use client";
+
+import { Banner } from "@cookieyes/react";
+import { useState } from "react";
+
+export function DismissibleBanner() {
+  const [hidden, setHidden] = useState(false);
+
+  if (hidden) return null;
+
+  return (
+    <Banner.Root>
+      <Banner.Title />
+      <Banner.Description />
+      <Banner.Close
+        aria-label="Dismiss for now"
+        onClick={(event) => {
+          // Cancels the built-in acceptAll(). Nothing is recorded.
+          event.preventDefault();
+          setHidden(true);
+        }}
+      />
+      <Banner.AcceptAll />
+      <Banner.RejectAll />
+    </Banner.Root>
+  );
+}
+```
+
+Consent stays unrecorded, so the banner returns on the next page load — which is the correct outcome for a true dismiss, and the reason the preset offers none under GDPR. Note this hides only your own render; it does not change consent state, so anything gated on consent stays gated.
 
 ### Render `DoNotSell` conditionally
 

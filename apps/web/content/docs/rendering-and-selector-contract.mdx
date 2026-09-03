@@ -45,6 +45,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 | Reload notice | In place | Not portalled |
 | `GatedFrame` placeholder | In place | Where you render it |
 
+### Which selector to measure
+
+If you are benchmarking the banner, this is the section to read. **Three names are involved and two of them are on different elements**, so measuring the wrong one gives a meaningless answer.
+
+| Name | What it identifies | Measure it? |
+| --- | --- | --- |
+| `[data-cky-banner]` | **The visible card** — the box a visitor actually sees | **Yes. This is the one.** |
+| `[data-cy-part="banner"]` | The same element, in the part contract. Also where `role="dialog"` sits, so this is what assistive technology reads | Yes — identical element |
+| `.cy-banner-wrap` | A logical grouping wrapper around the card | **Never** |
+
+<Callout type="warn">
+  **`.cy-banner-wrap` is `display: contents`. It generates no box at all** — no width, no height, no position. A tool that measures it gets a zero-sized or empty rectangle back and may conclude the banner is not there.
+
+  It exists only to group things and to carry inheritable typography down to the card. The only measurable banner element is `.cy-banner` / `[data-cky-banner]`, whose bounding box equals what the visitor sees.
+</Callout>
+
+**These names are a promise.** `[data-cky-banner]` and the `data-cy-part` values will not change without a major version, and a test asserts them. Build your checks on those.
+
 ### Selector stability
 
 | Selector | Stable? | Notes |
@@ -53,8 +71,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 | `[data-cy-state="on" \| "off"]` | **Yes** | Toggles; preset only |
 | `.cy-*` classes | **Yes** | Prefer parts where one exists |
 | `#cookieyes-portal-root` | **Yes** | The portal container id |
-| `[data-cky-banner]` | **Yes** | Legacy alias on the visible banner card |
-| `data-cy-entered` | No — internal | Animation suppression marker |
+| `[data-cky-banner]` | **Yes** | The visible banner card — the element to measure |
+| `data-cy-entered` | **No** — internal | Animation suppression marker. Do not build on it |
 | DOM structure, nesting, element types | **No** | Can change without a major bump |
 
 ### Server-rendering helpers
@@ -77,6 +95,73 @@ Two things follow:
 
 Do not depend on the banner being inline in the DOM. Query by part, not by position.
 
+### It appears with the page, not after it
+
+The banner is **built into the HTML the server sends**, not added afterwards by JavaScript. So it arrives in the same frame as the rest of your page rather than popping in a moment later.
+
+That matters for more than polish: a banner that arrives late means the page has visibly *started* before the visitor was asked anything about tracking.
+
+**It is fully styled with JavaScript disabled entirely** — white background, correct font — not blank or transparent. That works because we ship a second, much smaller stylesheet, `@cookieyes/react/critical.css`, containing only what the banner needs to paint correctly. It is **capped at 2 KB gzipped**, and a test asserts both the cap and that every rule in it is byte-identical to the same rule in the full sheet, so the two can never drift apart.
+
+### It never moves your content
+
+The banner card is `position: fixed` and out of the normal document flow, so nothing else on the page has to move when it appears. **Measured layout shift attributable to the banner is zero.**
+
+The entry animation **only fades** — it changes opacity and nothing else. It never slides, scales or resizes, and it is capped at 0.2s. Both are asserted on every change: a `transform` reintroduced into that animation, or a longer duration, fails the build.
+
+This is worth caring about because layout shift is a ranking signal — search engines measure it directly, and a banner is the single most common cause of a bad score on an otherwise fine page.
+
+### What it fetches
+
+| Mode | On load | On a decision |
+| --- | --- | --- |
+| `cookie-only` | **Nothing. Ever.** | Nothing — the decision is written to a cookie |
+| `self-hosted` | **Nothing** | Exactly one `POST` to your backend per accept, reject or save |
+
+Neither mode issues a request when the page loads, and neither ever issues a `GET`. All three claims are asserted by tests.
+
+Consent-gated third-party tags are not fetched at all until their category is granted — that is the entire point of [GatedScript](/docs/components/gated-script) and the [script integrations](/docs/integrations).
+
+### Measured figures
+
+Real numbers, with the conditions that produced them — a number without its conditions is not a measurement.
+
+| | Result |
+| --- | --- |
+| Banner present and laid out at first contentful paint | Yes, FCP ~232 ms |
+| Layout shift attributable to the banner | 0 |
+| Click → visible response | 10–13 ms, with 0 of 6 consent-gated tags loaded |
+| Banner background with JavaScript disabled | `rgb(255, 255, 255)` — fully styled |
+
+**Conditions:** Chromium, emulated Pixel 5, CPU throttled ×4, network ~1.6 Mbps with 150 ms RTT, cold cache. Taken against `@cookieyes/react` 0.4.0 in August 2026.
+
+<Callout type="warn">
+  **These are a point-in-time measurement, not a continuous check.** They were taken with a local browser harness — a fixture app that server-renders the banner, inlines `critical.css`, and serves consent-gated stand-in tags — which is deliberately **not** part of this repository. Nothing re-runs them on every change.
+
+  To reproduce: server-render a page with the banner, inline `critical.css` in the `<head>`, throttle CPU and network as above, and record FCP, CLS and click latency with a cold cache. The invariants below are what actually hold the line between measurements.
+</Callout>
+
+### What is checked automatically
+
+Thirteen guarantees run on every change and **block the release** if broken. In plain terms, the main ones:
+
+- Every `--cy-*` colour the stylesheet uses actually has a value defined — the check that would have caught the worst regression we have had here
+- The entry animation changes opacity only, and lasts no more than 0.2s
+- A re-parented banner does not replay its entry animation
+- The banner card is `position: fixed` and out of flow
+- `critical.css` stays a byte-identical subset of the full sheet, within 2 KB gzipped
+- The banner is present in the server-rendered HTML
+- **A returning visitor's HTML contains no banner at all**
+- The consent decision is committed and broadcast before any side effect runs
+- A third-party tag that throws cannot strand the banner or block mounting
+- `readServerConsent` agrees with the client about the same cookie
+
+<Callout type="warn">
+  **These run in a simulated browser (jsdom), which has no paint, no layout and no compositor.** They confirm the *rules* are right. They cannot confirm a visitor can actually **see** the banner — not first contentful paint, not layout shift, not click latency.
+
+  That is precisely how the regression behind this page's existence went unnoticed: the markup was correct the whole time, and the banner was invisible. The figures above come from separate browser testing, which is why they are dated rather than continuous.
+</Callout>
+
 ### The portal root is `<body>`'s first child
 
 Inserted with `insertBefore`, not appended. This is what puts the banner early in tab order regardless of where you mount `<CookieYesRoot />` — see [Accessibility](/docs/accessibility).
@@ -94,9 +179,11 @@ In any non-Next framework, pass the header directly:
 ```ts title="src/server.ts"
 import { readServerConsent } from "@cookieyes/core";
 
-const initialConsent = readServerConsent(request.headers.get("cookie") ?? "", {
-  regulation: "GDPR",
-});
+export function getInitialConsent(request: Request) {
+  return readServerConsent(request.headers.get("cookie") ?? "", {
+    regulation: "GDPR",
+  });
+}
 ```
 
 ### `getServerConsent` opts the route into dynamic rendering

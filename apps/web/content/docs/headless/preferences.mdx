@@ -7,7 +7,7 @@ description: Headless preferences primitive.
 
 Use `Preferences.*` when [`CookiePreferences`](/docs/components/cookie-preferences) cannot match your design system — most often when category rows need to be your own accordion, table, or card component.
 
-You get the dialog's accessibility for free: focus trap, autofocus, `Escape` to close, focus restoration, `role="dialog"` and `aria-modal`. Rebuilding this on hooks means reimplementing all of it. Read [Overview](/docs/headless/overview) first.
+You get the dialog's accessibility for free: focus trap, autofocus, `Escape` to close, focus restoration, `role="dialog"` and `aria-modal`. Rebuilding this on hooks means reimplementing all of it — see [Accessibility](/docs/accessibility#focus-management) for exactly what `Root` is doing and [the hand-check](/docs/accessibility#check-it-yourself-in-three-minutes) for confirming you kept it. Read [Overview](/docs/headless/overview) first.
 
 ## Basic usage
 
@@ -57,7 +57,7 @@ export function ConsentPreferences() {
 | `Preferences.Root` | `<div>` | `overlay` | Open state, focus trap, `Escape`, autofocus, focus restore, theme vars. `null` when closed |
 | `Preferences.Title` | `<h2>` | `title` | Translated `preferencesTitle` |
 | `Preferences.Intro` | `<p>` | `intro` | Translated `preferencesIntro` |
-| `Preferences.Description` | `<p>` | — | Alternate body text slot |
+| `Preferences.Description` | `<p>` | — | A bare paragraph — no default text, no part attribute. [See below](#preferencesdescription-is-an-empty-slot) |
 | `Preferences.Close` | `<button>` | `close` | Closes the dialog |
 | `Preferences.Categories` | `<div role="list">` | — | **Render prop.** Iterates the configured taxonomy in declaration order |
 | `Preferences.Category` | `<div>` | `category` | **Render prop.** Resolves one category's label, description, and state |
@@ -98,7 +98,7 @@ export function ConsentPreferences() {
 
 It is `(next: boolean) => void`. Passing it straight to `onChange` hands it a React event, which is truthy — so the box can never be unchecked:
 
-```tsx title="Wrong vs. right"
+```tsx title="Wrong vs. right" check="false"
 // Wrong — always toggles on
 <input type="checkbox" onChange={toggle} />
 
@@ -118,11 +118,29 @@ Always render a `Save` (or Accept/Reject) somewhere. A dialog whose toggles neve
 
 ### Label and description resolution order
 
-Text falls back in this order: the active language's translation → the category's config `label`/`description` → the built-in English default → the raw id. So a customer translation always wins over a config label, and a missing translation degrades to something readable rather than blank.
+Text falls back in this order: the active language's translation → the category's config `label`/`description` → the built-in English default → the raw id.
+
+**A translation deliberately outranks a configured label.** That ordering is what lets a customer set default wording in `categories` *and* still have it translated: if the config label won, a translated site would show the configured English on every language. A missing translation then degrades to something readable rather than blank.
+
+All of this happens inside `Preferences.Category`, so a custom dialog gets it for free — you render `label` and `description` from the render prop and the resolution has already happened.
 
 ### Required categories
 
-`checked` is forced `true`, `disabled` is `true`, and `toggle` is a no-op. Render the disabled state — do not hide the row, since visitors are entitled to see what is set regardless of choice.
+A category configured `required: true` arrives already on and unchangeable: `checked` is forced `true`, `disabled` is `true`, and **`toggle` is a no-op**. You do not need to guard against changing one — calling `toggle(false)` on a required category simply does nothing.
+
+Render the state, do not hide the row: visitors are entitled to see what is set regardless of their choice. What you render is up to you, with one rule — **do not offer a control that will not work.** A disabled switch is confusing and, as [Accessibility](/docs/accessibility#tab-wraps-inside-a-pop-up) notes, a disabled button first or last in the dialog is also the one focus-trap edge worth avoiding.
+
+Our own preset renders a short piece of text instead of a switch — the translated `alwaysActive` string, which comes from the translation system like every other label, so it follows the visitor's language.
+
+### `Preferences.Description` is an empty slot
+
+Worth being straight about: it renders `<p>{children}</p>` and nothing else. **No default text, no `data-cy-part`, no behaviour**, and our own preset does not use it.
+
+Use `Preferences.Intro` for the dialog's body text — that one carries the translated `preferencesIntro` and a part attribute. Reach for `Description` only if you want an extra paragraph inside the dialog that participates in nothing; a plain `<p>` of your own does the same job with less ambiguity.
+
+### The category list is already marked up for screen readers
+
+`Preferences.Categories` renders `role="list"` and wraps **each** item in `role="listitem"` for you. Your render prop supplies only the inside of a row, so a custom dialog gets the list semantics without doing anything — and without being able to break them by accident.
 
 ## Complete example
 
@@ -183,8 +201,8 @@ Note `onCheckedChange={toggle}` works directly here — that design-system prop 
 
 ## Common mistakes
 
-**`Error: [cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`**
-A slot escaped the root, commonly after extracting the category list into a component rendered elsewhere.
+**A slot renders but ignores everything — no toggles, no saving.**
+It is outside `Preferences.Root`. Nothing throws: the guard for this exists in our source but is not wired to any slot today, so the failure is silent. Check the slot is a descendant of `Preferences.Root`.
 
 **Checkboxes can be turned on but never off.**
 `onChange={toggle}` passes an event object. Use `onChange={(e) => toggle(e.target.checked)}`.

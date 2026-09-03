@@ -1,0 +1,51 @@
+---
+title: "v1.3.0 — Consent Events, Live Language Switching and Stable Selectors"
+description: Consent Events, Live Language Switching and Stable Selectors — the v1.3.0 release of the CookieYes SDK.
+---
+
+<ReleaseBadges date="2026-08-05" />
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):63-65,73 */}
+<ReleaseSummary headline="Consent Events, Live Language Switching and Stable Selectors">
+This release adds a consent event API for reacting to accept/reject/save decisions, a `useLanguage()` hook for switching the banner's language without a reload, and a documented `data-cy-part`/`data-cy-state` selector contract for styling and testing. The styled presets now accept `className`/`style`.
+</ReleaseSummary>
+
+<ReleaseRule />
+
+### Install
+
+<ReleaseInstall packages={[
+  { name: "core", version: "0.3.0" },
+  { name: "react", version: "0.4.0" },
+  { name: "nextjs", version: "0.4.0" },
+  { name: "cli", version: "0.3.0" },
+]} />
+
+### Added
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):63 */}
+A consent event API lets code react to a decision as it happens rather than polling: `consentStore.on("save" | "change", listener, { category? })` in `@cookieyes/core`, and the `useOnConsentChange()` hook for React/Next.js. Passing a `category` scopes the listener to a single consent category instead of firing on every change.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):64; verified: sdk/react/src/hooks/useLanguage.ts */}
+`useLanguage()` reads the active language and its text direction, and `setLanguage(tag)` switches it live, with no page reload — useful for a language switcher in the page chrome rather than the banner alone. `i18n.loadLanguage(tag)` loads a language's translation catalog on demand, so a site doesn't have to bundle every locale up front.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):65 */}
+Every pre-built component now carries `data-cy-part` and `data-cy-state` attributes, and the typed `CY_PART`/`CY_STATE` constants are exported so custom CSS or tests can target, e.g., `[data-cy-part="accept-all"]` or a toggle's `data-cy-state="on"` without depending on class names or DOM structure that could change between versions.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):66 */}
+`asChild` is now available on the control primitives, letting a consumer render their own element in place of the primitive's default one while keeping its behavior and `data-cy-part` attribute wired onto it.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):67 */}
+`npx @cookieyes/cli init` now prints a short GitHub star nudge before its summary output. Cosmetic only — it does not change what the scaffold generates.
+
+### Changed
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):73 */}
+The styled presets — `CookieBanner`, `CookiePreferences`, `CookieOptOut` — now accept `className` and `style` props, merged onto their default look rather than replacing it. This makes small visual overrides possible without dropping down to the headless primitives.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):74 */}
+`useTranslations()` now re-renders when the language changes. Previously the returned translation map was fixed at setup time, so a live language switch (via `useLanguage()` above) would not update text already read from `useTranslations()`.
+
+### Source
+
+<ReleaseSource version="v1.3.0" />

@@ -708,6 +708,35 @@
   margin: 0 0 16px;
 }
 
+/* .psw-h (docs.html:65) — the label heading the switcher. */
+.cy-doc-psw-h {
+  display: block;
+  padding: 0 2px 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--cy-doc-tx3);
+}
+
+/* .pi.lg (docs.html:70-72) — the logo slot, on the trigger and on every list row.
+   The design's letter-chip variant (.pi without .lg) has no user left here now that
+   all three rows carry real logos, so the transparent 21px box folds into one class. */
+.cy-doc-pi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  flex-shrink: 0;
+}
+
+.cy-doc-pi > svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+
 .cy-doc-psw {
   display: flex;
   align-items: center;
@@ -793,15 +822,6 @@
   color: var(--cy-doc-tx3);
   font-size: 11px;
   margin-left: auto;
-}
-
-/* The switcher's chips are 21px in the sidebar; the inline PackageBadge reuses the
-   same colour keys at 14px. */
-.cy-doc-pdi .cy-doc-pkg-mark {
-  width: 21px;
-  height: 21px;
-  border-radius: 4px;
-  font-size: 10px;
 }
 
 /* Version select */
@@ -2657,6 +2677,34 @@
      h1 margin was rendering as 28px. Zeroing the gap hands spacing back to the
      margins below. */
   gap: 0;
+}
+
+/* Centers the 800px column per the mock's exact asymmetric formula (design doc
+   §2.4): true viewport-center once there's room, flush against the sidebar
+   otherwise. Reuses --fd-sidebar-width, which already cascades correctly to
+   #nd-page via the two-location fix above — no new layout metric is declared,
+   so the two-location !important pattern does not need repeating here.
+   Scoped to the same ≥1280px breakpoint as the no-gutter grid-template-columns
+   override below: only there does the content cell's left edge sit at exactly
+   var(--fd-sidebar-width), which the formula assumes. */
+@media (min-width: 1280px) {
+  #nd-page {
+    margin-left: max(0px, calc(50vw - (var(--fd-page-width) / 2) - var(--fd-sidebar-width)));
+    margin-right: auto;
+  }
+}
+
+/* Mock's mobile spec (docs.html's implied ≤900px collapse). Independent of the
+   768px/1280px sidebar/TOC breakpoints — those are pre-existing, deliberately
+   corrected elsewhere in this file (see the --fd-toc-width 1280px comment) and
+   are out of scope here; this rule only tightens padding, it reserves no grid
+   track. */
+@media (max-width: 900px) {
+  #nd-page {
+    max-width: 800px;
+    padding: 24px 20px 60px;
+    margin: 0 auto;
+  }
 }
 
 /* Vertical rhythm through the page head now comes from the header's own wrapper

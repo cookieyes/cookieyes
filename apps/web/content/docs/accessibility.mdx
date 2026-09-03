@@ -1,83 +1,187 @@
 ---
 title: Accessibility
-description: The accessibility guarantees the SDK makes, and what you own.
+description: What the SDK guarantees for keyboard, screen-reader and reduced-motion users — what is tested, what is not, and what you own.
 ---
 
-## When to use it
+## Scope of this page
 
-Read this before shipping consent UI — a banner is often the first interactive element on a page, and an inaccessible one blocks the whole site for keyboard and screen-reader users. It is also the section auditors check first.
+This page covers **keyboard operability, focus management, screen-reader labelling, and reduced motion** across [`CookieBanner`](/docs/components/cookie-banner), [`CookiePreferences`](/docs/components/cookie-preferences), [`CookieOptOut`](/docs/components/cookie-opt-out), [`RecallButton`](/docs/components/recall-button) and [`ReloadNotice`](/docs/components/reload-notice).
 
-If you use [`CookieBanner`](/docs/components/cookie-banner) and [`CookiePreferences`](/docs/components/cookie-preferences) unchanged, everything below is already handled and you mainly need the "What you own" section.
+<Callout type="warn">
+  **This is not a blanket conformance claim.** It is not a statement that the SDK is "WCAG 2.1 AA compliant". It describes specific, verifiable behaviours and nothing beyond them.
+</Callout>
 
-## Basic usage
+**Outside this scope, and not covered:**
 
-The accessible path is the default path:
+- **Colour contrast.** The defaults are a reasonable starting point, but the moment you set `theme.primaryColor` the ratio is yours. The brand colour does **not** change between light and dark schemes, so a colour that passes on white can fail on the dark surface. Only you can assess your own palette — see [Colour scheme](/docs/styling/color-scheme), which documents the dev-time contrast warning the SDK emits.
+- **Text resizing and zoom**, which depend on your page's own layout and typography.
+- **Anything in your own theme, content, or the surrounding page** — including whether rejecting consent is as easy as accepting it, which is a design decision you own and auditors check.
+
+This page is written to be handed to an accessibility reviewer as-is.
+
+## What you get by default
+
+If you use the ready-made components unchanged, everything below is already handled:
 
 ```tsx title="app/cookieyes.tsx"
-<CookieBanner />
-<CookiePreferences />
-<RecallButton />
+"use client";
+
+import {
+  CookieBanner,
+  CookiePreferences,
+  RecallButton,
+  initCookieYes,
+} from "@cookieyes/react";
+
+initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </>
+  );
+}
 ```
 
-The same guarantees hold when you build on [primitives](/docs/headless/overview), because they live in the `Root` components rather than the styled markup.
+The same behaviour holds when you build on [primitives](/docs/headless/overview), because it lives in the `Root` components rather than the styled markup. Building on hooks alone means implementing all of it yourself — see [If you build your own](#if-you-build-your-own).
 
-## What the SDK guarantees
+## Keyboard behaviour
 
-| Behaviour | Where | Notes |
+### Tab order, per component
+
+Documented in order so a custom implementation can match it.
+
+| Component | Tab order |
+| --- | --- |
+| **Banner** (GDPR) | Preferences → Reject All → Accept All → branding link |
+| **Banner** (CCPA) | Close → Do Not Sell → branding link |
+| **Preferences** | Close → each category toggle, in configured order → Reject All → Save → Accept All → branding link |
+| **Opt-out** (before saving) | Close → opt-out checkbox → Cancel → Confirm → branding link |
+| **Opt-out** (after saving) | Close → opt-out checkbox → branding link |
+| **Recall button** | A single button |
+
+Category toggles follow the configured taxonomy's declaration order, not alphabetical order. A category marked `required` renders as **plain text rather than a disabled control**, so it is not in the tab order at all — Tab does not stop on it.
+
+**The opt-out dialog changes shape once the choice is saved.** Cancel and Confirm are removed and a `role="status"` confirmation takes their place, so two stops disappear from the tab order mid-interaction. The dialog then **closes itself after a ten-second countdown**. A keyboard user who is still reading the confirmation will have the dialog close under them and focus returned to the opener — expected, but worth knowing before you time a test around it.
+
+<Callout type="warn">
+  **On narrow viewports the banner's visual order differs from its tab order.** Below 440px the actions stack vertically and CSS `order` presents them as Accept All, Preferences, Reject All — while the DOM order, and therefore the keyboard tab order, stays Preferences → Reject All → Accept All.
+
+  CSS `order` never changes focus sequence. If that divergence matters to your audit, override the `order` declarations on `.cy-banner-actions .cy-btn` so the two agree — see [Custom CSS](/docs/styling/custom-css).
+</Callout>
+
+### The banner deliberately does not trap focus
+
+The banner carries `role="dialog"` with **`aria-modal="false"`**, and does not trap focus. Both pop-ups do the opposite: `aria-modal="true"` and a real focus trap.
+
+That combination is unusual enough to be worth stating with its reasoning. A consent banner appears unbidden on arrival, so trapping focus in it would imprison a keyboard user in a prompt they did not ask for and could not leave without answering. But it still needs to be announced as a distinct region rather than as anonymous page content — hence the dialog role without the modality. **A keyboard user can Tab straight past the banner into your page.**
+
+The two pop-ups are different: the visitor deliberately opened them, and they are genuinely modal, so holding focus is correct.
+
+### Escape closes both pop-ups
+
+`Escape` closes `CookiePreferences` and `CookieOptOut`. The listener is attached to the **document**, not to the dialog element, so it works regardless of where focus currently sits — including if focus has somehow escaped the dialog.
+
+Closing with Escape **returns focus exactly as clicking Close does** — the restore runs when the pop-up closes, not from any particular button, so every route out of it behaves the same.
+
+Escape does not dismiss the banner. There is no "dismiss without deciding" action under GDPR: the banner is something you answer, not something you close.
+
+### Tab wraps inside a pop-up
+
+While a pop-up is open, `Tab` from the last control moves to the first, and `Shift+Tab` from the first moves to the last. Focus cannot leave the dialog by keyboard.
+
+<Callout type="warn">
+  **Edge case if you build a custom pop-up with disabled buttons.** The trap collects focusable elements with the selector `button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])`. A **disabled** button matches `button` while not actually being focusable, so if a disabled control ends up first or last in your dialog, wrapping will try to focus something that cannot take focus.
+
+  Nothing in the shipped components hits this — a required category renders as text rather than a disabled toggle, which is why. It is a latent edge for custom pop-ups only. Avoid putting a disabled control first or last, or give it `tabindex="-1"` explicitly.
+</Callout>
+
+A control that is focusable by other means — a `div` with a click handler and no `tabindex` — is not in the cycle either, and is not keyboard-operable to begin with. Use real elements.
+
+## Focus management
+
+This is the most intricate part of the implementation, and the reasoning matters as much as the behaviour, because the obvious implementation is wrong.
+
+### Opening moves focus onto the pop-up itself
+
+Not onto its first control — onto the dialog container, which carries the `aria-label`. That is what makes a screen reader announce *"Cookie preferences, dialog"* rather than falling back to page-level context.
+
+For this to work the container must be **programmatically focusable without being a tab stop**: it carries `tabIndex={-1}`. If you build a custom pop-up and omit that, `.focus()` on the container silently does nothing and the announcement is lost.
+
+### Closing returns focus to whatever opened it
+
+Closing by saving, cancelling, or pressing `Escape` returns focus to the control that opened the pop-up.
+
+### The opener is captured at the moment of the click
+
+**Not when the pop-up mounts.** This is the part that is easy to get wrong.
+
+Opening a pop-up also hides the banner, in the same render. So by the time a mount effect runs inside the dialog, the button that triggered the open may already be gone from the DOM — and the browser will have reset focus to `<body>`. An implementation that captures "the previously focused element" in the dialog's own effect therefore remembers `<body>`, and returns focus to the top of the page.
+
+Capturing synchronously in the click handler, before that re-render happens, is the only reliable point.
+
+### If the opener did not survive, we match it by label
+
+The opener can legitimately unmount while its pop-up is open — the banner and the recall button both hide when a pop-up opens, and remount as **new DOM nodes** when it closes. A stale reference is simply disconnected, and calling `.focus()` on it does nothing at all.
+
+So alongside the element reference we capture its rendered text or `aria-label`. On close, if the original node did not survive, we search for its replacement by that same label. "Do Not Sell" lands back on "Do Not Sell" — not on whichever control happens to be first.
+
+### It works for your own triggers too
+
+The capture lives in the shared opening action, not in our components. So [`useConsentActions().showPreferences()`](/docs/hooks/use-consent-actions) and `showOptOut()` record focus wherever they are called from — a footer link, a menu item, your own button — and focus return works with no `ref` and no restore logic of your own.
+
+<Callout type="warn">
+  Calling `runtime.manager.showPreferences()` directly through [`useConsentRuntime()`](/docs/hooks/low-level-hooks) **skips the capture entirely**, and focus falls back to the top of the page on close. Always use the action hook for anything a visitor triggers.
+</Callout>
+
+## What screen-reader users experience
+
+### The banner announces itself, on a deliberate delay
+
+When the banner appears, its title is announced through an `aria-live="assertive"` region — after a **700ms delay**, not on React's next tick.
+
+The delay is deliberate. Immediately after a page loads, screen readers are typically still announcing the page itself, and a live-region update fired inside that window is commonly **dropped rather than queued**. Waiting until that has settled is what makes the announcement reliably heard.
+
+### The announcement region is always in the page
+
+The live region sits permanently in the document rather than appearing along with the banner. Updating an element assistive technology has been tracking all along is more reliable than inserting a new one and hoping it is noticed — which matters for a later appearance, after `reset()`, as much as for the first.
+
+### Roles and labels, per component
+
+| Component | Role | Accessible name |
 | --- | --- | --- |
-| Reachable in the first Tab | Banner, recall widget | Portal root is inserted as `<body>`'s **first child**, so the banner comes before your page content in tab order regardless of where you mount it |
-| `role="dialog"` + `aria-modal="true"` | Both dialogs | On the visible card, not a wrapper |
-| Focus trap | Both dialogs | Tab and Shift+Tab cycle within the dialog |
-| Autofocus on open | Both dialogs | Focus moves into the dialog |
-| `Escape` closes | Both dialogs | |
-| Focus restoration | Both dialogs | Returns to the element that opened it |
-| Live-region announcement | Banner | `aria-live`, deliberately delayed so it does not collide with the page-load announcement |
-| `role="alert"` | Reload notice | Announced immediately |
-| `role="switch"` + `aria-checked` | Category toggles | |
-| `role="list"` / `role="listitem"` | Category list | |
-| `aria-label` | Recall widget, close buttons | Defaults provided, overridable |
-| Text direction | All surfaces | Derived from the active language — see [Translations](/docs/translations) |
-| Typography isolation | All surfaces | Host resets cannot strip the SDK's text styling |
+| Banner | `role="dialog"`, `aria-modal="false"` | The banner title |
+| Preferences | `role="dialog"`, `aria-modal="true"` | `preferencesDialogLabel` |
+| Opt-out | `role="dialog"`, `aria-modal="true"` | `optOutDialogLabel` |
+| Opt-out confirmation | `role="status"` | Announced when the choice is recorded |
+| Reload notice | `role="alert"` | Announced immediately |
+| Category toggles | `role="switch"` + `aria-checked` | The category name |
+| Category list | `role="list"` / `role="listitem"` | — |
+| Recall button | Button | `recallButtonLabel` |
+| Close buttons | Button | `bannerCloseLabel` / `preferencesCloseLabel` / `optOutCloseLabel` |
 
-## Behaviour and trade-offs
+**Every one of these labels comes from the translation system**, so a German site announces its dialogs in German. Each close button renders only an `aria-hidden` icon, which means the label *is* the button's entire accessible name — there is nothing else for a screen reader to fall back on. See [Translations](/docs/translations).
 
-### The banner is first in tab order on purpose
+### The banner and recall button are moved to the top of the page
 
-The portal root is inserted as the **first child of `<body>`**, not appended. Mount `<CookieYesRoot />` at the end of your layout — as the docs and CLI scaffold suggest — and the banner is still reachable within the first Tab rather than after every link on the page.
+Both render into a portal root inserted as the **first child of `<body>`** — inserted, not appended.
 
-This also means it renders inline on the server and relocates after mount, matching on the first client pass so hydration does not mismatch.
+This is an accessibility mechanism, not an implementation detail: it means the banner is reachable within the **first Tab** rather than after every link in your navigation. Mount `<CookieYesRoot />` at the end of your layout, as the docs and CLI scaffold suggest, and it is still first in tab order.
 
-### The live-region announcement is delayed deliberately
+It also renders inline on the server and relocates after mount, so the banner is still in the initial HTML and appears just as fast — the move costs nothing in first paint, and matches on the first client pass so hydration does not mismatch.
 
-The banner's announcement is populated after a short delay rather than on React's next tick. Screen readers are typically still announcing the page navigation right after load, and a live-region update fired inside that window is commonly dropped rather than queued.
+**If you have ever wondered why the banner is not where you put it, this is why.** You mount `<CookieYesRoot />` at the end of your layout, as our setup guide and the CLI scaffold both tell you to, and then find it elsewhere in the DOM. That is deliberate: left where you put it, a keyboard user would have to Tab through your entire site before reaching the consent prompt. Nothing is broken.
 
-The region also lives **outside** the banner's own mount cycle, so a later appearance — after `reset()`, say — is a change to an element assistive technology has tracked all along rather than a freshly inserted one.
+## Reduced motion
 
-If you rebuild the banner on primitives, you own this. A naive `aria-live` region inside a conditionally mounted banner is announced unreliably.
+When a visitor has asked their device to reduce motion, **all entrance and exit animation is removed** — the banner's slide-in, the dialog overlay and dialog fade, the recall button's pop-in, and the reload notice.
 
-### The focus trap covers standard focusables
+**Everything still appears and works identically.** Nothing is hidden, delayed, or disabled; only the movement is removed. The end state is exactly the same.
 
-It cycles `button`, `[href]`, `input`, `select`, `textarea`, and `[tabindex]` other than `-1`. A custom control that is focusable by other means — a `div` with a click handler and no `tabindex` — is not in the cycle, and is not keyboard-operable anyway. Use real elements or add `tabindex`.
-
-### Open the dialogs through the action hooks
-
-`useConsentActions().showPreferences()` records the focused element before opening, so focus returns there on close. Calling `runtime.manager.showPreferences()` through [`useConsentRuntime()`](/docs/hooks/low-level-hooks) skips that, and focus jumps to the top of the page instead.
-
-This is easy to introduce and hard to notice. Always use the action hook for anything a visitor triggers.
-
-### Reject must be as easy as accept
-
-Not an SDK guarantee — a design decision you own. Under GDPR, a banner with a prominent Accept All and a buried reject is widely held to be invalid consent. It is easy to create that imbalance accidentally with your own CSS. Style both actions deliberately, using the `cy-*` classes and `--cy-*` custom properties — see [Custom CSS](/docs/styling/custom-css) and [Theme tokens](/docs/styling/theme-tokens) — to give both actions comparable visual weight.
-
-Likewise, offering only a close button with no explicit reject is generally not a valid choice. See [Banner primitives](/docs/headless/banner).
-
-### Contrast is yours
-
-The SDK's defaults are a reasonable starting point, but the moment you set `theme.primaryColor` you own the contrast ratio — including on the dark surface, since the brand color does **not** change between schemes. Check it against both `#ffffff` and `#161b27`. See [Color scheme](/docs/styling/color-scheme).
-
-### Reduced motion
-
-The entry animation mutates opacity only, is capped at 0.2s, and never uses `transform` — all enforced by tests, so it cannot regress into something that moves content. If you add your own animation, honour `prefers-reduced-motion`:
+If you replace our CSS, you own this. Preserve it with:
 
 ```css title="app/consent.css"
 @media (prefers-reduced-motion: reduce) {
@@ -89,93 +193,165 @@ The entry animation mutates opacity only, is capped at 0.2s, and never uses `tra
 }
 ```
 
-### What you own with hooks
+See [Custom CSS](/docs/styling/custom-css) and the [part and state contract](/docs/styling/part-and-state-contract) for the selectors.
 
-Building on [`useConsent`](/docs/hooks/use-consent) and [`useConsentActions`](/docs/hooks/use-consent-actions) alone means implementing every row of the guarantees table yourself: dialog role and modality, focus trap, autofocus, Escape, focus restoration, the announcement and its timing, switch semantics, and tab-order placement.
+## Check it yourself, in three minutes
 
-This is the strongest argument for primitives over hooks. Primitives give you complete markup control and keep all of it.
+Keyboard flow is the part you should verify by hand, because the automated suite does not cover it — see [why](#why-this-is-not-automated) below. Run this with the mouse pushed aside.
 
-## Complete example
+### The stock components
 
-Filling in the parts the SDK cannot decide for you:
+Load a page with the banner showing (clear the consent cookie, or call `reset()`), then click once on the address bar so focus starts outside the page.
 
-```tsx title="components/ConsentBanner.tsx"
-"use client";
+| # | Do this | Correct result |
+| --- | --- | --- |
+| 1 | Press `Tab` once | Focus lands on the banner's first control — **Preferences** under GDPR, **Close** under CCPA. Not a nav link, not a skip link |
+| 2 | Keep pressing `Tab` | Preferences → Reject All → Accept All → branding link, in that order |
+| 3 | Press `Tab` once more | Focus **leaves the banner** into your page. This is correct — the banner does not trap |
+| 4 | `Shift+Tab` back to Preferences, press `Enter` | The dialog opens. Focus is on the **dialog itself**, not its first button — a screen reader announces the dialog's name here |
+| 5 | Press `Tab` | Focus moves to Close, the dialog's first control |
+| 6 | `Tab` to the last control, then `Tab` once more | Focus **wraps to Close**. It never reaches the page behind |
+| 7 | `Shift+Tab` from Close | Focus wraps backwards to the last control |
+| 8 | Press `Escape` | The dialog closes, and focus is back on **Preferences** — the button you opened it from |
 
-import { Banner, useRegulation } from "@cookieyes/react";
-import { Button } from "@/components/ui/button";
+Step 8 is the one that catches most regressions. If focus lands at the top of the page instead, the opener was not captured, or was captured too late.
 
-export function ConsentBanner() {
-  const isCCPA = useRegulation() === "CCPA";
+Repeat steps 4 and 8 with **Save** and with **Cancel**: all three routes out must return focus to the same button.
 
-  return (
-    <Banner.Root>
-      <section
-        className="cy-banner-wrap fixed inset-x-4 bottom-4 z-50 mx-auto max-w-2xl rounded-xl border bg-white p-6 shadow-xl"
-        aria-labelledby="consent-title"
-      >
-        <Banner.Title id="consent-title" className="text-lg font-semibold" />
-        <Banner.Description className="mt-2 text-sm" />
+### Your own banner
 
-        <Banner.Actions className="mt-5 flex flex-wrap gap-3">
-          {isCCPA ? (
-            <Banner.DoNotSell asChild>
-              <Button variant="primary">Do not sell my information</Button>
-            </Banner.DoNotSell>
-          ) : (
-            <>
-              {/* Equal visual weight — reject is as easy as accept. */}
-              <Banner.AcceptAll asChild>
-                <Button variant="primary" className="min-w-32">
-                  Accept all
-                </Button>
-              </Banner.AcceptAll>
-              <Banner.RejectAll asChild>
-                <Button variant="primary" className="min-w-32">
-                  Reject all
-                </Button>
-              </Banner.RejectAll>
-            </>
-          )}
-          <Banner.OpenPreferences asChild>
-            <Button variant="ghost">Customise</Button>
-          </Banner.OpenPreferences>
-        </Banner.Actions>
-      </section>
-    </Banner.Root>
-  );
-}
-```
+If you replaced the banner, run the same check from your own trigger — a footer "Cookie settings" link is the usual case:
+
+| # | Do this | Correct result |
+| --- | --- | --- |
+| 1 | `Tab` to your trigger, press `Enter` | The dialog opens, focus on the dialog itself |
+| 2 | `Tab` around the dialog and past its last control | Focus wraps rather than escaping |
+| 3 | Press `Escape` | Focus returns to **your** trigger |
+| 4 | Open from a trigger that unmounts while the dialog is open | Focus still returns to a control with the same label, not to the first control on the page |
+
+Step 4 is the one custom implementations fail. If you opened the dialog through [`useConsentActions()`](/docs/hooks/use-consent-actions) you get it for free; if you called the runtime directly you will not.
+
+Also confirm, at every step above, that the focused control has a **visible outline**. A CSS reset that removes `:focus-visible` styling passes every automated check and makes the whole flow unusable.
+
+### Why this is not automated
+
+Some of it is, and it is worth being exact about which:
+
+| Behaviour | Covered in CI? |
+| --- | --- |
+| Roles, accessible names, labelling | Yes — the axe suite |
+| `Tab` / `Shift+Tab` wrap inside a pop-up | Yes — unit-tested against the trap directly |
+| Escape closing a pop-up | Yes |
+| **Focus returning to the opener on close** | **No** |
+| **The label-matching fallback when the opener has unmounted** | **No** |
+| **A visible focus outline** | **No** — jsdom has no paint |
+
+So the trap itself is defended, but **the two things most likely to break silently are not**: focus return and its fallback. Both depend on real browser focus semantics and on the timing of a real click, which a simulated DOM only approximates — which is why step 8 above is the step worth actually running.
+
+The missing outline is the other one. A CSS reset that strips `:focus-visible` passes every check in CI and makes the entire flow unusable.
+
+## What is tested, and what is not
+
+### Automated
+
+`axe-core` runs on every change and **fails the build** on any violation. Coverage is exactly:
+
+| Test case | Component |
+| --- | --- |
+| Banner, GDPR mode | `CookieBanner` |
+| Banner, CCPA mode | `CookieBanner` |
+| Preferences dialog, open | `CookiePreferences` |
+| Opt-out dialog, open | `CookieOptOut` |
+
+Four cases, three components.
+
+<Callout type="warn">
+  **These run in a simulated browser (jsdom), which has no layout and no paint.** Colour contrast, visible text sizing, and anything else that depends on rendering **cannot be evaluated and is skipped**.
+
+  In one sentence: it catches structural and labelling regressions — missing accessible names, wrong roles, broken labelling — **not the full accessibility surface. It is a safety net, not a substitute for testing by hand.**
+</Callout>
+
+**Reconciling scope with coverage**, so the two do not quietly disagree:
+
+- **`RecallButton` is in the scope above but has no automated accessibility test.** Its labelling is covered by other tests, but axe does not run against it.
+- **`ReloadNotice` is announced to screen readers** via `role="alert"` and is in the scope above, but likewise has no axe coverage.
+
+Neither is necessarily a defect. Both are stated so that a reviewer reading the scope is not misled about what the automated suite actually proves.
+
+### Manual
+
+The keyboard and focus-management behaviour on this page was verified by hand across desktop, tablet and mobile viewports, in both light and dark colour schemes, with **VoiceOver**. If something does not behave as described with your screen reader, please open an issue — that is a bug worth hearing about.
+
+## If you build your own
+
+Everything above comes free with the ready-made components. Assembling your own from [primitives](/docs/headless/overview) keeps most of it, because the behaviour lives in the `Root` components. Building on hooks alone means you own all of it.
+
+### What the primitives still give you
+
+| Behaviour | Provided by |
+| --- | --- |
+| Focus trap, Escape, autofocus, focus restoration | [`Preferences.Root`](/docs/headless/preferences), [`OptOut.Root`](/docs/headless/opt-out) |
+| First-child portal placement, the delayed announcement | [`Banner.Root`](/docs/headless/banner) |
+| Switch semantics on toggles | `Preferences.Category` |
+| Focus capture on open | [`useConsentActions()`](/docs/hooks/use-consent-actions) |
+| Reduced-motion handling | The SDK stylesheet, if you keep it |
+
+### Checklist for a custom interface
+
+Whatever you replace, preserve these:
+
+- [ ] **Pop-ups hold focus** — Tab and Shift+Tab wrap inside; focus cannot escape. → [`Preferences.Root`](/docs/headless/preferences)
+- [ ] **Escape closes both pop-ups**, listening at document level. → [`Preferences.Root`](/docs/headless/preferences)
+- [ ] **Focus returns to the opener on close**, including when the opener has remounted. → [`useConsentActions()`](/docs/hooks/use-consent-actions)
+- [ ] **Every control has a visible keyboard outline** — a real `:focus-visible` style, not the browser default you may have reset away.
+- [ ] **Reduced motion is honoured** — no entrance or exit movement, same end state. → [Custom CSS](/docs/styling/custom-css)
+- [ ] **The banner is reachable in the first Tab**, not after your navigation. → [`Banner.Root`](/docs/headless/banner)
+- [ ] **Dialog containers carry `tabIndex={-1}`** so they can receive focus without becoming a tab stop.
+
+<Callout type="warn">
+  **The automated coverage above applies to the ready-made components only.** A custom interface is not covered by it and needs its own accessibility testing.
+</Callout>
+
+### The two easiest things to lose
+
+Both are invisible to sighted testing, which is exactly why they get dropped:
+
+1. **The banner's delayed announcement.** A naive `aria-live` region placed inside a conditionally mounted banner, updated on mount, is announced during the page-load window — and is commonly dropped. Replicate both the delay and the outside-the-mount-cycle placement, or keep `Banner.Root`.
+2. **Label-matching focus return.** Restoring focus with a plain saved reference works until the opener unmounts, which the banner and recall button both do whenever a pop-up opens. Then the reference is disconnected, `.focus()` silently does nothing, and the visitor is dropped at the top of the page.
 
 ## Common mistakes
 
-**Focus jumps to the top of the page when a dialog closes.**
-The dialog was opened via the low-level runtime rather than `useConsentActions()`.
+**Focus jumps to the top of the page when a pop-up closes.**
+Opened via `runtime.manager.showPreferences()` instead of `useConsentActions().showPreferences()`, so no opener was captured.
 
 **Tab from the address bar reaches every nav link before the banner.**
-You rebuilt the banner without `Banner.Root`, losing the first-child portal placement.
+A custom banner without `Banner.Root`, so it lost the first-child portal placement.
 
 **A screen reader never announces the banner on first load.**
-A custom `aria-live` region inside the conditionally mounted banner, announced during the page-load window. Use `Banner.Root`, or replicate the delay and place the region outside the mount cycle.
+A custom `aria-live` region inside the conditionally mounted banner, fired during the page-load window. Keep `Banner.Root`, or replicate the delay and the placement.
 
-**Tab escapes the dialog.**
-Custom focusable elements outside the trap's selector list. Use real interactive elements.
+**Focus escapes a custom pop-up.**
+Controls outside the trap's selector list — usually a `div` with a click handler. Use real interactive elements.
+
+**Tab wrapping lands on nothing in a custom pop-up.**
+A disabled button first or last in the dialog. It matches the focusable selector without being focusable.
+
+**A screen reader announces the dialogs in English on a translated site.**
+This was true of nine strings in earlier versions and is fixed — all accessible names now come from the translation system. Check the language actually supplies them; a missing key falls back to English.
 
 **An audit flags the banner as invalid consent.**
-Reject is visually subordinate to accept, or there is no explicit reject at all. A design issue, not an SDK one.
+Reject is visually subordinate to accept, or there is no explicit reject. A design issue rather than an SDK one, and yours to fix.
 
 **Contrast fails in dark mode only.**
-`primaryColor` does not change between schemes. Override it per scheme.
-
-**The banner moves page content as it appears.**
-It is `position: fixed` and out of flow by default, so this means a custom wrapper reintroduced it into the layout.
+`theme.primaryColor` does not change between schemes. Override it per scheme — see [Colour scheme](/docs/styling/color-scheme).
 
 ## Across the SDK
 
-Every guarantee above lives in `@cookieyes/react` and applies unchanged in `@cookieyes/nextjs`. `@cookieyes/core` renders nothing, so building directly on it in another framework means implementing all of it yourself — the same trade as the hooks-only path.
+Every behaviour on this page lives in `@cookieyes/react` and applies unchanged in `@cookieyes/nextjs`. `@cookieyes/core` renders nothing at all, so building on it directly in another framework means implementing every item in the checklist above yourself — the same trade as the hooks-only path.
 
 ## See also
 
 - [Overview (asChild, part contract)](/docs/headless/overview) — accessible behaviour with your own markup
-- [Translations (i18n)](/docs/translations) — language and text direction
-- [Color scheme](/docs/styling/color-scheme) — contrast across light and dark
+- [Translations (i18n)](/docs/translations) — where every accessible name comes from
+- [Colour scheme](/docs/styling/color-scheme) — contrast across light and dark
+- [Reload notice](/docs/components/reload-notice) — the `role="alert"` surface

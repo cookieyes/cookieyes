@@ -203,8 +203,8 @@ export function CookieYesRoot() {
 **A script loads as soon as someone flips a toggle, before they hit Save.**
 You gated on `useConsent().categories` (live) instead of `useConsentCategory()` (committed). Switch to `useConsentCategory`.
 
-**`Error: [cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`**
-A primitive was used outside its namespace root. Every `Preferences.*` must be a descendant of `Preferences.Root`; same for `OptOut.*` and `OptOut.Root`.
+**A primitive slot renders but does nothing.**
+It was used outside its namespace root. Every `Preferences.*` must be a descendant of `Preferences.Root`, and every `OptOut.*` of `OptOut.Root`. Only four `OptOut` slots — `Checkbox`, `Save`, `Buttons`, `Success` — actually throw about it; the rest, and all of `Preferences.*`, fail silently.
 
 **Rebuilt the whole banner with hooks to change one button's color.**
 You wanted primitives, or just CSS. See [Custom CSS](/docs/styling/custom-css) — the part contract lets you restyle the presets entirely without replacing them.

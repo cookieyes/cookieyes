@@ -1,0 +1,112 @@
+---
+title: Changelog
+description: All notable changes to the CookieYes SDK. Follows Keep a Changelog and Semantic Versioning.
+---
+
+{/* Each `highlights` line condenses that kind's bullets on the corresponding release
+    page into one sentence — a taste of the release, not its contents. Keep them to a
+    single line: the release page is where detail belongs. Every line must summarise
+    something that page actually says; nothing new is introduced here. */}
+
+<div className="cy-doc-cl-page">
+
+## August 2026
+
+<ChangelogEntry
+  version="v1.4.0"
+  date="2026-08-17"
+  title="Critical CSS, Geo-Detection and Script Presets"
+  highlights={[
+    {
+      kind: "Added",
+      text: "Paint-critical banner CSS, optional region-based regulation, the @cookieyes/scripts vendor presets, and server-read consent that stops the returning-visitor flash.",
+    },
+    {
+      kind: "Changed",
+      text: "The CLI's scaffolded Next.js layout now wires up getServerConsent() from the start.",
+    },
+    {
+      kind: "Fixed",
+      text: "A broken @cookieyes/scripts dependency reference, and a throwing third-party tag that could strand the banner on screen.",
+    },
+    {
+      kind: "Breaking",
+      text: "The integrations config key is renamed to builtInIntegrations.",
+    },
+  ]}
+/>
+
+<ChangelogEntry
+  version="v1.3.0"
+  date="2026-08-05"
+  title="Consent Events, Live Language Switching and Stable Selectors"
+  highlights={[
+    {
+      kind: "Added",
+      text: "A consent event API, reload-free language switching, the data-cy-part selector contract, and asChild on the control primitives.",
+    },
+    {
+      kind: "Changed",
+      text: "Styled presets accept className and style, and useTranslations() re-renders when the language changes.",
+    },
+  ]}
+/>
+
+## July 2026
+
+<ChangelogEntry
+  version="v1.2.0"
+  date="2026-07-20"
+  title="Configurable Categories, Google Consent Mode v2 and Reload-Free Revocation"
+  highlights={[
+    {
+      kind: "Added",
+      text: "A custom consent-category taxonomy, automatic Google Consent Mode v2 broadcasts, and built-in stop handlers so revoking consent needs no page reload.",
+    },
+    {
+      kind: "Changed",
+      text: "styles.css is a real importable file rather than auto-injected, so the SDK renders under a strict style-src CSP.",
+    },
+    {
+      kind: "Fixed",
+      text: "Gated scripts now react only to a committed decision, plus keyboard and screen-reader fixes across the banner and both dialogs.",
+    },
+  ]}
+/>
+
+## June 2026
+
+<ChangelogEntry
+  version="v1.1.0"
+  date="2026-06-25"
+  title="Server-Rendered Banner and a Stable Selector Contract"
+  highlights={[
+    {
+      kind: "Added",
+      text: "The banner ships in server-rendered HTML on every load, and its selectors become a documented, regression-tested public contract.",
+    },
+    {
+      kind: "Changed",
+      text: "The positioning wrapper generates no box, and the build moved from tsup to Rollup.",
+    },
+  ]}
+/>
+
+<ChangelogOlderReveal>
+
+<ChangelogEntry
+  version="v1.0.0"
+  date="2026-06-02"
+  kind="stable"
+  title="First Stable Release"
+  highlights={[
+    {
+      kind: "Highlights",
+      text: "First stable release of core, react, nextjs and cli — GDPR and CCPA banners, gated scripts and frames, the hooks API, and headless slot primitives.",
+    },
+  ]}
+/>
+
+</ChangelogOlderReveal>
+
+</div>

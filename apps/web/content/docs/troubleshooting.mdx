@@ -5,9 +5,29 @@ description: Error messages you may hit, what causes them, and the fix.
 
 ## When to use it
 
-Come here with a symptom or a console message. Errors are quoted verbatim, so searching this page for the exact text works.
+Come here with a symptom or a console message. **Every message the SDK prints is quoted word for word**, so pasting the exact text into this page's search finds it.
+
+Most of what goes wrong here is a setup detail, not a mistake you should feel bad about — several of the worst cases produce no error at all, which is exactly why they cost hours. If something looks broken, check this page before you start deleting `node_modules`.
 
 If you are setting up for the first time and nothing has gone wrong yet, [Quick start](/docs/getting-started/quick-start) ends with a "Verify it works" checklist that catches most setup problems before they become symptoms.
+
+### Find your symptom
+
+| What you are seeing | Where |
+| --- | --- |
+| The banner has no styling at all | [Below](#the-banner-appears-but-has-no-styling) |
+| The banner never appears | [Below](#the-banner-never-appears) |
+| Clicking "Do Not Sell" does nothing | [Below](#clicking-do-not-sell-does-nothing) |
+| I withdrew consent and the tracking carried on | [Below](#i-withdrew-consent-and-the-tracking-carried-on) |
+| A visitor flicked a switch without saving and it counted | [Below](#someone-flicked-a-switch-without-saving-and-it-counted) |
+| My custom categories did not appear | [Below](#my-custom-categories-did-not-appear) |
+| The banner is in English despite setting a language | [Below](#my-banner-is-in-english-even-though-i-set-another-language) |
+| The floating recall button lost its styling | [Below](#my-floating-button-lost-all-its-styling) |
+| The visitor's choice is not remembered | [Below](#the-visitors-choice-isnt-remembered) |
+| I have an error message | [Errors](#errors) |
+| I have a console warning | [Every warning, word for word](#every-warning-word-for-word) |
+| It might not be broken at all | [Working as intended](#working-as-intended) |
+| I need to test it again from scratch | [Reset and re-test](#reset-and-re-test) |
 
 ## Basic usage
 
@@ -28,6 +48,119 @@ document.cookie = "cookieyes-consent=; max-age=0; path=/";
 location.reload();
 ```
 
+## It looks wrong, and there is no error
+
+The expensive category. Nothing throws, nothing appears in the console, and there is no text to search for — so these are findable here by what you *see* instead.
+
+### The banner appears but has no styling
+
+**What you see.** Everything works — the banner shows, buttons respond, consent saves correctly — but it renders as unstyled text with no card, no colours, no layout.
+
+**Why.** The stylesheet was never imported. Styling ships as a separate file rather than being injected by JavaScript, which is what keeps the SDK compatible with a strict Content-Security-Policy. Nothing warns you, because from the SDK's point of view everything is working.
+
+**Fix.** Import it once, at your app root:
+
+```ts title="app/layout.tsx"
+import "@cookieyes/react/styles.css";
+```
+
+If the **banner** looks right and only the **preferences dialog** is unstyled, you loaded `critical.css` — the small paint-critical subset — and not the full sheet. Load both; `critical.css` does not replace `styles.css`.
+
+### The banner never appears
+
+**What you see.** No banner, no error, nothing in the console.
+
+**Why.** Three common causes, in the order worth checking:
+
+1. **The visitor already decided.** The banner shows until someone acts, then never again. This is the most common one, and it is correct behaviour — see [Reset and re-test](#reset-and-re-test).
+2. **`initCookieYes()` never ran**, or ran in a module that is not `"use client"`. Nothing renders and nothing errors, because the hooks return safe defaults rather than throwing.
+3. **The regulation does not apply to you.** With region detection on, the banner may simply not apply where you are testing from.
+
+**Fix.** Clear the cookie and reload; confirm your `initCookieYes()` module starts with `"use client"` and is actually imported on the path to your components; check `useRegion()` for which regulation resolved and why.
+
+### Clicking "Do Not Sell" does nothing
+
+**What you see.** Under CCPA the banner shows a "Do Not Sell" button. Clicking it does nothing at all — no dialog, no error.
+
+**Why.** `Banner.DoNotSell` only *sets state*: it asks for the opt-out dialog to open. If `<CookieOptOut />` — or your own `OptOut.Root` — is not mounted, there is nothing to open.
+
+**Fix.** Mount it alongside the banner:
+
+```tsx title="app/cookieyes.tsx"
+"use client";
+
+import { CookieBanner, CookieOptOut, CookiePreferences } from "@cookieyes/react";
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      {/* Without this, the banner's "Do Not Sell" button has nothing to open. */}
+      <CookieOptOut />
+    </>
+  );
+}
+```
+
+The same applies to `showPreferences()` with no `<CookiePreferences />` mounted.
+
+### I withdrew consent and the tracking carried on
+
+**What you see.** A visitor revokes consent for a category, and a tool gated on it keeps running.
+
+**Why.** Injecting a third-party script is one-way within a page load. Once a vendor's code is executing, the SDK can ask it to stop — and does, where the vendor supports it — but it cannot un-run what already ran. Some tools have no clean stop at all and genuinely need a page reload.
+
+<Callout type="warn">
+  **This one has a compliance consequence, not just a cosmetic one.** A visitor who withdraws consent and keeps being tracked for the rest of their session is a real problem, whatever the technical explanation. If you gate anything that cannot stop cleanly, mount [`<ReloadNotice />`](/docs/components/reload-notice) so the visitor is told a reload is needed — or set `reloadOnRevoke: true` to reload for them.
+</Callout>
+
+**Fix.** Mount `<ReloadNotice />`. Note it appears only when something that *was* running has been switched off — see [Working as intended](#the-reload-notice-never-appears).
+
+### Someone flicked a switch without saving and it counted
+
+**What you see.** A visitor opens preferences, toggles a category on to read its description, closes without saving — and your tracker loaded anyway.
+
+**Why.** You gated on the **live** values (`useConsent().categories`), which reflect in-progress toggles, rather than the **committed** values, which only change on a real decision.
+
+**Fix.** Gate on [`useConsentCategory(id)`](/docs/hooks/focused-hooks), or on `useConsent().committedCategories`. See [`categories` vs `committedCategories`](/docs/hooks/use-consent#categories-vs-committedcategories) — this is the single most consequential distinction in the API.
+
+### My custom categories did not appear
+
+**What you see.** You configured `categories`, and the built-in five render instead.
+
+**Why.** The config failed validation and the SDK fell back rather than throwing. It **does** warn — this is one of the no-error cases only if you were not watching the console.
+
+**Fix.** Check the console for `[cookieyes] Invalid categories config (...)`. The reason is in the parentheses: every category needs a non-empty string `id`, ids cannot contain `,` or `:`, ids must be unique, ids must not collide with the reserved cookie keys, and **at least one category must be marked `required: true`**.
+
+### My banner is in English even though I set another language
+
+**What you see.** `locale` or `setLanguage("fr")` is set, and the interface stays English.
+
+**Why.** Setting a language does not supply the words for it. If there is no catalogue for that tag in `i18n.messages` and no `i18n.loadLanguage` to fetch one, the SDK stays on the language it has.
+
+**Fix.** Add the catalogue. The console warns once per language tag: `[cookieyes] no translations for language "..."`.
+
+### My floating button lost all its styling
+
+**What you see.** You passed a `className` to `<RecallButton />` and it lost its appearance entirely.
+
+**Why.** `RecallButton` **replaces** its class rather than merging: your class is used *instead of* `cy-widget`, not alongside it. This differs from the headless primitives, which merge your class with theirs — so the behaviour is genuinely inconsistent between the two, and nothing warns.
+
+**Fix.** Include the base class yourself:
+
+```tsx title="Keep the base styling"
+<RecallButton className="cy-widget my-custom-class" />
+```
+
+### The visitor's choice isn't remembered
+
+**What you see.** Consent is recorded, then forgotten on the next page load.
+
+**Why.** The decision lives in a first-party cookie named `cookieyes-consent`. It goes missing for three ordinary reasons: browser privacy settings or an extension blocking storage, a strict cookie policy on your own domain, or — most often — your own code clearing cookies on navigation or on every deploy.
+
+**Fix.** Confirm the cookie survives a reload in DevTools. If it does not, check what else on your site writes to `document.cookie`.
+
 ## Errors
 
 ### `[cookieyes] No runtime is registered.`
@@ -47,11 +180,11 @@ You will see an actual thrown error only when code calls [`useConsentRuntime()`]
 Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
 ```
 
-### `[cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.`
+### `[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`
 
-Also `[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`
+A primitive slot escaped its namespace root — usually after extracting a sub-tree into a component rendered elsewhere. Thrown by the four slots that read the dialog's saved state: `OptOut.Checkbox`, `OptOut.Save`, `OptOut.Buttons` and `OptOut.Success`.
 
-A primitive slot escaped its namespace root — usually after extracting a sub-tree into a component rendered elsewhere. Every `Preferences.*` must be a DOM descendant of `Preferences.Root`.
+The matching `[cookieyes] Preferences.* sub-components must be rendered inside <Preferences.Root>.` exists in our source but is **not currently wired to any slot**, so it does not fire today. If you have a `Preferences.*` slot outside its root the symptom is silent instead: it renders, and toggling or saving does nothing. Every `Preferences.*` must still be a DOM descendant of `Preferences.Root`.
 
 ### `` [cookieyes] `asChild` expects exactly one React element child. ``
 
@@ -120,6 +253,151 @@ The hardest category — no error, nothing in the console.
 | Revoking consent does not stop a tracker | Injection is one-way within a page load | Mount `ReloadNotice`, or `reloadOnRevoke: true` |
 | `strategy="lazyOnce"` changed nothing | Currently a no-op | Leave it unset |
 | Reload notice never appears | Nothing declared itself reload-only | Register a `needsReload` handler |
+
+## Every warning, word for word
+
+Every message the SDK prints, quoted so that searching for any of it lands here. `${...}` marks a value filled in at runtime.
+
+**Two things worth knowing before you read the list.** Only three of these are development-only — the rest **also print in production**, so a warning in a live console is a real signal. And several print **once per page load**, so a quiet console on your second attempt does not mean you fixed it; reload properly before concluding anything.
+
+### Configuration and categories
+
+| Message | What it means | Prints in production? |
+| --- | --- | --- |
+| `[cookieyes] Invalid categories config (${reason}). Falling back to the default five (necessary, functional, analytics, performance, advertisement).` | Your `categories` failed validation. The reason is in the parentheses | Yes |
+| `[CookieYes] Received both \`regulation\` and the deprecated \`overrides.regulation\`. Using the top-level \`regulation\` and ignoring \`overrides\`.` | Drop the `overrides` object | Yes |
+| `` [CookieYes] Received both `apiUrl` and the deprecated `backendURL`. Using `apiUrl` and ignoring `backendURL`. `` | Rename `backendURL` to `apiUrl` | Yes |
+| `[cookieyes] mode: "offline" has been renamed to "cookie-only".` | A rename. Both behave identically | Yes — **once per page load** |
+| `` [cookieyes] `builtInIntegrations` (formerly the `integrations` field) is deprecated `` | Move to `integrations` with a preset from `@cookieyes/scripts` | Yes — **once per page load** |
+| `` [CookieYes] `createCookieYes()` (the builder) is deprecated. `` | Use `initCookieYes(config)` | Yes — **once per page load** |
+| `[cookieyes] initCookieYes() called more than once. Replacing the previous runtime.` | Two `initCookieYes()` calls. Often React Strict Mode in development; otherwise a genuine double setup | Yes |
+
+### Region and regulation
+
+| Message | What it means | Prints in production? |
+| --- | --- | --- |
+| `` [cookieyes] `regulation` is set manually, so region detection is ignored. Remove one of them to clear the conflict. `` | You set both. The manual value wins | Yes |
+| `[cookieyes] region detection` (with a `{ region, regulation, source, confidence, gpcOptOut }` object) | Not a problem — the deliberate debug log from `region.debug` | Only when you set `region.debug` |
+
+### Integrations and third-party scripts
+
+| Message | What it means | Prints in production? |
+| --- | --- | --- |
+| `[cookieyes] integration "${id}" is gated on category "${category}", which isn't in your configured categories — it will never load.` | The category does not exist, so consent for it can never be granted | Yes |
+| `[cookieyes] integration "${id}" has an empty category list — it will never load.` | Same outcome, no category given at all | Yes |
+| `[cookieyes] "${vendor}" is configured as both a script integration and a built-in integration — remove one to avoid loading it twice (e.g. double-counted events).` | Configured twice. Your analytics will double-count | Yes |
+| `[cookieyes] both Google Tag Manager and a gtag product (GA4/Ads) are configured.` | If your container also loads GA4/Ads, they fire twice | Yes — **once per page** |
+| `[cookieyes] Google Consent Mode default was not set before init` | The `<head>` snippet did not run first. Falls back to deny-by-default | Yes — **once per page** |
+| `[cookieyes] integration "${id}" is registered more than once; skipping the duplicate.` | Two integrations share an `id` | Yes |
+| `[cookieyes] integration "${id}" failed to load; will retry on the next change.` | The vendor's script did not load — network, CSP, or ad blocker | Yes |
+| `[cookieyes] integration "${id}" uses format version ${version}, but this build understands ${expected}. Skipping it.` | A `@cookieyes/scripts` version mismatch. Align the versions | Yes |
+| `[cookieyes] an entry in "integrations" looks like the old built-in format` | Old API shape. Move it to `builtInIntegrations` or use a preset | Yes |
+| `[cookieyes] integration "${id}" threw while being torn down.` / `cleanup threw on revoke.` / `silence() threw.` / `resume() threw.` | The vendor's own cleanup failed. Yours to fix if it is a custom integration | Yes |
+| `` [cookieyes] posthog(): `onReject` is required — choose "stop" ... Falling back to "stop". `` | Pass `onReject` explicitly | Yes |
+
+### Language
+
+| Message | What it means | Prints in production? |
+| --- | --- | --- |
+| `[cookieyes] no translations for language "${tag}"; staying on "${language}". Add it to i18n.messages or provide i18n.loadLanguage.` | You asked for a language you did not supply | Yes — **once per language tag** |
+
+### Styling and environment
+
+| Message | What it means | Prints in production? |
+| --- | --- | --- |
+| `[cookieyes] A style was blocked by your Content-Security-Policy (${directive}).` | Something on the page violated `style-src`. **Probably not us** — the SDK needs no `unsafe-inline` and no nonce | Yes |
+| `[cookieyes] Low contrast in ${scheme} mode: ...below the WCAG AA threshold of 4.5:1` | Your `theme` colours fail contrast | **Development only** — once per unique pair |
+| `[cookieyes] You're running React ${version}, which is below this SDK's supported floor of React 18.0.0.` | Unsupported React. Parts may fail silently | **Development only** — once per version |
+| `[cookieyes] You're running React ${version}. This SDK's CI matrix has verified up through React 19.x` | Newer than we have verified. Likely fine | **Development only** — once per version |
+
+### Network blocking
+
+| Message | What it means | Prints in production? |
+| --- | --- | --- |
+| `[cookieyes] blocked ${method} ${url} (rule "${id}", category: ${category})` | The network blocker stopped a request because its category is not consented. Working as designed | Yes, unless you set `logBlockedRequests: false` |
+
+A blocked `fetch()` also rejects with `TypeError: Blocked by consent (rule: ${id}, category: ${category})`, which your own `.catch()` will see. That is not an SDK failure — it is the block working.
+
+## Working as intended
+
+These arrive as bug reports and are not bugs. Each is correct behaviour with a specific reason.
+
+### The banner will not come back after I accepted
+
+**Correct.** The banner shows until the visitor decides, then never again — that is the entire point. To test repeatedly, see [Reset and re-test](#reset-and-re-test).
+
+### I cannot see my own banner
+
+**Probably correct.** With region detection configured, the banner applies where the regulation applies. If you are testing from a region that maps to no regulation, you will not see it. Check `useRegion()` for what resolved and why, or set `regulation` manually while developing.
+
+### The reload notice never appears
+
+**Correct, if you tested by rejecting first.** The notice appears only when something that *was* running has been switched off. Reject on a first visit and nothing was ever running, so there is nothing to warn about. To see it: accept, reload, then withdraw.
+
+### I withdrew consent and the embedded video is still there
+
+**Correct.** A `GatedFrame` that has already loaded stays for the rest of that page visit; it is blocked on the next load. Withdrawing consent does not retroactively unload an iframe.
+
+### I withdrew consent and the tracking script is still loaded
+
+**Correct, and unavoidable.** You cannot un-run code that has already executed. The SDK stops or silences vendors that support it; the rest need a reload. This is the one case above with a compliance consequence — see [the full explanation](#i-withdrew-consent-and-the-tracking-carried-on).
+
+### The banner is not where I put it in my code
+
+**Correct.** The banner and recall button are moved to the very start of `<body>` so a keyboard visitor reaches them on the first Tab rather than after your entire navigation. See [Accessibility](/docs/accessibility#the-banner-and-recall-button-are-moved-to-the-top-of-the-page).
+
+### All my returning visitors got asked again
+
+**Correct, if you changed your category list.** Consent is recorded against a fingerprint of the categories in effect. Change the categories and previous answers no longer describe what you are asking, so everyone is re-asked. See [re-prompts](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor).
+
+## Reset and re-test
+
+### Clear a stored choice so the banner returns
+
+```js title="DevTools console"
+document.cookie = "cookieyes-consent=; max-age=0; path=/";
+location.reload();
+```
+
+Or call `useConsentActions().reset()` from a dev-only control.
+
+### See the banner when your own location would not trigger it
+
+Set `regulation` explicitly while developing — `"GDPR"` gives you the opt-in banner — instead of relying on `region.detect`.
+
+### Trigger the reload notice deliberately
+
+It needs a specific sequence, because it only fires on a withdrawal:
+
+1. **Accept** the category your reload-only tool is gated on.
+2. **Reload** the page, so the tool actually starts.
+3. **Withdraw** that category.
+
+Rejecting on a first visit will never show it, and that is correct.
+
+### Check these first
+
+If nothing works at all, in this order:
+
+1. Is `@cookieyes/react/styles.css` imported exactly once at your app root?
+2. Does the module calling `initCookieYes()` start with `"use client"`, and is it imported on the path to your components?
+3. Is there a `cookieyes-consent` cookie already recording a decision?
+4. Is anything in the console? Several failures warn rather than throw.
+5. Are `<CookiePreferences />` and — under CCPA — `<CookieOptOut />` actually mounted?
+
+## Known bugs
+
+Confirmed problems on our side. If you are seeing one of these, it is not a configuration mistake and there is no setting to find.
+
+### The "Do Not Sell" dialog writes every category, not just the one it names
+
+`OptOut.Save` calls `rejectAll()` when the box is ticked and `acceptAll()` when it is not — so a visitor who opens it, decides *not* to opt out, and saves has granted every category, overwriting earlier rejections. Its checkbox also derives its initial state from a hardcoded `analytics` category name, so a custom taxonomy without one always starts ticked, and it reads live rather than committed values.
+
+Under review. Documented in full on [OptOut primitives](/docs/headless/opt-out#what-save-actually-writes) — do not build on the current semantics.
+
+### A `Preferences.*` slot outside its Root fails silently
+
+It should throw, and the guard for it exists in our source, but it is not wired to any slot. A `Preferences.*` component used outside `<Preferences.Root>` renders normally and quietly ignores every interaction instead of telling you why. `OptOut.*` does throw, but only from the four slots that read dialog state.
 
 ## Behaviour and trade-offs
 

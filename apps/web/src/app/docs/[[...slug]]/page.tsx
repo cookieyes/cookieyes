@@ -77,6 +77,22 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   // prop with the description forced to the design's literal caption instead.
   const { previous, next } = findNeighbour(source.pageTree, page.url);
 
+  // A release detail page (`/docs/changelog/v1-4-0`) has its own explicit content
+  // order — badges/summary directly under the h1, no generic chrome in between
+  // (design doc §2.6). `page.slugs` for the index is `["changelog"]`; for a
+  // release page it's `["changelog", "v1-4-0"]` — a purely structural check, no
+  // new frontmatter keys.
+  const isReleasePage = page.slugs[0] === "changelog" && page.slugs.length === 2;
+
+  // The changelog navigates by its own affordances — the index's cards, the sidebar
+  // release list and the breadcrumb — so Fumadocs' previous/next footer is suppressed
+  // across the whole section. Every other docs page keeps it.
+  const isChangelogSection = page.slugs[0] === "changelog";
+
+  // "v1.4.0 — Critical CSS, …" -> "v1.4.0". Em-dash split, falling back to the whole
+  // title if a release page is ever authored without one.
+  const releaseVersionLabel = page.data.title.split("—")[0]?.trim() ?? page.data.title;
+
   return (
     <DocsPage
       toc={page.data.toc}
@@ -108,6 +124,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
       // §2.6. `items` (below) now supplies previous/next explicitly instead of
       // leaving Footer to compute — and render its description — itself.
       footer={{
+        enabled: !isChangelogSection,
         className: "cy-doc-pnav",
         items: {
           previous: previous ? { ...previous, description: "Previous" } : undefined,
@@ -118,7 +135,10 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
       {/* Header: .bc (breadcrumb prop, above) → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
           matching docs.html's own runtime assembly (initPageMeta(), docs.html:2119-2168). */}
       <div className="cy-doc-ptitle">
-        <DocsTitle>{page.data.title}</DocsTitle>
+        {/* A release page's frontmatter title carries "vX.Y.Z — Headline" so the sidebar
+            and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
+            the bare version (the headline is already the summary's lead-in just below). */}
+        <DocsTitle>{isReleasePage ? releaseVersionLabel : page.data.title}</DocsTitle>
 
         {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
             See design doc content-tier-d.md. */}
@@ -127,21 +147,28 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         </div>
       </div>
 
-      {/* The design hyperlinks "Keep a Changelog" / "Semantic Versioning" inside .pd
-          (docs.html:1780). `description` is a plain frontmatter string reused as the SEO
-          meta description below, so the anchors are applied at render — see
-          LinkedDescription. A description with no known phrase renders unchanged. */}
-      <DocsDescription className="cy-doc-pd">
-        <LinkedDescription text={page.data.description ?? ""} />
-      </DocsDescription>
+      {/* Suppressed on a release detail page (§2.6): frontmatter `description` is
+          retained there only for generateMetadata's SEO/social tags, never rendered,
+          and <DocsBody> begins immediately after the h1 with <ReleaseBadges> etc. */}
+      {!isReleasePage && (
+        <>
+          {/* The design hyperlinks "Keep a Changelog" / "Semantic Versioning" inside .pd
+              (docs.html:1780). `description` is a plain frontmatter string reused as the SEO
+              meta description below, so the anchors are applied at render — see
+              LinkedDescription. A description with no known phrase renders unchanged. */}
+          <DocsDescription className="cy-doc-pd">
+            <LinkedDescription text={page.data.description ?? ""} />
+          </DocsDescription>
 
-      {/* .pmeta now holds only the last-updated stamp (docs.html:2130) — the Markdown
-          actions moved into .cy-doc-ptitle above. */}
-      <div className="cy-doc-pmeta">
-        {lastModified ? <LastUpdated date={lastModified} /> : null}
-      </div>
+          {/* .pmeta now holds only the last-updated stamp (docs.html:2130) — the Markdown
+              actions moved into .cy-doc-ptitle above. */}
+          <div className="cy-doc-pmeta">
+            {lastModified ? <LastUpdated date={lastModified} /> : null}
+          </div>
 
-      <div className="cy-doc-phr" />
+          <div className="cy-doc-phr" />
+        </>
+      )}
 
       <DocsBody>
         <MDX components={getMDXComponents({ a: createRelativeLink(source, page) })} />

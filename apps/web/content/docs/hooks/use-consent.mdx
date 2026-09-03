@@ -47,7 +47,7 @@ export function ConsentStatus() {
 | `committedCategories` | `Record<string, boolean>` | **Committed** values — change only on a real decision. Gate on these |
 | `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | The regulation in effect |
 | `lastRenewed` | `number \| undefined` | Timestamp of the last decision |
-| `taxonomyHash` | `string \| undefined` | Signature of the taxonomy this consent was recorded under |
+| `taxonomyHash` | `string \| undefined` | Fingerprint of the category list this consent was recorded under. When it stops matching your config, the visitor is [re-prompted](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) |
 | `isPreferencesOpen` | `boolean` | Whether the preferences dialog is open |
 | `isOptOutOpen` | `boolean` | Whether the CCPA opt-out dialog is open |
 | `reloadNotice` | `ReloadNoticeState` | `{ required, reasons }` — see [ReloadNotice](/docs/components/reload-notice) |
@@ -65,6 +65,51 @@ The single most important distinction in this API.
 
 Reading `categories` to decide whether to load analytics means a visitor who opens the dialog, flips analytics on to read the description, and then closes without saving has been tracked. Gate on `committedCategories`, or better, on `useConsentCategory()`.
 
+#### Do this
+
+```tsx title="components/MapEmbed.tsx"
+"use client";
+
+import { useConsent } from "@cookieyes/react";
+
+export function MapEmbed() {
+  // `committedCategories` changes only on a real decision:
+  // accept, reject, save, or reset.
+  const { committedCategories } = useConsent();
+
+  if (!committedCategories.functional) {
+    return <p>Enable functional cookies to see the map.</p>;
+  }
+
+  return <iframe title="Office location" src="https://maps.example.com/embed" />;
+}
+```
+
+#### Not this
+
+```tsx title="components/MapEmbedWrong.tsx"
+"use client";
+
+import { useConsent } from "@cookieyes/react";
+
+export function MapEmbedWrong() {
+  // `categories` is the live value, including toggles that were never saved.
+  const { categories } = useConsent();
+
+  // A visitor who opens the preferences dialog, flips "functional" on to read
+  // its description, and closes without saving has now loaded this iframe --
+  // third-party cookies and all -- having consented to nothing. That is a
+  // compliance defect, not a cosmetic one.
+  if (!categories.functional) {
+    return <p>Enable functional cookies to see the map.</p>;
+  }
+
+  return <iframe title="Office location" src="https://maps.example.com/embed" />;
+}
+```
+
+The two differ by one word. That is exactly why it is worth being deliberate about which you reach for.
+
 ### It re-renders a lot
 
 Every state change re-renders every component calling this hook — including transient UI state like a dialog opening. That is fine for a settings page and wasteful in a component that only cares about one boolean. Prefer the focused hooks where they fit.
@@ -76,6 +121,55 @@ On the server and before mount it returns a stable default snapshot rather than 
 ### `hasActed` is not "accepted"
 
 It means a decision was recorded, in either direction. A visitor who rejected everything has `hasActed: true` and every non-required category `false`.
+
+### Reading and writing are two hooks, not one
+
+Consent state is read with `useConsent()` and changed with [`useConsentActions()`](/docs/hooks/use-consent-actions). Some consent libraries instead expose a single combined hook returning both halves at once; if that is what you are looking for, there isn't one — and the split is deliberate rather than an omission.
+
+**The benefit is concrete: a component that only writes never re-renders on consent changes.** `useConsentActions()` does not subscribe to anything. A "Cookie settings" link in your footer, a custom accept button, a reset control in a dev panel — none of them re-render when a visitor toggles a category, because none of them ever asked to hear about it. With a combined hook, every consumer subscribes whether it reads state or not, so that footer link re-renders on every dialog toggle on the page.
+
+Take both when you need both. Calling the two hooks in one component is the normal shape, not a workaround:
+
+```tsx title="components/ConsentPanel.tsx"
+"use client";
+
+import { useConsent, useConsentActions } from "@cookieyes/react";
+
+export function ConsentPanel() {
+  const { hasActed, committedCategories } = useConsent();
+  const { acceptAll, reset } = useConsentActions();
+
+  return (
+    <div>
+      <p>{hasActed ? "Choice recorded" : "No choice yet"}</p>
+      <p>Analytics: {committedCategories.analytics ? "on" : "off"}</p>
+      <button type="button" onClick={acceptAll}>
+        Accept all
+      </button>
+      <button type="button" onClick={reset}>
+        Reset
+      </button>
+    </div>
+  );
+}
+```
+
+#### Coming from a combined hook
+
+Typical single-hook usage translates directly. Names vary between libraries; the shape does not:
+
+| A combined hook gives you | Here |
+| --- | --- |
+| Live category values, for dialog checkboxes | `useConsent().categories` |
+| Committed category values, for gating | `useConsent().committedCategories` |
+| Whether the visitor has decided | `useConsent().hasActed` |
+| Whether a dialog is open | `useConsent().isPreferencesOpen` / `.isOptOutOpen` |
+| Set one category | `useConsentActions().updateCategory(id, value)` |
+| Save / accept all / reject all | `useConsentActions().save()` / `.acceptAll()` / `.rejectAll()` |
+| Clear the decision | `useConsentActions().reset()` |
+| Open or close a dialog | `useConsentActions().showPreferences()` / `.hidePreferences()` |
+
+One behavioural difference worth knowing about: a combined hook is usually scoped to a React provider and **throws** when called outside it. Neither of these hooks does. With no runtime mounted — during server rendering, or before `initCookieYes()` has run — `useConsent()` returns a fresh-visitor snapshot and every action on `useConsentActions()` is a silent no-op. Nothing crashes, so there is no provider to place them under and no boundary to keep them inside. The trade is that a missing `initCookieYes()` shows up as consent reading all-defaults rather than as an exception — see [Common mistakes](#common-mistakes) below.
 
 ## Complete example
 

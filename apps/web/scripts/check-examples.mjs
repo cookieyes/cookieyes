@@ -21,6 +21,16 @@ const ENABLED_FILES = [
   "getting-started/configuration.mdx",
   "getting-started/which-api.mdx",
   "migration.mdx",
+  "hooks/use-consent.mdx",
+  "hooks/use-consent-actions.mdx",
+  "hooks/use-on-consent-change.mdx",
+  "hooks/focused-hooks.mdx",
+  "hooks/low-level-hooks.mdx",
+  "accessibility.mdx",
+  "headless/overview.mdx",
+  "headless/banner.mdx",
+  "headless/preferences.mdx",
+  "headless/opt-out.mdx",
   "components/cookie-banner.mdx",
   "components/cookie-preferences.mdx",
   "components/cookie-opt-out.mdx",
@@ -29,6 +39,8 @@ const ENABLED_FILES = [
   "components/gated-frame.mdx",
   "components/reload-notice.mdx",
   "reopening-preferences.mdx",
+  "rendering-and-selector-contract.mdx",
+  "troubleshooting.mdx",
   "network-blocking.mdx",
   "styling/overview.mdx",
   "styling/css-variables.mdx",
@@ -177,6 +189,27 @@ function main() {
         writeFileSync(target, f.content);
         checkedFiles++;
       }
+      // Some examples import the reader's own tooling rather than ours: a
+      // design-system component (conventionally `@/components/ui/*`) in the
+      // `asChild` demos, or a test runner in the end-to-end ones. Those belong to
+      // the reader and cannot resolve here, but the examples are still worth
+      // checking for their CookieYes usage. Ambient declarations type only those
+      // imports as `any`, so the rest of each file is checked for real.
+      // The test-runner stub carries just enough of a signature that destructured
+      // fixtures (`{ page }`) are contextually typed rather than implicitly `any`,
+      // which `strict` would otherwise reject.
+      writeFileSync(
+        join(groupDir, "reader-tooling.d.ts"),
+        [
+          'declare module "@/*";',
+          'declare module "@playwright/test" {',
+          "  type Fixtures = Record<string, any>;",
+          "  export const test: (name: string, fn: (fixtures: Fixtures) => unknown) => void;",
+          "  export const expect: (actual: unknown) => Record<string, any>;",
+          "}",
+          "",
+        ].join("\n"),
+      );
       writeFileSync(
         join(groupDir, "tsconfig.json"),
         JSON.stringify({ extends: baseTsconfigPath, include: ["**/*"] }, null, 2),

@@ -9,9 +9,49 @@ Use this to build your own consent controls: a footer "Cookie settings" link, a 
 
 You do not need it with the styled components or the primitives — [`Banner.AcceptAll`](/docs/headless/banner) and friends already call these actions. Reach for the hook when you are building a trigger the SDK does not provide.
 
-To *read* consent, pair this with [`useConsent()`](/docs/hooks/use-consent). This hook only writes; it does not subscribe to changes, so it never causes a re-render.
+To *read* consent, pair this with [`useConsent()`](/docs/hooks/use-consent). Reading and writing are deliberately two separate hooks: this one only writes, never subscribes, and so never causes a re-render — see [Reading and writing are two hooks, not one](/docs/hooks/use-consent#reading-and-writing-are-two-hooks-not-one) for why, and for a mapping if you are arriving from a library with a single combined hook.
 
 ## Basic usage
+
+The three things people most often build with this hook are a custom accept button, a preferences interface with per-category toggles, and a way to withdraw a decision.
+
+**A custom accept button.** `acceptAll()` grants every category and commits in one call — there is no separate save step:
+
+```tsx title="components/AcceptButton.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+export function AcceptButton() {
+  const { acceptAll } = useConsentActions();
+
+  return (
+    <button type="button" className="btn-primary" onClick={acceptAll}>
+      Accept all cookies
+    </button>
+  );
+}
+```
+
+**A "reset my choices" control.** `reset()` clears the recorded decision entirely, so the banner returns as it would for a first-time visitor:
+
+```tsx title="components/ResetChoices.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+export function ResetChoices() {
+  const { reset } = useConsentActions();
+
+  return (
+    <button type="button" onClick={reset}>
+      Reset my cookie choices
+    </button>
+  );
+}
+```
+
+**A link that reopens the preferences dialog** — the usual footer control:
 
 ```tsx title="components/CookieSettingsLink.tsx"
 "use client";
@@ -28,6 +68,8 @@ export function CookieSettingsLink() {
   );
 }
 ```
+
+For the third case — a full preferences interface with a toggle per category — see [Complete example](#complete-example) below, which wires `updateCategory` and `save` together.
 
 ## Options
 
@@ -58,20 +100,38 @@ For a one-shot write that commits immediately, use `acceptSelected([...])` inste
 
 It grants the ids you pass and **denies everything else**. It is not additive. To grant analytics while keeping existing choices, read the current committed state, merge, and pass the full list:
 
-```tsx title="Merging with existing consent"
-const { committedCategories } = useConsent();
-const { acceptSelected } = useConsentActions();
+```tsx title="components/GrantAnalytics.tsx"
+"use client";
 
-const granted = Object.entries(committedCategories)
-  .filter(([, v]) => v)
-  .map(([id]) => id);
+import { useConsent, useConsentActions } from "@cookieyes/react";
 
-acceptSelected([...new Set([...granted, "analytics"])]);
+export function GrantAnalytics() {
+  const { committedCategories } = useConsent();
+  const { acceptSelected } = useConsentActions();
+
+  function grantAnalytics() {
+    const granted = Object.entries(committedCategories)
+      .filter(([, isGranted]) => isGranted)
+      .map(([id]) => id);
+
+    acceptSelected([...new Set([...granted, "analytics"])]);
+  }
+
+  return (
+    <button type="button" onClick={grantAnalytics}>
+      Enable analytics
+    </button>
+  );
+}
 ```
 
 ### `showPreferences` and `showOptOut` remember focus
 
-Both record the currently focused element before opening, so focus returns there on close. Calling `runtime.manager.showPreferences()` directly through [`useConsentRuntime()`](/docs/hooks/low-level-hooks) skips that — use this hook for anything a visitor triggers.
+Both record which element had focus at the moment they were called, and that is what lets focus return to it when the dialog closes. **This works from your own trigger, not just the built-in ones** — a footer link, a menu item, a button inside a settings page all get correct focus return for free, with no `ref` and no restore logic of your own.
+
+The capture happens synchronously inside your click handler, which is the only reliable point: opening a dialog also hides the banner in the same render, so by the time an effect could run, the element that triggered the open may already have been removed from the DOM.
+
+Calling `runtime.manager.showPreferences()` directly through [`useConsentRuntime()`](/docs/hooks/low-level-hooks) skips the capture entirely — focus falls back to the top of the page on close. Use this hook for anything a visitor triggers.
 
 ### `reset` is a genuine reset
 
@@ -159,7 +219,22 @@ Call `reset()`, or clear the `cookieyes-consent` cookie.
 
 ## Across the SDK
 
-Identical in `@cookieyes/react` and `@cookieyes/nextjs`. The hook is a thin wrapper over `consentManager`, so in `@cookieyes/core` the same actions are `consentManager.acceptAll()`, `.rejectAll()`, `.acceptSelected()`, `.updateCategory()`, `.savePreferences()`, `.resetConsent()`, `.showPreferences()`, `.hidePreferences()`. Note `save` here maps to `savePreferences` and `reset` to `resetConsent`.
+Identical in `@cookieyes/react` and `@cookieyes/nextjs`.
+
+Eight of the ten actions are a thin wrapper over `consentManager`, so `@cookieyes/core` has a direct equivalent for each. **Two of the names differ from the operation they call** — worth knowing if you are reading a stack trace, where you will see the right-hand name, not the one you called:
+
+| Action | Calls |
+| --- | --- |
+| `acceptAll` | `consentManager.acceptAll()` |
+| `rejectAll` | `consentManager.rejectAll()` |
+| `acceptSelected` | `consentManager.acceptSelected()` |
+| `updateCategory` | `consentManager.updateCategory()` |
+| **`save`** | **`consentManager.savePreferences()`** |
+| **`reset`** | **`consentManager.resetConsent()`** |
+| `showPreferences` | `consentManager.showPreferences()` |
+| `hidePreferences` | `consentManager.hidePreferences()` |
+
+The remaining two are **not** on `consentManager` at all. `showOptOut` and `hideOptOut` call `showOptOut()` / `hideOptOut()` on the React runtime itself, because the CCPA opt-out dialog's open state is a React-layer concept — `@cookieyes/core` has no such methods, and `ConsentManager` has no opt-out members. In a stack trace they surface under the runtime, not the manager. If you are building a CCPA opt-out control against `@cookieyes/core` directly, you are responsible for that dialog's open state yourself.
 
 ## See also
 

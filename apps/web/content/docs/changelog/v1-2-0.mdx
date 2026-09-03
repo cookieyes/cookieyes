@@ -1,0 +1,60 @@
+---
+title: "v1.2.0 — Configurable Categories, Google Consent Mode v2 and Reload-Free Revocation"
+description: Configurable Categories, Google Consent Mode v2 and Reload-Free Revocation — the v1.2.0 release of the CookieYes SDK.
+---
+
+<ReleaseBadges date="2026-07-20" />
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):95-96,98 */}
+<ReleaseSummary headline="Configurable Categories, Google Consent Mode v2 and Reload-Free Revocation">
+This release lets you define a custom consent-category taxonomy instead of the fixed defaults, broadcasts Google Consent Mode v2 signals automatically, and adds built-in stop handlers so revoking consent can stop tracking without a full page reload.
+</ReleaseSummary>
+
+<ReleaseRule />
+
+### Install
+
+<ReleaseInstall packages={[
+  { name: "core", version: "0.2.0" },
+  { name: "react", version: "0.3.0" },
+  { name: "nextjs", version: "0.3.0" },
+  { name: "cli", version: "0.2.0" },
+  { name: "translations", version: "0.2.0" },
+]} />
+
+### Added
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):95 */}
+Consent categories are now configurable: pass a custom taxonomy via `categories` in `@cookieyes/core`, or `.categories([...])` on the React builder. Each category declares a stable `id`, an explicit `required` flag, and an optional `gcm` mapping, replacing the fixed default set for sites whose regulatory categories don't match it.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):96 */}
+Google Consent Mode v2 signals now broadcast automatically on load and on every consent change. GA4 and Google Tag Manager no longer need an `integrations` entry to receive them.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):97 */}
+`mode: "cookie-only"` is the clearer replacement for `mode: "offline"`, which is now `@deprecated` and scheduled for removal. The behavior is unchanged; only the name is clearer about what the mode does — keep consent state in a cookie without syncing it anywhere.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):98 */}
+`integrations` plus built-in stop handlers (`meta` stops cleanly; others are reload-only) and `customStopHandlers` mean revoking consent can now stop tracking without forcing a full page reload for vendors with a clean stop path. For vendors that still need a reload, the new `<ReloadNotice />` component and `useReloadNotice()` hook prompt the visitor instead of reloading silently.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):99 */}
+`initCookieYes(config)` is now the one canonical setup function, and `CookieYesConfig` the one canonical config shape, across `core`, `react` and `nextjs` — the same call and the same config type work whichever package a project imports it from.
+
+### Changed
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):105 */}
+`@cookieyes/react/styles.css` is now a real, directly-importable file instead of being auto-injected at runtime. This is required for the SDK to render under a strict `style-src` Content-Security-Policy, which blocks runtime style injection; a consumer now adds `import "@cookieyes/react/styles.css"` explicitly.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):106 */}
+`@cookieyes/cli` bumped its `@clack/prompts` dependency from 1.5.0 to 1.7.0, folded in from an untagged `@cookieyes/cli@0.2.1` patch release on Jul 27, 2026. No user-facing behavior change.
+
+### Fixed
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):112 */}
+Consent-gated scripts, embeds and the network blocker now react only to a committed decision — Accept All, Reject All, or Save — rather than to an in-progress toggle flip inside a still-open preferences dialog. Previously, toggling a category while the dialog was open could gate scripts before the visitor had actually confirmed the change.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):113 */}
+Keyboard and focus management, plus screen-reader labeling, across the banner and both dialogs — focus trapping, returning focus on close, and named toggle switches — is now covered by automated `axe-core` tests, catching accessibility regressions in CI rather than relying on manual review.
+
+### Source
+
+<ReleaseSource version="v1.2.0" />
