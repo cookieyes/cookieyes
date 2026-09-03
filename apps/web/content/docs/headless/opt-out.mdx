@@ -54,22 +54,56 @@ export function ConsentOptOut() {
 | `OptOut.Checkbox` | `<input type="checkbox">` | — | The opt-out toggle |
 | `OptOut.CheckboxLabel` | `<label>` | — | Translated label for the checkbox |
 | `OptOut.Cancel` | `<button>` | — | Translated `optOut.cancel`, closes without saving |
-| `OptOut.Save` | `<button>` | `confirm` | Records the choice and enters the success state |
+| `OptOut.Save` | `<button>` | `confirm` | Writes consent and enters the success state — [read what it writes](#what-save-actually-writes) |
 | `OptOut.Buttons` | `<div>` | — | Layout container |
 | `OptOut.Success` | `<div>` | — | Confirmation message and countdown. Renders only after saving |
-| `OptOut.Branding` | `<a>` | `branding` | "Powered by" link |
+| `OptOut.Branding` | `<a>` | — | "Powered by" link. Emits **no part** — unlike `Banner.Branding` and `Preferences.Branding`, which do |
 
 Shared props are the same as every primitive — `children`, `className`, `asChild` on action slots, chained `onClick`, forwarded `ref`, native props spread.
 
 ## Behaviour and trade-offs
 
+### What `Save` actually writes
+
+<Callout type="warn">
+  **Current behaviour, under review — do not build on these semantics.**
+
+  `OptOut.Save` does not write only the thing the checkbox names. It writes **every category**:
+
+  ```ts
+  if (optOut) rejectAll();  // ticked   → denies every non-required category
+  else        acceptAll();  // unticked → grants every category
+  ```
+
+  So a visitor who opens "Do Not Sell", decides they do *not* want to opt out, and clicks Save has **granted everything** — including categories they may have rejected earlier.
+
+  The checkbox's initial state has two further problems. It is read from a **hardcoded `analytics` key**, so a customer whose taxonomy has no category by that exact name always gets a ticked box. And it is read from the **live** category map rather than committed consent, so an unsaved toggle made elsewhere in the preferences dialog leaks into it.
+
+  This is being reviewed. Treat the all-categories behaviour as something that will change, and do not design a custom dialog that depends on it.
+</Callout>
+
+If you are building a custom opt-out today and want only the sale-related category written, do not use `OptOut.Save` for that — cancel it with `preventDefault()` (see [the overview](/docs/headless/overview#onclick-chains-and-you-can-cancel-ours)) and call [`useConsentActions().acceptSelected([...])`](/docs/hooks/use-consent-actions) with the exact list you intend.
+
 ### The checkbox is pre-filled from current state
 
-When the dialog opens it reads whether the visitor is currently opted out — derived from whether `analytics` is granted — and checks the box accordingly. Someone who already opted out sees that reflected rather than a blank form. The state resets to the live value on every open.
+When the dialog opens it checks whether the visitor is currently opted out and ticks the box accordingly, so someone who already opted out sees that reflected rather than a blank form. **Everything resets on every open** — the tick, and the saved state that drives the confirmation.
+
+See the callout above for the two defects in how that initial value is derived.
 
 ### `Success` and the 10-second countdown
 
-After `Save`, the dialog enters a success state: `OptOut.Success` renders, and a **10-second countdown** runs before the dialog closes itself. The countdown text comes from `optOut.successCountdown`, the message from `optOut.successText`.
+After `Save`, the dialog enters a success state and **swaps what is on screen**:
+
+| Slot | Before saving | After saving |
+| --- | --- | --- |
+| `OptOut.Buttons` (Cancel + Save) | Visible | **Renders `null`** |
+| `OptOut.Success` | **Renders `null`** | Visible |
+
+The two are never on screen together. If your custom dialog looks broken after someone saves — buttons gone, nothing in their place — you rendered `Buttons` but not `Success`.
+
+`Success` then runs a **10-second countdown** and closes the dialog itself. The visitor can still close it sooner with `Close`, `Cancel` or `Escape`; the countdown is a convenience, not a lock.
+
+**Its shape is fixed and you cannot change it from the primitives.** `Success` hardcodes its own inner layout, a tick-mark icon, and its `cy-optout-success-*` class names. Only the **wording** is yours, via translations: `optOut.successText`, and `optOut.successCountdown`, whose `{seconds}` placeholder is replaced with the live count. If you need a different confirmation entirely, omit `OptOut.Success` and render your own on the same condition — but note the saved state lives in `Root`'s context, so you would need `Save`'s own `onClick` to track it.
 
 Render `OptOut.Success` somewhere in your tree. Omit it and the dialog appears to do nothing for ten seconds and then vanishes, which reads as a bug to the visitor.
 
@@ -134,7 +168,7 @@ export function ConsentOptOut() {
 ## Common mistakes
 
 **`Error: [cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`**
-A slot escaped the root.
+A slot escaped the root — thrown by the four that read the dialog's state: `Checkbox`, `Save`, `Buttons` and `Success`. The rest (`Title`, `Description`, `Close`, `CheckboxLabel`, `Cancel`, `Branding`) do not consult the context, so they render without complaint outside `Root` and simply do nothing useful. Keep every slot inside `Root` regardless.
 
 **Nothing visible happens after pressing Confirm, then the dialog closes.**
 `OptOut.Success` is not in your tree. The save worked; the confirmation had nowhere to render.
