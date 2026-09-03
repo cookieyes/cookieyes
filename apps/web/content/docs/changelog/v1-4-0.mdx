@@ -1,0 +1,58 @@
+---
+title: "v1.4.0 — Critical CSS, Geo-Detection and Script Presets"
+description: Critical CSS, Geo-Detection and Script Presets — the v1.4.0 release of the CookieYes SDK.
+---
+
+<ReleaseBadges date="2026-08-17" />
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):21-24,43 */}
+<ReleaseSummary headline="Critical CSS, Geo-Detection and Script Presets">
+This release adds a paint-critical stylesheet for the consent banner, an optional region-based regulation config for geo-detection, a new `@cookieyes/scripts` package for consent-gated third-party integrations, and server-read consent so a returning visitor's banner no longer flashes on load. The `integrations` config key is renamed to `builtInIntegrations` — see Breaking below before upgrading.
+</ReleaseSummary>
+
+<ReleaseRule />
+
+### Install
+
+<ReleaseInstall packages={[
+  { name: "react", version: "0.5.0" },
+  { name: "core", version: "0.4.0" },
+  { name: "nextjs", version: "0.5.1" },
+  { name: "cli", version: "0.3.1" },
+]} />
+
+### Added
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):21 */}
+`@cookieyes/react/critical.css` is a roughly 1.6 KB stylesheet containing only the rules the consent banner needs for its first paint. Inline it in `<head>` ahead of the full `styles.css` import so the banner renders correctly before the larger stylesheet has loaded, avoiding a flash of unstyled banner content on slow connections.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):22; verified: sdk/core/src/region.ts, sdk/react/src/hooks/useRegion.ts */}
+Region-based regulation is now optional and config-driven: pass a `region` object with `detect`, `map`, `honorGpc` and `strictest` options to `initCookieYes()`, or wrap the app in `<CookieYesProvider region={…}>` for server-rendered pages. The `useRegion()` hook reads the resolved region and regulation on the client, and `regionFromHeaders()` derives them from request headers on the server — useful when a page needs to decide, before render, which regulation (GDPR, CCPA, …) applies to a visitor.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):23; verified: sdk/scripts/src/{google,segment,meta,custom-script}.ts, sdk/nextjs/src/google-consent-mode.tsx */}
+Third-party scripts can now be gated on consent through the new `@cookieyes/scripts` package instead of hand-rolled `GatedScript` wiring for common vendors: it ships presets for Segment, Meta Pixel and the Google GA4/Ads/Tag Manager family. Alongside it, `<GoogleConsentMode />` broadcasts Google's Consent Mode signals as deny-by-default from first paint, before a visitor has made any choice.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):24; verified: sdk/core/src/server-consent.ts (readServerConsent), sdk/nextjs/src/server.ts (getServerConsent) */}
+`readServerConsent()`, `getServerConsent()` and `<CookieYesProvider initialConsent={…}>` let a server component read a returning visitor's existing consent decision and pass it into the client render. Wiring this up means the banner no longer flashes on load for a visitor who already made a choice — the server-rendered HTML already reflects it.
+
+### Changed
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):30 */}
+`@cookieyes/cli`'s scaffolded Next.js layout now links to the `getServerConsent()` setup described above, so a project generated with `npx @cookieyes/cli init` avoids the returning-visitor flash from day one instead of needing it added by hand later.
+
+### Fixed
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):36 */}
+`@cookieyes/nextjs@0.5.1` repoints its `@cookieyes/scripts` dependency. The prior release, `@cookieyes/scripts@0.1.0`, shipped with an unresolvable `workspace:*` reference, which made `npm install @cookieyes/nextjs@0.5.0` fail outright with `EUNSUPPORTEDPROTOCOL` outside the monorepo. Upgrading to `@cookieyes/nextjs@0.5.1` resolves the install.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):37 */}
+A failing third-party tag — a vendor script that throws inside `dataLayer.push`, or one whose injection is blocked by an extension or CSP — can no longer strand the consent banner on screen or prevent the SDK from mounting at all. One integration's failure is now isolated from the rest of the consent flow.
+
+### Breaking
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):43 */}
+The `integrations` config key — previously used for built-in vendor stop-handlers such as `{ vendor: "meta" }` — is renamed to `builtInIntegrations`, because `integrations` now takes the new script presets described above. Existing `integrations: [{ vendor: … }]` code stops working as written after upgrading; move those entries to `builtInIntegrations` before adopting v1.4.0.
+
+### Source
+
+<ReleaseSource version="v1.4.0" />

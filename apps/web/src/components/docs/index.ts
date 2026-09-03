@@ -4,7 +4,7 @@
  * importing. Anything reusable beyond /docs belongs in src/components instead.
  */
 export { ArchArrow, ArchBox, ArchDiagram, ArchRow } from "./ArchDiagram";
-export { ChangelogEntry, ChangelogGroup } from "./Changelog";
+export { ChangelogEntry, ChangelogOlderReveal } from "./Changelog";
 export { CompareTable, Mark } from "./CompareTable";
 export { ComponentPropsTable } from "./ComponentPropsTable";
 export { ConfigNestedTable } from "./ConfigNestedTable";
@@ -17,4 +17,11 @@ export { OverviewHero } from "./OverviewHero";
 export { PackageBadge } from "./PackageBadge";
 export { ParamFlag } from "./ParamFlag";
 export { PropsTable } from "./PropsTable";
+export {
+  ReleaseBadges,
+  ReleaseInstall,
+  ReleaseRule,
+  ReleaseSource,
+  ReleaseSummary,
+} from "./ReleaseNotes";
 export { TokenDefaultsBlock } from "./TokenDefaultsBlock";

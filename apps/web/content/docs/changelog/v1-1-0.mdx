@@ -1,0 +1,43 @@
+---
+title: "v1.1.0 — Server-Rendered Banner and a Stable Selector Contract"
+description: Server-Rendered Banner and a Stable Selector Contract — the v1.1.0 release of the CookieYes SDK.
+---
+
+<ReleaseBadges date="2026-06-25" />
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):134-135 */}
+<ReleaseSummary headline="Server-Rendered Banner and a Stable Selector Contract">
+`<CookieBanner />` is now present in server-rendered HTML on every load instead of waiting for client hydration, and its selectors — `[data-cky-banner]`, `.cy-banner`, `.cy-banner-wrap` — are now documented and regression-tested.
+</ReleaseSummary>
+
+<ReleaseRule />
+
+### Install
+
+<ReleaseInstall packages={[
+  { name: "core", version: "0.1.1" },
+  { name: "react", version: "0.2.0" },
+  { name: "nextjs", version: "0.2.0" },
+  { name: "cli", version: "0.1.1" },
+  { name: "translations", version: "0.1.1" },
+]} />
+
+### Added
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):134 */}
+`<CookieBanner />` is now present in the server-rendered HTML on every load, instead of appearing only after client hydration completes. This removes the brief empty-page window where a visitor with JavaScript disabled or slow to load would see no banner at all.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):135 */}
+`[data-cky-banner]`, `.cy-banner` and `.cy-banner-wrap` are now documented, regression-tested public selectors. A consumer can rely on them for custom CSS or end-to-end tests with the same stability guarantee as an exported function — they won't be renamed without a breaking-change notice.
+
+### Changed
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):141 */}
+The full-screen positioning wrapper around the banner is now `display: contents`, so it generates no box of its own. Fixed positioning and `role="dialog"` moved onto the visible `.cy-banner` card itself, which simplifies the DOM a custom stylesheet has to account for.
+
+{/* source: apps/web/content/docs/changelog.mdx (pre-migration, see git history):142 */}
+The build moved from tsup to Rollup, emitting minified first-party ESM and CJS bundles plus type declarations. An internal build-tooling change with no expected effect on how the package is consumed.
+
+### Source
+
+<ReleaseSource version="v1.1.0" />
