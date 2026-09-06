@@ -1,0 +1,450 @@
+/**
+ * Playground styles.
+ *
+ * Scoped under `cy-pg-*` and kept out of the SDK's own selectors: the preview is only
+ * worth anything if the banner inside it is styled exactly as a visitor's would be, so
+ * nothing here reaches into `.cy-banner-wrap`, `.cy-dialog-overlay` or `.cy-widget`.
+ */
+
+.cy-pg-main {
+  max-width: 1152px;
+  margin: 0 auto;
+  padding: 64px var(--cy-space-gutter, 24px) 96px;
+}
+
+.cy-pg-intro h1 {
+  font-family: var(--font-poppins), sans-serif;
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.cy-pg-intro p {
+  margin-top: 8px;
+  max-width: 62ch;
+  color: #52525b;
+}
+
+/* ── Sandbox shell ─────────────────────────────────────────────────────────── */
+
+.cy-pg-sandbox {
+  margin-top: 32px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.cy-pg-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.cy-pg-header-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.cy-pg-header-title h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cy-pg-version {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  color: #71717a;
+}
+
+.cy-pg-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cy-pg-header-actions button,
+.cy-pg-copy,
+.cy-pg-add-row button {
+  padding: 7px 12px;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cy-pg-header-actions button:hover,
+.cy-pg-copy:hover,
+.cy-pg-add-row button:hover:not(:disabled) {
+  background: #f4f4f5;
+}
+
+.cy-pg-add-row button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cy-pg-body {
+  display: grid;
+  grid-template-columns: minmax(320px, 400px) 1fr;
+  min-height: 620px;
+}
+
+.cy-pg-left {
+  border-right: 1px solid #e4e4e7;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Tabs ──────────────────────────────────────────────────────────────────── */
+
+.cy-pg-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.cy-pg-tab {
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cy-pg-tab[aria-selected="true"] {
+  border-color: #d4d4d8;
+  background: #fff;
+  font-weight: 500;
+}
+
+/* ── Controls ──────────────────────────────────────────────────────────────── */
+
+.cy-pg-controls {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 620px;
+}
+
+.cy-pg-section + .cy-pg-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #f4f4f5;
+}
+
+.cy-pg-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  margin-bottom: 14px;
+}
+
+.cy-pg-field,
+.cy-pg-segmented {
+  border: 0;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.cy-pg-label {
+  display: block;
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #71717a;
+}
+
+.cy-pg-input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  background: #fff;
+}
+
+textarea.cy-pg-input {
+  resize: vertical;
+}
+
+.cy-pg-swatches {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cy-pg-swatch {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  border: 1px solid rgb(0 0 0 / 12%);
+  cursor: pointer;
+}
+
+.cy-pg-swatch:has(input:checked) {
+  box-shadow:
+    0 0 0 2px #fff inset,
+    0 0 0 2px #18181b;
+}
+
+.cy-pg-swatch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cy-pg-hex {
+  font-family: var(--font-geist-mono), monospace;
+}
+
+.cy-pg-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cy-pg-slider-row input[type="range"] {
+  flex: 1;
+  accent-color: #1863dc;
+}
+
+.cy-pg-slider-row output {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  color: #71717a;
+  min-width: 40px;
+  text-align: right;
+}
+
+.cy-pg-segmented-track {
+  display: flex;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cy-pg-segment {
+  flex: 1;
+}
+
+.cy-pg-segment input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cy-pg-segment span {
+  display: block;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 13px;
+  background: #f4f4f5;
+  cursor: pointer;
+}
+
+.cy-pg-segment input:checked + span {
+  background: #fff;
+  font-weight: 500;
+}
+
+.cy-pg-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f4f4f5;
+  font-size: 13px;
+}
+
+.cy-pg-check input {
+  accent-color: #1863dc;
+}
+
+.cy-pg-check label {
+  flex: 1;
+}
+
+.cy-pg-always-on {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.cy-pg-add-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* ── Code panel ────────────────────────────────────────────────────────────── */
+
+.cy-pg-code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.cy-pg-code-name {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  color: #71717a;
+}
+
+.cy-pg-code-body {
+  margin: 0;
+  padding: 16px;
+  overflow-x: auto;
+  max-height: 560px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12.5px;
+  line-height: 1.7;
+  tab-size: 2;
+  /* Wraps rather than scrolls sideways. The panel is a narrow column, and code running
+     under its edge reads as broken even though Copy still yields the whole thing. */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* ── Preview ───────────────────────────────────────────────────────────────── */
+
+.cy-pg-preview {
+  display: grid;
+  background: #fafafa;
+  min-width: 0;
+}
+
+.cy-pg-frame {
+  display: block;
+  width: 100%;
+  /* Fills the row, which the grid holds at `min-height` or taller — so the frame is sized
+     before it loads and the page never reflows around it. */
+  height: 100%;
+  min-height: 620px;
+  border: 0;
+}
+
+/* ── Inside the preview frame ──────────────────────────────────────────────── */
+
+.cy-pg-page {
+  min-height: 100vh;
+  background: #fafafa;
+}
+
+.cy-pg-page-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid #ececf0;
+}
+
+.cy-pg-page-bar-end {
+  margin-left: auto;
+}
+
+.cy-pg-page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 32px 24px;
+}
+
+.cy-pg-skeleton {
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  background: #e7e7ee;
+}
+
+.cy-pg-page-heading {
+  height: 18px;
+}
+
+.cy-pg-page-block {
+  height: 130px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.cy-pg-page[data-scheme="dark"] {
+  background: #0f1219;
+}
+
+.cy-pg-page[data-scheme="dark"] .cy-pg-page-bar {
+  border-bottom-color: #232a38;
+}
+
+.cy-pg-page[data-scheme="dark"] .cy-pg-skeleton {
+  background: #1e2431;
+}
+
+/* ── Focus ─────────────────────────────────────────────────────────────────── */
+
+/* Last in the file on purpose: the radio-based controls hide their input and paint the
+   label, so these selectors are more specific than the rules they override and have to
+   come after them to apply. */
+.cy-pg-input:focus-visible,
+.cy-pg-tab:focus-visible,
+.cy-pg-segment input:focus-visible + span,
+.cy-pg-swatch:has(input:focus-visible) {
+  outline: 2px solid #1863dc;
+  outline-offset: 2px;
+}
+
+/* ── Shared ────────────────────────────────────────────────────────────────── */
+
+.cy-pg-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .cy-pg-body {
+    grid-template-columns: 1fr;
+  }
+
+  /* Preview first once the columns stack. The controls run past a phone screen, and the
+     promise of this page is seeing a real banner without hunting for it. */
+  .cy-pg-preview {
+    order: -1;
+    border-bottom: 1px solid #e4e4e7;
+  }
+
+  .cy-pg-left {
+    border-right: 0;
+  }
+
+  .cy-pg-controls {
+    max-height: none;
+  }
+
+  .cy-pg-frame {
+    height: 520px;
+  }
+}

@@ -8,6 +8,8 @@
 /* Docs theme last: it remaps Fumadocs' --color-fd-* tokens onto the docs design's
    palette, so it must win over the neutral preset imported above. */
 @import "../styles/docs/index.css";
+/* Playground: its own cy-pg-* namespace, overriding nothing above. */
+@import "../styles/playground/index.css";
 
 html {
   scrollbar-gutter: stable;
