@@ -1,0 +1,21 @@
+{
+  "name": "@cookieyes/size-fixture-with-react-all",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Size-measurement fixture. Not published. See tools/size/README.md.",
+  "scripts": {
+    "build": "next build"
+  },
+  "dependencies": {
+    "@cookieyes/react": "__TARBALL_REACT__",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "typescript": "^6.0.3"
+  }
+}
