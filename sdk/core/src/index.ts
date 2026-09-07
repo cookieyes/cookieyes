@@ -44,6 +44,8 @@ export {
   warnOverlappingVendors,
   warnUnknownCategories,
 } from "./integrations.js";
+/** @internal — on-demand integration loader consumed by framework adapters. */
+export { _loadIntegrations } from "./integrations-lazy.js";
 export type { LanguageController } from "./language.js";
 export { createLanguageController } from "./language.js";
 export { createConsentManager } from "./manager.js";

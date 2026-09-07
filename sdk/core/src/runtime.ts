@@ -2,12 +2,8 @@ import { resolveCategories } from "./categories.js";
 import { _normalizeConfig } from "./config.js";
 import { _warnBuiltInIntegrationsDeprecated, _warnOfflineModeDeprecated } from "./deprecations.js";
 import { type ConsentEmitter, createConsentEmitter } from "./events.js";
-import {
-  type IntegrationRunner,
-  runIntegrations,
-  warnOverlappingVendors,
-  warnUnknownCategories,
-} from "./integrations.js";
+import type { IntegrationRunner } from "./integrations.js";
+import { _loadIntegrations } from "./integrations-lazy.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
 import { installNetworkBlocker, uninstallNetworkBlocker } from "./network-blocker.js";
@@ -43,6 +39,14 @@ function splitCategories(categories: Record<string, boolean>): ConsentChangePayl
 
 let _runtime: ConsentRuntime | null = null;
 let _integrationRunner: IntegrationRunner | null = null;
+/**
+ * Bumped by every runtime creation and by every reset, so a chunk that arrives
+ * after the runtime it was requested for has gone away can tell and do nothing.
+ * Without it, a `resetConsentRuntime()` between the `import()` and its
+ * resolution would be followed by the old runner installing itself against a
+ * manager that is no longer current.
+ */
+let _integrationGeneration = 0;
 
 export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRuntime {
   if (_runtime) return _runtime;
@@ -183,16 +187,29 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
 
   // Run the configured script integrations (Segment, Google, Meta, …) against
   // the committed consent. Reconciles on every consent change; torn down on reset.
+  let integrationsReady: Promise<void> = Promise.resolve();
   if (options.integrations && options.integrations.length > 0) {
-    warnOverlappingVendors(
-      options.integrations.map((i) => i.id),
-      (options.builtInIntegrations ?? []).map((b) => b.vendor),
-    );
-    warnUnknownCategories(options.integrations, resolved.ids);
-    _integrationRunner = runIntegrations(options.integrations, {
-      granted: (category) => manager.committedCategories[category] === true,
-      subscribe: (fn) => manager.subscribe(() => fn()),
-      region: regionDecision,
+    const configured = options.integrations;
+    const builtIn = options.builtInIntegrations ?? [];
+    const generation = ++_integrationGeneration;
+    // Loaded on demand: see `_loadIntegrations`. The setup of each integration
+    // is therefore deferred by one chunk fetch. Integrations exist to load
+    // third-party tags, which are asynchronous anyway, and consent gating is
+    // unaffected — nothing loads that would not have loaded. It is still a
+    // deferral, not a deletion, which is why `total` in the size report does
+    // not fall even though `initial` does.
+    integrationsReady = _loadIntegrations().then((m) => {
+      if (generation !== _integrationGeneration) return;
+      m.warnOverlappingVendors(
+        configured.map((i) => i.id),
+        builtIn.map((b) => b.vendor),
+      );
+      m.warnUnknownCategories(configured, resolved.ids);
+      _integrationRunner = m.runIntegrations(configured, {
+        granted: (category) => manager.committedCategories[category] === true,
+        subscribe: (fn) => manager.subscribe(() => fn()),
+        region: regionDecision,
+      });
     });
   }
 
@@ -200,6 +217,7 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
     consentManager: manager,
     consentStore,
     getIntegrations: () => _integrationRunner?.list() ?? [],
+    integrationsReady,
   };
   return _runtime;
 }
@@ -222,6 +240,9 @@ export function resetConsentRuntime(): void {
   // `initCookieYes()` would silently never apply its own rules. Idempotent — a no-op
   // when nothing was installed.
   uninstallNetworkBlocker();
+  // Invalidate any in-flight integration load before dropping the runner, so a
+  // chunk still on its way cannot install itself after the reset.
+  _integrationGeneration++;
   _integrationRunner?.stop();
   _integrationRunner = null;
   _runtime = null;

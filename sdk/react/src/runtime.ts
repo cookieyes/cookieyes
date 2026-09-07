@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  installNetworkBlocker,
+  _loadIntegrations,
   _logRegionDecision,
   _normalizeConfig,
   _warnBuiltInIntegrationsDeprecated,
@@ -24,7 +26,6 @@ import {
   type Integration,
   type IntegrationDebugInfo,
   type IntegrationRunner,
-  installNetworkBlocker,
   type LanguageInfo,
   type NetworkBlockerConfig,
   type RegionConfig,
@@ -35,13 +36,10 @@ import {
   readGpc,
   resolveCategories,
   resolveRegion,
-  runIntegrations,
   type ScriptEntry,
   type StopHandler,
   type ThemeConfig,
   type TranslationMap,
-  warnOverlappingVendors,
-  warnUnknownCategories,
 } from "@cookieyes/core";
 import { warnOnUntestedReactVersion } from "./diagnostics/peer-version-warning.js";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
@@ -98,6 +96,13 @@ export type CookieYesRuntime = {
   manager: ConsentManager;
   /** Config + live status for each script integration — data for a debug view. */
   getIntegrations: () => IntegrationDebugInfo[];
+  /**
+   * Resolves once configured integrations have been loaded and wired up. The
+   * runner is loaded on demand, so `getIntegrations()` returns `[]` for a short
+   * window after mount. Resolves immediately when none are configured. See the
+   * same field on `@cookieyes/core`'s `ConsentRuntime`.
+   */
+  integrationsReady: Promise<void>;
   /** Text for the active language (English fills any gaps). Reactive — swaps on setLanguage. */
   translations: TranslationMap;
   getLanguageInfo: () => LanguageInfo;
@@ -292,6 +297,8 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
 
 let _instance: CookieYesRuntime | null = null;
 let _integrationRunner: IntegrationRunner | null = null;
+/** Guards an in-flight integration load against a re-mount or reset. */
+let _integrationGeneration = 0;
 
 function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (!cfg.mode) {
@@ -426,6 +433,11 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     committedCategories: Object.freeze({ ...ssrCategories }) as Record<string, boolean>,
   }) as CookieYesSnapshot;
 
+  // Assigned by the integration block further down, which runs after this
+  // object is built. Exposed through a getter so that late assignment is
+  // visible to a caller holding the runtime.
+  let integrationsReady: Promise<void> = Promise.resolve();
+
   const runtime: CookieYesRuntime = {
     subscribe: (listener) => {
       listeners.add(listener);
@@ -437,6 +449,9 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     getServerSnapshot: () => ssrSnapshot,
     manager,
     getIntegrations: () => _integrationRunner?.list() ?? [],
+    get integrationsReady() {
+      return integrationsReady;
+    },
     get translations() {
       return language.getTranslations();
     },
@@ -472,16 +487,29 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   // the committed consent. A re-mount replaces the previous runner.
   _integrationRunner?.stop();
   _integrationRunner = null;
+  // Invalidate any in-flight load before starting a new one, so a chunk still
+  // on its way for the previous mount cannot install itself against this one.
+  const generation = ++_integrationGeneration;
   if (cfg.integrations && cfg.integrations.length > 0) {
-    warnOverlappingVendors(
-      cfg.integrations.map((i) => i.id),
-      (cfg.builtInIntegrations ?? []).map((b) => b.vendor),
-    );
-    warnUnknownCategories(cfg.integrations, Object.keys(manager.committedCategories));
-    _integrationRunner = runIntegrations(cfg.integrations, {
-      granted: (category) => manager.committedCategories[category] === true,
-      subscribe: (fn) => manager.subscribe(() => fn()),
-      region: regionDecision,
+    const configured = cfg.integrations;
+    const builtIn = cfg.builtInIntegrations ?? [];
+    // Loaded on demand through core's `_loadIntegrations`, which keeps the
+    // runner out of the initial download. A static import of `runIntegrations`
+    // here would pull it straight back in — that is exactly what this adapter
+    // used to do, and why splitting it in core alone changed the interface
+    // layer's measurement by nothing.
+    integrationsReady = _loadIntegrations().then((m) => {
+      if (generation !== _integrationGeneration) return;
+      m.warnOverlappingVendors(
+        configured.map((i) => i.id),
+        builtIn.map((b) => b.vendor),
+      );
+      m.warnUnknownCategories(configured, Object.keys(manager.committedCategories));
+      _integrationRunner = m.runIntegrations(configured, {
+        granted: (category) => manager.committedCategories[category] === true,
+        subscribe: (fn) => manager.subscribe(() => fn()),
+        region: regionDecision,
+      });
     });
   }
 
