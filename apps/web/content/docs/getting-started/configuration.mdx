@@ -158,6 +158,10 @@ Applies only in `@cookieyes/react` and `@cookieyes/nextjs`. `@cookieyes/core` is
 
 Each entry in `rules` takes `id`, `domain`, `category`, and optionally `pathIncludes` and `methods`.
 
+<Callout type="warn">
+  This key needs `registerNetworkBlocker()` from `@cookieyes/core/network-blocker` called once before setup. Without it the blocker is not in your bundle at all, and configuring rules logs an error and blocks nothing. See [Network blocking](/docs/network-blocking#basic-usage) for why it is a separate import.
+</Callout>
+
 ## Behaviour and trade-offs
 
 ### Choosing a mode — `cookie-only` vs `self-hosted`

@@ -56,8 +56,21 @@ export type {
 } from "./network-blocker.js";
 export {
   installNetworkBlocker,
+  registerNetworkBlocker,
   uninstallNetworkBlocker,
 } from "./network-blocker.js";
+/**
+ * @internal — the seam through which core and its framework adapters install a
+ * registered network blocker without importing the blocker itself. Importing
+ * the blocker directly would put it back in every consumer's bundle; see
+ * `network-blocker-slot.ts`.
+ */
+export {
+  _clearNetworkBlockerInstaller,
+  _hasNetworkBlockerInstaller,
+  _installRegisteredNetworkBlocker,
+  _uninstallRegisteredNetworkBlocker,
+} from "./network-blocker-slot.js";
 export type { HeaderSource } from "./region.js";
 export { _logRegionDecision, readGpc, regionFromHeaders, resolveRegion } from "./region.js";
 export {

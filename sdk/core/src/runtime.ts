@@ -6,7 +6,10 @@ import type { IntegrationRunner } from "./integrations.js";
 import { _loadIntegrations } from "./integrations-lazy.js";
 import { createLanguageController } from "./language.js";
 import { createConsentManager } from "./manager.js";
-import { installNetworkBlocker, uninstallNetworkBlocker } from "./network-blocker.js";
+import {
+  _installRegisteredNetworkBlocker,
+  _uninstallRegisteredNetworkBlocker,
+} from "./network-blocker-slot.js";
 import { _logRegionDecision, readGpc, resolveRegion } from "./region.js";
 import type {
   ActiveUI,
@@ -178,8 +181,12 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
     getRegion: () => regionDecision,
   };
 
+  // Installed through the slot rather than imported directly, so the blocker
+  // ships only to customers who register it. Still eager and synchronous: a
+  // registered blocker patches the browser's networking here, exactly as
+  // before. See network-blocker-slot.ts.
   if (options.networkBlocker && options.networkBlocker.rules.length > 0) {
-    installNetworkBlocker(
+    _installRegisteredNetworkBlocker(
       options.networkBlocker,
       (cat) => manager.committedCategories[cat] === true,
     );
@@ -239,7 +246,7 @@ export function resetConsentRuntime(): void {
   // `installNetworkBlocker()` is a no-op while one is active, the next
   // `initCookieYes()` would silently never apply its own rules. Idempotent — a no-op
   // when nothing was installed.
-  uninstallNetworkBlocker();
+  _uninstallRegisteredNetworkBlocker();
   // Invalidate any in-flight integration load before dropping the runner, so a
   // chunk still on its way cannot install itself after the reset.
   _integrationGeneration++;

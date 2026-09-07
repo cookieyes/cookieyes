@@ -6,16 +6,19 @@ const pkg = createRequire(import.meta.url)("./package.json");
 export default createLibConfig({
   pkg,
   /**
-   * `integrations` needs its own entry for the dynamic `import()` in
-   * `runtime.ts` to survive into the published output.
+   * Every optional subsystem that must be able to leave a consumer's bundle
+   * needs its own entry here.
    *
    * Rollup flattens a module into the main chunk as soon as anything statically
-   * reachable from `src/index.ts` imports it — and the barrel re-exports
-   * `runIntegrations`. Without an entry the split emitted no second chunk at
-   * all and made `index.js` 317 bytes *larger*. See tools/size/README.md.
+   * reachable from `src/index.ts` imports it — and the barrel re-exports both of
+   * these. Without an entry, `integrations`' dynamic `import()` is inlined (it
+   * emitted no second chunk at all and made `index.js` 317 bytes *larger*), and
+   * `network-blocker` cannot be reached by its own subpath. See
+   * `tools/size/README.md` and `src/network-blocker-slot.ts`.
    */
   entries: {
     index: "src/index.ts",
     integrations: "src/integrations.ts",
+    "network-blocker": "src/network-blocker.ts",
   },
 });

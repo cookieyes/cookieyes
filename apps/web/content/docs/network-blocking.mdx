@@ -25,12 +25,15 @@ If none of those apply — if you can reference the tag in code — register it 
 
 ## Basic usage
 
-The declarative path is what almost everyone uses: the `networkBlocker` key on `initCookieYes()`.
+Two things are needed: register the blocker, and configure your rules.
 
 ```tsx title="app/cookieyes.tsx"
 "use client";
 
+import { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
 import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+
+registerNetworkBlocker();
 
 initCookieYes({
   mode: "cookie-only",
@@ -46,11 +49,24 @@ export function ConsentManager() {
 
 Every request to `google-analytics.com` (or any subdomain of it) is denied until the `analytics` category is granted.
 
-You will rarely call the underlying functions directly — `installNetworkBlocker(config, hasConsent)` and `uninstallNetworkBlocker()` are exported from `@cookieyes/core` for the rare case where you're managing consent state yourself, outside `initCookieYes()`. Note that `react` and `nextjs` do not re-export either function — the `networkBlocker` config key is the only path in those two packages.
+<Callout type="warn">
+  `registerNetworkBlocker()` is required. Configuring `networkBlocker` without it logs an error naming the missing import and **blocks nothing** — the console message is the only warning you get, so check for it after upgrading.
+</Callout>
+
+### Why the extra line
+
+The blocker lives at its own address, `@cookieyes/core/network-blocker`, and is reached only if you import it. That is deliberate, and it buys two things:
+
+- **You don't pay for it if you don't use it.** It used to be downloaded by every customer of `@cookieyes/core`, configured or not, because the runtime imported it unconditionally at the top of the file. A bundler can drop code nobody uses, but an unconditional import counts as using it. Moving it behind its own entry point takes it out of the download for everyone else.
+- **It still blocks from the very first moment.** The alternative — loading it on demand behind a dynamic `import()` — would have saved the same bytes and opened a hole: between the page starting and the chunk arriving, the browser's networking is unpatched and an early-firing tag gets through. Because you import it normally, it is already there when `initCookieYes()` runs and patches immediately. There is no window.
+
+The trade is one import line for a feature you had to configure anyway.
+
+You will rarely call the underlying functions directly — `installNetworkBlocker(config, hasConsent)` and `uninstallNetworkBlocker()` are exported from `@cookieyes/core/network-blocker` for the rare case where you're managing consent state yourself, outside `initCookieYes()`. Calling `installNetworkBlocker` yourself does not need `registerNetworkBlocker()`; registration exists only so the `networkBlocker` config key can reach it. Note that `react` and `nextjs` do not re-export either function — the `networkBlocker` config key is the only path in those two packages.
 
 ```ts title="src/network-blocker-manual.ts"
-import { installNetworkBlocker } from "@cookieyes/core";
 import type { ConsentCategory } from "@cookieyes/core";
+import { installNetworkBlocker } from "@cookieyes/core/network-blocker";
 
 const committedCategories: Partial<Record<ConsentCategory, boolean>> = {
   analytics: false,

@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  installNetworkBlocker,
+  _installRegisteredNetworkBlocker,
   _loadIntegrations,
   _logRegionDecision,
   _normalizeConfig,
@@ -394,7 +394,14 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   if (cfg.networkBlocker && cfg.networkBlocker.rules.length > 0) {
     // Gate on committed consent, not the live toggle — an unsaved switch flip
     // must not open the network before the visitor actually consents.
-    installNetworkBlocker(cfg.networkBlocker, (cat) => manager.committedCategories[cat] === true);
+    // Through core's slot, not a direct import: a static import of
+    // `installNetworkBlocker` here would put the blocker back into every
+    // consumer's bundle, which is the whole thing this avoids. Still eager —
+    // a registered blocker patches networking synchronously, right here.
+    _installRegisteredNetworkBlocker(
+      cfg.networkBlocker,
+      (cat) => manager.committedCategories[cat] === true,
+    );
   }
 
   // Both are developer diagnostics: a CSP-violation listener and an
