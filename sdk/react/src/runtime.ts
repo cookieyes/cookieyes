@@ -390,8 +390,17 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     installNetworkBlocker(cfg.networkBlocker, (cat) => manager.committedCategories[cat] === true);
   }
 
-  warnOnStyleCspViolations();
-  warnOnUntestedReactVersion();
+  // Both are developer diagnostics: a CSP-violation listener and an
+  // untested-React-version warning. Neither does anything a visitor can act on,
+  // and guarding the *call sites* (rather than the function bodies) is what
+  // makes them removable — with nothing referencing them, the bundler drops the
+  // functions and their message strings entirely rather than keeping empty
+  // shells. See the note in `@cookieyes/core`'s `deprecations.ts` for why the
+  // check is written as this exact literal.
+  if (process.env.NODE_ENV !== "production") {
+    warnOnStyleCspViolations();
+    warnOnUntestedReactVersion();
+  }
 
   // Owns the active language + live switching; re-renders the UI via notify.
   const language = createLanguageController(cfg.i18n, notify);
