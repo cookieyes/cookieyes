@@ -183,9 +183,33 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
   };
 }
 
+/**
+ * Declared locally rather than pulled in from `@types/node`.
+ *
+ * The guard below needs `process.env.NODE_ENV` to survive into the published
+ * output as that exact literal, so a consumer's bundler can replace it. That
+ * rules out any defensive form — `globalThis.process?.env?.NODE_ENV`, a
+ * `typeof` check — because none of them are the pattern bundlers match.
+ *
+ * Referencing Node's global types instead (`/// <reference types="node" />`)
+ * would work for the compiler but risks that reference reaching the emitted
+ * `.d.ts`, which would make every consumer of this package need `@types/node`
+ * to typecheck. This declaration is module-scoped and ambient, so it types the
+ * one expression that needs it and reaches nothing else.
+ */
+declare const process: { env: { NODE_ENV?: string } };
+
 let _builderDeprecationWarned = false;
 
+/**
+ * No-op in a production bundle. The literal `process.env.NODE_ENV` check is the
+ * form bundlers replace, which makes the early return unconditional and the
+ * message below dead code; see the note at the top of
+ * `@cookieyes/core`'s `deprecations.ts` for why it is written this exact way
+ * and not hoisted into a shared constant.
+ */
 function warnBuilderDeprecated(): void {
+  if (process.env.NODE_ENV === "production") return;
   if (_builderDeprecationWarned) return;
   _builderDeprecationWarned = true;
   if (typeof console !== "undefined") {
