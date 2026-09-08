@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import {
   BUILT_IN_CATEGORY_IDS,
   COLOUR_SWATCHES,
+  categoryLabel,
   FONTS,
   type FontChoice,
   type PlaygroundConfig,
@@ -17,13 +18,30 @@ const FONT_OPTIONS = (Object.keys(FONTS) as FontChoice[]).map((value) => ({
   label: FONTS[value].label,
 }));
 
-const WORDING_FIELDS: { key: keyof PlaygroundText; label: string; multiline?: boolean }[] = [
-  { key: "bannerTitle", label: "Title" },
-  { key: "bannerDescription", label: "Description", multiline: true },
-  { key: "acceptAll", label: "Accept button" },
-  { key: "rejectAll", label: "Reject button" },
-  { key: "managePreferences", label: "Preferences button" },
-];
+type WordingField = { key: keyof PlaygroundText; label: string; multiline?: boolean };
+
+/**
+ * Only the text the current banner actually renders.
+ *
+ * Under CCPA the SDK swaps `bannerDescription` for `ccpaDescription` and replaces the three
+ * buttons with a single Do Not Sell link (see the SDK's CookieBanner preset). Offering the
+ * GDPR fields there would put four controls on screen that change nothing — which is the
+ * impression this whole page exists to avoid.
+ */
+const WORDING_FIELDS: Record<"GDPR" | "CCPA", WordingField[]> = {
+  GDPR: [
+    { key: "bannerTitle", label: "Title" },
+    { key: "bannerDescription", label: "Description", multiline: true },
+    { key: "acceptAll", label: "Accept button" },
+    { key: "rejectAll", label: "Reject button" },
+    { key: "managePreferences", label: "Preferences button" },
+  ],
+  CCPA: [
+    { key: "bannerTitle", label: "Title" },
+    { key: "ccpaDescription", label: "Description", multiline: true },
+    { key: "doNotSell", label: "Do Not Sell link" },
+  ],
+};
 
 const HEX_PATTERN = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 
@@ -95,6 +113,8 @@ function Appearance({
     setHexDraft(config.primaryColor);
   }
 
+  const hexValid = HEX_PATTERN.test(hexDraft.trim());
+
   function commitHex(next: string) {
     setHexDraft(next);
     if (HEX_PATTERN.test(next.trim())) onChange({ primaryColor: next.trim() });
@@ -124,9 +144,16 @@ function Appearance({
             className="cy-pg-input cy-pg-hex"
             value={hexDraft}
             spellCheck={false}
+            aria-invalid={!hexValid}
+            aria-describedby={hexValid ? undefined : `${hexId}-hint`}
             onChange={(event) => commitHex(event.target.value)}
           />
         </div>
+        {/* Otherwise a typo just sits there while the preview keeps the old colour, and
+            the two quietly disagree with no explanation. */}
+        <p className="cy-pg-field-error" id={`${hexId}-hint`} hidden={hexValid}>
+          Enter a hex colour, like #1863dc.
+        </p>
       </fieldset>
 
       <div className="cy-pg-field">
@@ -177,7 +204,7 @@ function Wording({
 
   return (
     <Section title="Wording">
-      {WORDING_FIELDS.map(({ key, label, multiline }) => {
+      {WORDING_FIELDS[config.regulation].map(({ key, label, multiline }) => {
         const id = `${prefix}-${key}`;
         const common = {
           id,
@@ -247,7 +274,7 @@ function Categories({
               disabled={required}
               onChange={(event) => toggle(id, event.target.checked)}
             />
-            <label htmlFor={inputId}>{config.customLabels[id] ?? id}</label>
+            <label htmlFor={inputId}>{categoryLabel(id, config.customLabels)}</label>
             {required ? <span className="cy-pg-always-on">Always on</span> : null}
           </div>
         );
@@ -260,7 +287,7 @@ function Categories({
         <input
           id={addId}
           className="cy-pg-input"
-          placeholder="Add your own, e.g. functional"
+          placeholder="Add your own, e.g. marketing"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {

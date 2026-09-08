@@ -92,16 +92,16 @@ function categoriesBlock(config: PlaygroundConfig, depth: number): string[] {
   return [pad(depth, "categories: ["), ...entries, pad(depth, "],")];
 }
 
-export function generateSetupCode(config: PlaygroundConfig): string {
+/**
+ * The inside of the config object — the one region the Code tab lets a visitor edit.
+ *
+ * The braces stay in the fixed text either side, so the block reads as the single
+ * `initCookieYes({ … });` call the quick start shows rather than a box wedged between two
+ * halves. The surrounding file cannot be edited anyway: it contains JSX, and reading that
+ * back would mean shipping a JSX compiler to the browser.
+ */
+export function generateConfigBody(config: PlaygroundConfig): string {
   return [
-    '"use client";',
-    "",
-    // The one import people forget. Without it the banner renders unstyled and looks
-    // broken, so it is never conditional on anything.
-    'import "@cookieyes/react/styles.css";',
-    'import { CookieBanner, CookiePreferences, RecallButton, initCookieYes } from "@cookieyes/react";',
-    "",
-    "initCookieYes({",
     pad(1, 'mode: "cookie-only",'),
     // Always spelled out: left unset, the SDK resolves `regulation` by region and falls
     // back to `colorScheme: "system"`, so omitting them would make the copied code behave
@@ -111,17 +111,45 @@ export function generateSetupCode(config: PlaygroundConfig): string {
     ...themeBlock(config, 1),
     ...i18nBlock(config, 1),
     ...categoriesBlock(config, 1),
-    "});",
-    "",
-    "export function CookieYesRoot() {",
-    pad(1, "return ("),
-    pad(2, "<>"),
-    pad(3, "<CookieBanner />"),
-    pad(3, "<CookiePreferences />"),
-    pad(3, "<RecallButton />"),
-    pad(2, "</>"),
-    pad(1, ");"),
-    "}",
-    "",
   ].join("\n");
+}
+
+/** Fixed text before the editable config object. */
+export const SETUP_HEADER = [
+  '"use client";',
+  "",
+  // The one import people forget. Without it the banner renders unstyled and looks broken,
+  // so it is never conditional on anything.
+  'import "@cookieyes/react/styles.css";',
+  // Broken across lines like the package README's own quick start. It also keeps every
+  // line short enough to read in a narrow column without wrapping or sideways scrolling.
+  "import {",
+  pad(1, "CookieBanner,"),
+  pad(1, "CookiePreferences,"),
+  pad(1, "RecallButton,"),
+  pad(1, "initCookieYes,"),
+  '} from "@cookieyes/react";',
+  "",
+  "initCookieYes({",
+].join("\n");
+
+/** Fixed text after it. */
+export const SETUP_FOOTER = [
+  "});",
+  "",
+  "export function CookieYesRoot() {",
+  pad(1, "return ("),
+  pad(2, "<>"),
+  pad(3, "<CookieBanner />"),
+  pad(3, "<CookiePreferences />"),
+  pad(3, "<RecallButton />"),
+  pad(2, "</>"),
+  pad(1, ");"),
+  "}",
+  "",
+].join("\n");
+
+/** The whole file, as copied. */
+export function generateSetupCode(config: PlaygroundConfig): string {
+  return `${SETUP_HEADER}\n${generateConfigBody(config)}\n${SETUP_FOOTER}`;
 }

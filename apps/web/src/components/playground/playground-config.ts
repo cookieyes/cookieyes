@@ -8,10 +8,21 @@ import { DEFAULT_CATEGORIES, defaultTranslations, type TranslationMap } from "@c
  * banner they just approved — the single failure this page exists to prevent.
  */
 
-/** The wording fields the playground exposes, keyed by the SDK's own translation keys. */
+/**
+ * The wording fields the playground exposes, keyed by the SDK's own translation keys.
+ *
+ * Both regulations are covered because the banner renders different text for each — see
+ * WORDING_FIELDS in ControlsPanel for which are offered when.
+ */
 export type PlaygroundText = Pick<
   TranslationMap,
-  "bannerTitle" | "bannerDescription" | "acceptAll" | "rejectAll" | "managePreferences"
+  | "bannerTitle"
+  | "bannerDescription"
+  | "ccpaDescription"
+  | "doNotSell"
+  | "acceptAll"
+  | "rejectAll"
+  | "managePreferences"
 >;
 
 export type FontChoice = "system" | "inter" | "poppins";
@@ -53,6 +64,14 @@ export const FONTS: Record<FontChoice, { label: string; preview?: string; code?:
 
 export const BUILT_IN_CATEGORY_IDS: string[] = DEFAULT_CATEGORIES.map((category) => category.id);
 
+/**
+ * What to call a category on screen — the same name the preferences dialog shows, so the
+ * controls and the preview never disagree about what a row is.
+ */
+export function categoryLabel(id: string, customLabels: Record<string, string>): string {
+  return customLabels[id] ?? defaultTranslations.categories[id]?.label ?? id;
+}
+
 /** The one category that can never be switched off — removing it would invalidate the set. */
 export const REQUIRED_CATEGORY_ID = "necessary";
 
@@ -76,6 +95,8 @@ export const DEFAULT_CONFIG: PlaygroundConfig = {
   text: {
     bannerTitle: defaultTranslations.bannerTitle,
     bannerDescription: defaultTranslations.bannerDescription,
+    ccpaDescription: defaultTranslations.ccpaDescription,
+    doNotSell: defaultTranslations.doNotSell,
     acceptAll: defaultTranslations.acceptAll,
     rejectAll: defaultTranslations.rejectAll,
     managePreferences: defaultTranslations.managePreferences,

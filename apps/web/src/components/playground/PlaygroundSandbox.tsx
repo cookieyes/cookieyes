@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CodePanel } from "./CodePanel";
 import { ControlsPanel } from "./ControlsPanel";
-import { generateSetupCode } from "./generate-setup-code";
 import { PreviewFrame } from "./PreviewFrame";
 import { DEFAULT_CONFIG, type PlaygroundConfig } from "./playground-config";
 
@@ -34,14 +33,15 @@ export function PlaygroundSandbox({ version }: { version: string }) {
     return () => clearTimeout(timer);
   }, [config]);
 
-  const code = useMemo(() => generateSetupCode(config), [config]);
-
   function update(patch: Partial<PlaygroundConfig>) {
     setConfig((current) => ({ ...current, ...patch }));
   }
 
   function reset() {
-    setConfig(DEFAULT_CONFIG);
+    // A fresh object even though the values are the defaults: if the config is already at
+    // its defaults, passing the same reference changes nothing, and a code panel holding
+    // unparseable text would keep it — a Reset button that visibly does nothing.
+    setConfig({ ...DEFAULT_CONFIG, text: { ...DEFAULT_CONFIG.text } });
     setReplayCount((count) => count + 1);
   }
 
@@ -98,7 +98,7 @@ export function PlaygroundSandbox({ version }: { version: string }) {
             <ControlsPanel config={config} onChange={update} />
           </div>
           <div id="cy-pg-panel-code" role="tabpanel" hidden={tab !== "code"}>
-            <CodePanel code={code} />
+            <CodePanel config={config} onConfigChange={setConfig} />
           </div>
         </div>
 

@@ -4,6 +4,15 @@
  * Scoped under `cy-pg-*` and kept out of the SDK's own selectors: the preview is only
  * worth anything if the banner inside it is styled exactly as a visitor's would be, so
  * nothing here reaches into `.cy-banner-wrap`, `.cy-dialog-overlay` or `.cy-widget`.
+ *
+ * Colours come from the site's `--cy-doc-*` tokens, which are defined on `:root` and
+ * `.dark` precisely so they work outside the docs subtree. Hardcoding them left every
+ * label white-on-white once the site was in dark mode. Per that file's own note, text
+ * sitting on `--cy-doc-surface` uses `--cy-doc-tx2` or brighter — `tx3` falls below AA
+ * there.
+ *
+ * The one exception is the preview page inside the iframe: it follows the playground's
+ * own Mode control, not the site's theme, because it stands in for the visitor's site.
  */
 
 .cy-pg-main {
@@ -17,21 +26,24 @@
   font-size: 40px;
   font-weight: 600;
   letter-spacing: -0.02em;
+  color: var(--cy-doc-tx);
 }
 
 .cy-pg-intro p {
-  margin-top: 8px;
+  margin-top: 10px;
+  font-size: 16px;
   max-width: 62ch;
-  color: #52525b;
+  color: var(--cy-doc-tx2);
 }
 
 /* ── Sandbox shell ─────────────────────────────────────────────────────────── */
 
 .cy-pg-sandbox {
   margin-top: 32px;
-  border: 1px solid #e4e4e7;
+  border: 1px solid var(--cy-doc-bd);
   border-radius: 12px;
-  background: #fff;
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx);
   overflow: hidden;
 }
 
@@ -42,7 +54,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--cy-doc-bd);
 }
 
 .cy-pg-header-title {
@@ -52,14 +64,14 @@
 }
 
 .cy-pg-header-title h2 {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
 }
 
 .cy-pg-version {
   font-family: var(--font-geist-mono), monospace;
-  font-size: 12px;
-  color: #71717a;
+  font-size: 13px;
+  color: var(--cy-doc-tx2);
 }
 
 .cy-pg-header-actions {
@@ -71,17 +83,18 @@
 .cy-pg-copy,
 .cy-pg-add-row button {
   padding: 7px 12px;
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--cy-doc-bd2);
   border-radius: 8px;
-  background: #fff;
-  font-size: 13px;
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx);
+  font-size: 14px;
   cursor: pointer;
 }
 
 .cy-pg-header-actions button:hover,
 .cy-pg-copy:hover,
 .cy-pg-add-row button:hover:not(:disabled) {
-  background: #f4f4f5;
+  background: var(--cy-doc-bg2);
 }
 
 .cy-pg-add-row button:disabled {
@@ -96,7 +109,7 @@
 }
 
 .cy-pg-left {
-  border-right: 1px solid #e4e4e7;
+  border-right: 1px solid var(--cy-doc-bd);
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -108,21 +121,23 @@
   display: flex;
   gap: 4px;
   padding: 10px 12px;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--cy-doc-bd);
 }
 
 .cy-pg-tab {
-  padding: 6px 14px;
+  padding: 7px 14px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: none;
-  font-size: 13px;
+  color: var(--cy-doc-tx2);
+  font-size: 14px;
   cursor: pointer;
 }
 
 .cy-pg-tab[aria-selected="true"] {
-  border-color: #d4d4d8;
-  background: #fff;
+  border-color: var(--cy-doc-bd2);
+  background: var(--cy-doc-bg2);
+  color: var(--cy-doc-tx);
   font-weight: 500;
 }
 
@@ -137,15 +152,15 @@
 .cy-pg-section + .cy-pg-section {
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #f4f4f5;
+  border-top: 1px solid var(--cy-doc-bd);
 }
 
 .cy-pg-section-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #a1a1aa;
+  color: var(--cy-doc-tx2);
   margin-bottom: 14px;
 }
 
@@ -160,21 +175,22 @@
   display: block;
   padding: 0;
   margin-bottom: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #71717a;
+  color: var(--cy-doc-tx2);
 }
 
 .cy-pg-input {
   width: 100%;
   padding: 9px 11px;
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--cy-doc-bd2);
   border-radius: 8px;
   font: inherit;
-  font-size: 13px;
-  background: #fff;
+  font-size: 16px;
+  background: var(--cy-doc-chrome);
+  color: var(--cy-doc-tx);
 }
 
 textarea.cy-pg-input {
@@ -193,14 +209,14 @@ textarea.cy-pg-input {
   height: 32px;
   flex: 0 0 auto;
   border-radius: 8px;
-  border: 1px solid rgb(0 0 0 / 12%);
+  border: 1px solid var(--cy-doc-bd2);
   cursor: pointer;
 }
 
 .cy-pg-swatch:has(input:checked) {
   box-shadow:
-    0 0 0 2px #fff inset,
-    0 0 0 2px #18181b;
+    0 0 0 2px var(--cy-doc-surface) inset,
+    0 0 0 2px var(--cy-doc-tx);
 }
 
 .cy-pg-swatch input {
@@ -222,20 +238,20 @@ textarea.cy-pg-input {
 
 .cy-pg-slider-row input[type="range"] {
   flex: 1;
-  accent-color: #1863dc;
+  accent-color: var(--cy-doc-ac);
 }
 
 .cy-pg-slider-row output {
   font-family: var(--font-geist-mono), monospace;
-  font-size: 12px;
-  color: #71717a;
-  min-width: 40px;
+  font-size: 13px;
+  color: var(--cy-doc-tx2);
+  min-width: 44px;
   text-align: right;
 }
 
 .cy-pg-segmented-track {
   display: flex;
-  border: 1px solid #d4d4d8;
+  border: 1px solid var(--cy-doc-bd2);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -252,15 +268,17 @@ textarea.cy-pg-input {
 
 .cy-pg-segment span {
   display: block;
-  padding: 8px 4px;
+  padding: 9px 4px;
   text-align: center;
-  font-size: 13px;
-  background: #f4f4f5;
+  font-size: 14px;
+  background: var(--cy-doc-bg3);
+  color: var(--cy-doc-tx2);
   cursor: pointer;
 }
 
 .cy-pg-segment input:checked + span {
-  background: #fff;
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx);
   font-weight: 500;
 }
 
@@ -269,12 +287,12 @@ textarea.cy-pg-input {
   align-items: center;
   gap: 10px;
   padding: 9px 0;
-  border-bottom: 1px solid #f4f4f5;
-  font-size: 13px;
+  border-bottom: 1px solid var(--cy-doc-bd);
+  font-size: 15px;
 }
 
 .cy-pg-check input {
-  accent-color: #1863dc;
+  accent-color: var(--cy-doc-ac);
 }
 
 .cy-pg-check label {
@@ -282,10 +300,16 @@ textarea.cy-pg-input {
 }
 
 .cy-pg-always-on {
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #a1a1aa;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-pg-field-error {
+  margin: 6px 0 0;
+  color: var(--cy-doc-re);
+  font-size: 13px;
 }
 
 .cy-pg-add-row {
@@ -301,35 +325,116 @@ textarea.cy-pg-input {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid #e4e4e7;
+  border-bottom: 1px solid var(--cy-doc-bd);
 }
 
 .cy-pg-code-name {
   font-family: var(--font-geist-mono), monospace;
-  font-size: 12px;
-  color: #71717a;
+  font-size: 13px;
+  color: var(--cy-doc-tx2);
 }
 
-.cy-pg-code-body {
-  margin: 0;
-  padding: 16px;
-  overflow-x: auto;
-  max-height: 560px;
+/* ── Code editor ───────────────────────────────────────────────────────────
+
+   Always dark, whatever the site's theme. That is what the design specifies, it is what
+   makes the block read as an editor rather than text on a card, and it keeps one surface
+   to reason about instead of two. Colours are the design's own. */
+
+.cy-pg-editor {
+  display: flex;
+  background: #15171a;
+  overflow: auto;
+  max-height: 520px;
+}
+
+.cy-pg-editor,
+.cy-pg-fixed,
+.cy-pg-editable-ink,
+.cy-pg-editable-input,
+.cy-pg-gutter {
   font-family: var(--font-geist-mono), monospace;
-  font-size: 12.5px;
-  line-height: 1.7;
+  font-size: 13.5px;
+  line-height: 22px;
   tab-size: 2;
-  /* Wraps rather than scrolls sideways. The panel is a narrow column, and code running
-     under its edge reads as broken even though Copy still yields the whole thing. */
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
+}
+
+.cy-pg-gutter {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 16px 12px 16px 16px;
+  text-align: right;
+  white-space: pre;
+  color: #575653;
+  user-select: none;
+}
+
+.cy-pg-listing {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 16px 16px 16px 0;
+  color: #cecdc3;
+}
+
+.cy-pg-fixed,
+.cy-pg-editable-ink,
+.cy-pg-editable-input {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  /* No wrapping: the gutter's line numbers only line up while one line is one row. Every
+     generated line is short enough that this rarely scrolls. */
+  white-space: pre;
+}
+
+.cy-pg-fixed {
+  color: inherit;
+}
+
+/* The two layers sit exactly on top of each other: the pre paints the colours, the
+   textarea holds the real text and the caret with its own glyphs invisible. */
+.cy-pg-editable {
+  position: relative;
+}
+
+.cy-pg-editable-ink {
+  pointer-events: none;
+}
+
+.cy-pg-editable-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  resize: none;
+  overflow: hidden;
+  background: transparent;
+  color: transparent;
+  caret-color: #cecdc3;
+}
+
+.cy-pg-editable-input::selection {
+  background: rgb(108 155 234 / 35%);
+}
+
+.cy-pg-editable-input:focus-visible {
+  outline: 2px solid #6c9bea;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.cy-tok-str {
+  color: #6c9bea;
+}
+
+.cy-tok-com {
+  color: #878580;
 }
 
 /* ── Preview ───────────────────────────────────────────────────────────────── */
 
 .cy-pg-preview {
   display: grid;
-  background: #fafafa;
+  background: var(--cy-doc-bg2);
   min-width: 0;
 }
 
@@ -407,7 +512,7 @@ textarea.cy-pg-input {
 .cy-pg-tab:focus-visible,
 .cy-pg-segment input:focus-visible + span,
 .cy-pg-swatch:has(input:focus-visible) {
-  outline: 2px solid #1863dc;
+  outline: 2px solid var(--cy-doc-ac);
   outline-offset: 2px;
 }
 
@@ -433,7 +538,7 @@ textarea.cy-pg-input {
      promise of this page is seeing a real banner without hunting for it. */
   .cy-pg-preview {
     order: -1;
-    border-bottom: 1px solid #e4e4e7;
+    border-bottom: 1px solid var(--cy-doc-bd);
   }
 
   .cy-pg-left {
