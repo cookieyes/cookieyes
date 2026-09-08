@@ -152,6 +152,13 @@ is not a code change, but it is why the budgets carry headroom rather than
 sitting on the measured value, and why a diff of ±a few bytes after a release
 needs no investigation.
 
+This is also why the docs site's staleness check compares a **fingerprint of the
+SDK's bundle inputs** (`sdk-fingerprint.mjs`) and not package versions. A
+version comparison is wrong in both directions: it fails the changesets release
+PR, which bumps versions and touches no code, and it passes an ordinary pull
+request that changes code without touching a version. The first of those blocked
+a release before it was fixed.
+
 ### What is not in the JS delta
 
 The stylesheet. `@cookieyes/react/styles.css` and `critical.css` are measured
@@ -216,3 +223,8 @@ claim. When a release changes it:
 2. Move `previous` in `budgets.json` to the newly published version's numbers.
 3. Anything that quotes a figure reads it from the report — nothing is typed by
    hand in a second place.
+
+You do **not** have to do this to unblock a release. The changesets release PR
+changes only versions and CHANGELOGs, which the fingerprint ignores, so it
+passes on its own. Refreshing the report keeps `previous` meaningful; it is not
+a gate.
