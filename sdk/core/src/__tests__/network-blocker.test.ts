@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   installNetworkBlocker,
   type NetworkBlockerRule,
+  registerNetworkBlocker,
   uninstallNetworkBlocker,
 } from "../network-blocker.js";
-import { resetConsentRuntime } from "../runtime.js";
+import { _clearNetworkBlockerInstaller } from "../network-blocker-slot.js";
+import { getOrCreateConsentRuntime, resetConsentRuntime } from "../runtime.js";
 
 const ruleGA: NetworkBlockerRule = {
   id: "ga",
@@ -305,6 +307,110 @@ describe("resetConsentRuntime un-patches the transports", () => {
     installNetworkBlocker({ rules: [ruleFB], logBlockedRequests: false }, () => false);
     expect(window.fetch).not.toBe(pristineFetch);
     uninstallNetworkBlocker();
+    expect(window.fetch).toBe(pristineFetch);
+  });
+});
+
+/**
+ * The blocker now ships as its own entry point (`@cookieyes/core/network-blocker`)
+ * so that customers who do not use it do not download it. See
+ * `network-blocker-slot.ts` for why that shape was chosen over a dynamic import.
+ *
+ * These cover the three states that shape creates. The size half of the claim —
+ * that none of the machinery reaches a bundle that never registers it — is
+ * enforced by the budgets in `tools/size/budgets.json`, since no unit test can
+ * see what a bundler emitted.
+ */
+describe("registration seam", () => {
+  const rules = [ruleGA];
+
+  afterEach(() => {
+    // `getOrCreateConsentRuntime` is a process-wide singleton, so without this
+    // the second test in this block silently reuses the first one's runtime and
+    // its config is ignored entirely — which reads as "the blocker did not
+    // install" rather than "the runtime was never created".
+    resetConsentRuntime();
+    _clearNetworkBlockerInstaller();
+    vi.restoreAllMocks();
+  });
+
+  it("does nothing at all when no blocker is configured", () => {
+    const pristineFetch = window.fetch;
+    const pristineOpen = XMLHttpRequest.prototype.open;
+    const pristineSend = XMLHttpRequest.prototype.send;
+    const pristineBeacon = navigator.sendBeacon;
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    getOrCreateConsentRuntime({ mode: "cookie-only" });
+
+    // No patching, and no complaint either: not configuring the feature is the
+    // normal case, not a mistake.
+    expect(window.fetch).toBe(pristineFetch);
+    expect(XMLHttpRequest.prototype.open).toBe(pristineOpen);
+    expect(XMLHttpRequest.prototype.send).toBe(pristineSend);
+    expect(navigator.sendBeacon).toBe(pristineBeacon);
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it("patches all four transports when registered and configured", () => {
+    const pristine = {
+      fetch: window.fetch,
+      open: XMLHttpRequest.prototype.open,
+      send: XMLHttpRequest.prototype.send,
+      beacon: navigator.sendBeacon,
+    };
+
+    registerNetworkBlocker();
+    getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      networkBlocker: { rules, logBlockedRequests: false },
+    });
+
+    expect(window.fetch).not.toBe(pristine.fetch);
+    expect(XMLHttpRequest.prototype.open).not.toBe(pristine.open);
+    expect(XMLHttpRequest.prototype.send).not.toBe(pristine.send);
+    expect(navigator.sendBeacon).not.toBe(pristine.beacon);
+
+    // …and all four come back on reset.
+    resetConsentRuntime();
+    expect(window.fetch).toBe(pristine.fetch);
+    expect(XMLHttpRequest.prototype.open).toBe(pristine.open);
+    expect(XMLHttpRequest.prototype.send).toBe(pristine.send);
+    expect(navigator.sendBeacon).toBe(pristine.beacon);
+  });
+
+  it("fails loudly, not silently, when configured without being registered", () => {
+    // The dangerous case. Someone who configured `networkBlocker` before this
+    // change and upgrades must not quietly stop blocking, so the console names
+    // the exact import needed.
+    const pristineFetch = window.fetch;
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      networkBlocker: { rules, logBlockedRequests: false },
+    });
+
+    expect(window.fetch).toBe(pristineFetch);
+    expect(error).toHaveBeenCalledTimes(1);
+    const message = String(error.mock.calls[0]?.[0]);
+    expect(message).toContain("nothing is being blocked");
+    expect(message).toContain("@cookieyes/core/network-blocker");
+    expect(message).toContain("registerNetworkBlocker");
+  });
+
+  it("is idempotent — registering twice changes nothing", () => {
+    const pristineFetch = window.fetch;
+    registerNetworkBlocker();
+    registerNetworkBlocker();
+
+    getOrCreateConsentRuntime({
+      mode: "cookie-only",
+      networkBlocker: { rules, logBlockedRequests: false },
+    });
+    expect(window.fetch).not.toBe(pristineFetch);
+
+    resetConsentRuntime();
     expect(window.fetch).toBe(pristineFetch);
   });
 });

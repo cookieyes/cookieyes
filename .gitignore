@@ -51,3 +51,17 @@ matrix/results/
 # framework-regenerated in place; only its scratch copies get built), so
 # un-ignore it explicitly.
 !matrix/example-app/next-env.d.ts
+
+Copy of Final cy.dev
+
+consentbench-share/
+
+# Bundle-size measurement scratch output (tools/size/README.md). The fixture
+# apps and the harness are committed; their installs, builds and the tarballs
+# packed to feed them are not — tools/size/size-report.json is the artifact.
+tools/size/.tarballs/
+tools/size/fixtures/*/pnpm-lock.yaml
+# `breakdown.json` is diagnostic output from `pnpm size:breakdown`, regenerated
+# on demand and read by nobody. `size-report.json` is the opposite — it is the
+# committed artifact the docs site generates its published figure from.
+tools/size/breakdown.json

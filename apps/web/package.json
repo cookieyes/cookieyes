@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/generate-config-reference.mjs && node scripts/generate-component-reference.mjs && node scripts/generate-css-variables-reference.mjs && node scripts/check-examples.mjs && next build",
+    "build": "node scripts/generate-bundle-size.mjs && node scripts/generate-config-reference.mjs && node scripts/generate-component-reference.mjs && node scripts/generate-css-variables-reference.mjs && node scripts/check-examples.mjs && next build",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "check-examples": "node scripts/check-examples.mjs",
