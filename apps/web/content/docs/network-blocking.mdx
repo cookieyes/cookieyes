@@ -100,7 +100,7 @@ This is the part worth reading in full before you rely on it — the three trans
 
 ### How a request matches a rule
 
-- **`domain`** matches the request's hostname exactly, or as a suffix of `"." + domain` — both lower-cased first. A rule for `google-analytics.com` also matches `region1.google-analytics.com`, but **not** `evilgoogle-analytics.com` (no dot boundary, so it isn't a suffix match).
+- **`domain`** matches the request's hostname exactly, or as a suffix of `"." + domain` — both lower-cased first. A rule for `google-analytics.com` also matches `region1.google-analytics.com`, but **not** `mygoogle-analytics.com` — the rule's domain has to be preceded by a dot to count as a suffix, and a string glued straight onto the front is a different host.
 - **`pathIncludes`** is a plain substring test against the URL's path **and query string** together. A narrow-looking string can still match more than you expect if the same substring shows up in an unrelated query parameter on the same host.
 - **`methods`**, if omitted, matches every method — including `OPTIONS` preflights. If present, it's a case-insensitive allow-list. `sendBeacon`'s method is always `"POST"`, since that's the only method the browser API supports.
 - A URL that fails to parse is never blocked.
@@ -193,7 +193,7 @@ Check **per transport** — a console-only check misses the `sendBeacon` case en
    - **XHR** — the request shows as **(canceled)** in the Network tab; nothing appears in the console unless you registered an `abort` listener yourself.
    - **`sendBeacon`** — **no request appears in the Network tab at all**, and no console output unless `logBlockedRequests` is on (the default) or `onRequestBlocked` is wired up. The call itself silently reports success to the caller — this is the transport most likely to be mis-tested by "check the console" alone.
 4. Grant the category, retry, and confirm the request now appears and succeeds for all three transports.
-5. To check domain matching specifically, run a scratch `fetch("https://sub.<domain>/...")` from the DevTools console to confirm a subdomain is caught, and `fetch("https://evil<domain>/...")` (no dot before the domain) to confirm a lookalike is **not** caught.
+5. To check domain matching specifically, run a scratch `fetch("https://sub.<domain>/...")` from the DevTools console to confirm a subdomain is caught, then `fetch("https://x<domain>/...")` — a character glued onto the front, with no dot — to confirm a host that merely ends with your rule's text is **not** caught.
 
 ## Complete example
 
