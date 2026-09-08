@@ -244,7 +244,7 @@ jobs:
         run: pnpm exec biome format --write matrix/matrix-results.json
 
       - name: Open pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "chore(matrix): update peer-dependency matrix results"
           title: "chore(matrix): update peer-dependency matrix results"
