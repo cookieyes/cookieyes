@@ -81,6 +81,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { brotliCompressSync, gzipSync, constants as zlibConstants } from "node:zlib";
 import { packTarballs } from "../../matrix/scripts/pack-tarballs.mjs";
+import { sdkFingerprint } from "./sdk-fingerprint.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..", "..");
@@ -575,6 +576,14 @@ const report = {
   measuredAt: new Date().toISOString(),
   node: process.version,
   versions,
+  /**
+   * Hash of everything that determines these figures — sources, Rollup configs,
+   * bundle-affecting manifest fields. The docs site refuses to publish a figure
+   * whose fingerprint no longer matches the tree. Version numbers are recorded
+   * above for information only; they are pointedly not part of this hash. See
+   * sdk-fingerprint.mjs.
+   */
+  sdkFingerprint: sdkFingerprint(),
   apps: measured,
   deltas,
   interfaceOverCore,

@@ -13,8 +13,8 @@
 //
 // Fails closed (exit 1) rather than emitting a plausible-looking wrong number:
 //   1. the report is missing — someone needs to run `pnpm size`
-//   2. the report predates the SDK versions in the workspace, so it describes
-//      code that is no longer here
+//   2. the report's fingerprint no longer matches the SDK in the tree, so it
+//      describes code that is no longer here
 //   3. a layer the page renders is absent from the report
 //   4. a competitor figure has no citation, which is what makes the "N× smaller"
 //      claim reproducible rather than an assertion
@@ -22,6 +22,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { sdkFingerprint } from "../../../tools/size/sdk-fingerprint.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const webRoot = join(here, "..");
@@ -44,20 +45,29 @@ if (!existsSync(reportPath)) {
 
 const report = JSON.parse(readFileSync(reportPath, "utf8"));
 
-// The report records the SDK versions it measured. If those have moved on, the
-// figures describe code that is no longer in the tree, and publishing them
-// would recreate the exact problem this generator exists to end.
-for (const [name, measuredVersion] of Object.entries(report.versions ?? {})) {
-  const dir = name.replace("@cookieyes/", "");
-  const manifestPath = join(repoRoot, "sdk", dir, "package.json");
-  if (!existsSync(manifestPath)) continue;
-  const current = JSON.parse(readFileSync(manifestPath, "utf8")).version;
-  if (current !== measuredVersion) {
-    fail(
-      `the measurement describes ${name}@${measuredVersion} but the workspace has ` +
-        `${current}.\n  Re-run \`pnpm size\` and commit the updated report.`,
-    );
-  }
+// Does this measurement still describe the code in this tree? The report carries
+// a fingerprint of everything that determines the figures; if the SDK has moved
+// on, publishing them would recreate the exact problem this generator exists to
+// end.
+//
+// This compares the fingerprint and NOT the package versions. Comparing versions
+// is wrong in both directions: it fails the changesets release PR, which bumps
+// versions and touches no code, and it passes an ordinary pull request that
+// changes code without touching a version. The first of those blocked a release.
+const currentFingerprint = sdkFingerprint();
+if (report.sdkFingerprint && report.sdkFingerprint !== currentFingerprint) {
+  fail(
+    `the measurement describes a different SDK than the one in this tree.\n` +
+      `  report fingerprint:  ${report.sdkFingerprint}\n` +
+      `  workspace:           ${currentFingerprint}\n` +
+      `  Run \`pnpm size\` from the repo root and commit the updated report.`,
+  );
+}
+if (!report.sdkFingerprint) {
+  fail(
+    "the report has no `sdkFingerprint`, so it cannot be checked against this tree.\n" +
+      "  Run `pnpm size` from the repo root and commit the updated report.",
+  );
 }
 
 /**
