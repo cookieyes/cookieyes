@@ -30,8 +30,7 @@ Two things are needed: register the blocker, and configure your rules.
 ```tsx title="app/cookieyes.tsx"
 "use client";
 
-import { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
-import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { CookieBanner, initCookieYes, registerNetworkBlocker } from "@cookieyes/nextjs";
 
 registerNetworkBlocker();
 
@@ -62,7 +61,9 @@ The blocker lives at its own address, `@cookieyes/core/network-blocker`, and is 
 
 The trade is one import line for a feature you had to configure anyway.
 
-You will rarely call the underlying functions directly — `installNetworkBlocker(config, hasConsent)` and `uninstallNetworkBlocker()` are exported from `@cookieyes/core/network-blocker` for the rare case where you're managing consent state yourself, outside `initCookieYes()`. Calling `installNetworkBlocker` yourself does not need `registerNetworkBlocker()`; registration exists only so the `networkBlocker` config key can reach it. Note that `react` and `nextjs` do not re-export either function — the `networkBlocker` config key is the only path in those two packages.
+Import `registerNetworkBlocker` from whichever package you already installed — `@cookieyes/react` and `@cookieyes/nextjs` both re-export it, and on `@cookieyes/core` it lives at the `@cookieyes/core/network-blocker` subpath. Do not reach across packages for it: if you installed only `@cookieyes/react`, then `@cookieyes/core` is not in your `node_modules` root under pnpm's strict layout and `import "@cookieyes/core/network-blocker"` will not resolve.
+
+You will rarely call the underlying functions directly — `installNetworkBlocker(config, hasConsent)` and `uninstallNetworkBlocker()` are exported from `@cookieyes/core/network-blocker` for the rare case where you're managing consent state yourself, outside `initCookieYes()`. Calling `installNetworkBlocker` yourself does not need `registerNetworkBlocker()`; registration exists only so the `networkBlocker` config key can reach it. `@cookieyes/react` and `@cookieyes/nextjs` re-export **only** `registerNetworkBlocker`, not the imperative pair — the config key remains the only declarative path in those two packages.
 
 ```ts title="src/network-blocker-manual.ts"
 import type { ConsentCategory } from "@cookieyes/core";
@@ -169,6 +170,7 @@ Every consent tool that intercepts network requests has these properties — the
 - **The single biggest gap: it cannot stop a `<script src="...">` element at all.** Covered above, worth repeating here — no `HTMLScriptElement`/`document.createElement` patch exists.
 - A vendor changes its tracking endpoint without notice, and your rule's `domain` or `pathIncludes` no longer matches.
 - A transport this SDK doesn't patch (anything other than `fetch`, `XMLHttpRequest`, and `sendBeacon`) is unaffected.
+- **`registerNetworkBlocker()` was never called.** Then the blocker is not in your bundle at all and no rule can match. This logs a `console.error` naming the missing import, and is the first thing to check if nothing is being blocked.
 - A request fired before the blocker installs — for example, from code that runs ahead of `initCookieYes()` — is not intercepted.
 - A malformed URL is never blocked; a URL that fails to parse falls through.
 
@@ -200,7 +202,9 @@ A config combining two starter rules for vendors that need active blocking (Meta
 ```tsx title="app/cookieyes.tsx"
 "use client";
 
-import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { CookieBanner, initCookieYes, registerNetworkBlocker } from "@cookieyes/nextjs";
+
+registerNetworkBlocker();
 
 initCookieYes({
   mode: "cookie-only",
@@ -231,6 +235,9 @@ export function ConsentManager() {
 
 ## Common mistakes
 
+**Rules are configured but nothing is blocked.**
+`registerNetworkBlocker()` was probably never called. The blocker ships as a separate entry point so that customers who do not use it do not download it, which means configuring `networkBlocker` is no longer sufficient on its own. Check the console: a configured-but-unregistered setup logs an error naming the exact import. Import it from the package you installed — `@cookieyes/react` and `@cookieyes/nextjs` re-export it.
+
 **A `<script src="...">` tag isn't blocked.**
 It won't. Nothing patches `HTMLScriptElement` or `document.createElement`. If you need a script gated, register it with `GatedScript` — see "When to use it" above.
 
@@ -248,7 +255,9 @@ Nothing is queued or retried. Granting consent only unblocks requests made *afte
 
 ## Across the SDK
 
-`installNetworkBlocker`, `uninstallNetworkBlocker`, and the `NetworkBlockerConfig`/`NetworkBlockerRule`/`BlockedRequestInfo` types are all `@cookieyes/core` exports. `@cookieyes/react` and `@cookieyes/nextjs` reach this feature only declaratively, through the `networkBlocker` key on `initCookieYes()` — neither package re-exports the imperative functions, so the config key is the only path if you're on either of those packages.
+`installNetworkBlocker`, `uninstallNetworkBlocker` and `registerNetworkBlocker` live at `@cookieyes/core/network-blocker`, a separate entry point so the blocker is not downloaded by anyone who does not use it. The first two are also re-exported from `@cookieyes/core`'s root for direct callers; the `NetworkBlockerConfig`/`NetworkBlockerRule`/`BlockedRequestInfo` types are root exports too.
+
+`@cookieyes/react` and `@cookieyes/nextjs` re-export `registerNetworkBlocker` only. That is not an oversight: the `networkBlocker` config key lives on those packages' own config type, so the function that activates it has to be reachable from the same package — a consumer who installed only `@cookieyes/react` cannot resolve `@cookieyes/core` at all under pnpm. The imperative `installNetworkBlocker`/`uninstallNetworkBlocker` pair stays out, so the config key remains the only declarative path there.
 
 This page is distinct from `sdk/core/README.md`'s "three-layer stop-tracking model": that section answers "how do I stop something already running once consent is withdrawn" (network blocking as one of three layers, alongside built-in and custom stop-handlers). This page answers a different question — "how do I stop something from ever starting before consent, and what does that cost." Both are accurate descriptions of the same underlying function, from two different angles.
 

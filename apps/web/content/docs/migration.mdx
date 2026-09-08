@@ -338,10 +338,13 @@ Migrating touches configuration, not the rest of your setup:
 The network blocker now lives at its own address so that customers who do not use it do not download it. If you configure `networkBlocker`, add this once before your setup call:
 
 ```ts title="app/cookieyes.tsx"
-import { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
+// from whichever package you installed — all three export it
+import { registerNetworkBlocker } from "@cookieyes/nextjs";
 
 registerNetworkBlocker();
 ```
+
+`@cookieyes/react` and `@cookieyes/nextjs` both re-export it; on `@cookieyes/core` it is at the `@cookieyes/core/network-blocker` subpath. Import it from the package you already depend on — reaching for `@cookieyes/core` when you only installed the React adapter will not resolve under pnpm.
 
 **Do not skip this.** Configuring `networkBlocker` without registering logs an error to the console and blocks nothing — your rules are silently inert. The error names the exact import, but nothing else surfaces it, so check the console after upgrading.
 
