@@ -62,6 +62,21 @@ export {
   resolveRegion,
   resolveTranslations,
 } from "@cookieyes/core";
+/**
+ * Re-exported from `@cookieyes/core/network-blocker` so the `networkBlocker`
+ * config key — which lives on *this* package's config type — is reachable from
+ * this package. A consumer who installed only `@cookieyes/react` cannot import
+ * `@cookieyes/core/network-blocker` directly: under pnpm's strict layout
+ * `@cookieyes/core` is not in their `node_modules` root, so the import does not
+ * resolve.
+ *
+ * This does not undo the split. The blocker is still its own entry in core, so
+ * it reaches a consumer's bundle only if this export is actually used; leave it
+ * alone and the bundler drops the re-export along with the chunk behind it.
+ * `installNetworkBlocker`/`uninstallNetworkBlocker` are deliberately not
+ * re-exported — the config key is still the only declarative path here.
+ */
+export { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
 // Provider — supplies the per-request regulation so SSR banners are correct
 export {
   CookieYesProvider,

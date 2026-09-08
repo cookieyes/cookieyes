@@ -81,3 +81,45 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  size-budget:
+    name: Bundle-size budget
+    runs-on: ubuntu-latest
+    # A single Node version on purpose. The measurement is a *delta* against a
+    # control app built in the same job, so it is insensitive to the runner —
+    # but running it three times across the Node matrix would produce three
+    # near-identical numbers and invite arguing about which one is the figure.
+    # There is one figure, and it comes from here.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The fixtures install the SDK from packed tarballs, so `dist/` must exist
+      # and must be current. `measure.mjs` fails loudly on a missing one rather
+      # than quietly measuring nothing.
+      - name: Build SDK
+        run: pnpm build
+
+      - name: Measure and enforce budgets
+        run: pnpm size:check
+
+      # Uploaded whether or not the budget passed: on a failure this is the
+      # evidence for what grew, and re-running the job to find out is worse.
+      - name: Upload size report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: size-report
+          path: tools/size/size-report.json
+          if-no-files-found: error
