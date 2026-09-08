@@ -94,6 +94,7 @@ export {
   readGpc,
   readServerConsent,
   regionFromHeaders,
+  registerNetworkBlocker,
   registerStopHandler,
   resetConsentRuntime,
   resetCookieYes,

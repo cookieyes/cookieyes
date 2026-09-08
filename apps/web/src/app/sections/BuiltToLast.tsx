@@ -1,5 +1,10 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "05 Built to last".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+//
+// The one deliberate divergence: the bundle-size figure is read from the
+// measurement (src/lib/bundle-size.ts) rather than copied from the design file.
+import { BANNER_SIZE } from "@/lib/bundle-size";
+
 export function BuiltToLast() {
   return (
     <section
@@ -221,7 +226,7 @@ export function BuiltToLast() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {"9 KB gz"}
+                  {`${BANNER_SIZE} gz`}
                 </span>{" "}
                 <span
                   style={{

@@ -25,12 +25,14 @@ If none of those apply — if you can reference the tag in code — register it 
 
 ## Basic usage
 
-The declarative path is what almost everyone uses: the `networkBlocker` key on `initCookieYes()`.
+Two things are needed: register the blocker, and configure your rules.
 
 ```tsx title="app/cookieyes.tsx"
 "use client";
 
-import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { CookieBanner, initCookieYes, registerNetworkBlocker } from "@cookieyes/nextjs";
+
+registerNetworkBlocker();
 
 initCookieYes({
   mode: "cookie-only",
@@ -46,11 +48,26 @@ export function ConsentManager() {
 
 Every request to `google-analytics.com` (or any subdomain of it) is denied until the `analytics` category is granted.
 
-You will rarely call the underlying functions directly — `installNetworkBlocker(config, hasConsent)` and `uninstallNetworkBlocker()` are exported from `@cookieyes/core` for the rare case where you're managing consent state yourself, outside `initCookieYes()`. Note that `react` and `nextjs` do not re-export either function — the `networkBlocker` config key is the only path in those two packages.
+<Callout type="warn">
+  `registerNetworkBlocker()` is required. Configuring `networkBlocker` without it logs an error naming the missing import and **blocks nothing** — the console message is the only warning you get, so check for it after upgrading.
+</Callout>
+
+### Why the extra line
+
+The blocker lives at its own address, `@cookieyes/core/network-blocker`, and is reached only if you import it. That is deliberate, and it buys two things:
+
+- **You don't pay for it if you don't use it.** It used to be downloaded by every customer of `@cookieyes/core`, configured or not, because the runtime imported it unconditionally at the top of the file. A bundler can drop code nobody uses, but an unconditional import counts as using it. Moving it behind its own entry point takes it out of the download for everyone else.
+- **It still blocks from the very first moment.** The alternative — loading it on demand behind a dynamic `import()` — would have saved the same bytes and opened a hole: between the page starting and the chunk arriving, the browser's networking is unpatched and an early-firing tag gets through. Because you import it normally, it is already there when `initCookieYes()` runs and patches immediately. There is no window.
+
+The trade is one import line for a feature you had to configure anyway.
+
+Import `registerNetworkBlocker` from whichever package you already installed — `@cookieyes/react` and `@cookieyes/nextjs` both re-export it, and on `@cookieyes/core` it lives at the `@cookieyes/core/network-blocker` subpath. Do not reach across packages for it: if you installed only `@cookieyes/react`, then `@cookieyes/core` is not in your `node_modules` root under pnpm's strict layout and `import "@cookieyes/core/network-blocker"` will not resolve.
+
+You will rarely call the underlying functions directly — `installNetworkBlocker(config, hasConsent)` and `uninstallNetworkBlocker()` are exported from `@cookieyes/core/network-blocker` for the rare case where you're managing consent state yourself, outside `initCookieYes()`. Calling `installNetworkBlocker` yourself does not need `registerNetworkBlocker()`; registration exists only so the `networkBlocker` config key can reach it. `@cookieyes/react` and `@cookieyes/nextjs` re-export **only** `registerNetworkBlocker`, not the imperative pair — the config key remains the only declarative path in those two packages.
 
 ```ts title="src/network-blocker-manual.ts"
-import { installNetworkBlocker } from "@cookieyes/core";
 import type { ConsentCategory } from "@cookieyes/core";
+import { installNetworkBlocker } from "@cookieyes/core/network-blocker";
 
 const committedCategories: Partial<Record<ConsentCategory, boolean>> = {
   analytics: false,
@@ -83,7 +100,7 @@ This is the part worth reading in full before you rely on it — the three trans
 
 ### How a request matches a rule
 
-- **`domain`** matches the request's hostname exactly, or as a suffix of `"." + domain` — both lower-cased first. A rule for `google-analytics.com` also matches `region1.google-analytics.com`, but **not** `evilgoogle-analytics.com` (no dot boundary, so it isn't a suffix match).
+- **`domain`** matches the request's hostname exactly, or as a suffix of `"." + domain` — both lower-cased first. A rule for `google-analytics.com` also matches `region1.google-analytics.com`, but **not** `mygoogle-analytics.com` — the rule's domain has to be preceded by a dot to count as a suffix, and a string glued straight onto the front is a different host.
 - **`pathIncludes`** is a plain substring test against the URL's path **and query string** together. A narrow-looking string can still match more than you expect if the same substring shows up in an unrelated query parameter on the same host.
 - **`methods`**, if omitted, matches every method — including `OPTIONS` preflights. If present, it's a case-insensitive allow-list. `sendBeacon`'s method is always `"POST"`, since that's the only method the browser API supports.
 - A URL that fails to parse is never blocked.
@@ -153,6 +170,7 @@ Every consent tool that intercepts network requests has these properties — the
 - **The single biggest gap: it cannot stop a `<script src="...">` element at all.** Covered above, worth repeating here — no `HTMLScriptElement`/`document.createElement` patch exists.
 - A vendor changes its tracking endpoint without notice, and your rule's `domain` or `pathIncludes` no longer matches.
 - A transport this SDK doesn't patch (anything other than `fetch`, `XMLHttpRequest`, and `sendBeacon`) is unaffected.
+- **`registerNetworkBlocker()` was never called.** Then the blocker is not in your bundle at all and no rule can match. This logs a `console.error` naming the missing import, and is the first thing to check if nothing is being blocked.
 - A request fired before the blocker installs — for example, from code that runs ahead of `initCookieYes()` — is not intercepted.
 - A malformed URL is never blocked; a URL that fails to parse falls through.
 
@@ -175,7 +193,7 @@ Check **per transport** — a console-only check misses the `sendBeacon` case en
    - **XHR** — the request shows as **(canceled)** in the Network tab; nothing appears in the console unless you registered an `abort` listener yourself.
    - **`sendBeacon`** — **no request appears in the Network tab at all**, and no console output unless `logBlockedRequests` is on (the default) or `onRequestBlocked` is wired up. The call itself silently reports success to the caller — this is the transport most likely to be mis-tested by "check the console" alone.
 4. Grant the category, retry, and confirm the request now appears and succeeds for all three transports.
-5. To check domain matching specifically, run a scratch `fetch("https://sub.<domain>/...")` from the DevTools console to confirm a subdomain is caught, and `fetch("https://evil<domain>/...")` (no dot before the domain) to confirm a lookalike is **not** caught.
+5. To check domain matching specifically, run a scratch `fetch("https://sub.<domain>/...")` from the DevTools console to confirm a subdomain is caught, then `fetch("https://x<domain>/...")` — a character glued onto the front, with no dot — to confirm a host that merely ends with your rule's text is **not** caught.
 
 ## Complete example
 
@@ -184,7 +202,9 @@ A config combining two starter rules for vendors that need active blocking (Meta
 ```tsx title="app/cookieyes.tsx"
 "use client";
 
-import { CookieBanner, initCookieYes } from "@cookieyes/nextjs";
+import { CookieBanner, initCookieYes, registerNetworkBlocker } from "@cookieyes/nextjs";
+
+registerNetworkBlocker();
 
 initCookieYes({
   mode: "cookie-only",
@@ -215,6 +235,9 @@ export function ConsentManager() {
 
 ## Common mistakes
 
+**Rules are configured but nothing is blocked.**
+`registerNetworkBlocker()` was probably never called. The blocker ships as a separate entry point so that customers who do not use it do not download it, which means configuring `networkBlocker` is no longer sufficient on its own. Check the console: a configured-but-unregistered setup logs an error naming the exact import. Import it from the package you installed — `@cookieyes/react` and `@cookieyes/nextjs` re-export it.
+
 **A `<script src="...">` tag isn't blocked.**
 It won't. Nothing patches `HTMLScriptElement` or `document.createElement`. If you need a script gated, register it with `GatedScript` — see "When to use it" above.
 
@@ -232,7 +255,9 @@ Nothing is queued or retried. Granting consent only unblocks requests made *afte
 
 ## Across the SDK
 
-`installNetworkBlocker`, `uninstallNetworkBlocker`, and the `NetworkBlockerConfig`/`NetworkBlockerRule`/`BlockedRequestInfo` types are all `@cookieyes/core` exports. `@cookieyes/react` and `@cookieyes/nextjs` reach this feature only declaratively, through the `networkBlocker` key on `initCookieYes()` — neither package re-exports the imperative functions, so the config key is the only path if you're on either of those packages.
+`installNetworkBlocker`, `uninstallNetworkBlocker` and `registerNetworkBlocker` live at `@cookieyes/core/network-blocker`, a separate entry point so the blocker is not downloaded by anyone who does not use it. The first two are also re-exported from `@cookieyes/core`'s root for direct callers; the `NetworkBlockerConfig`/`NetworkBlockerRule`/`BlockedRequestInfo` types are root exports too.
+
+`@cookieyes/react` and `@cookieyes/nextjs` re-export `registerNetworkBlocker` only. That is not an oversight: the `networkBlocker` config key lives on those packages' own config type, so the function that activates it has to be reachable from the same package — a consumer who installed only `@cookieyes/react` cannot resolve `@cookieyes/core` at all under pnpm. The imperative `installNetworkBlocker`/`uninstallNetworkBlocker` pair stays out, so the config key remains the only declarative path there.
 
 This page is distinct from `sdk/core/README.md`'s "three-layer stop-tracking model": that section answers "how do I stop something already running once consent is withdrawn" (network blocking as one of three layers, alongside built-in and custom stop-handlers). This page answers a different question — "how do I stop something from ever starting before consent, and what does that cost." Both are accurate descriptions of the same underlying function, from two different angles.
 

@@ -1,0 +1,107 @@
+{
+  "$comment": [
+    "Size budgets enforced by `node tools/size/measure.mjs --check`, which CI runs on",
+    "every pull request. All figures are BYTES of gzip -9 over the empty-Next.js-app",
+    "control, on the basis documented in tools/size/README.md.",
+    "",
+    "Budgets are ceilings, not targets. They are set just above the current measured",
+    "value so that unnoticed creep fails a build — the failure this file exists to",
+    "prevent is the one that already happened: core grew 5.95 KB across three releases",
+    "without anyone seeing it. Raising a budget is a deliberate decision that belongs",
+    "in the same change as the growth, with a reason, and never as a fix for a red",
+    "build.",
+    "",
+    "`targets` are where DEVP-62 wants these to end up. They are recorded here so the",
+    "gap is visible next to the ceiling, but they are NOT enforced — a target that",
+    "fails every build is noise, not a signal.",
+    "",
+    "`previous` is the most recently published release, measured by this same harness.",
+    "It drives the 'change against the previous release' line so slow creep shows up",
+    "as a trend rather than only as a threshold breach."
+  ],
+  "basis": "gzip",
+  "budgets": {
+    "$comment": [
+      "`initial` and `total` now carry different budgets, and the gap between them is",
+      "the on-demand integration-runner chunk. Before it was split out the two numbers",
+      "were identical, because nothing in either package was ever loaded on demand.",
+      "",
+      "Keeping both is the point: a future change that merely defers more code will show",
+      "`initial` falling while `total` holds, and a change that actually removes code",
+      "will move both. Budgeting only `initial` would let the package grow without limit",
+      "as long as the growth was lazy."
+    ],
+    "core": {
+      "$comment": "@cookieyes/core via getOrCreateConsentRuntime(). Measured 7121 / 8782.",
+      "initial": 7505,
+      "total": 9166
+    },
+    "banner": {
+      "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 14713 / 16373.",
+      "initial": 15097,
+      "total": 16757
+    },
+    "interface": {
+      "$comment": "@cookieyes/react mounting banner + preferences + recall. Measured 15273 / 16933.",
+      "initial": 15657,
+      "total": 17317
+    },
+    "nextjs": {
+      "$comment": [
+        "@cookieyes/nextjs mounting banner + preferences, mirroring the leaderboard's",
+        "fair-cookieyes app. Measured 15284 / 16945 — within 12 bytes of the plain-React",
+        "fixture, which is the check that @cookieyes/scripts stays out of the client bundle."
+      ],
+      "initial": 15668,
+      "total": 17329
+    }
+  },
+  "targets": {
+    "$comment": [
+      "The agreed targets, restated on the measured basis: core under 8 KB and the",
+      "interface under 16 KB of compressed initial download. Both are currently MET",
+      "(core 7585, interface 15776).",
+      "",
+      "These replace the original <2 KB core / <8 KB interface goals, which were set",
+      "against figures that turned out to be 2.9x and 1.5x optimistic and are below the",
+      "cost of the code that has to render in the initial HTML. The measured floor, with",
+      "every optional subsystem deferred and the badge removed, is 5.29 KB core and",
+      "12.01 KB interface; the remaining gap to it is held by subsystems whose deferral",
+      "would weaken a consent guarantee for under 400 bytes each.",
+      "",
+      "Targets are recorded, not enforced; `budgets` above is what fails a build."
+    ],
+    "core": { "initial": 8192 },
+    "interface": { "initial": 16384 }
+  },
+  "previous": {
+    "$comment": [
+      "@cookieyes/core@0.5.0 and @cookieyes/react@0.6.1 as published on npm, installed",
+      "from the registry and measured by this harness. Update on every release."
+    ],
+    "core": { "initial": 8818, "total": 8818 },
+    "interface": { "initial": 18198, "total": 18198 }
+  },
+  "history": {
+    "$comment": [
+      "Every published version, measured by this harness on one machine in one sitting,",
+      "so the trend is comparable end to end. Bytes, gzip, initial. This is the",
+      "evidence for 'it grew and nobody noticed' — and for the fact that the growth is",
+      "spread across three releases rather than caused by one thing."
+    ],
+    "core": {
+      "0.1.1": 2721,
+      "0.2.0": 4580,
+      "0.3.0": 6590,
+      "0.4.0": 8662,
+      "0.5.0": 8818
+    },
+    "interface": {
+      "0.2.0": 15324,
+      "0.3.0": 13397,
+      "0.4.0": 15213,
+      "0.5.0": 17461,
+      "0.6.1": 18198
+    }
+  }
+}
