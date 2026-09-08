@@ -213,8 +213,35 @@ jobs:
           name: peer-matrix-results
           path: .
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # Only needed for Biome, so scripts are skipped — same shape as the
+      # derive-check job above.
+      - name: Install root dependencies only (Biome, for the format step)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
       - name: Replace matrix/matrix-results.json
         run: cp matrix-results.aggregated.json matrix/matrix-results.json
+
+      # `aggregate-results.mjs` writes with `JSON.stringify(x, null, 2)`, which
+      # puts every array element on its own line. Biome's formatter collapses
+      # short arrays onto one, so the raw aggregator output does not match the
+      # committed file's formatting and `pnpm lint` fails the pull request this
+      # job opens — on every run, for a file no human wrote.
+      #
+      # Formatting here, with the Biome the repo pins rather than a fetched one,
+      # is what keeps the two in step. Reimplementing Biome's line-collapsing
+      # rules inside the aggregator would be the same fix in a worse place: it
+      # would drift the next time Biome changes its mind.
+      - name: Format it the way the repository expects
+        run: pnpm exec biome format --write matrix/matrix-results.json
 
       - name: Open pull request
         uses: peter-evans/create-pull-request@v7
