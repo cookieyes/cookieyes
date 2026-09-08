@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/core",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Headless consent engine — the single source of truth for all CookieYes consent logic",
   "keywords": [
     "cookie consent",
@@ -33,6 +33,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./network-blocker": {
+      "types": "./dist/network-blocker.d.ts",
+      "import": "./dist/network-blocker.js",
+      "require": "./dist/network-blocker.cjs"
     }
   },
   "main": "./dist/index.cjs",

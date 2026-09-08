@@ -36,7 +36,10 @@ export function useThemeVars(
     if (!el) return;
     const isDark = colorScheme === "dark" || (colorScheme === "system" && prefersDark);
     const vars = computeThemeVars(theme, isDark);
-    warnOnLowContrast(vars, isDark); // dev-only; guarded/deduped internally
+    // Dev-only WCAG contrast check on a customer-configured theme. Guarded at
+    // the call site so a production bundle drops the checker, its de-dupe set
+    // and `contrastRatio` along with it.
+    if (process.env.NODE_ENV !== "production") warnOnLowContrast(vars, isDark);
     for (const [name, value] of Object.entries(vars)) {
       el.style.setProperty(name, value);
     }

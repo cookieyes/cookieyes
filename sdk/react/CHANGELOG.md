@@ -1,5 +1,88 @@
 # @cookieyes/react
 
+## 0.7.0
+
+### Minor Changes
+
+- 794b194: The network blocker now ships as its own entry point, `@cookieyes/core/network-blocker`, so customers who do not use it no longer download it.
+
+  **Action required if you configure `networkBlocker`.** Add one import before your setup call:
+
+  ```ts
+  import { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
+
+  registerNetworkBlocker();
+  ```
+
+  Configuring `networkBlocker` without registering logs an error naming the missing import and **blocks nothing**. That is a deliberate choice over throwing — taking the page down is not proportionate — but it means the console is the only thing that surfaces it, so check after upgrading. The config shape itself is unchanged.
+
+  **Measured saving** (`pnpm size`, compressed delta over an empty Next.js app): `@cookieyes/core` **7.41 KB → 6.95 KB**, the React layer **15.41 KB → 14.92 KB**. Unlike the integration-runner split, `total` falls too — this is a genuine deletion from the bundle, not a deferral. Verified by a bundle breakdown rather than inferred: `onRequestBlocked`, `logBlockedRequests`, `pathIncludes`, `_cyUrl`, `sendBeacon` and the blocked-request message are all absent from a build that never registers it.
+
+  **Why a separate entry point and not a dynamic import.** The obvious reading of "load it only when it is used" is `import()`, and it is the wrong one here. The blocker exists to have the browser's networking already replaced when the page starts; between the page starting and a chunk arriving, nothing is patched and an early-firing tag gets through. That is not a performance regression, it is a hole in the thing the feature does, on a compliance product — for about 600 bytes. A separate entry point saves the same bytes and, because it is reached by an ordinary static import, the blocker is loaded before setup runs and patches immediately. **Timing is unchanged for anyone who uses it.**
+
+  Behaviour is otherwise identical. All four transports — `fetch`, `XMLHttpRequest.prototype.open`/`send` and `navigator.sendBeacon` — are still replaced and still restored on uninstall, now covered by a test that asserts all four in both directions.
+
+  One related fix: `installNetworkBlocker` now records its own teardown, so `resetConsentRuntime()` un-patches the transports whether the blocker was installed through config or by a direct call. Previously a direct call left them patched after a reset, and because a second install is a silent no-op while one is active, the _next_ setup would have run on the old rules and the old consent closure while appearing to accept new ones.
+
+  `installNetworkBlocker`, `uninstallNetworkBlocker` and the `NetworkBlocker*` types remain exported from the package root as well, so direct callers are unaffected. `@cookieyes/react` and `@cookieyes/nextjs` still do not re-export them; the config key is the only path there.
+
+- 5de25ea: Take a further **2.37 KB** of gzip out of the initial download: the banner goes from 17.24 KB to **14.87 KB** over an empty Next.js app, and banner + preferences + recall from 17.78 KB to **15.41 KB**.
+
+  **Integration runner deferred (≈2.1 KB).** The adapter now loads it through core's `_loadIntegrations()` instead of importing `runIntegrations` statically. That static import was the reason splitting the runner in core alone changed this layer's measurement by _nothing_ — core emitted a separate chunk and the adapter pulled it straight back in. `integrationsReady` is exposed on the runtime for the same reason it is on core's; see that package's changeset.
+
+  **Developer diagnostics stripped from production builds (≈0.27 KB).** Three checks — the CSP-violation listener, the untested-React-version warning, and the WCAG contrast check on a configured theme — are now behind `process.env.NODE_ENV !== "production"` at their **call sites**, not inside their function bodies. Guarding the call sites is what makes them removable: with nothing referencing them, the bundler drops the functions, their de-dupe sets, their message strings and `contrastRatio` entirely, rather than keeping empty shells. Verified absent from a production bundle.
+
+  All three are unchanged in development and in tests. None of them does anything a visitor can act on.
+
+  Worth recording for anyone tempted to chase this further: the three diagnostic modules are 7.4 KB of _source_ and worth only 0.27 KB compressed, because most of that is comments and the contrast checker shares `tokens.ts`. Source size is a poor guide to shipped size, which is why every figure here comes from `pnpm size` (`tools/size/README.md`) rather than from reading the files.
+
+### Patch Changes
+
+- dcf3a75: Re-export `registerNetworkBlocker` from `@cookieyes/react` and `@cookieyes/nextjs`, so the `networkBlocker` config key on those packages is actually usable from those packages.
+
+  Moving the network blocker to `@cookieyes/core/network-blocker` left a hole: the docs told React and Next.js users to import registration from `@cookieyes/core`, and for most of them that import does not resolve. Under pnpm's strict layout a consumer who installed only `@cookieyes/react` has no `@cookieyes/core` in their `node_modules` root, so the documented instruction fails with `MODULE_NOT_FOUND` — while `networkBlocker` is advertised on the React package's own config type.
+
+  It went unnoticed because `apps/web` carries `@cookieyes/core` as a devDependency, so the documentation examples typechecked in an environment no consumer has.
+
+  Import `registerNetworkBlocker` from whichever package you installed. Only the registration function is re-exported; `installNetworkBlocker`/`uninstallNetworkBlocker` stay at the core subpath, so the config key remains the only declarative path on the adapters. Measured with `pnpm size`: no change to either layer — the blocker still reaches a bundle only if the export is used.
+
+- 3f6d819: Take 1.11 KB of gzip out of the banner, with no visual, behavioural or API change.
+
+  **The "Powered by CookieYes" wordmark (786 bytes).** It is an inline SVG of the letterforms, and it arrived from a design tool carrying about fourteen significant digits per coordinate — `5.48703 1.81738C8.08615 3.20915…` — for a mark whose viewBox is 78×13 and which renders at 78 CSS pixels. Every one of those digits is a shipped byte on every page load, in all three components that render the badge. Rounding the path data to two decimals moved the furthest point by 0.005 of a viewBox unit: a two-hundredth of a CSS pixel, under a third of a device pixel even at 3× DPR. The badge is unchanged, still on by default, and there is no new configuration.
+
+  Gating the badge behind a config flag was considered first and measured at **zero** saving, which is the point worth recording: a runtime flag cannot remove the bytes, because the icon stays imported and therefore stays in the bundle regardless of what the flag says. Only making the asset smaller — or not shipping it at all, which is a commercial decision and not this change — moves the number. `icon-precision.test.ts` now fails if long decimals come back, because re-exporting the asset restores them, the diff reads as a routine asset update, and nothing about the rendered banner looks different.
+
+  Rounding to one decimal was measured too, at a further 0.36 KB. It is not taken here: 0.05px of drift per letter is still invisible, but this is a brand wordmark, and that is the brand owner's call rather than a size decision.
+
+  **The builder deprecation warning (325 bytes).** `createCookieYes()`'s deprecation message is now dropped from production bundles by the same `process.env.NODE_ENV` guard `@cookieyes/core` uses, and for the same reason — see that package's changeset for why the guard is written the way it is. Unchanged in development and in tests.
+
+  Both figures are from `pnpm size`, which measures the compressed client-JS delta against an empty Next.js app; see `tools/size/README.md`.
+
+- Updated dependencies [5de25ea]
+- Updated dependencies [794b194]
+- Updated dependencies [b3605d0]
+  - @cookieyes/core@0.6.0
+
+## 0.6.1
+
+### Patch Changes
+
+- 99375f0: Reconcile the README's accessibility scope with what the automated suite actually covers. The stated scope named `<CookieBanner />`, `<CookiePreferences />`, `<CookieOptOut />` and `<RecallButton />`, while the axe suite runs four cases across three components — the banner in both GDPR and CCPA modes, the preferences dialog, and the opt-out dialog. `<RecallButton />` has no axe coverage, and `<ReloadNotice />` is announced to screen readers via `role="alert"` but was not named in the scope at all.
+
+  Neither gap is necessarily a defect, but a reviewer who finds one overstated claim stops trusting the rest of the section. The README now names the exact test cases, adds `<ReloadNotice />` to the stated scope, and says plainly which two components the automated suite does not run against.
+
+  Also repoints the accessibility test's `docs/accessibility.md` reference, which pointed at a file that did not exist, at the published page. Documentation only; no behaviour change.
+
+- a709132: Correct the `useConsent()` return shape in the README. It listed seven fields and omitted `committedCategories` entirely, along with `taxonomyHash` and `reloadNotice`. The omission mattered more than the other two: `committedCategories` is the map that only changes on a real decision (accept, reject, save, reset), and it is the one to gate scripts and embeds on. Anyone following the README would have found only `categories` — the live value, which reflects preference-dialog toggles the visitor has not saved — and gated on that, so a visitor who flips a switch and closes the dialog without saving would have been treated as having consented.
+
+  All ten fields are now documented with their types, alongside a note stating which of the two category maps to gate on and what the other is for. Documentation only; no behaviour change.
+
+- 1ae4233: Correct the README's SSR-safety claim. It stated without qualification that all hooks are SSR-safe and fall back to a stable snapshot when no runtime is mounted. That is true of every hook that reads consent state, and false for the two that hand back the runtime itself: `useConsentRuntime()` is a direct pass-through to `getCookieYes()`, which throws when no runtime is registered rather than returning a fallback.
+
+  The distinction is deliberate — there is no honest default for "give me the runtime" when there isn't one, and a fake one would fail later and less clearly. But a developer who trusted the README and called `useConsentRuntime()` in a server-rendered component got a crash where they had been promised a fallback, with nothing in our documentation to suggest the fault was ours.
+
+  Registration is not guarded by an environment check, so whether a runtime exists during a server render depends on whether the `initCookieYes()` module was evaluated for the tree being rendered — which is what makes this succeed on one route and throw on another. The README now states the rule with its two exceptions, quotes the error text so it is searchable, and says plainly not to read the runtime while server rendering. Documentation only; no behaviour change.
+
 ## 0.6.0
 
 ### Minor Changes

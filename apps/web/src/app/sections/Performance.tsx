@@ -1,6 +1,16 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "01 Performance".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+//
+// The one deliberate divergence: every bundle-size figure is read from the
+// measurement (src/lib/bundle-size.ts) rather than copied from the design file.
+// The design file said 9 KB; the banner measures 16.1 KB. A number that has to
+// stay true cannot live in a static port.
+import { BANNER_SIZE, barWidth, BUNDLE_SIZE, sizeComparison } from "@/lib/bundle-size";
+
 export function Performance() {
+  const banner = BUNDLE_SIZE.layers.banner;
+  const [figure, unit] = BANNER_SIZE.split(" ");
+  const vsOneTrust = sizeComparison("OneTrust");
   return (
     <section
       className="cy-band-light section--beveled-panel section--beveled-panel"
@@ -249,7 +259,7 @@ export function Performance() {
                     {" "}
                     <span
                       className="cy-num"
-                      data-count="9"
+                      data-count={figure}
                       style={{
                         fontFamily: "Poppins, Inter, sans-serif",
                         fontWeight: "500",
@@ -259,7 +269,7 @@ export function Performance() {
                         color: "var(--cy-accent)",
                       }}
                     >
-                      {"9"}
+                      {figure}
                     </span>{" "}
                     <span
                       style={{
@@ -271,20 +281,22 @@ export function Performance() {
                         color: "var(--cy-accent)",
                       }}
                     >
-                      {"KB"}
+                      {unit}
                     </span>{" "}
                   </div>{" "}
-                  <span
-                    style={{
-                      fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
-                      fontWeight: "600",
-                      fontSize: "1.375rem",
-                      lineHeight: "26px",
-                      color: "var(--cy-fg)",
-                    }}
-                  >
-                    {"/ 29× smaller"}
-                  </span>{" "}
+                  {vsOneTrust ? (
+                    <span
+                      style={{
+                        fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
+                        fontWeight: "600",
+                        fontSize: "1.375rem",
+                        lineHeight: "26px",
+                        color: "var(--cy-fg)",
+                      }}
+                    >
+                      {`/ ${vsOneTrust.ratio}× smaller`}
+                    </span>
+                  ) : null}{" "}
                 </div>{" "}
                 <span
                   style={{
@@ -363,7 +375,7 @@ export function Performance() {
                   <div
                     className="cy-bar"
                     style={{
-                      width: "15%",
+                      width: barWidth(banner.kb),
                       height: "100%",
                       borderRadius: "4px",
                       background: "var(--cy-accent)",
@@ -385,11 +397,11 @@ export function Performance() {
                 >
                   <span
                     className="cy-num"
-                    data-count="9"
-                    data-suffix=" KB"
+                    data-count={figure}
+                    data-suffix={` ${unit}`}
                     style={{ fontWeight: "600", color: "var(--cy-accent)" }}
                   >
-                    {"9 KB"}
+                    {BANNER_SIZE}
                   </span>
                 </span>{" "}
               </div>{" "}

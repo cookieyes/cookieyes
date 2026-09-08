@@ -1,5 +1,36 @@
 # @cookieyes/nextjs
 
+## 0.5.4
+
+### Patch Changes
+
+- dcf3a75: Re-export `registerNetworkBlocker` from `@cookieyes/react` and `@cookieyes/nextjs`, so the `networkBlocker` config key on those packages is actually usable from those packages.
+
+  Moving the network blocker to `@cookieyes/core/network-blocker` left a hole: the docs told React and Next.js users to import registration from `@cookieyes/core`, and for most of them that import does not resolve. Under pnpm's strict layout a consumer who installed only `@cookieyes/react` has no `@cookieyes/core` in their `node_modules` root, so the documented instruction fails with `MODULE_NOT_FOUND` — while `networkBlocker` is advertised on the React package's own config type.
+
+  It went unnoticed because `apps/web` carries `@cookieyes/core` as a devDependency, so the documentation examples typechecked in an environment no consumer has.
+
+  Import `registerNetworkBlocker` from whichever package you installed. Only the registration function is re-exported; `installNetworkBlocker`/`uninstallNetworkBlocker` stay at the core subpath, so the config key remains the only declarative path on the adapters. Measured with `pnpm size`: no change to either layer — the blocker still reaches a bundle only if the export is used.
+
+- Updated dependencies [5de25ea]
+- Updated dependencies [794b194]
+- Updated dependencies [b3605d0]
+- Updated dependencies [5de25ea]
+- Updated dependencies [dcf3a75]
+- Updated dependencies [3f6d819]
+  - @cookieyes/core@0.6.0
+  - @cookieyes/react@0.7.0
+  - @cookieyes/scripts@0.2.1
+
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [99375f0]
+- Updated dependencies [a709132]
+- Updated dependencies [1ae4233]
+  - @cookieyes/react@0.6.1
+
 ## 0.5.2
 
 ### Patch Changes

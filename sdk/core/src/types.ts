@@ -510,4 +510,17 @@ export type ConsentRuntime = {
   consentStore: ConsentStore;
   /** Config + live status for each script integration — data for a debug view. */
   getIntegrations: () => IntegrationDebugInfo[];
+  /**
+   * Resolves once configured integrations have been loaded and wired up.
+   *
+   * The integration runner is loaded on demand — it is the largest subsystem in
+   * the package and does nothing unless `integrations` is configured — so there
+   * is a short window after setup in which `getIntegrations()` returns `[]` and
+   * no integration has been set up yet. Await this to act after that window;
+   * it resolves immediately when no integrations are configured.
+   *
+   * Nothing about consent gating depends on it: an integration cannot run
+   * before its category is granted whether or not it has loaded yet.
+   */
+  integrationsReady: Promise<void>;
 };

@@ -1,3 +1,7 @@
+import {
+  _setActiveNetworkBlockerUninstall,
+  _setNetworkBlockerInstaller,
+} from "./network-blocker-slot.js";
 import type { ConsentCategory } from "./types.js";
 
 export type NetworkBlockerRule = {
@@ -167,6 +171,9 @@ export function installNetworkBlocker(
     };
   }
 
+  // Recorded so `resetConsentRuntime()` un-patches the transports even when the
+  // blocker was installed by a direct call rather than through config.
+  _setActiveNetworkBlockerUninstall(uninstallNetworkBlocker);
   return uninstallNetworkBlocker;
 }
 
@@ -181,4 +188,31 @@ export function uninstallNetworkBlocker(): void {
     }
   }
   active = null;
+  _setActiveNetworkBlockerUninstall(null);
+}
+
+/**
+ * Register the network blocker so that a configured `networkBlocker` actually
+ * installs. Call it once, before your setup call:
+ *
+ * ```ts
+ * import { initCookieYes } from "@cookieyes/core";
+ * import { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
+ *
+ * registerNetworkBlocker();
+ * initCookieYes({ mode: "cookie-only", networkBlocker: { rules: [...] } });
+ * ```
+ *
+ * This indirection is what keeps the blocker out of the download for everyone
+ * who does not use it. Because it is reached by an ordinary static import, the
+ * blocker is already loaded when setup runs and patches the browser's
+ * networking immediately — there is no window in which requests slip through,
+ * which is the flaw a dynamic import would have introduced. See
+ * `network-blocker-slot.ts` for the full reasoning.
+ *
+ * Idempotent: calling it more than once replaces the registration with the same
+ * installer and changes nothing.
+ */
+export function registerNetworkBlocker(): void {
+  _setNetworkBlockerInstaller(installNetworkBlocker);
 }

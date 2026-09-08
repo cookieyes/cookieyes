@@ -35,11 +35,15 @@ describe("integrations wiring", () => {
       onRevoke: "remove",
       setup,
     };
-    const { consentStore } = getOrCreateConsentRuntime({
+    const { consentStore, integrationsReady } = getOrCreateConsentRuntime({
       mode: "cookie-only",
       integrations: [integration],
     });
-    await flush();
+    // The runner is loaded on demand, so await the load rather than a fixed
+    // number of ticks. A `setTimeout(0)` flush is not enough — the import takes
+    // longer than that, and a test that guessed a tick count would pass or fail
+    // on machine speed.
+    await integrationsReady;
     expect(setup).not.toHaveBeenCalled(); // analytics denied initially
 
     consentStore.getState().saveConsents("all");
@@ -50,9 +54,11 @@ describe("integrations wiring", () => {
     expect(cleanup).toHaveBeenCalledTimes(1);
   });
 
-  it("warns when the same vendor is on both integrations and builtInIntegrations", () => {
+  it("warns when the same vendor is on both integrations and builtInIntegrations", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    getOrCreateConsentRuntime({
+    // Async because the warning lives in the on-demand runner chunk; it is
+    // emitted when that arrives, not during setup.
+    const { integrationsReady } = getOrCreateConsentRuntime({
       mode: "cookie-only",
       integrations: [
         {
@@ -66,6 +72,7 @@ describe("integrations wiring", () => {
       ],
       builtInIntegrations: [{ vendor: "segment" }],
     });
+    await integrationsReady;
     expect(warn.mock.calls.some((c) => /"segment" is configured as both/.test(String(c[0])))).toBe(
       true,
     );
