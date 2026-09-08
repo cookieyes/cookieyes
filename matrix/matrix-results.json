@@ -6,9 +6,7 @@
   "matrixConfigHash": "sha256:d22e103be392eac346c780fed533fbb137ad4f9449570006250bf24540c29c04",
   "subset": "full",
   "dimensions": {
-    "varied": [
-      "framework"
-    ],
+    "varied": ["framework"],
     "fixed": {
       "node": "20",
       "packageManager": "pnpm@10.22.0",
@@ -20,10 +18,7 @@
       "id": "next-14.0.0-react-18.0.0",
       "role": "floor",
       "label": "Next 14.0.0 + React 18.0.0 (declared floor)",
-      "packagesUnderTest": [
-        "@cookieyes/react",
-        "@cookieyes/nextjs"
-      ],
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
       "requested": {
         "next": "14.0.0",
         "react": "18.0.0",
@@ -96,10 +91,7 @@
       "id": "next-15.5.24-react-18.3.1",
       "role": "middle",
       "label": "Next 15.5.24 + React 18.3.1",
-      "packagesUnderTest": [
-        "@cookieyes/react",
-        "@cookieyes/nextjs"
-      ],
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
       "requested": {
         "next": "15.5.24",
         "react": "18.3.1",
@@ -172,10 +164,7 @@
       "id": "next-16.3.0-react-19.2.8",
       "role": "newest",
       "label": "Next 16.3.0 + React 19.2.8 (matches apps/web today)",
-      "packagesUnderTest": [
-        "@cookieyes/react",
-        "@cookieyes/nextjs"
-      ],
+      "packagesUnderTest": ["@cookieyes/react", "@cookieyes/nextjs"],
       "requested": {
         "next": "16.3.0",
         "react": "19.2.8",
