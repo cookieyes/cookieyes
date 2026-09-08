@@ -72,6 +72,46 @@ export function categoryLabel(id: string, customLabels: Record<string, string>):
   return customLabels[id] ?? defaultTranslations.categories[id]?.label ?? id;
 }
 
+/**
+ * Two stand-in tags the preview gates for real, so a visitor can watch blocking happen
+ * rather than read a claim that it did.
+ *
+ * Named plainly and served from this site. Logging real vendor names while loading none of
+ * them would be exactly the kind of thing this page exists to disprove. Two, on different
+ * categories, so switching one category off visibly leaves the other running.
+ */
+export const DEMO_SCRIPTS = [
+  {
+    id: "analytics-tag",
+    label: "Analytics tag",
+    category: "analytics",
+    src: "/playground/analytics-tag.js",
+  },
+  {
+    id: "ad-tag",
+    label: "Ad tag",
+    category: "advertisement",
+    src: "/playground/ad-tag.js",
+  },
+] as const;
+
+export type DemoScript = (typeof DEMO_SCRIPTS)[number];
+
+/** One event from the preview. `level` picks the colour, exactly as the design does. */
+export type LogEvent = {
+  time: string;
+  level: "info" | "allowed" | "blocked";
+  message: string;
+  meta?: string;
+};
+
+/**
+ * An event once the parent has filed it. The number is assigned here, not in the frame:
+ * the frame reloads on Replay and Reset, which would restart any counter it kept and
+ * collide with entries already on the list.
+ */
+export type LogEntry = LogEvent & { seq: number };
+
 /** The one category that can never be switched off — removing it would invalidate the set. */
 export const REQUIRED_CATEGORY_ID = "necessary";
 
@@ -110,22 +150,23 @@ export const PREVIEW_PATH = "/playground/preview";
 
 const CHANNEL = "cy-playground";
 
-export type PreviewMessage =
-  | { channel: typeof CHANNEL; type: "config"; config: PlaygroundConfig }
-  | { channel: typeof CHANNEL; type: "replay" };
+export type PreviewMessage = { channel: typeof CHANNEL; type: "config"; config: PlaygroundConfig };
 
-export type PreviewReply = { channel: typeof CHANNEL; type: "ready" };
+export type PreviewReply =
+  | { channel: typeof CHANNEL; type: "ready" }
+  /** One real event from the preview. `allowed` is only ever sent by a script that ran. */
+  | { channel: typeof CHANNEL; type: "log"; entry: LogEvent };
 
 export function configMessage(config: PlaygroundConfig): PreviewMessage {
   return { channel: CHANNEL, type: "config", config };
 }
 
-export function replayMessage(): PreviewMessage {
-  return { channel: CHANNEL, type: "replay" };
-}
-
 export function readyReply(): PreviewReply {
   return { channel: CHANNEL, type: "ready" };
+}
+
+export function logReply(entry: LogEvent): PreviewReply {
+  return { channel: CHANNEL, type: "log", entry };
 }
 
 /**
@@ -144,11 +185,11 @@ function isOurs(event: MessageEvent): boolean {
 export function parsePreviewMessage(event: MessageEvent): PreviewMessage | null {
   if (!isOurs(event)) return null;
   const data = event.data as PreviewMessage;
-  return data.type === "config" || data.type === "replay" ? data : null;
+  return data.type === "config" ? data : null;
 }
 
 export function parsePreviewReply(event: MessageEvent): PreviewReply | null {
   if (!isOurs(event)) return null;
   const data = event.data as PreviewReply;
-  return data.type === "ready" ? data : null;
+  return data.type === "ready" || data.type === "log" ? data : null;
 }

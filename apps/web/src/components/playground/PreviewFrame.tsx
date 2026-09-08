@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import {
   configMessage,
+  type LogEvent,
   type PlaygroundConfig,
   PREVIEW_PATH,
   parsePreviewReply,
-  replayMessage,
 } from "./playground-config";
 
 /**
@@ -18,16 +18,28 @@ import {
 export function PreviewFrame({
   config,
   replayCount,
+  onLog,
 }: {
   config: PlaygroundConfig;
   replayCount: number;
+  onLog: (event: LogEvent) => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
 
+  // Held in a ref so the listener below can mount once and stay. Re-attaching it whenever
+  // the callback's identity changed left a gap on every render, and the frame's one-time
+  // `ready` landing in that gap meant the config was never sent and the preview stayed
+  // blank.
+  const onLogRef = useRef(onLog);
+  onLogRef.current = onLog;
+
   useEffect(() => {
     function onReply(event: MessageEvent) {
-      if (parsePreviewReply(event)) setReady(true);
+      const reply = parsePreviewReply(event);
+      if (!reply) return;
+      if (reply.type === "ready") setReady(true);
+      else onLogRef.current(reply.entry);
     }
     window.addEventListener("message", onReply);
     return () => window.removeEventListener("message", onReply);
@@ -40,10 +52,14 @@ export function PreviewFrame({
     frame.current?.contentWindow?.postMessage(configMessage(config), window.location.origin);
   }, [ready, config]);
 
+  // Replaying reloads the frame rather than resetting state inside it. A script that has
+  // already run cannot be un-run, so only a fresh document is honestly a first visit — and
+  // the in-memory cookie jar goes with it. `ready` will fire again and the config follows.
   useEffect(() => {
-    if (!ready || replayCount === 0) return;
-    frame.current?.contentWindow?.postMessage(replayMessage(), window.location.origin);
-  }, [ready, replayCount]);
+    if (replayCount === 0) return;
+    setReady(false);
+    frame.current?.contentWindow?.location.reload();
+  }, [replayCount]);
 
   return (
     <div className="cy-pg-preview">

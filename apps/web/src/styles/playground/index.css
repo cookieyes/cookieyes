@@ -18,7 +18,27 @@
 .cy-pg-main {
   max-width: 1152px;
   margin: 0 auto;
-  padding: 64px var(--cy-space-gutter, 24px) 96px;
+  /* Clears the nav, which the design's markup positions over the top of the page. */
+  padding: 96px var(--cy-space-gutter, 24px) 80px;
+}
+
+.cy-pg-crumbs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-pg-crumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cy-pg-crumbs a:hover {
+  color: var(--cy-doc-tx2);
+  text-decoration: underline;
 }
 
 .cy-pg-intro h1 {
@@ -105,7 +125,10 @@
 .cy-pg-body {
   display: grid;
   grid-template-columns: minmax(320px, 400px) 1fr;
-  min-height: 620px;
+  /* Fixed, not a minimum. Left to grow, the controls stretch the row, the row stretches the
+     preview frame, and the card ends up taller than the screen. Matches the design's
+     proportions: a 780px body under a ~56px header. */
+  height: 780px;
 }
 
 .cy-pg-left {
@@ -113,6 +136,19 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+}
+
+/* The tab panels fill whatever height the preview column sets, so the editor reaches the
+   bottom of the card instead of stopping short and leaving a blank slab beneath it. */
+.cy-pg-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cy-pg-panel:not([hidden]) {
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Tabs ──────────────────────────────────────────────────────────────────── */
@@ -144,9 +180,10 @@
 /* ── Controls ──────────────────────────────────────────────────────────────── */
 
 .cy-pg-controls {
+  flex: 1 1 auto;
+  min-height: 0;
   padding: 20px;
   overflow-y: auto;
-  max-height: 620px;
 }
 
 .cy-pg-section + .cy-pg-section {
@@ -328,10 +365,26 @@ textarea.cy-pg-input {
   border-bottom: 1px solid var(--cy-doc-bd);
 }
 
+.cy-pg-code {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .cy-pg-code-name {
   font-family: var(--font-geist-mono), monospace;
   font-size: 13px;
   color: var(--cy-doc-tx2);
+}
+
+/* Pushed to the right of the filename and kept quiet: it is the only cue that the config
+   can be edited, but it should not compete with the file it labels. */
+.cy-pg-code-hint {
+  margin-left: auto;
+  margin-right: 12px;
+  font-size: 12px;
+  color: var(--cy-doc-tx3);
 }
 
 /* ── Code editor ───────────────────────────────────────────────────────────
@@ -341,10 +394,12 @@ textarea.cy-pg-input {
    to reason about instead of two. Colours are the design's own. */
 
 .cy-pg-editor {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
+  align-items: flex-start;
   background: #15171a;
   overflow: auto;
-  max-height: 520px;
 }
 
 .cy-pg-editor,
@@ -441,11 +496,155 @@ textarea.cy-pg-input {
 .cy-pg-frame {
   display: block;
   width: 100%;
-  /* Fills the row, which the grid holds at `min-height` or taller — so the frame is sized
-     before it loads and the page never reflows around it. */
+  /* The row's height is fixed above, so the frame is sized before it loads and nothing
+     reflows around it. */
   height: 100%;
-  min-height: 620px;
   border: 0;
+}
+
+/* ── Console ───────────────────────────────────────────────────────────────
+
+   Follows the design's console. Every colour it specifies turns out to be one of the
+   site's own tokens — #8f92af is tx3, #00754e is gr, #a6742a is am, #14142a is tx — so
+   naming the tokens reproduces the design exactly and themes for free. */
+
+.cy-pg-right {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cy-pg-right .cy-pg-preview {
+  flex: 1 1 auto;
+}
+
+.cy-pg-console {
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--cy-doc-bd);
+  background: var(--cy-doc-surface);
+}
+
+.cy-pg-console-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--cy-doc-bd);
+}
+
+.cy-pg-console-head h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cy-doc-tx);
+}
+
+.cy-pg-console-head p {
+  flex: 1 1 auto;
+  font-size: 13px;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-pg-console-head button {
+  padding: 5px 12px;
+  border: 1px solid var(--cy-doc-bd2);
+  border-radius: 8px;
+  background: var(--cy-doc-surface);
+  color: var(--cy-doc-tx);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cy-pg-console-head button:hover:not(:disabled) {
+  background: var(--cy-doc-bg2);
+}
+
+.cy-pg-console-head button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cy-pg-console-rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.cy-pg-console-rows li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 5px 16px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.cy-pg-console-rows li[data-level="allowed"] {
+  background: var(--cy-doc-gr-bg);
+}
+
+.cy-pg-console-rows li[data-level="blocked"] {
+  background: var(--cy-doc-am-bg);
+}
+
+/* The design paints these #8f92af, which is `tx3` — but that is only legible on a light
+   surface. theme.css records the constraint: text on `--cy-doc-surface` uses `tx2` or
+   brighter, because tx3 falls to 3.46:1 in dark mode. `tx2` is still clearly muted against
+   the message colour, and passes in both themes. */
+.cy-pg-log-time,
+.cy-pg-log-meta {
+  color: var(--cy-doc-tx2);
+  white-space: nowrap;
+}
+
+.cy-pg-log-level {
+  min-width: 58px;
+  font-weight: 500;
+  color: var(--cy-doc-tx2);
+}
+
+li[data-level="allowed"] .cy-pg-log-level {
+  color: var(--cy-doc-gr);
+}
+
+li[data-level="blocked"] .cy-pg-log-level {
+  color: var(--cy-doc-am);
+}
+
+.cy-pg-log-msg {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--cy-doc-tx);
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cy-pg-log-empty {
+  padding: 12px 16px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-pg-console-note {
+  padding: 9px 16px;
+  border-top: 1px solid var(--cy-doc-bd);
+  font-size: 13px;
+  color: var(--cy-doc-tx2);
+}
+
+.cy-pg-console-note code {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  color: var(--cy-doc-tx);
+  word-break: break-word;
 }
 
 /* ── Inside the preview frame ──────────────────────────────────────────────── */
@@ -532,11 +731,23 @@ textarea.cy-pg-input {
 @media (max-width: 900px) {
   .cy-pg-body {
     grid-template-columns: 1fr;
+    /* Stacked, there is no second column to line up with, so each part takes what it needs
+       and the page scrolls instead of the panels. */
+    height: auto;
+  }
+
+  .cy-pg-console {
+    flex: 0 0 auto;
+  }
+
+  .cy-pg-console-rows {
+    max-height: 240px;
   }
 
   /* Preview first once the columns stack. The controls run past a phone screen, and the
-     promise of this page is seeing a real banner without hunting for it. */
-  .cy-pg-preview {
+     promise of this page is seeing a real banner without hunting for it. The grid's child
+     is the right-hand column, not the frame inside it. */
+  .cy-pg-right {
     order: -1;
     border-bottom: 1px solid var(--cy-doc-bd);
   }
@@ -545,11 +756,7 @@ textarea.cy-pg-input {
     border-right: 0;
   }
 
-  .cy-pg-controls {
-    max-height: none;
-  }
-
   .cy-pg-frame {
-    height: 520px;
+    height: 460px;
   }
 }

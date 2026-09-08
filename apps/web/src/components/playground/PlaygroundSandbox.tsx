@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CodePanel } from "./CodePanel";
+import { ConsolePanel } from "./ConsolePanel";
 import { ControlsPanel } from "./ControlsPanel";
 import { PreviewFrame } from "./PreviewFrame";
-import { DEFAULT_CONFIG, type PlaygroundConfig } from "./playground-config";
+import { DEFAULT_CONFIG, type LogEntry, type PlaygroundConfig } from "./playground-config";
 
 /**
  * Long enough that typing a description does not remount the banner on every keystroke,
@@ -24,6 +25,7 @@ export function PlaygroundSandbox({ version }: { version: string }) {
   const [previewConfig, setPreviewConfig] = useState<PlaygroundConfig>(DEFAULT_CONFIG);
   const [replayCount, setReplayCount] = useState(0);
   const [tab, setTab] = useState<Tab>("controls");
+  const [log, setLog] = useState<LogEntry[]>([]);
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
   // The controls stay instant because they read `config`; only the frame waits. Applying a
@@ -94,15 +96,41 @@ export function PlaygroundSandbox({ version }: { version: string }) {
             ))}
           </div>
 
-          <div id="cy-pg-panel-controls" role="tabpanel" hidden={tab !== "controls"}>
+          <div
+            id="cy-pg-panel-controls"
+            className="cy-pg-panel"
+            role="tabpanel"
+            hidden={tab !== "controls"}
+          >
             <ControlsPanel config={config} onChange={update} />
           </div>
-          <div id="cy-pg-panel-code" role="tabpanel" hidden={tab !== "code"}>
+          <div
+            id="cy-pg-panel-code"
+            className="cy-pg-panel"
+            role="tabpanel"
+            hidden={tab !== "code"}
+          >
             <CodePanel config={config} onConfigChange={setConfig} />
           </div>
         </div>
 
-        <PreviewFrame config={previewConfig} replayCount={replayCount} />
+        <div className="cy-pg-right">
+          <PreviewFrame
+            config={previewConfig}
+            replayCount={replayCount}
+            // Numbered from the list itself. A counter held in a ref looks equivalent but
+            // is not: React batches these events and runs every updater afterwards, by
+            // which point the ref has already reached its final value and each entry gets
+            // the same number.
+            onLog={(event) =>
+              setLog((current) => [
+                ...current,
+                { ...event, seq: (current[current.length - 1]?.seq ?? 0) + 1 },
+              ])
+            }
+          />
+          <ConsolePanel entries={log} onClear={() => setLog([])} />
+        </div>
       </div>
     </div>
   );

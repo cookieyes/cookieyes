@@ -119,6 +119,9 @@ export function CodePanel({
     <div className="cy-pg-code">
       <div className="cy-pg-code-bar">
         <span className="cy-pg-code-name">app/cookieyes.tsx</span>
+        {/* In the bar rather than under the editor: it is the only cue that the config is
+            editable, but floating below the code it read as stray text. */}
+        <span className="cy-pg-code-hint">Edits apply as you type</span>
         <button type="button" className="cy-pg-copy" onClick={copy}>
           {copied ? "Copied!" : "Copy"}
         </button>
@@ -158,9 +161,6 @@ export function CodePanel({
           <pre className="cy-pg-fixed">{highlight(SETUP_FOOTER)}</pre>
         </div>
       </div>
-
-      {/* Without this the block reads as the read-only listing it used to be. */}
-      <p className="cy-pg-code-hint">Edits apply as you type.</p>
 
       {/* Assertive: the visitor is typing here, so a polite message would queue behind
           their own keystrokes and arrive after they had moved on. */}

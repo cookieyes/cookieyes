@@ -49,8 +49,3 @@ export function installEphemeralCookieJar(): void {
     set: apply,
   });
 }
-
-/** Forget every stored choice, so the next mount looks like a first visit. */
-export function clearEphemeralCookieJar(): void {
-  jar.clear();
-}
