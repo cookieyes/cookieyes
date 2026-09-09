@@ -73,25 +73,42 @@ export function categoryLabel(id: string, customLabels: Record<string, string>):
 }
 
 /**
- * Two stand-in tags the preview gates for real, so a visitor can watch blocking happen
+ * Five stand-in tags the preview gates for real, so a visitor can watch blocking happen
  * rather than read a claim that it did.
  *
- * Named plainly and served from this site. Logging real vendor names while loading none of
- * them would be exactly the kind of thing this page exists to disprove. Two, on different
- * categories, so switching one category off visibly leaves the other running.
+ * One is `necessary`: it runs before any decision, beside four that are held, which shows
+ * the rule rather than restating it. Two per gated category shows that a category is what
+ * gates, not the individual script.
+ *
+ * Named generically and served from this site. The design names real vendors — analytics
+ * and ad products it never loads — which is the one thing a consent company should not be
+ * caught doing.
  */
 export const DEMO_SCRIPTS = [
   {
+    id: "session-cookie",
+    label: "session cookie",
+    category: "necessary",
+    src: "/playground/session-cookie.js",
+  },
+  {
     id: "analytics-tag",
-    label: "Analytics tag",
+    label: "analytics tag",
     category: "analytics",
     src: "/playground/analytics-tag.js",
   },
   {
-    id: "ad-tag",
-    label: "Ad tag",
+    id: "heatmap-tag",
+    label: "heatmap tag",
+    category: "analytics",
+    src: "/playground/heatmap-tag.js",
+  },
+  { id: "ad-pixel", label: "ad pixel", category: "advertisement", src: "/playground/ad-pixel.js" },
+  {
+    id: "retargeting-tag",
+    label: "retargeting tag",
     category: "advertisement",
-    src: "/playground/ad-tag.js",
+    src: "/playground/retargeting-tag.js",
   },
 ] as const;
 
@@ -115,8 +132,11 @@ export type LogEntry = LogEvent & { seq: number };
 /** The one category that can never be switched off — removing it would invalidate the set. */
 export const REQUIRED_CATEGORY_ID = "necessary";
 
+/** Corner rounding runs 0–20px, the range the design's slider offers. */
+export const MAX_RADIUS = 20;
+
 /** The four brand colours offered as one-click swatches, alongside the free-text hex field. */
-export const COLOUR_SWATCHES = ["#1863dc", "#18181b", "#0f7b52", "#8250df"];
+export const COLOUR_SWATCHES = ["#136fe8", "#14142a", "#00754e", "#8250df"];
 
 /**
  * What the playground starts on — deliberately not what the SDK falls back to.
@@ -129,7 +149,7 @@ export const COLOUR_SWATCHES = ["#1863dc", "#18181b", "#0f7b52", "#8250df"];
 export const DEFAULT_CONFIG: PlaygroundConfig = {
   regulation: "GDPR",
   colorScheme: "light",
-  primaryColor: "#1863dc",
+  primaryColor: "#136fe8",
   borderRadius: 8,
   font: "system",
   text: {
@@ -147,6 +167,28 @@ export const DEFAULT_CONFIG: PlaygroundConfig = {
 
 /** Where the preview document lives. The iframe's `src`, and the route that renders it. */
 export const PREVIEW_PATH = "/playground/preview";
+
+/**
+ * The width the preview frame pretends to be, in CSS pixels.
+ *
+ * The panel it sits in is only ~650px wide, and a banner laid out for that reads as a
+ * phone. Giving the frame a real desktop viewport and scaling the whole thing down instead
+ * shows the banner at the size and position a visitor would actually meet it.
+ *
+ * 1000 rather than a wider desktop: the frame is shown at about two thirds size, so the
+ * banner's own body text still lands around 12px on screen and stays readable. At 1280 it
+ * came out near 9px, which is a picture of a banner rather than a banner you can read.
+ */
+export const PREVIEW_WIDTH = 1000;
+
+/**
+ * How small the scaled-down desktop preview is allowed to get before it stops being one.
+ *
+ * Once the panel goes full width on a phone, a 1280px page shrinks to under a third and the
+ * banner's own text is unreadable — at which point the honest preview is the banner at its
+ * real size, which is what a visitor on that phone would see anyway.
+ */
+export const MIN_PREVIEW_SCALE = 0.5;
 
 const CHANNEL = "cy-playground";
 

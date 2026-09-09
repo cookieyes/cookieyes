@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import {
   configMessage,
   type LogEvent,
+  MIN_PREVIEW_SCALE,
   type PlaygroundConfig,
   PREVIEW_PATH,
+  PREVIEW_WIDTH,
   parsePreviewReply,
 } from "./playground-config";
 
@@ -25,7 +27,28 @@ export function PreviewFrame({
   onLog: (event: LogEvent) => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
+
+  // The panel's own width. 0 means "not measured yet" — the frame stays hidden for that
+  // first frame rather than flashing at full size.
+  const [stageWidth, setStageWidth] = useState(0);
+
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry?.contentRect.width ?? 0;
+      if (width > 0) setStageWidth(width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Wide enough to be worth faking a desktop; below that the frame is simply itself.
+  const desktop = stageWidth / PREVIEW_WIDTH >= MIN_PREVIEW_SCALE;
+  const frameWidth = desktop ? PREVIEW_WIDTH : stageWidth;
+  const scale = desktop ? stageWidth / PREVIEW_WIDTH : 1;
 
   // Held in a ref so the listener below can mount once and stay. Re-attaching it whenever
   // the callback's identity changed left a gap on every render, and the frame's one-time
@@ -58,12 +81,36 @@ export function PreviewFrame({
   useEffect(() => {
     if (replayCount === 0) return;
     setReady(false);
-    frame.current?.contentWindow?.location.reload();
+    // Reload to a URL that says this is a replay, so the frame's mount line can say so too.
+    frame.current?.contentWindow?.location.replace(`${PREVIEW_PATH}?replay=${replayCount}`);
   }, [replayCount]);
 
   return (
     <div className="cy-pg-preview">
-      <iframe ref={frame} src={PREVIEW_PATH} title="Banner preview" className="cy-pg-frame" />
+      <div className="cy-pg-stagehead">
+        <span className="cy-pg-stagehead-lbl">Preview</span>
+        <span className="cy-pg-stagehead-note">
+          A placeholder site running your config. Use the banner the way a visitor would.
+        </span>
+      </div>
+      {/* The frame is laid out at desktop width and scaled down to fill this box, so the
+          box keeps the design's size while the banner inside renders at a real page's
+          proportions. The box clips, so the scaled frame changes nothing around it. */}
+      <div className="cy-pg-stage" ref={stage}>
+        <iframe
+          ref={frame}
+          src={PREVIEW_PATH}
+          title="Banner preview"
+          className="cy-pg-frame"
+          style={
+            {
+              width: frameWidth,
+              visibility: stageWidth ? "visible" : "hidden",
+              "--cy-pg-scale": scale,
+            } as CSSProperties
+          }
+        />
+      </div>
     </div>
   );
 }

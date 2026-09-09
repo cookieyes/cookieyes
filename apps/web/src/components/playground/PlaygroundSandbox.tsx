@@ -13,9 +13,13 @@ import { DEFAULT_CONFIG, type LogEntry, type PlaygroundConfig } from "./playgrou
  */
 const PREVIEW_DELAY_MS = 200;
 
+/** The design's ceiling. Past it the oldest line drops off. */
+const MAX_LOG_ROWS = 200;
+
+/** Config first and selected, as the design opens: the code is the thing to look at. */
 const TABS = [
+  { id: "code", label: "Config" },
   { id: "controls", label: "Controls" },
-  { id: "code", label: "Code" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["id"];
@@ -24,8 +28,10 @@ export function PlaygroundSandbox({ version }: { version: string }) {
   const [config, setConfig] = useState<PlaygroundConfig>(DEFAULT_CONFIG);
   const [previewConfig, setPreviewConfig] = useState<PlaygroundConfig>(DEFAULT_CONFIG);
   const [replayCount, setReplayCount] = useState(0);
-  const [tab, setTab] = useState<Tab>("controls");
+  const [tab, setTab] = useState<Tab>("code");
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [logCleared, setLogCleared] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
   // The controls stay instant because they read `config`; only the frame waits. Applying a
@@ -45,12 +51,13 @@ export function PlaygroundSandbox({ version }: { version: string }) {
     // unparseable text would keep it — a Reset button that visibly does nothing.
     setConfig({ ...DEFAULT_CONFIG, text: { ...DEFAULT_CONFIG.text } });
     setReplayCount((count) => count + 1);
+    setAnnouncement("Configurator reset to defaults.");
   }
 
   function onTabKeys(event: React.KeyboardEvent) {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
-    const next: Tab = tab === "controls" ? "code" : "controls";
+    const next: Tab = tab === "code" ? "controls" : "code";
     setTab(next);
     // Selection alone would leave focus on a button that is no longer a tab stop.
     tabRefs.current[next]?.focus();
@@ -64,7 +71,13 @@ export function PlaygroundSandbox({ version }: { version: string }) {
           <span className="cy-pg-version">@cookieyes/react {version}</span>
         </div>
         <div className="cy-pg-header-actions">
-          <button type="button" onClick={() => setReplayCount((count) => count + 1)}>
+          <button
+            type="button"
+            onClick={() => {
+              setReplayCount((count) => count + 1);
+              setAnnouncement("Replayed from first visit.");
+            }}
+          >
             Replay from first visit
           </button>
           <button type="button" onClick={reset}>
@@ -73,27 +86,35 @@ export function PlaygroundSandbox({ version }: { version: string }) {
         </div>
       </header>
 
+      {/* Both header actions change several panels at once, which is invisible to anyone
+          not watching them. */}
+      <p className="cy-pg-visually-hidden" aria-live="polite">
+        {announcement}
+      </p>
+
       <div className="cy-pg-body">
         <div className="cy-pg-left">
-          <div className="cy-pg-tabs" role="tablist" aria-label="Configure the banner">
-            {TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={tab === id}
-                aria-controls={`cy-pg-panel-${id}`}
-                tabIndex={tab === id ? 0 : -1}
-                ref={(node) => {
-                  tabRefs.current[id] = node;
-                }}
-                className="cy-pg-tab"
-                onClick={() => setTab(id)}
-                onKeyDown={onTabKeys}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="cy-pg-tabs">
+            <div className="cy-pg-tabs-track" role="tablist" aria-label="Configure the banner">
+              {TABS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === id}
+                  aria-controls={`cy-pg-panel-${id}`}
+                  tabIndex={tab === id ? 0 : -1}
+                  ref={(node) => {
+                    tabRefs.current[id] = node;
+                  }}
+                  className="cy-pg-tab"
+                  onClick={() => setTab(id)}
+                  onKeyDown={onTabKeys}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div
@@ -123,13 +144,25 @@ export function PlaygroundSandbox({ version }: { version: string }) {
             // which point the ref has already reached its final value and each entry gets
             // the same number.
             onLog={(event) =>
-              setLog((current) => [
-                ...current,
-                { ...event, seq: (current[current.length - 1]?.seq ?? 0) + 1 },
-              ])
+              setLog((current) => {
+                const next = [
+                  ...current,
+                  { ...event, seq: (current[current.length - 1]?.seq ?? 0) + 1 },
+                ];
+                // Oldest out first past the cap: a session left open should not grow a
+                // list nobody is going to scroll back through.
+                return next.length > MAX_LOG_ROWS ? next.slice(next.length - MAX_LOG_ROWS) : next;
+              })
             }
           />
-          <ConsolePanel entries={log} onClear={() => setLog([])} />
+          <ConsolePanel
+            entries={log}
+            cleared={logCleared}
+            onClear={() => {
+              setLog([]);
+              setLogCleared(true);
+            }}
+          />
         </div>
       </div>
     </div>

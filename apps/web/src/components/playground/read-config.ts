@@ -3,6 +3,7 @@ import {
   DEFAULT_CONFIG,
   FONTS,
   type FontChoice,
+  MAX_RADIUS,
   type PlaygroundConfig,
   type PlaygroundText,
   REQUIRED_CATEGORY_ID,
@@ -57,9 +58,11 @@ function readTheme(value: unknown, into: PlaygroundConfig): string | null {
   }
   if (value.borderRadius !== undefined) {
     const match = typeof value.borderRadius === "string" && RADIUS_PATTERN.exec(value.borderRadius);
-    if (!match) return '`borderRadius` must look like `"8px"`, from 0 to 16.';
+    if (!match) return `\`borderRadius\` must look like \`"8px"\`, from 0 to ${MAX_RADIUS}.`;
     const px = Number(match[1]);
-    if (px > 16) return '`borderRadius` goes up to `"16px"` here — that is the slider\'s range.';
+    if (px > MAX_RADIUS) {
+      return `\`borderRadius\` goes up to \`"${MAX_RADIUS}px"\` here — that is the slider's range.`;
+    }
     into.borderRadius = px;
   }
   if (value.fontFamily !== undefined) {

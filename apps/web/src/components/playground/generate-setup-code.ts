@@ -102,11 +102,17 @@ function categoriesBlock(config: PlaygroundConfig, depth: number): string[] {
  */
 export function generateConfigBody(config: PlaygroundConfig): string {
   return [
+    // Each option carries its own choices, so the answer to "what else can I put here?" is
+    // on the line above rather than in the docs. `regulation` omits "DEFAULT": every branch
+    // in the SDK tests for "CCPA", so "DEFAULT" and "GDPR" behave identically.
+    pad(1, '// "cookie-only" | "self-hosted"'),
     pad(1, 'mode: "cookie-only",'),
+    pad(1, '// "GDPR" | "CCPA"'),
     // Always spelled out: left unset, the SDK resolves `regulation` by region and falls
     // back to `colorScheme: "system"`, so omitting them would make the copied code behave
     // differently from the preview the visitor just approved.
     pad(1, `regulation: ${quote(config.regulation)},`),
+    pad(1, '// "light" | "dark" | "system"'),
     pad(1, `colorScheme: ${quote(config.colorScheme)},`),
     ...themeBlock(config, 1),
     ...i18nBlock(config, 1),

@@ -1,19 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { writeToClipboard } from "@/components/docs/clipboard";
 import { type ConfigSandbox, createConfigSandbox } from "./config-sandbox";
-import {
-  generateConfigBody,
-  generateSetupCode,
-  SETUP_FOOTER,
-  SETUP_HEADER,
-} from "./generate-setup-code";
+import { generateConfigBody, SETUP_FOOTER, SETUP_HEADER } from "./generate-setup-code";
 import { highlight } from "./highlight";
 import type { PlaygroundConfig } from "./playground-config";
 import { readConfig } from "./read-config";
-
-const CONFIRMATION_MS = 2000;
 
 /** Matches the controls, so typing here and typing there feel the same. */
 const APPLY_DELAY_MS = 200;
@@ -36,7 +28,6 @@ export function CodePanel({
 }) {
   const errorId = useId();
   const editorId = useId();
-  const [copied, setCopied] = useState(false);
   const [draft, setDraft] = useState(() => generateConfigBody(config));
   const [error, setError] = useState<string | null>(null);
 
@@ -102,30 +93,19 @@ export function CodePanel({
     };
   }, [draft, config, onConfigChange]);
 
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), CONFIRMATION_MS);
-    return () => clearTimeout(timer);
-  }, [copied]);
-
-  async function copy() {
-    await writeToClipboard(generateSetupCode(config));
-    setCopied(true);
-  }
-
   const totalLines = countLines(SETUP_HEADER) + countLines(draft) + countLines(SETUP_FOOTER);
 
   return (
     <div className="cy-pg-code">
-      <div className="cy-pg-code-bar">
-        <span className="cy-pg-code-name">app/cookieyes.tsx</span>
-        {/* In the bar rather than under the editor: it is the only cue that the config is
-            editable, but floating below the code it read as stray text. */}
-        <span className="cy-pg-code-hint">Edits apply as you type</span>
-        <button type="button" className="cy-pg-copy" onClick={copy}>
-          {copied ? "Copied!" : "Copy"}
-        </button>
-      </div>
+      {/* Above the code, not below it: the message is about the text you are looking at, and
+          it should not move the editor when it appears. */}
+      <p id={errorId} className="cy-pg-code-error" role="alert" hidden={!error}>
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.5" />
+          <path d="M8 4.8v3.9M8 11.2h.01" />
+        </svg>
+        <span>{error}</span>
+      </p>
 
       <div className="cy-pg-editor">
         {/* One text node rather than a node per line, and hidden from screen readers —
@@ -162,14 +142,10 @@ export function CodePanel({
         </div>
       </div>
 
-      {/* Assertive: the visitor is typing here, so a polite message would queue behind
-          their own keystrokes and arrive after they had moved on. */}
-      <p id={errorId} className="cy-pg-code-error" role="alert" hidden={!error}>
-        {error}
-      </p>
-
-      <p aria-live="polite" className="cy-pg-visually-hidden">
-        {copied ? "Setup code copied to clipboard" : ""}
+      {/* Polite and below the editor, as the design has it: a status about what typing
+          does, not an interruption. */}
+      <p className="cy-pg-code-stat" aria-live="polite">
+        Edits apply as you type.
       </p>
     </div>
   );

@@ -16,6 +16,7 @@ import {
 // surrounding site never loads it.
 import "@cookieyes/react/styles.css";
 import { type ReactNode, useEffect, useState } from "react";
+import { ConsentObserver, RUN, reportConsent } from "./ConsentObserver";
 import {
   BUILT_IN_CATEGORY_IDS,
   DEMO_SCRIPTS,
@@ -76,21 +77,16 @@ function categoriesFor(config: PlaygroundConfig): CategoryDef[] {
   });
 }
 
-/** Reports which gated scripts the current consent is holding back. */
-function logHeldScripts(config: PlaygroundConfig, granted: Record<string, boolean>): void {
-  for (const script of DEMO_SCRIPTS) {
-    if (!config.categories.includes(script.category)) continue;
-    // A granted script announces itself through its own onLoad; only the held ones are
-    // reported from here, so nothing claims to have run that has not.
-    if (!granted[script.category]) log("blocked", `script.hold  ${script.label}`, script.category);
-  }
-}
-
-function mountRuntime(config: PlaygroundConfig): void {
+function mountRuntime(config: PlaygroundConfig, replayed: boolean): void {
   resetCookieYes();
-  const onSnapshot = (state: { categories: Record<string, boolean>; hasActed: boolean }) => {
-    log("info", "consent.change", state.hasActed ? "visitor decided" : "no decision yet");
-    logHeldScripts(config, state.categories);
+  let reported = false;
+  const onReady = (state: { categories: Record<string, boolean> }) => {
+    // Once, on the first snapshot. Every later change is the observer's job.
+    if (reported) return;
+    reported = true;
+    // No reason: nothing has been stored yet on a first load, and the design only writes
+    // `consent.store` once a decision exists.
+    reportConsent({ committedCategories: state.categories }, config.categories, log, null);
   };
 
   initCookieYes({
@@ -102,14 +98,15 @@ function mountRuntime(config: PlaygroundConfig): void {
     // The preview must look the same to every visitor, so it never follows the browser's
     // language — the playground offers no language control yet.
     i18n: { messages: { en: config.text }, detectBrowserLanguage: false },
-    onConsentReady: onSnapshot,
-    onConsentUpdate: onSnapshot,
+    onConsentReady: onReady,
   });
 
   log(
     "info",
     "cookieyes.mount",
-    `regulation ${config.regulation}, ${config.categories.length} categories`,
+    replayed
+      ? "replayed from first visit"
+      : `regulation ${config.regulation}, ${config.categories.length} categories`,
   );
 }
 
@@ -153,7 +150,9 @@ export function PreviewApp() {
 
   useEffect(() => {
     if (!config) return;
-    mountRuntime(config);
+    // A reloaded frame is a replay; a first load is not. Both arrive as the same message,
+    // so the flag rides along on the URL the parent reloads to.
+    mountRuntime(config, new URLSearchParams(window.location.search).has("replay"));
     setGeneration((value) => value + 1);
   }, [config]);
 
@@ -171,6 +170,7 @@ export function PreviewApp() {
           <CookiePreferences />
           <CookieOptOut />
           <RecallButton />
+          <ConsentObserver categories={config.categories} log={log} />
           {/* Only for categories the visitor kept: a row that could never run whatever they
               did would read as a bug rather than as blocking working. */}
           {DEMO_SCRIPTS.filter((script) => config.categories.includes(script.category)).map(
@@ -180,7 +180,7 @@ export function PreviewApp() {
                 id={script.id}
                 src={script.src}
                 category={script.category}
-                onLoad={() => log("allowed", `script.run   ${script.label}`, script.category)}
+                onLoad={() => log("allowed", RUN + script.label, script.category)}
               />
             ),
           )}

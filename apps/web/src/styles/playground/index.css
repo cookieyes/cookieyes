@@ -73,7 +73,9 @@
   gap: 12px;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  min-height: 48px;
+  padding: 8px 16px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--cy-doc-bd);
 }
 
@@ -84,13 +86,13 @@
 }
 
 .cy-pg-header-title h2 {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .cy-pg-version {
   font-family: var(--font-geist-mono), monospace;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--cy-doc-tx2);
 }
 
@@ -100,38 +102,53 @@
 }
 
 .cy-pg-header-actions button,
-.cy-pg-copy,
-.cy-pg-add-row button {
-  padding: 7px 12px;
-  border: 1px solid var(--cy-doc-bd2);
+.cy-pg-console-head button {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid var(--cy-doc-bd3);
   border-radius: 8px;
   background: var(--cy-doc-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
   color: var(--cy-doc-tx);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
+  transition: background 0.14s ease;
 }
 
-.cy-pg-header-actions button:hover,
-.cy-pg-copy:hover,
-.cy-pg-add-row button:hover:not(:disabled) {
+.cy-pg-header-actions button:hover:not(:disabled),
+.cy-pg-console-head button:hover:not(:disabled) {
   background: var(--cy-doc-bg2);
 }
 
-.cy-pg-add-row button:disabled {
-  opacity: 0.5;
+.cy-pg-header-actions button:active:not(:disabled),
+.cy-pg-console-head button:active:not(:disabled) {
+  background: var(--cy-doc-bg3);
+}
+
+.cy-pg-header-actions button:disabled,
+.cy-pg-console-head button:disabled {
+  background: var(--cy-doc-bg3);
+  border-color: var(--cy-doc-bd);
+  box-shadow: none;
+  color: var(--cy-doc-tx3);
   cursor: default;
 }
 
 .cy-pg-body {
   display: grid;
-  grid-template-columns: minmax(320px, 400px) 1fr;
-  /* Fixed, not a minimum. Left to grow, the controls stretch the row, the row stretches the
-     preview frame, and the card ends up taller than the screen. Matches the design's
-     proportions: a 780px body under a ~56px header. */
-  height: 780px;
+  /* The design's fixed side. Left to size itself, the controls would widen the column and
+     squeeze the preview. The row's height comes from the preview column below. */
+  grid-template-columns: 404px minmax(0, 1fr);
 }
 
 .cy-pg-left {
+  position: relative;
   border-right: 1px solid var(--cy-doc-bd);
   display: flex;
   flex-direction: column;
@@ -153,52 +170,81 @@
 
 /* ── Tabs ──────────────────────────────────────────────────────────────────── */
 
+/* 48px to match the preview's header on the other side of the card, so the two panes start
+   on the same line. */
 .cy-pg-tabs {
+  flex: none;
+  height: 48px;
   display: flex;
-  gap: 4px;
-  padding: 10px 12px;
+  align-items: center;
+  padding: 0 16px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--cy-doc-bd);
 }
 
-.cy-pg-tab {
-  padding: 7px 14px;
-  border: 1px solid transparent;
+.cy-pg-tabs-track {
+  display: flex;
+  gap: 2px;
+  height: 32px;
+  padding: 2px;
+  box-sizing: border-box;
   border-radius: 8px;
-  background: none;
+  background: var(--cy-doc-bg3);
+}
+
+.cy-pg-tab {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
   color: var(--cy-doc-tx2);
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
   cursor: pointer;
 }
 
-.cy-pg-tab[aria-selected="true"] {
-  border-color: var(--cy-doc-bd2);
-  background: var(--cy-doc-bg2);
+.cy-pg-tab:hover:not([aria-selected="true"]) {
   color: var(--cy-doc-tx);
-  font-weight: 500;
+}
+
+.cy-pg-tab[aria-selected="true"] {
+  background: var(--cy-doc-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
+  color: var(--cy-doc-tx);
 }
 
 /* ── Controls ──────────────────────────────────────────────────────────────── */
 
+/* Taken out of flow so a long list of settings scrolls inside the column rather than
+   growing it — which would stretch the row, and with it the preview beside it. */
 .cy-pg-controls {
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 20px;
+  position: absolute;
+  top: 48px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 20px 20px 24px;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .cy-pg-section + .cy-pg-section {
-  margin-top: 24px;
-  padding-top: 24px;
+  margin-top: 20px;
+  padding-top: 20px;
   border-top: 1px solid var(--cy-doc-bd);
 }
 
 .cy-pg-section-title {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  line-height: normal;
   text-transform: uppercase;
-  color: var(--cy-doc-tx2);
-  margin-bottom: 14px;
+  color: var(--cy-doc-tx3);
+  margin-bottom: 16px;
 }
 
 .cy-pg-field,
@@ -208,29 +254,51 @@
   padding: 0;
 }
 
+.cy-pg-field:last-child,
+.cy-pg-segmented:last-child {
+  margin-bottom: 0;
+}
+
 .cy-pg-label {
   display: block;
   padding: 0;
-  margin-bottom: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  margin-bottom: 8px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  font-weight: 400;
   letter-spacing: 0.06em;
+  line-height: normal;
   text-transform: uppercase;
   color: var(--cy-doc-tx2);
 }
 
 .cy-pg-input {
   width: 100%;
-  padding: 9px 11px;
+  height: 40px;
+  padding: 0 16px;
   border: 1px solid var(--cy-doc-bd2);
-  border-radius: 8px;
+  border-radius: 4px;
   font: inherit;
-  font-size: 16px;
-  background: var(--cy-doc-chrome);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: normal;
+  background: var(--cy-doc-surface);
   color: var(--cy-doc-tx);
+  transition: border-color 0.14s ease;
+}
+
+/* Doubling the border rather than growing it: a 2px border would shift the text inside. */
+.cy-pg-input:focus {
+  outline: 0;
+  border-color: var(--cy-doc-ac);
+  box-shadow: inset 0 0 0 1px var(--cy-doc-ac);
 }
 
 textarea.cy-pg-input {
+  height: auto;
+  min-height: 76px;
+  padding: 12px 16px;
+  line-height: 22px;
   resize: vertical;
 }
 
@@ -242,18 +310,25 @@ textarea.cy-pg-input {
 
 .cy-pg-swatch {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   flex: 0 0 auto;
-  border-radius: 8px;
+  border-radius: 4px;
   border: 1px solid var(--cy-doc-bd2);
   cursor: pointer;
 }
 
+/* A gap of page colour, then the ring — so the mark reads on a dark swatch as well as a
+   pale one, which a ring drawn straight onto the colour does not. */
 .cy-pg-swatch:has(input:checked) {
   box-shadow:
-    0 0 0 2px var(--cy-doc-surface) inset,
-    0 0 0 2px var(--cy-doc-tx);
+    0 0 0 2px var(--cy-doc-surface),
+    0 0 0 3px var(--cy-doc-tx);
+}
+
+.cy-pg-swatch:has(input:focus-visible) {
+  outline: 2px solid var(--cy-doc-ac);
+  outline-offset: 2px;
 }
 
 .cy-pg-swatch input {
@@ -264,37 +339,102 @@ textarea.cy-pg-input {
 }
 
 .cy-pg-hex {
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+  text-transform: lowercase;
 }
 
 .cy-pg-slider-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
-.cy-pg-slider-row input[type="range"] {
-  flex: 1;
-  accent-color: var(--cy-doc-ac);
+/* The design's slider: a hairline rail with a small bar for a knob, which no browser's
+   native range control draws. The real input stays, invisible, on top of it — so keyboard
+   support, the value and the screen-reader reading are the browser's, and only the paint
+   is ours. `--cy-pg-pct` is the value as a percentage, set on the wrapper. */
+.cy-pg-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.cy-pg-track-rail,
+.cy-pg-track-fill {
+  position: absolute;
+  height: 1px;
+}
+
+.cy-pg-track-rail {
+  right: 0;
+  left: 0;
+  background: var(--cy-doc-bd2);
+}
+
+.cy-pg-track-fill {
+  left: 0;
+  width: var(--cy-pg-pct);
+  background: var(--cy-doc-ac);
+}
+
+.cy-pg-track-knob {
+  position: absolute;
+  left: var(--cy-pg-pct);
+  width: 4px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--cy-doc-ac);
+  transform: translateX(-2px);
+  pointer-events: none;
+}
+
+.cy-pg-track input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.cy-pg-track input[type="range"]:focus-visible {
+  outline: 2px solid var(--cy-doc-ac);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .cy-pg-slider-row output {
   font-family: var(--font-geist-mono), monospace;
-  font-size: 13px;
+  font-size: 12px;
+  line-height: normal;
   color: var(--cy-doc-tx2);
-  min-width: 44px;
+  min-width: 38px;
   text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
+/* The same pill as the Config/Controls tabs above — one segmented control in the design,
+   used in both places. */
 .cy-pg-segmented-track {
   display: flex;
-  border: 1px solid var(--cy-doc-bd2);
+  gap: 2px;
+  height: 32px;
+  padding: 2px;
+  box-sizing: border-box;
   border-radius: 8px;
-  overflow: hidden;
+  background: var(--cy-doc-bg3);
 }
 
 .cy-pg-segment {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .cy-pg-segment input {
@@ -304,43 +444,129 @@ textarea.cy-pg-input {
 }
 
 .cy-pg-segment span {
-  display: block;
-  padding: 9px 4px;
-  text-align: center;
-  font-size: 14px;
-  background: var(--cy-doc-bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 6px 12px;
+  box-sizing: border-box;
+  border-radius: 4px;
   color: var(--cy-doc-tx2);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.cy-pg-segment:hover span {
+  background: var(--cy-doc-bg2);
 }
 
 .cy-pg-segment input:checked + span {
   background: var(--cy-doc-surface);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 10%);
   color: var(--cy-doc-tx);
-  font-weight: 500;
+}
+
+.cy-pg-segment input:focus-visible + span {
+  outline: 2px solid var(--cy-doc-ac);
+  outline-offset: -2px;
 }
 
 .cy-pg-check {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--cy-doc-bd);
-  font-size: 15px;
+  gap: 12px;
+  height: 40px;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: normal;
+  color: var(--cy-doc-tx);
 }
 
-.cy-pg-check input {
-  accent-color: var(--cy-doc-ac);
+/* Between rows, not under every one: a line under the last row would read as the end of
+   the group rather than a divider, and the Add row already follows. */
+.cy-pg-check + .cy-pg-check {
+  border-top: 1px solid var(--cy-doc-bd);
 }
 
 .cy-pg-check label {
-  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
 }
 
-.cy-pg-always-on {
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+/* The native checkbox cannot be given the design's box and tick, so it is hidden and left
+   to do the real work — state, keyboard, and what a screen reader announces. */
+.cy-pg-check input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.cy-pg-check-box {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--cy-doc-bd2);
+  border-radius: 4px;
+  background: var(--cy-doc-surface);
+}
+
+.cy-pg-check-box svg {
+  width: 10px;
+  height: 10px;
+  opacity: 0;
+  fill: none;
+  stroke: var(--cy-doc-surface);
+  stroke-width: 2.4;
+}
+
+.cy-pg-check input:checked + .cy-pg-check-box {
+  background: var(--cy-doc-ac);
+  border-color: var(--cy-doc-ac);
+}
+
+.cy-pg-check input:checked + .cy-pg-check-box svg {
+  opacity: 1;
+}
+
+.cy-pg-check input:disabled + .cy-pg-check-box {
+  background: var(--cy-doc-bd2);
+  border-color: var(--cy-doc-bd2);
+}
+
+.cy-pg-check input:focus-visible + .cy-pg-check-box {
+  outline: 2px solid var(--cy-doc-ac);
+  outline-offset: 2px;
+}
+
+/* Necessary cannot be turned off, so its row should not offer a pointer or full-strength
+   text that says it can. */
+.cy-pg-check:has(input:disabled) label {
+  cursor: default;
   color: var(--cy-doc-tx2);
+}
+
+.cy-pg-cat-tag {
+  margin-left: auto;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: normal;
+  text-transform: uppercase;
+  color: var(--cy-doc-tx3);
 }
 
 .cy-pg-field-error {
@@ -349,21 +575,78 @@ textarea.cy-pg-input {
   font-size: 13px;
 }
 
+.cy-pg-cat-remove {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cy-doc-tx);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.cy-pg-cat-remove:hover {
+  background: var(--cy-doc-bg2);
+}
+
+.cy-pg-cat-remove:active {
+  background: var(--cy-doc-bg3);
+}
+
 .cy-pg-add-row {
   display: flex;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 16px;
+}
+
+.cy-pg-add-row .cy-pg-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 13px;
+}
+
+/* The one filled button in the panel. Everything else here changes a setting; this is the
+   only control that adds something, and the design gives it the weight to say so. */
+.cy-pg-add-row button {
+  flex: none;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--cy-doc-ac);
+  color: var(--cy-doc-bg);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.cy-pg-add-row button:hover:not(:disabled) {
+  background: var(--cy-doc-co);
+}
+
+.cy-pg-add-row button:disabled {
+  background: var(--cy-doc-bg3);
+  color: var(--cy-doc-tx3);
+  cursor: default;
 }
 
 /* ── Code panel ────────────────────────────────────────────────────────────── */
-
-.cy-pg-code-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--cy-doc-bd);
-}
 
 .cy-pg-code {
   flex: 1 1 auto;
@@ -372,19 +655,57 @@ textarea.cy-pg-input {
   flex-direction: column;
 }
 
-.cy-pg-code-name {
+/* A solid bar, not a tint: it sits directly above a near-black editor, where a pale wash
+   would barely register. Monospace, because it quotes the engine's own parse error. */
+.cy-pg-code-error {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding: 12px 16px;
+  background: #b9172b;
+  color: #fff;
   font-family: var(--font-geist-mono), monospace;
-  font-size: 13px;
-  color: var(--cy-doc-tx2);
+  font-size: 12px;
+  line-height: 18px;
 }
 
-/* Pushed to the right of the filename and kept quiet: it is the only cue that the config
-   can be edited, but it should not compete with the file it labels. */
-.cy-pg-code-hint {
-  margin-left: auto;
-  margin-right: 12px;
+.cy-pg-code-error[hidden] {
+  display: none;
+}
+
+.cy-pg-code-error span {
+  overflow-wrap: anywhere;
+}
+
+.cy-pg-code-error svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* Part of the editor rather than the card around it: same dark family, same monospace, the
+   comment grey. A light bar here read as a separate strip of page. */
+.cy-pg-code-stat {
+  flex: none;
+  min-height: 38px;
+  margin: 0;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  border-top: 1px solid #313336;
+  background: #1f2124;
+  font-family: var(--font-geist-mono), monospace;
   font-size: 12px;
-  color: var(--cy-doc-tx3);
+  line-height: 16px;
+  /* The design's #878580 lands at 4.38:1 on this bar — just under AA. Two steps lighter
+     reaches 4.74:1 and is indistinguishable beside it. */
+  color: #8d8b86;
 }
 
 /* ── Code editor ───────────────────────────────────────────────────────────
@@ -395,7 +716,8 @@ textarea.cy-pg-input {
 
 .cy-pg-editor {
   flex: 1 1 auto;
-  min-height: 0;
+  height: 592px;
+  min-height: 592px;
   display: flex;
   align-items: flex-start;
   background: #15171a;
@@ -405,12 +727,17 @@ textarea.cy-pg-input {
 .cy-pg-editor,
 .cy-pg-fixed,
 .cy-pg-editable-ink,
-.cy-pg-editable-input,
-.cy-pg-gutter {
+.cy-pg-editable-input {
   font-family: var(--font-geist-mono), monospace;
-  font-size: 13.5px;
+  font-size: 13px;
   line-height: 22px;
   tab-size: 2;
+}
+
+.cy-pg-gutter {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 12px;
+  line-height: 22px;
 }
 
 .cy-pg-gutter {
@@ -487,19 +814,66 @@ textarea.cy-pg-input {
 
 /* ── Preview ───────────────────────────────────────────────────────────────── */
 
+.cy-pg-stagehead {
+  flex: none;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-bottom: 1px solid var(--cy-doc-bd);
+  background: var(--cy-doc-surface);
+}
+
+.cy-pg-stagehead-lbl {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+}
+
+.cy-pg-stagehead-note {
+  font-size: 12px;
+  color: var(--cy-doc-tx2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .cy-pg-preview {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background: var(--cy-doc-bg2);
   min-width: 0;
 }
 
+/* The design's height, and the one measurement the whole card is built on: it is set
+   before the frame loads, so nothing reflows around it, and it gives back height on a
+   short screen so the console below stays on the same screenful as the banner. */
+.cy-pg-stage {
+  position: relative;
+  flex: none;
+  height: clamp(380px, 46vh, 480px);
+  /* Clips the oversized frame, so only this box's size is ever visible. */
+  overflow: hidden;
+  border-bottom: 1px solid var(--cy-doc-bd);
+}
+
+/* Laid out at desktop width, then shrunk to fit. Dividing the height by the same scale
+   makes the shrunk frame land exactly on the box — no bars, nothing cut off. */
 .cy-pg-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
-  width: 100%;
-  /* The row's height is fixed above, so the frame is sized before it loads and nothing
-     reflows around it. */
-  height: 100%;
+  /* The extra pixel is scaled-down rounding: without it the frame can land a hair short
+     and leave a hairline of the box showing. The box clips, so overshooting costs nothing. */
+  height: calc((100% + 1px) / var(--cy-pg-scale));
   border: 0;
+  transform: scale(var(--cy-pg-scale));
+  transform-origin: top left;
 }
 
 /* ── Console ───────────────────────────────────────────────────────────────
@@ -514,12 +888,8 @@ textarea.cy-pg-input {
   min-width: 0;
 }
 
-.cy-pg-right .cy-pg-preview {
-  flex: 1 1 auto;
-}
-
 .cy-pg-console {
-  flex: 0 0 260px;
+  flex: none;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -528,47 +898,37 @@ textarea.cy-pg-input {
 }
 
 .cy-pg-console-head {
+  flex: none;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 0 16px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--cy-doc-bd);
 }
 
 .cy-pg-console-head h3 {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--cy-doc-tx);
 }
 
+/* The design sits the note and Clear together at the right end, away from the label. */
 .cy-pg-console-head p {
-  flex: 1 1 auto;
-  font-size: 13px;
+  margin-left: auto;
+  min-width: 0;
+  font-size: 12px;
   color: var(--cy-doc-tx2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.cy-pg-console-head button {
-  padding: 5px 12px;
-  border: 1px solid var(--cy-doc-bd2);
-  border-radius: 8px;
-  background: var(--cy-doc-surface);
-  color: var(--cy-doc-tx);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.cy-pg-console-head button:hover:not(:disabled) {
-  background: var(--cy-doc-bg2);
-}
-
-.cy-pg-console-head button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
+/* The design's log window. Fixed, so the console never pushes the preview off the screen. */
 .cy-pg-console-rows {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: none;
+  height: 210px;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -627,24 +987,21 @@ li[data-level="blocked"] .cy-pg-log-level {
 }
 
 .cy-pg-log-empty {
-  padding: 12px 16px;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 12px;
-  color: var(--cy-doc-tx2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
 }
 
-.cy-pg-console-note {
-  padding: 9px 16px;
-  border-top: 1px solid var(--cy-doc-bd);
+.cy-pg-log-empty-head {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cy-doc-tx);
+}
+
+.cy-pg-log-empty-sub {
   font-size: 13px;
   color: var(--cy-doc-tx2);
-}
-
-.cy-pg-console-note code {
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 12px;
-  color: var(--cy-doc-tx);
-  word-break: break-word;
 }
 
 /* ── Inside the preview frame ──────────────────────────────────────────────── */
@@ -728,35 +1085,37 @@ li[data-level="blocked"] .cy-pg-log-level {
   white-space: nowrap;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 940px) {
   .cy-pg-body {
     grid-template-columns: 1fr;
-    /* Stacked, there is no second column to line up with, so each part takes what it needs
-       and the page scrolls instead of the panels. */
-    height: auto;
-  }
-
-  .cy-pg-console {
-    flex: 0 0 auto;
-  }
-
-  .cy-pg-console-rows {
-    max-height: 240px;
   }
 
   /* Preview first once the columns stack. The controls run past a phone screen, and the
      promise of this page is seeing a real banner without hunting for it. The grid's child
      is the right-hand column, not the frame inside it. */
   .cy-pg-right {
-    order: -1;
-    border-bottom: 1px solid var(--cy-doc-bd);
+    order: 1;
   }
 
   .cy-pg-left {
+    order: 2;
+    border-top: 1px solid var(--cy-doc-bd);
     border-right: 0;
   }
 
-  .cy-pg-frame {
-    height: 460px;
+  /* Stacked, there is no second column setting the height, so the controls come back into
+     flow and the page scrolls instead of the panel. */
+  .cy-pg-controls {
+    position: static;
+    max-height: none;
+  }
+
+  .cy-pg-editor {
+    height: 440px;
+    min-height: 440px;
+  }
+
+  .cy-pg-stage {
+    height: min(64vh, 460px);
   }
 }

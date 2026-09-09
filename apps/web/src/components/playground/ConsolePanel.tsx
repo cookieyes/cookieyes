@@ -14,7 +14,15 @@ import type { LogEntry } from "./playground-config";
  *
  * Layout and colours follow the design's console.
  */
-export function ConsolePanel({ entries, onClear }: { entries: LogEntry[]; onClear: () => void }) {
+export function ConsolePanel({
+  entries,
+  cleared,
+  onClear,
+}: {
+  entries: LogEntry[];
+  cleared: boolean;
+  onClear: () => void;
+}) {
   const rows = useRef<HTMLOListElement>(null);
 
   // Follow the tail, the way a console does — but only while the visitor is already at the
@@ -30,7 +38,7 @@ export function ConsolePanel({ entries, onClear }: { entries: LogEntry[]; onClea
     <section className="cy-pg-console" aria-label="Consent event log">
       <header className="cy-pg-console-head">
         <h3>Console</h3>
-        <p>Use the banner and watch what your tags do.</p>
+        <p>Use the banner above and watch what your tags do.</p>
         <button type="button" onClick={onClear} disabled={entries.length === 0}>
           Clear
         </button>
@@ -38,7 +46,7 @@ export function ConsolePanel({ entries, onClear }: { entries: LogEntry[]; onClea
 
       {/* A log a screen reader reads line by line as it grows would talk over the visitor
           using the banner, so it is a plain region they can go and read instead. */}
-      <ol className="cy-pg-console-rows" ref={rows}>
+      <ol className="cy-pg-console-rows" role="log" ref={rows}>
         {entries.map((entry) => (
           <li key={entry.seq} data-seq={entry.seq} data-level={entry.level}>
             <span className="cy-pg-log-time">{entry.time}</span>
@@ -47,14 +55,21 @@ export function ConsolePanel({ entries, onClear }: { entries: LogEntry[]; onClea
             <span className="cy-pg-log-meta">{entry.meta}</span>
           </li>
         ))}
+        {/* Two states, because they mean different things: nothing has happened yet, versus
+            you emptied it and the next thing you do will show up here. */}
         {entries.length === 0 ? (
-          <li className="cy-pg-log-empty">Waiting for the preview…</li>
+          <li className="cy-pg-log-empty">
+            <span className="cy-pg-log-empty-head">
+              {cleared ? "Console cleared" : "No entries"}
+            </span>
+            <span className="cy-pg-log-empty-sub">
+              {cleared
+                ? "Accept, reject or save a choice in the preview and every tag reports back here."
+                : "Waiting for the preview to load."}
+            </span>
+          </li>
         ) : null}
       </ol>
-
-      <p className="cy-pg-console-note">
-        Gated with <code>{'<GatedScript src="…" category="analytics" id="…" />'}</code>
-      </p>
     </section>
   );
 }

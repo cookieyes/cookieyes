@@ -1,12 +1,13 @@
 "use client";
 
-import { useId, useState } from "react";
+import { type CSSProperties, useId, useState } from "react";
 import {
   BUILT_IN_CATEGORY_IDS,
   COLOUR_SWATCHES,
   categoryLabel,
   FONTS,
   type FontChoice,
+  MAX_RADIUS,
   type PlaygroundConfig,
   type PlaygroundText,
   REQUIRED_CATEGORY_ID,
@@ -161,15 +162,25 @@ function Appearance({
           Corner rounding
         </label>
         <div className="cy-pg-slider-row">
-          <input
-            id={radiusId}
-            type="range"
-            min={0}
-            max={16}
-            step={1}
-            value={config.borderRadius}
-            onChange={(event) => onChange({ borderRadius: Number(event.target.value) })}
-          />
+          <span
+            className="cy-pg-track"
+            style={
+              { "--cy-pg-pct": `${(config.borderRadius / MAX_RADIUS) * 100}%` } as CSSProperties
+            }
+          >
+            <span className="cy-pg-track-rail" />
+            <span className="cy-pg-track-fill" />
+            <span className="cy-pg-track-knob" />
+            <input
+              id={radiusId}
+              type="range"
+              min={0}
+              max={MAX_RADIUS}
+              step={1}
+              value={config.borderRadius}
+              onChange={(event) => onChange({ borderRadius: Number(event.target.value) })}
+            />
+          </span>
           <output htmlFor={radiusId}>{config.borderRadius}px</output>
         </div>
       </div>
@@ -218,7 +229,7 @@ function Wording({
             <label className="cy-pg-label" htmlFor={id}>
               {label}
             </label>
-            {multiline ? <textarea {...common} rows={3} /> : <input {...common} />}
+            {multiline ? <textarea {...common} /> : <input {...common} />}
           </div>
         );
       })}
@@ -250,6 +261,11 @@ function Categories({
     onChange({ categories: next });
   }
 
+  function remove(id: string) {
+    const { [id]: _dropped, ...rest } = config.customLabels;
+    onChange({ categories: config.categories.filter((each) => each !== id), customLabels: rest });
+  }
+
   function add() {
     const id = toCategoryId(draft);
     if (!id || config.categories.includes(id)) return;
@@ -265,17 +281,38 @@ function Categories({
       {known.map((id) => {
         const inputId = `${prefix}-${id}`;
         const required = id === REQUIRED_CATEGORY_ID;
+        const custom = !BUILT_IN_CATEGORY_IDS.includes(id);
         return (
           <div className="cy-pg-check" key={id}>
-            <input
-              id={inputId}
-              type="checkbox"
-              checked={config.categories.includes(id)}
-              disabled={required}
-              onChange={(event) => toggle(id, event.target.checked)}
-            />
-            <label htmlFor={inputId}>{categoryLabel(id, config.customLabels)}</label>
-            {required ? <span className="cy-pg-always-on">Always on</span> : null}
+            <label htmlFor={inputId}>
+              <input
+                id={inputId}
+                type="checkbox"
+                checked={config.categories.includes(id)}
+                disabled={required}
+                onChange={(event) => toggle(id, event.target.checked)}
+              />
+              <span className="cy-pg-check-box">
+                <svg viewBox="0 0 12 12" aria-hidden="true">
+                  <polyline points="2,6.4 4.6,9 10,3.2" />
+                </svg>
+              </span>
+              {categoryLabel(id, config.customLabels)}
+            </label>
+            {required ? <span className="cy-pg-cat-tag">Always on</span> : null}
+            {custom ? <span className="cy-pg-cat-tag">Custom</span> : null}
+            {/* Unchecking leaves a category the visitor can put back; removing takes it out
+                of the set entirely, which is what changes the taxonomy they would ship. */}
+            {custom ? (
+              <button
+                type="button"
+                className="cy-pg-cat-remove"
+                aria-label={`Remove ${categoryLabel(id, config.customLabels)}`}
+                onClick={() => remove(id)}
+              >
+                ×
+              </button>
+            ) : null}
           </div>
         );
       })}
@@ -287,7 +324,7 @@ function Categories({
         <input
           id={addId}
           className="cy-pg-input"
-          placeholder="Add your own, e.g. marketing"
+          placeholder="Add your own, e.g. functional"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event) => {
