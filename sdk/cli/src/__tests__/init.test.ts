@@ -99,7 +99,11 @@ describe("runInit — Next.js (cookie-only, GDPR)", () => {
     expect(writes.some((w) => w.includes("initCookieYes"))).toBe(true);
     expect(writes.some((w) => w.includes("<CookieBanner />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/nextjs"'))).toBe(true);
-    expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(true);
+    // Self-referential: the scaffold installs only @cookieyes/nextjs, and under
+    // pnpm that app cannot resolve @cookieyes/react — so a scaffold pointing
+    // there would not build for a pnpm user.
+    expect(writes.some((w) => w.includes('import "@cookieyes/nextjs/styles.css"'))).toBe(true);
+    expect(writes.some((w) => w.includes('import "@cookieyes/react/styles.css"'))).toBe(false);
     // App-router layout is generated when one does not already exist.
     expect(writes.some((w) => w.includes("RootLayout"))).toBe(true);
     expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/nextjs", "npm", expect.any(String));
