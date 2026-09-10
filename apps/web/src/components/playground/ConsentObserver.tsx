@@ -95,9 +95,14 @@ export function reportConsent(
   const granted = categories.filter((id) => snapshot.committedCategories[id]);
   log("info", "consent.change", granted.join(", ") || "necessary only");
 
+  // Every script reported here, in one pass, so the run lines sit with the hold lines in
+  // the order the scripts are declared rather than whenever their file happened to arrive.
   for (const script of DEMO_SCRIPTS) {
     const known = categories.includes(script.category);
-    if (known && snapshot.committedCategories[script.category]) continue; // its own onLoad reports it
+    if (known && snapshot.committedCategories[script.category]) {
+      log("allowed", RUN + script.label, script.category);
+      continue;
+    }
     log(
       "blocked",
       HOLD + script.label,
@@ -109,5 +114,3 @@ export function reportConsent(
   // be reporting an event that did not happen.
   if (reason) log("info", "consent.store", reason);
 }
-
-export { RUN };

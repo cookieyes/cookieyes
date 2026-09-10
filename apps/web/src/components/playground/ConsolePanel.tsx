@@ -8,8 +8,8 @@ import type { LogEntry } from "./playground-config";
  *
  * The one question a developer has is whether their tags really stop before consent, and a
  * status table asks to be believed. A timestamped stream of events reads as monitoring, and
- * every line is earned: `allowed` is written by a script's own load callback, `blocked` by
- * the consent snapshot holding it back. Nothing is inferred, and no vendor is named that
+ * every line is earned: each `allowed` and `blocked` is read off the consent snapshot at the
+ * moment it decides that script's fate. Nothing is inferred, and no vendor is named that
  * this page does not actually load.
  *
  * Layout and colours follow the design's console.

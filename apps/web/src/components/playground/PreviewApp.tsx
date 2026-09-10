@@ -16,7 +16,7 @@ import {
 // surrounding site never loads it.
 import "@cookieyes/react/styles.css";
 import { type ReactNode, useEffect, useState } from "react";
-import { ConsentObserver, RUN, reportConsent } from "./ConsentObserver";
+import { ConsentObserver, reportConsent } from "./ConsentObserver";
 import {
   BUILT_IN_CATEGORY_IDS,
   DEMO_SCRIPTS,
@@ -180,7 +180,6 @@ export function PreviewApp() {
                 id={script.id}
                 src={script.src}
                 category={script.category}
-                onLoad={() => log("allowed", RUN + script.label, script.category)}
               />
             ),
           )}
