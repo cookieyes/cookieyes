@@ -22,7 +22,22 @@ Content-Security-Policy:
 
 No `unsafe-inline`. No nonce. The banner, both dialogs, the recall widget, and custom `theme` colors all work.
 
-**One exception, if you inline `critical.css`.** The SDK ships two stylesheets. `@cookieyes/react/styles.css` is loaded as a normal file and is fully covered by the policy above. `@cookieyes/react/critical.css` is an optional performance extra that [Installation](/docs/getting-started/installation#stylescss-vs-criticalcss) suggests **inlining in `<head>`** — and an inlined stylesheet is a literal `<style>` block, which `style-src 'self'` blocks like any other.
+**One exception, if you inline `critical.css`.** The SDK ships two stylesheets. `styles.css` is loaded as a normal file and is fully covered by the policy above. `critical.css` is an optional first-paint optimisation that [Installation](/docs/getting-started/installation#stylescss-vs-criticalcss) describes **inlining in `<head>`** via `<CookieYesStyles />` — and an inlined stylesheet is a literal `<style>` block, which `style-src 'self'` blocks like any other.
+
+It does **not** need `'unsafe-inline'`. The block is static and identical for every request, so it is admitted by a **hash** — the exact case hashes exist for. `@cookieyes/nextjs/server` exports the value ready to paste:
+
+```ts
+import { CRITICAL_CSS_HASH } from "@cookieyes/nextjs/server";
+// → "'sha256-…'"   append to style-src
+```
+
+```http
+Content-Security-Policy: style-src 'self' 'sha256-…'
+```
+
+A hash admits *that one byte sequence* and nothing else, so the policy stays exactly as strict as before — an attacker who injects even a one-character variation is still blocked. It changes only when the stylesheet changes, and the new value is published in the changelog with each such release. If you already run nonces, pass one instead: `<CookieYesStyles nonce={nonce} />`.
+
+Nothing is needed for `script-src`. The component emits no inline script — the deferred full stylesheet is switched on by the SDK's own client bundle, which your policy already admits.
 
 If you inline it, you must account for that one block. Either add a hash for it (`style-src 'self' 'sha256-…'`), give it a nonce, or simply link `critical.css` as a file instead of inlining it and keep the policy above unchanged. Linking it is the simplest option and costs only the extra request; the SDK itself still needs no blanket allowance either way.
 
