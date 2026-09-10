@@ -1,7 +1,7 @@
 {
   "name": "@cookieyes/react",
   "version": "0.7.0",
-  "description": "React adapter for the CookieYes consent SDK — components and hooks",
+  "description": "React adapter for the CookieYes consent SDK \u2014 components and hooks",
   "keywords": [
     "cookie consent",
     "GDPR",
@@ -26,7 +26,9 @@
   },
   "license": "MIT",
   "author": "CookieYes (https://www.cookieyes.com)",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "type": "module",
   "exports": {
     ".": {

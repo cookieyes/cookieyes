@@ -91,7 +91,10 @@ function nextjsProviderTemplate(opts: OptionInputs, isCCPA: boolean): string {
     `  RecallButton,`,
     `  initCookieYes,`,
     `} from "@cookieyes/nextjs";`,
-    `import "@cookieyes/react/styles.css";`,
+    // Self-referential, not "@cookieyes/react/styles.css": under pnpm's strict
+    // node_modules layout an app that installed only @cookieyes/nextjs cannot
+    // resolve the react package, and the scaffold would not build.
+    `import "@cookieyes/nextjs/styles.css";`,
     ``,
     `initCookieYes(${buildConfigLiteral(opts, "")});`,
     ``,

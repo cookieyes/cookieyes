@@ -30,6 +30,21 @@ function rootVars(from: string): Record<string, string> {
   return out;
 }
 
+/** The declarations inside a `[data-cy-scheme="…"] { … }` rule. */
+function schemeVars(scheme: "light" | "dark"): Record<string, string> {
+  const selector = `[data-cy-scheme="${scheme}"] {`;
+  const open = sheet.indexOf(selector);
+  if (open === -1) throw new Error(`no ${selector.trim()} rule found`);
+  const body = sheet.slice(open + selector.length, sheet.indexOf("}", open));
+  const out: Record<string, string> = {};
+  for (const line of body.split(";")) {
+    const [name, ...rest] = line.split(":");
+    if (!name || rest.length === 0) continue;
+    out[name.trim()] = rest.join(":").trim();
+  }
+  return out;
+}
+
 const lightVars = rootVars(sheet);
 const darkBlockStart = sheet.indexOf("@media (prefers-color-scheme: dark)");
 const darkVars = rootVars(sheet.slice(darkBlockStart));
@@ -95,6 +110,31 @@ describe("theme token defaults are declared and match tokens.ts", () => {
     for (const name of ["--cy-bg", "--cy-text", "--cy-muted", "--cy-border", "--cy-widget-bg"]) {
       expect(Object.keys(darkVars)).toContain(name);
     }
+  });
+
+  it('the [data-cy-scheme="light"] rule matches computeThemeVars(undefined, false)', () => {
+    // `useThemeVars` writes this attribute for an explicit `colorScheme`
+    // instead of computing the twelve values in JavaScript, so the rule is
+    // now load-bearing for that configuration and can drift exactly the way
+    // the `:root` defaults once did.
+    for (const [name, value] of Object.entries(schemeVars("light"))) {
+      expect(normalise(value)).toBe(normalise(vars[name as keyof typeof vars]));
+    }
+  });
+
+  it('the [data-cy-scheme="dark"] rule matches computeThemeVars(undefined, true)', () => {
+    for (const [name, value] of Object.entries(schemeVars("dark"))) {
+      expect(normalise(value)).toBe(normalise(darkVarsComputed[name as keyof typeof vars]));
+    }
+  });
+
+  it("both scheme rules declare exactly the tokens the dark @media block does", () => {
+    // Anything the media query overrides has to be overridable by the
+    // attribute too — otherwise an explicit `colorScheme` leaves some tokens
+    // resolved against the device preference and the container is half-dark.
+    const expected = Object.keys(darkVars).sort();
+    expect(Object.keys(schemeVars("dark")).sort()).toEqual(expected);
+    expect(Object.keys(schemeVars("light")).sort()).toEqual(expected);
   });
 
   it("no var(--cy-*) reference in the sheet lacks a declaration", () => {

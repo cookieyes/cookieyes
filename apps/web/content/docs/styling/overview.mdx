@@ -297,7 +297,7 @@ By design — the style boundary blocks inheritance. Set `theme.fontFamily`.
 
 ## Across the SDK
 
-The stylesheet and tokens live in `@cookieyes/react` and are used unchanged by `@cookieyes/nextjs` — the import path is `@cookieyes/react/styles.css` in both. `@cookieyes/core` ships no CSS at all, but it does own the `ThemeConfig` type itself — `react` and `nextjs` both re-export it rather than defining their own.
+The stylesheet and tokens live in `@cookieyes/react` and are used unchanged by `@cookieyes/nextjs`, which re-exports the sheet as `@cookieyes/nextjs/styles.css`. Under pnpm's strict `node_modules` layout an app that installed only `@cookieyes/nextjs` cannot resolve `@cookieyes/react`, so a Next.js app must import `@cookieyes/nextjs/styles.css` — the same sheet, re-exported from the package you actually installed. npm and Yarn Classic hoist `@cookieyes/react` and resolve either path, but the `nextjs` one is correct everywhere. `@cookieyes/core` ships no CSS at all, but it does own the `ThemeConfig` type itself — `react` and `nextjs` both re-export it rather than defining their own.
 
 ## See also
 

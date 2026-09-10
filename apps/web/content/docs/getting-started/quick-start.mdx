@@ -75,7 +75,7 @@ export function CookieYesRoot() {
 Then mount it in your root layout, and import the stylesheet:
 
 ```tsx title="app/layout.tsx"
-import "@cookieyes/react/styles.css";
+import "@cookieyes/nextjs/styles.css";
 import { CookieYesRoot } from "./cookieyes";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -104,7 +104,7 @@ If something doesn't match, here's the fast path from symptom to cause (the full
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| Banner renders as unstyled text | Stylesheet not imported | `import "@cookieyes/react/styles.css"` |
+| Banner renders as unstyled text | Stylesheet not imported | `import "@cookieyes/nextjs/styles.css"` (Next.js) or `import "@cookieyes/react/styles.css"` (React) |
 | Banner never appears | Already decided in this browser | Clear the cookie, or `reset()` |
 | Banner flashes and vanishes on every load | No `initialConsent` | Pass it via `CookieYesProvider` |
 

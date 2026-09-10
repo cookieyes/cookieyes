@@ -56,6 +56,37 @@
   }
 }
 
+/* An explicit `colorScheme: "light" | "dark"` is the one case the media query  */
+/* above gets wrong — it follows the device, and the developer has said not to. */
+/* `useThemeVars` writes `data-cy-scheme` on each container in exactly that     */
+/* case, and these two rules correct it. On the container the declaration beats */
+/* the inherited `:root` value, which is the same cascade position the CSSOM    */
+/* writes for a custom `theme` occupy.                                          */
+/*                                                                              */
+/* Only the six tokens that differ between schemes appear here: the five in     */
+/* tokens.ts's DARK_DEFAULTABLE plus --cy-on-widget-bg, which is derived from   */
+/* --cy-widget-bg. The other six are scheme-independent and stay on `:root`.    */
+/*                                                                              */
+/* These MUST stay byte-identical to `computeThemeVars(undefined, false)` and   */
+/* `computeThemeVars(undefined, true)`, for the same reason and under the same  */
+/* guard as the `:root` block — `__tests__/styles-parity.test.ts`.              */
+[data-cy-scheme="light"] {
+  --cy-bg: #ffffff;
+  --cy-text: #212121;
+  --cy-muted: #6b7280;
+  --cy-border: #f4f4f4;
+  --cy-widget-bg: #0056a7;
+  --cy-on-widget-bg: #ffffff;
+}
+[data-cy-scheme="dark"] {
+  --cy-bg: #161b27;
+  --cy-text: #f3f4f6;
+  --cy-muted: #9ca3af;
+  --cy-border: #2d3748;
+  --cy-widget-bg: #1f6fd1;
+  --cy-on-widget-bg: #ffffff;
+}
+
 /* ── Style boundary — isolate our widget from host-app CSS ────────── */
 /* Inheritable typography is set explicitly at every root container so   */
 /* host stylesheets (Next's Geist font, Vite resets, Tailwind, etc.)     */

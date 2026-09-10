@@ -87,6 +87,9 @@ function useClientBanner(exclude = []) {
  * @param {boolean} [opts.sourcemap]   default true
  * @param {string}  [opts.target]      esbuild target (default "es2020")
  * @param {string}  [opts.shebang]     optional shebang banner (cli)
+ * @param {import('rollup').Plugin[]} [opts.extraPlugins]  package-specific plugins, run
+ *   before resolution on the JS build only (never the .d.ts build). For build-time
+ *   sentinel replacement in the style of `injectPkgVersion`.
  */
 export function createLibConfig({
   pkg,
@@ -98,6 +101,7 @@ export function createLibConfig({
   sourcemap = true,
   target = "es2020",
   shebang,
+  extraPlugins = [],
 }) {
   const deps = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {})];
   const isExternal = (id) =>
@@ -136,6 +140,7 @@ export function createLibConfig({
       plugins: [
         tsJsResolve(),
         injectPkgVersion(pkg.version),
+        ...extraPlugins,
         nodeResolve({ extensions: [".ts", ".tsx", ".mjs", ".js", ".json"] }),
         commonjs(),
         esbuild({ target, jsx: "automatic", sourceMap: sourcemap }),

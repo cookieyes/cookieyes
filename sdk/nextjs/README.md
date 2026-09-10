@@ -97,7 +97,7 @@ import {
   RecallButton,
   initCookieYes,
 } from "@cookieyes/nextjs";
-import "@cookieyes/react/styles.css";
+import "@cookieyes/nextjs/styles.css";
 
 initCookieYes({
   mode: "cookie-only",    // "cookie-only" | "self-hosted"
@@ -116,10 +116,17 @@ export function CookieYesRoot() {
 }
 ```
 
-The `@cookieyes/react/styles.css` import is required — the components ship
-no inline styling, so without it they render unstyled. It's exposed from
-`@cookieyes/react` (a dependency of this package) rather than duplicated
-under `@cookieyes/nextjs`.
+The `@cookieyes/nextjs/styles.css` import is required — the components ship
+no inline styling, so without it they render unstyled.
+
+The sheet itself lives in `@cookieyes/react` and is re-exported here as a
+one-line `@import`, so there is still only one copy of it. Import it from
+**this** package, not from `@cookieyes/react`: under pnpm's strict
+`node_modules` layout an app that installed only `@cookieyes/nextjs` cannot
+resolve `@cookieyes/react`, and the import fails with `MODULE_NOT_FOUND`. npm
+and Yarn Classic hoist it and resolve either path; `@cookieyes/nextjs/styles.css`
+is correct under all of them. `@cookieyes/nextjs/critical.css` is re-exported
+the same way.
 
 **3. Mount it in your root layout** — the layout itself stays a Server Component:
 
@@ -313,6 +320,57 @@ Then load the tags on the client with a preset from
 [`@cookieyes/scripts`](https://github.com/cookieyes/cookieyes/tree/main/sdk/scripts)
 — `ga4()`, `googleAds()`, or `googleTagManager()`. The SDK broadcasts each
 consent change to Google as a Consent Mode `update`; you don't wire that up.
+
+## Faster first paint (critical CSS)
+
+The banner is server-rendered, so it is in the very first HTML — but the browser
+cannot paint it until the stylesheet arrives, and that is a *second* round trip.
+On a slow connection the round trip costs more than the whole SDK: on the
+Lighthouse Mobile profile, first paint is 468 ms with the stylesheet as a
+`<link>` and **224 ms** with the banner's rules inlined. Nil difference on fast
+desktop.
+
+Two lines, and it is opt-in — nothing changes unless you add them:
+
+```tsx
+// app/layout.tsx
+import { CookieYesStyles } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <head>
+        <CookieYesStyles />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+```ts
+// app/cookieyes/styles.css/route.ts — the SDK serves its own stylesheet
+export { GET } from "@cookieyes/nextjs/styles-route";
+```
+
+Then **remove** `import "@cookieyes/nextjs/styles.css"` — leaving it puts the
+sheet back on the critical path and cancels the gain.
+
+`<CookieYesStyles />` inlines `critical.css` (only the banner's rules) in
+`<head>` and loads the full sheet with `media="print"`, which the browser
+fetches without blocking render; the SDK switches it on once mounted. There is
+no inline script.
+
+**If you run a strict Content-Security-Policy**, the inlined block needs one
+hash on `style-src` — not `'unsafe-inline'`:
+
+```ts
+import { CRITICAL_CSS_HASH } from "@cookieyes/nextjs/server"; // "'sha256-…'"
+```
+
+It changes only when the stylesheet does, and is published in the changelog.
+Nonce users can pass `<CookieYesStyles nonce={nonce} />` instead. Without a CSP
+there is nothing further to configure.
 
 ## API
 
