@@ -22,7 +22,7 @@ initCookieYes({
 });
 ```
 
-Three tokens have no `theme` key — `--cy-primary-hover` and two auto-contrast tokens covered in [Two tokens are derived automatically for readable text](#two-tokens-are-derived-automatically-for-readable-text) below. **A plain `:root` override will not change any of them**, for the reason in the next section: every token is written inline onto the SDK's own containers on each render, whether or not you configured it, and an inline declaration beats an inherited `:root` value. To change one of these you need an author `!important` rule aimed at the SDK's container:
+Three tokens have no `theme` key — `--cy-primary-hover` and two auto-contrast tokens covered in [Two tokens are derived automatically for readable text](#two-tokens-are-derived-automatically-for-readable-text) below. **If you configure a `theme` at all, a plain `:root` override will not change any of them**, for the reason in the next section: configuring a theme makes the SDK write all twelve tokens inline onto its own containers, and an inline declaration beats an inherited `:root` value. To change one of these you need an author `!important` rule aimed at the SDK's container:
 
 ```css title="app/consent.css"
 /* Loaded after @cookieyes/react/styles.css. `!important` is genuinely
@@ -46,11 +46,27 @@ Every token this SDK reads is `--cy-`-prefixed, with zero exceptions.
 
 ### `theme` values win over CSS
 
-The stylesheet sets the defaults on `:root`. On every render the SDK writes **all twelve** tokens onto each component container with `element.style.setProperty()` — not only the ones you configured, but the computed defaults and derived values too. An inline declaration beats an inherited `:root` value, so a `:root` rule loses for every token, not just the ones you set.
+The stylesheet sets the defaults on `:root`. **If you configure a `theme`**, the SDK writes **all twelve** tokens onto each component container with `element.style.setProperty()` on every render — not only the ones you configured, but the computed defaults and derived values too. An inline declaration beats an inherited `:root` value, so a `:root` rule then loses for every token, not just the ones you set.
 
 An author rule marked `!important` does still win, because the cascade sorts by importance before it considers where a declaration came from. That is the escape hatch for the three tokens with no `theme` key.
 
-So this does nothing if `theme.primaryColor` is set:
+**If you configure no `theme`, nothing is written inline and a plain `:root` override works** — for all twelve tokens, including the three with no key. The stylesheet's defaults are the only thing setting them, and your rule beats those on order. This is the simplest way to restyle the SDK entirely in CSS:
+
+```css title="app/consent.css — no theme configured"
+/* Loaded after @cookieyes/react/styles.css */
+:root {
+  --cy-primary: #7c3aed;
+  --cy-primary-hover: #6d28d9; /* no `theme` key exists for this one */
+}
+```
+
+One exception: an explicit `colorScheme: "light" | "dark"` marks each container `data-cy-scheme` and the SDK's stylesheet sets the six scheme-sensitive tokens on it. A declaration on the element beats an inherited one whatever its specificity, so those six need a rule aimed at the container rather than at `:root` — no `!important` required, since it is an ordinary rule you are competing with:
+
+```css title="app/consent.css — with colorScheme: \"dark\""
+.cy-banner-wrap, .cy-dialog-overlay, .cy-widget { --cy-bg: #101828; }
+```
+
+The rest of this section applies when a `theme` **is** configured. So this does nothing if `theme.primaryColor` is set:
 
 ```css title="Ineffective override"
 :root { --cy-primary: rebeccapurple; } /* loses to the inline value */
@@ -64,9 +80,11 @@ Pick one mechanism per token. Prefer `theme` config wherever a key exists — it
 
 ### Scoping different values to different instances
 
-The same "an inline declaration beats an inherited one" rule above means a plain wrapper class — `.checkout { --cy-primary: red; }` — cannot scope one instance of a component differently from another, ever, regardless of selector cleverness. `useThemeVars` writes all twelve tokens inline on the SDK's own container inside an effect with deliberately no dependency array, so the values are inline on every render, whether or not you configured them; an inline declaration always beats an inherited `:root`/ancestor value, full stop.
+With **no `theme` configured**, a plain wrapper class scopes instances exactly as you would expect — `.checkout [data-cy-part="banner"] { --cy-primary: red; }` — because nothing is set inline to beat it.
 
-What does work is the same escape hatch as above, aimed at two different wrapper elements: an author `!important` rule beats a normal inline declaration, because the cascade sorts by importance before it considers origin.
+With a `theme` configured, it cannot, ever, regardless of selector cleverness. `useThemeVars` writes all twelve tokens inline on the SDK's own container inside an effect with deliberately no dependency array, so the values are inline on every render — not only the ones you configured; an inline declaration always beats an inherited `:root`/ancestor value, full stop.
+
+What does work in that case is the same escape hatch as above, aimed at two different wrapper elements: an author `!important` rule beats a normal inline declaration, because the cascade sorts by importance before it considers origin.
 
 ```css title="app/consent.css"
 /* Loaded after @cookieyes/react/styles.css */
@@ -140,7 +158,9 @@ The variable must be defined on an ancestor of the SDK's containers. Since they 
 
 ### First paint uses the stylesheet, not your config
 
-The `:root` defaults exist so a server-rendered banner paints correctly on the first frame with no JavaScript. Your `theme` values apply once `useThemeVars` runs after hydration. For default-ish themes nobody notices; for a dramatically different brand color there can be a brief flash of the default blue. Mirror the value in your own CSS if that matters:
+The `:root` defaults exist so a server-rendered banner paints correctly on the first frame with no JavaScript. **With no `theme` configured they are the whole mechanism** — the SDK computes nothing at hydration, so what the stylesheet paints is what you keep, and there is no flash to avoid.
+
+Your `theme` values, if you set any, apply once `useThemeVars` runs after hydration. For default-ish themes nobody notices; for a dramatically different brand color there can be a brief flash of the default blue. Mirror the value in your own CSS if that matters:
 
 ```css title="app/consent.css"
 :root { --cy-primary: #7c3aed; }
@@ -199,10 +219,13 @@ initCookieYes({
 ## Common mistakes
 
 **A `:root` override is ignored.**
-The same token is set in `theme`, and the inline value wins. Remove it from config.
+You configured a `theme`, so all twelve tokens are written inline and the inline value wins — even for tokens the `theme` did not name. Drop `theme` entirely and own the values in CSS, or move the one token into `theme`.
 
 **A normal CSS rule still loses.**
-The token is written inline on every render, and an inline declaration beats a normal author rule. Either stop setting the key in `theme` and own the value in CSS, or mark your rule `!important` — importance is weighed before origin, so an important author rule does win. Prefer the first; forcing leaves both mechanisms live.
+Same cause: with a `theme` configured the tokens are written inline on every render, and an inline declaration beats a normal author rule. Either stop configuring `theme` and own the values in CSS, or mark your rule `!important` — importance is weighed before origin, so an important author rule does win. Prefer the first; forcing leaves both mechanisms live.
+
+**A `:root` override is ignored for `--cy-bg`, `--cy-text`, `--cy-muted`, `--cy-border` or `--cy-widget-bg`, with no `theme` set.**
+You set an explicit `colorScheme`. The SDK's own stylesheet sets those on the container via `[data-cy-scheme]`, and a declaration on the element beats an inherited one. Aim your rule at the container instead of `:root`.
 
 **The brand color is unreadable in dark mode.**
 `primaryColor` does not change by scheme, even though five other tokens do. Override it per scheme in CSS.
