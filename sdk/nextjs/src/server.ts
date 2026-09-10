@@ -5,6 +5,13 @@ import {
 } from "@cookieyes/core";
 
 export { GoogleConsentMode } from "./google-consent-mode.js";
+export {
+  CookieYesStyles,
+  type CookieYesStylesProps,
+  CRITICAL_CSS,
+  CRITICAL_CSS_HASH,
+  DEFAULT_STYLES_HREF,
+} from "./styles.js";
 
 /**
  * Read a returning visitor's stored consent from the incoming request, in a

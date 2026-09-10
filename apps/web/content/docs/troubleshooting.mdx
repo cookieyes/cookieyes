@@ -234,7 +234,7 @@ The hardest category — no error, nothing in the console.
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| Banner renders as unstyled text | Stylesheet not imported | `import "@cookieyes/react/styles.css"` |
+| Banner renders as unstyled text | Stylesheet not imported, or imported from `@cookieyes/react` in a pnpm Next.js app where it cannot resolve | `import "@cookieyes/nextjs/styles.css"` (Next.js) or `import "@cookieyes/react/styles.css"` (React) |
 | Preferences dialog unstyled, banner fine | Only `critical.css` loaded | Load `styles.css` too |
 | Banner never appears | Already decided in this browser | Clear the cookie, or `reset()` |
 | Nothing renders anywhere, no error at all | `initCookieYes()` never ran, or ran outside `"use client"` | Confirm the module is imported and starts with `"use client"` — see [the rule that breaks most first setups](/docs/getting-started/configuration#the-rule-that-breaks-most-first-setups) |

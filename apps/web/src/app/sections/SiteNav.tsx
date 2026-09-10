@@ -258,6 +258,23 @@ export function SiteNav() {
               {"Docs"}
             </a>{" "}
             <a
+              href="/playground"
+              data-navlink="1"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
+                fontWeight: "500",
+                fontSize: "0.875rem",
+                lineHeight: "16px",
+                color: "var(--cy-fg)",
+                textDecoration: "none",
+                transition: "color 0.15s",
+              }}
+            >
+              {"Playground"}
+            </a>{" "}
+            <a
               href="https://github.com/cookieyes/cookieyes"
               data-navlink="1"
               style={{

@@ -192,7 +192,7 @@ You replaced a `cy-*` class that carried layout duties rather than adding to it.
 
 ## Across the SDK
 
-Identical for `@cookieyes/react` and `@cookieyes/nextjs` — the stylesheet is `@cookieyes/react/styles.css` in both. `@cookieyes/core` ships no CSS. If you rebuild the UI on [primitives](/docs/headless/overview), your part-based stylesheet keeps working, since primitives emit the same `data-cy-part` attributes.
+Identical for `@cookieyes/react` and `@cookieyes/nextjs` — the stylesheet is `@cookieyes/react/styles.css` in a React app and `@cookieyes/nextjs/styles.css` in a Next.js one. Under pnpm's strict `node_modules` layout an app that installed only `@cookieyes/nextjs` cannot resolve `@cookieyes/react`, so a Next.js app must import `@cookieyes/nextjs/styles.css` — the same sheet, re-exported from the package you actually installed. npm and Yarn Classic hoist `@cookieyes/react` and resolve either path, but the `nextjs` one is correct everywhere. `@cookieyes/core` ships no CSS. If you rebuild the UI on [primitives](/docs/headless/overview), your part-based stylesheet keeps working, since primitives emit the same `data-cy-part` attributes.
 
 ## See also
 

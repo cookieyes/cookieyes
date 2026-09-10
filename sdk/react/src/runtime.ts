@@ -43,6 +43,7 @@ import {
 } from "@cookieyes/core";
 import { warnOnUntestedReactVersion } from "./diagnostics/peer-version-warning.js";
 import { warnOnStyleCspViolations } from "./styles/csp-warning.js";
+import { loadThemeRuntime } from "./styles/load-theme-runtime.js";
 
 /**
  * @deprecated Use `"cookie-only"` instead — identical behavior, clearer name.
@@ -56,6 +57,25 @@ export type ColorSchemePref = "light" | "dark" | "system";
 /** True when a CCPA visitor's browser sends GPC and we're set to honour it. */
 function wantsGpcOptOut(regulation: Regulation, region: RegionConfig | undefined): boolean {
   return regulation === "CCPA" && (region?.honorGpc ?? true) && readGpc();
+}
+
+/**
+ * Switch any deferred SDK stylesheet — `<link rel="stylesheet" media="print"
+ * data-cy-full>` — to `media="all"`. The `print` media is how it was fetched
+ * without blocking first paint; by the time the runtime mounts, first paint is
+ * long past, so applying it costs nothing. If the sheet has not finished
+ * downloading yet, flipping `media` early is still correct: the browser applies
+ * it on arrival, and does not re-block rendering for a stylesheet that was not
+ * in the initial parse.
+ *
+ * SSR-safe and a no-op on any page that never rendered `<CookieYesStyles />`.
+ * @internal
+ */
+export function _activateDeferredStylesheets(): void {
+  if (typeof document === "undefined") return;
+  for (const link of document.querySelectorAll<HTMLLinkElement>("link[data-cy-full]")) {
+    if (link.media !== "all") link.media = "all";
+  }
 }
 
 type RuntimeConfig = {
@@ -420,6 +440,26 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   const language = createLanguageController(cfg.i18n, notify);
 
   const colorScheme = cfg.colorScheme ?? "system";
+
+  // A custom `theme` is the only configuration that still needs the token
+  // computation, and it now lives behind an `import()` (see
+  // `styles/load-theme-runtime.ts`). Start that fetch here, at mount, rather
+  // than leaving it to the banner's hydration effect: the two then overlap, so
+  // a themed consumer's brand colours land at the same moment they did when
+  // the module was in the main chunk. Deliberately not awaited — nothing on
+  // the render path depends on it, and the container carries the right colour
+  // scheme from the stylesheet in the meantime.
+  if (cfg.theme) void loadThemeRuntime();
+
+  // `<CookieYesStyles />` (the Next.js adapter's critical-CSS component) emits
+  // the full stylesheet as `<link media="print" data-cy-full>` so it is fetched
+  // without blocking first paint. Once we are running, nothing is left to
+  // block, so switch it on. Doing this here — from code that already ships —
+  // rather than with an inline `onload` handler is what keeps the page free of
+  // any inline script, so a strict `script-src` needs no exception for it. A
+  // page that never rendered the component has no such element and this is a
+  // no-op. Idempotent, so a re-mount is harmless.
+  _activateDeferredStylesheets();
 
   // Per-mount SSR snapshot: a fresh-visitor state (banner visible, dialogs
   // closed) carrying the *configured* regulation and the *resolved* taxonomy's

@@ -23,13 +23,20 @@
   "budgets": {
     "$comment": [
       "`initial` and `total` now carry different budgets, and the gap between them is",
-      "the on-demand integration-runner chunk. Before it was split out the two numbers",
-      "were identical, because nothing in either package was ever loaded on demand.",
+      "the code loaded on demand: core's integration runner, and — in the React layer —",
+      "the custom-theme runtime. Before either was split out the two numbers were",
+      "identical, because nothing in either package was ever loaded on demand.",
       "",
       "Keeping both is the point: a future change that merely defers more code will show",
       "`initial` falling while `total` holds, and a change that actually removes code",
       "will move both. Budgeting only `initial` would let the package grow without limit",
-      "as long as the growth was lazy."
+      "as long as the growth was lazy.",
+      "",
+      "The React layer's `total` budgets were raised by 0.35 KB when the theme runtime",
+      "was deferred, and that is the honest reading of the change: a second chunk costs",
+      "its own module wrapper, so `total` rises while `initial` falls 0.66 KB. The rise",
+      "is the price of the deferral, not unnoticed creep, which is why it is recorded",
+      "here in the same change rather than absorbed by headroom."
     ],
     "core": {
       "$comment": "@cookieyes/core via getOrCreateConsentRuntime(). Measured 7121 / 8782.",
@@ -37,30 +44,30 @@
       "total": 9166
     },
     "banner": {
-      "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 14713 / 16373.",
-      "initial": 15097,
-      "total": 16757
+      "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 14060 / 16749.",
+      "initial": 14444,
+      "total": 17133
     },
     "interface": {
-      "$comment": "@cookieyes/react mounting banner + preferences + recall. Measured 15273 / 16933.",
-      "initial": 15657,
-      "total": 17317
+      "$comment": "@cookieyes/react mounting banner + preferences + recall. Measured 14604 / 17296.",
+      "initial": 14988,
+      "total": 17680
     },
     "nextjs": {
       "$comment": [
         "@cookieyes/nextjs mounting banner + preferences, mirroring the leaderboard's",
-        "fair-cookieyes app. Measured 15284 / 16945 — within 12 bytes of the plain-React",
+        "fair-cookieyes app. Measured 14609 / 17296 — within 5 bytes of the plain-React",
         "fixture, which is the check that @cookieyes/scripts stays out of the client bundle."
       ],
-      "initial": 15668,
-      "total": 17329
+      "initial": 14993,
+      "total": 17680
     }
   },
   "targets": {
     "$comment": [
       "The agreed targets, restated on the measured basis: core under 8 KB and the",
       "interface under 16 KB of compressed initial download. Both are currently MET",
-      "(core 7585, interface 15776).",
+      "(core 7120, interface 14604).",
       "",
       "These replace the original <2 KB core / <8 KB interface goals, which were set",
       "against figures that turned out to be 2.9x and 1.5x optimistic and are below the",

@@ -86,7 +86,30 @@ Install `@cookieyes/nextjs`, not `@cookieyes/react`. It mirrors the entire `reac
 
 `critical.css` is a **supplement, never a replacement**. Every rule in it is byte-identical to the same rule in `styles.css` (a test enforces this), so the two can never disagree. But if you ship only `critical.css`, the preferences dialog is unstyled the moment a visitor opens it.
 
-Most apps do not need it: an app-root `import` normally puts `styles.css` in the critical path already.
+**Why you might want it.** An app-root `import` puts `styles.css` on the critical path — which sounds right, and is the problem. The browser cannot paint until the stylesheet arrives, and the stylesheet is a *second* round trip after the HTML. On a slow connection that round trip costs more than the whole SDK: on the Lighthouse Mobile profile, first paint moves from 468 ms to 224 ms and the banner is styled at 183 ms instead of 451 ms when the banner's rules travel inside the HTML instead. On fast desktop the difference is nil.
+
+**In Next.js this is two lines.** `@cookieyes/nextjs/server` exports `<CookieYesStyles />`, which inlines `critical.css` in `<head>` and loads the full sheet without blocking render, and `@cookieyes/nextjs/styles-route` serves that sheet so there is nothing to copy:
+
+```tsx title="app/layout.tsx"
+import { CookieYesStyles } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head><CookieYesStyles /></head>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+```ts title="app/cookieyes/styles.css/route.ts"
+export { GET } from "@cookieyes/nextjs/styles-route";
+```
+
+Then **remove** `import "@cookieyes/nextjs/styles.css"` — leaving it puts the sheet back on the critical path and cancels the gain.
+
+If you run a strict `Content-Security-Policy`, the inlined block needs one hash added to `style-src`; it is exported as `CRITICAL_CSS_HASH` and published with every release. See [CSP](/docs/styling/csp). Without a CSP there is nothing further to do.
 
 ### Prerequisites & framework support
 
@@ -153,7 +176,7 @@ export function CookieYesRoot() {
 ## Common mistakes
 
 **The banner renders as unstyled text.**
-You did not import the stylesheet. This fails silently — no error, no console warning, no build failure. Add `import "@cookieyes/react/styles.css";` at your app root. Note the import path is `@cookieyes/react/styles.css` even in a Next.js app that installed `@cookieyes/nextjs` — the sheet lives in the `react` package.
+You did not import the stylesheet. This fails silently — no error, no console warning, no build failure. Add the stylesheet import at your app root: `import "@cookieyes/react/styles.css";` in a React app, `import "@cookieyes/nextjs/styles.css";` in a Next.js one. Under pnpm's strict `node_modules` layout an app that installed only `@cookieyes/nextjs` cannot resolve `@cookieyes/react`, so a Next.js app must import `@cookieyes/nextjs/styles.css` — the same sheet, re-exported from the package you actually installed. npm and Yarn Classic hoist `@cookieyes/react` and resolve either path, but the `nextjs` one is correct everywhere.
 
 **Nothing renders — no banner, no error anywhere.**
 `initCookieYes()` has not run by the time a component rendered. This fails silently rather than loudly: every hook and every styled component reads the runtime through a non-throwing accessor, so a missing runtime never crashes the render or logs anything — it just produces nothing. The call must live in a module marked `"use client"` that is actually imported on the path to your components, and the components themselves must be in a `"use client"` file too. See [Quick start](/docs/getting-started/quick-start). You will only see a thrown error — `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.` — from code that calls `getCookieYes()` or `useConsentRuntime()` directly.
