@@ -11,7 +11,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/@cookieyes/core?label=%40cookieyes%2Fcore)](https://www.npmjs.com/package/@cookieyes/core)
 
-Open-source, developer-first cookie consent SDK. The same compliance engine that powers CookieYes for 1.5M+ websites — now installable via npm.
+Open-source cookie consent SDK for developers. Build consent banners and manage GDPR, CCPA, and privacy compliance.
 
 ## Packages
 
