@@ -478,6 +478,7 @@ class DesignMotion {
     this.startThemeCycle();
     this.startAcCycle();
     this.startToggleCycle();
+    this.bindHovers();
     if (!this.cyReduce()) {
       if (this._recIv) clearInterval(this._recIv);
       const seq = ["true", "true", "false", "true", "true"]; // analytics of the top visible row per tbFeed step (rows 5..1)
@@ -834,8 +835,69 @@ class DesignMotion {
     }
   }
 
+  /**
+   * Hovering a card drives its demo forward.
+   *
+   * The design binds this through onMouseEnter/onMouseLeave in its markup. Our sections are
+   * ported markup with no handlers, so the same behaviour is attached here instead — the
+   * advance functions, the per-card intervals and the replay rules are the design's own.
+   */
+  bindHovers() {
+    const ADVANCE = { 0: "_geoAdv", 1: "_stampAdv", 2: "_tgAdv", 3: "_themeAdv", 4: "_gateAdv", 5: "_acAdv" };
+    const PERIOD = { 0: 2500, 1: 2800, 2: 2000, 3: 3200, 4: 2600, 5: 2000 };
+    this._hoverBound = [];
+
+    const on = (el, type, fn) => {
+      el.addEventListener(type, fn);
+      this._hoverBound.push([el, type, fn]);
+    };
+
+    for (const card of this.root.querySelectorAll("[data-bento]")) {
+      const i = card.getAttribute("data-bento");
+      on(card, "mouseenter", () => {
+        if (this.cyReduce()) return;
+        const advance = this[ADVANCE[i]];
+        if (!advance) return;
+        if (card._hovIv) clearInterval(card._hovIv);
+        advance();
+        card._hovIv = setInterval(advance, PERIOD[i] || 2500);
+      });
+      on(card, "mouseleave", () => {
+        if (card._hovIv) {
+          clearInterval(card._hovIv);
+          card._hovIv = null;
+        }
+      });
+    }
+
+    // The record cards replay their drawing instead: the one-shot steps are restarted from
+    // the beginning, and the looping ones run only while the pointer is on the card.
+    for (const cell of this.root.querySelectorAll(".cy-ill-card")) {
+      on(cell, "mouseenter", () => {
+        if (this.cyReduce()) return;
+        const once = Array.from(cell.querySelectorAll("[data-anim]"));
+        for (const el of once) el.style.animation = "none";
+        void cell.offsetWidth; // Forces the restart; without it the browser keeps the old run.
+        for (const el of once) el.style.animation = el.getAttribute("data-anim");
+        for (const el of cell.querySelectorAll("[data-loop]")) {
+          el.style.animation = el.getAttribute("data-loop");
+        }
+      });
+      on(cell, "mouseleave", () => {
+        for (const el of cell.querySelectorAll("[data-loop]")) el.style.animation = "none";
+      });
+    }
+  }
+
   componentWillUnmount() {
     if (this._linesIv) clearInterval(this._linesIv);
+    if (this._hoverBound) {
+      for (const [el, type, fn] of this._hoverBound) el.removeEventListener(type, fn);
+      this._hoverBound = null;
+    }
+    for (const card of this.root.querySelectorAll("[data-bento]")) {
+      if (card._hovIv) clearInterval(card._hovIv);
+    }
     cancelAnimationFrame(this._raf);
     cancelAnimationFrame(this._globeRaf);
     if (this._flagEls) {
