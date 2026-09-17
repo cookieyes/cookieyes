@@ -1,5 +1,7 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "Hero".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+import sdkManifest from "../../../../../sdk/react/package.json";
+
 export function Hero() {
   return (
     <section
@@ -126,7 +128,10 @@ export function Hero() {
               color: "rgb(14, 70, 72)",
             }}
           >
-            {"cookieyes v1.1 with 17 consent-gated integrations"}
+            {/* Read from the package rather than typed here: the design's placeholder claimed a
+              version and an integration count that were both wrong, and any number written by
+              hand goes stale on the next release. */}
+            {`@cookieyes/react ${sdkManifest.version} is out`}
           </span>{" "}
           <svg
             width="12"

@@ -1453,7 +1453,7 @@ export function WhatItDoes() {
                   textWrap: "pretty",
                 }}
               >
-                {"Control when GA4, GTM, Meta Pixel, Mixpanel and 40+ integrations can run."}
+                {"Control when GA4, GTM, Meta Pixel and any of your integrations can run."}
               </span>{" "}
             </div>{" "}
             <div

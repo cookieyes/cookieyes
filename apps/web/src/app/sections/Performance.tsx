@@ -1009,29 +1009,6 @@ export function Performance() {
             </div>{" "}
           </div>{" "}
         </div>{" "}
-        <div
-          style={{
-            width: "100%",
-            border: "1px solid transparent",
-            padding: "var(--cy-space-12) var(--cy-space-16)",
-            boxSizing: "border-box",
-          }}
-        >
-          {" "}
-          <span
-            style={{
-              fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-              fontWeight: "400",
-              fontSize: "12px",
-              lineHeight: "16px",
-              color: "rgba(var(--cy-muted-rgb),0.4)",
-            }}
-          >
-            {
-              "Methodology: [placeholder] · Measured: [date TBC] · Figures are illustrative; replace with reproducible measurements."
-            }
-          </span>{" "}
-        </div>{" "}
       </div>{" "}
     </section>
   );
