@@ -171,18 +171,19 @@ describe("styles-parity", () => {
       expect(rule).toContain("background: transparent");
     });
 
-    it("D2: .cy-btn-cancel color is #858585", () => {
+    // The muted token meets WCAG in both colour schemes and tracks the scheme itself.
+    it("D2: .cy-btn-cancel color is the muted token", () => {
       const start = sheet.indexOf(".cy-btn-cancel {");
       const end = sheet.indexOf("}", start);
       const rule = sheet.slice(start, end);
-      expect(rule).toContain("color: #858585");
+      expect(rule).toContain("color: var(--cy-muted)");
     });
 
-    it("D2: .cy-btn-cancel border is 1px solid #dedfe0", () => {
+    it("D2: .cy-btn-cancel border is 1px solid var(--cy-muted)", () => {
       const start = sheet.indexOf(".cy-btn-cancel {");
       const end = sheet.indexOf("}", start);
       const rule = sheet.slice(start, end);
-      expect(rule).toContain("border: 1px solid #dedfe0");
+      expect(rule).toContain("border: 1px solid var(--cy-muted)");
     });
   });
 

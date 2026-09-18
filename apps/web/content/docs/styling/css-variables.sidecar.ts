@@ -150,8 +150,8 @@ export const hardcodedColorSidecarEntries: HardcodedColorSidecarEntry[] = [
   {
     selector: ".cy-toggle-track",
     property: "background",
-    value: "#d0d5d2",
-    line: 781,
+    value: "#8a8a8a",
+    line: 857,
     plainLanguageName: "the toggle switch's track in its off state",
     overrideSelector: '[data-cy-part="toggle"][data-cy-part][data-cy-state="off"] .cy-toggle-track',
     overrideNote:
@@ -189,28 +189,6 @@ export const hardcodedColorSidecarEntries: HardcodedColorSidecarEntry[] = [
     overrideSelector: '[data-cy-part="recall"][data-cy-part]::after',
     overrideNote:
       'Not variable-controlled. `[data-cy-part="recall"]::after` alone is (0,1,1), tying the SDK\'s own `.cy-widget::after` rule; repeating the attribute lifts it to (0,2,1), which wins outright. Keep this in sync with the tooltip background above — the arrow is a CSS triangle colour-matched to the tooltip.',
-    followUpCandidate: false,
-  },
-  {
-    selector: ".cy-btn-cancel",
-    property: "color",
-    value: "#858585",
-    line: 611,
-    plainLanguageName: "the CCPA opt-out dialog's Cancel button text",
-    overrideSelector: ".cy-btn-cancel.cy-btn-cancel",
-    overrideNote:
-      "Not variable-controlled, and this button carries no data-cy-part of its own. The SDK's own `.cy-btn-cancel` rule is (0,1,0); a plain `.cy-btn-cancel` override is also (0,1,0) and only ties, winning on source order alone. Repeating the class selector — a legal CSS specificity trick, not a hack — lifts your rule to (0,2,0), which wins outright regardless of import order.",
-    followUpCandidate: false,
-  },
-  {
-    selector: ".cy-btn-cancel",
-    property: "border",
-    value: "1px solid #dedfe0",
-    line: 612,
-    plainLanguageName: "the CCPA opt-out dialog's Cancel button border",
-    overrideSelector: ".cy-btn-cancel.cy-btn-cancel",
-    overrideNote:
-      "Not variable-controlled. Same button and same doubled-class technique as its text colour above — one rule can set both properties.",
     followUpCandidate: false,
   },
   {
@@ -306,17 +284,6 @@ export const hardcodedColorSidecarEntries: HardcodedColorSidecarEntry[] = [
     overrideSelector: ".cy-audit-table.cy-audit-table",
     overrideNote:
       "Not variable-controlled, and this element carries no data-cy-part. Repeating the class lifts the override from a tying (0,1,0) to a winning (0,2,0).",
-    followUpCandidate: false,
-  },
-  {
-    selector: ".cy-banner-close",
-    property: "color",
-    value: "#000",
-    line: 325,
-    plainLanguageName: "the banner's CCPA-only close icon",
-    overrideSelector: '[data-cy-part="banner"] [data-cy-part="close"][data-cy-part]',
-    overrideNote:
-      '`close` is a shared part name (also used by both dialogs), so this is scoped with the `banner` ancestor part rather than targeted bare — the same scoping the Part & state contract page recommends for every shared part. `[data-cy-part="banner"] [data-cy-part="close"]` alone is (0,2,0), already ahead of the SDK\'s own `.cy-banner-close` at (0,1,0); the attribute is still repeated for consistency with every other entry in this table: `[data-cy-part="banner"] [data-cy-part="close"][data-cy-part] { color: #4b5563; }`.',
     followUpCandidate: false,
   },
 ];
