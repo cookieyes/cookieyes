@@ -36,6 +36,28 @@
     --cy-widget-bg: #1f6fd1;
     --cy-on-widget-bg: #ffffff;
   }
+
+  /* Colours that need 4.5:1 on the dark surface. `--cy-primary` is the developer's  */
+  /* brand and is left alone; only its use as *text* is replaced here.               */
+  /*                                                                                 */
+  /* Keep these in this block: build-critical-css.mjs copies every block whose        */
+  /* selector matches, so a second block with this at-rule would be emitted twice.    */
+  /* The `:not()` guard must sit on the container itself — on a descendant it would   */
+  /* match through <html> and never hold. */
+  .cy-banner-wrap:not([data-cy-scheme="light"]) .cy-btn-outline,
+  .cy-dialog-overlay:not([data-cy-scheme="light"]) .cy-btn-outline {
+    color: var(--cy-text);
+    border-color: var(--cy-text);
+  }
+
+  /* Do Not Sell reads as a link, so it keeps the brand hue and is lightened instead. */
+  .cy-banner-wrap:not([data-cy-scheme="light"]) .cy-btn-do-not-sell {
+    color: color-mix(in srgb, var(--cy-primary) 55%, #ffffff);
+  }
+
+  .cy-dialog-overlay:not([data-cy-scheme="light"]) .cy-always-active {
+    color: #3fbf3f;
+  }
 }
 .cy-banner-wrap,
 .cy-dialog-overlay,
@@ -261,7 +283,8 @@
   align-items: center;
   justify-content: center;
   line-height: 0;
-  color: #000;
+  /* Same token as `.cy-dialog-close`: a fixed black is invisible on the dark banner. */
+  color: var(--cy-text);
 }
 .cy-banner-close:hover {
   opacity: 0.6;

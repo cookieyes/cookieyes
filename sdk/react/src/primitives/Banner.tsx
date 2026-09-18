@@ -23,6 +23,7 @@ type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
 type AnchorProps = ComponentPropsWithoutRef<"a">;
 type ParagraphProps = ComponentPropsWithoutRef<"p">;
+type HeadingProps = ComponentPropsWithoutRef<"h2">;
 
 /** Button props plus `asChild` — render your own element and we wire behaviour onto it. */
 type ActionProps = ButtonProps & { asChild?: boolean };
@@ -87,15 +88,16 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   return portalRoot ? createPortal(content, portalRoot) : content;
 });
 
-const Title = forwardRef<HTMLParagraphElement, ParagraphProps>(function BannerTitle(
+/** Titles the dialog the banner renders as; `Preferences.Title` and `OptOut.Title` match. */
+const Title = forwardRef<HTMLHeadingElement, HeadingProps>(function BannerTitle(
   { children, ...props },
   ref,
 ) {
   const t = useTranslations();
   return (
-    <p ref={ref} data-cy-part={CY_PART.banner.title} {...props}>
+    <h2 ref={ref} data-cy-part={CY_PART.banner.title} {...props}>
       {children ?? t.bannerTitle}
-    </p>
+    </h2>
   );
 });
 
@@ -269,7 +271,8 @@ const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function BannerBrand
       href="https://www.cookieyes.com"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={t.poweredBy}
+      // Neither the visible text nor the logo says the link opens a new tab.
+      aria-label={`${t.poweredBy} (${t.opensInNewTab})`}
       data-cy-part={CY_PART.banner.branding}
       {...props}
     >
