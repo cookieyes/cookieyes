@@ -33,6 +33,8 @@ export type TranslationMap = {
   ccpaDescription: string;
   accept: string;
   poweredBy: string;
+  /** Appended to the branding link's accessible name; that link opens a new tab. */
+  opensInNewTab: string;
   preferencesTitle: string;
   preferencesIntro: string;
   /** Shown in place of a toggle on a category marked `required: true`. */

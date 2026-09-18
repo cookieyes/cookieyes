@@ -1,6 +1,6 @@
 "use client";
 
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useId, useState } from "react";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useTranslations } from "../hooks/useTranslations.js";
@@ -35,6 +35,7 @@ export function CookieBanner({ className, style, classNames, styles }: CookieBan
 
   const reg = useRegulation();
   const t = useTranslations();
+  const titleId = useId();
   const isCCPA = reg === "CCPA";
   const visible = useBannerVisibility();
 
@@ -92,13 +93,14 @@ export function CookieBanner({ className, style, classNames, styles }: CookieBan
           data-cy-part={CY_PART.banner.root}
           role="dialog"
           aria-modal="false"
-          aria-live="polite"
-          aria-label={t.bannerTitle}
+          // Named by the visible title. No `aria-live`: the sr-only announcer above is
+          // the only live region, and two would announce the banner twice.
+          aria-labelledby={titleId}
         >
           {isCCPA && <Banner.Close {...part("close", "cy-banner-close")} />}
 
           <div className="cy-banner-text">
-            <Banner.Title {...part("title", "cy-banner-title")} />
+            <Banner.Title id={titleId} {...part("title", "cy-banner-title")} />
             <Banner.Description {...part("description", "cy-banner-description")} />
           </div>
 

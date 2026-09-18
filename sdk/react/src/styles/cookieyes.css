@@ -54,6 +54,28 @@
     --cy-widget-bg: #1f6fd1;
     --cy-on-widget-bg: #ffffff;
   }
+
+  /* Colours that need 4.5:1 on the dark surface. `--cy-primary` is the developer's  */
+  /* brand and is left alone; only its use as *text* is replaced here.               */
+  /*                                                                                 */
+  /* Keep these in this block: build-critical-css.mjs copies every block whose        */
+  /* selector matches, so a second block with this at-rule would be emitted twice.    */
+  /* The `:not()` guard must sit on the container itself — on a descendant it would   */
+  /* match through <html> and never hold. */
+  .cy-banner-wrap:not([data-cy-scheme="light"]) .cy-btn-outline,
+  .cy-dialog-overlay:not([data-cy-scheme="light"]) .cy-btn-outline {
+    color: var(--cy-text);
+    border-color: var(--cy-text);
+  }
+
+  /* Do Not Sell reads as a link, so it keeps the brand hue and is lightened instead. */
+  .cy-banner-wrap:not([data-cy-scheme="light"]) .cy-btn-do-not-sell {
+    color: color-mix(in srgb, var(--cy-primary) 55%, #ffffff);
+  }
+
+  .cy-dialog-overlay:not([data-cy-scheme="light"]) .cy-always-active {
+    color: #3fbf3f;
+  }
 }
 
 /* An explicit `colorScheme: "light" | "dark"` is the one case the media query  */
@@ -365,7 +387,8 @@
   align-items: center;
   justify-content: center;
   line-height: 0;
-  color: #000;
+  /* Same token as `.cy-dialog-close`: a fixed black is invisible on the dark banner. */
+  color: var(--cy-text);
 }
 .cy-banner-close:hover {
   opacity: 0.6;
@@ -649,10 +672,12 @@
 }
 
 /* ── Opt-out buttons (CCPA) ──────────────────────────────────────── */
+/* The muted token clears 4.5:1 for the label and 3:1 for the border in both colour  */
+/* schemes, and tracks the scheme itself, so no dark override is needed. */
 .cy-btn-cancel {
   background: transparent;
-  color: #858585;
-  border: 1px solid #dedfe0;
+  color: var(--cy-muted);
+  border: 1px solid var(--cy-muted);
 }
 .cy-btn-cancel:hover {
   opacity: 0.8;
@@ -822,10 +847,14 @@
   z-index: 1;
   cursor: pointer;
 }
+/* The off-state track is the switch's state indicator, so it needs 3:1 against both */
+/* the surface behind it and the white thumb on top of it (WCAG 1.4.11). Fixed, not  */
+/* a token: the thumb is always white, so the track cannot follow the colour scheme  */
+/* without losing contrast against it. */
 .cy-toggle-track {
   position: absolute;
   inset: 0;
-  background: #d0d5d2;
+  background: #8a8a8a;
   border-radius: 50px;
   transition: background 0.18s ease;
 }
@@ -1189,4 +1218,20 @@
 .cy-accordion-header-des img {
   min-height: 25px;
   min-width: 25px;
+}
+
+/* ── Dark-scheme corrections for an explicit colorScheme ──────────── */
+/* The media query above covers `colorScheme: "system"`; an explicit scheme writes   */
+/* `data-cy-scheme` on the container instead. Scoped to the container that carries   */
+/* the attribute, which also keeps these at the same specificity as their twins. */
+.cy-banner-wrap[data-cy-scheme="dark"] .cy-btn-outline,
+.cy-dialog-overlay[data-cy-scheme="dark"] .cy-btn-outline {
+  color: var(--cy-text);
+  border-color: var(--cy-text);
+}
+.cy-banner-wrap[data-cy-scheme="dark"] .cy-btn-do-not-sell {
+  color: color-mix(in srgb, var(--cy-primary) 55%, #ffffff);
+}
+.cy-dialog-overlay[data-cy-scheme="dark"] .cy-always-active {
+  color: #3fbf3f;
 }

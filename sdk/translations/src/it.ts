@@ -10,9 +10,10 @@ export const it: TranslationMap = {
   savePreferences: "Salva le mie preferenze",
   doNotSell: "Non vendere o condividere i miei dati personali",
   ccpaDescription:
-    'Questo sito Web oi suoi strumenti di terze parti elaborano i dati personali. Puoi disattivare la vendita delle tue informazioni personali facendo clic sul collegamento "Non vendere o condividere i miei dati personali".',
+    'Questo sito Web oi suoi strumenti di terze parti elaborano i dati personali. Puoi disattivare la vendita delle tue informazioni personali facendo clic sul pulsante "Non vendere o condividere i miei dati personali".',
   accept: "Accetta",
   poweredBy: "Con tecnologia di CookieYes",
+  opensInNewTab: "si apre in una nuova scheda",
   preferencesTitle: "Personalizza le preferenze di consenso",
   preferencesIntro:
     "Utilizziamo i cookie per aiutarti a navigare in maniera efficiente e a svolgere determinate funzioni. Troverai informazioni dettagliate su tutti i cookie sotto ogni categoria di consensi sottostanti.",
@@ -53,7 +54,7 @@ export const it: TranslationMap = {
       'Utilizziamo cookie di terze parti che ci aiutano ad analizzare come utilizzi questo sito web, memorizzare le tue preferenze e fornire i contenuti e gli annunci che sono rilevanti per te. Tuttavia, puoi disattivare questi cookie selezionando "Non vendere o condividere i miei dati personali" e facendo clic sul pulsante "Salva le mie preferenze". Una volta effettuato l\'opt-out, è possibile attivarli nuovamente in qualsiasi momento deselezionando "Non vendere o condividere i miei dati personali" e facendo clic sul pulsante "Salva le mie preferenze".',
     cancel: "Annulla",
     successText: "La tua preferenza di non partecipare è stata registrata e accettata.",
-    successCountdown: "Il banner si chiuderà automaticamente tra {seconds} s...",
+    successCountdown: "Il banner si chiuderà automaticamente tra {seconds} secondi...",
   },
   bannerCloseLabel: "Chiudi",
   preferencesCloseLabel: "Chiudi le preferenze",
