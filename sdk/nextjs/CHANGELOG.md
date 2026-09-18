@@ -1,5 +1,14 @@
 # @cookieyes/nextjs
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [ab8b82e]
+  - @cookieyes/core@0.7.0
+  - @cookieyes/react@0.9.0
+  - @cookieyes/scripts@0.2.2
+
 ## 0.6.0
 
 ### Minor Changes
