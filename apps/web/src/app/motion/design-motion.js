@@ -725,15 +725,18 @@ class DesignMotion {
       });
       const nums = perfSec.querySelectorAll(".cy-num");
       nums.forEach((n) => {
-        const target = parseFloat(n.getAttribute("data-count"));
+        const raw = n.getAttribute("data-count");
+        const target = parseFloat(raw);
         const suffix = n.getAttribute("data-suffix") || "";
         if (isNaN(target)) return;
+        // Count to as many decimals as the target has, or 19.8 KB lands on 20 KB.
+        const decimals = (raw.split(".")[1] || "").length;
         const dur = 1100,
           t0 = performance.now();
         const step = (now) => {
           const t = Math.min(1, (now - t0) / dur);
           const e = 1 - (1 - t) ** 3;
-          n.textContent = Math.round(target * e) + suffix;
+          n.textContent = (target * e).toFixed(decimals) + suffix;
           if (t < 1) requestAnimationFrame(step);
         };
         requestAnimationFrame(step);

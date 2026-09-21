@@ -83,27 +83,6 @@ const LAYERS = {
   interface: "Banner, preferences dialog and recall button together.",
 };
 
-/**
- * Competitor figures for the comparison chart.
- *
- * Every entry needs a `source` a reader can check. These three were on the page
- * as bare numbers with no citation anywhere in the repo, which makes the
- * "N× smaller" headline unreproducible in either direction — it could equally be
- * understating our lead. They are carried here, unchanged, with the citation
- * left explicitly empty so the gap is tracked rather than forgotten, and the
- * generator refuses to emit the comparison until they are filled in.
- *
- * A further caution: some competitors publish an npm package that is only a
- * loader, fetching the real SDK from their CDN at runtime. A bundle-delta
- * figure cannot see that payload, so comparing it against ours — which ships
- * everything in the build output — understates them by an unknown amount.
- */
-const COMPETITORS = [
-  { name: "c15t", kb: 34, source: null },
-  { name: "Cookiebot", kb: 190, source: null },
-  { name: "OneTrust", kb: 260, source: null },
-];
-
 const layers = {};
 for (const [key, blurb] of Object.entries(LAYERS)) {
   const delta = report.deltas?.[key];
@@ -124,8 +103,6 @@ for (const [key, blurb] of Object.entries(LAYERS)) {
   };
 }
 
-const uncited = COMPETITORS.filter((c) => !c.source).map((c) => c.name);
-
 const out = {
   $generatedBy: "apps/web/scripts/generate-bundle-size.mjs",
   $doNotEdit: "Regenerated on every web build from tools/size/size-report.json.",
@@ -135,17 +112,6 @@ const out = {
   methodUrl: "https://github.com/cookieyes/cookieyes/blob/main/tools/size/README.md",
   layers,
   stylesheet: report.stylesheet,
-  comparison: {
-    // Withheld rather than guessed. A ratio computed against a number with no
-    // provenance is a marketing claim wearing a decimal point, and the page
-    // renders nothing at all rather than something unsupportable.
-    publishable: uncited.length === 0,
-    uncited,
-    against: COMPETITORS.map((competitor) => ({
-      ...competitor,
-      ratio: Number((competitor.kb / (layers.banner.bytes / 1024)).toFixed(1)),
-    })),
-  },
 };
 
 mkdirSync(outDir, { recursive: true });
@@ -155,8 +121,3 @@ process.stdout.write(
   `[generate-bundle-size] core ${layers.core.label}, banner ${layers.banner.label}, ` +
     `interface ${layers.interface.label} (${out.basis})\n`,
 );
-if (uncited.length > 0) {
-  process.stdout.write(
-    `[generate-bundle-size] comparison withheld — no citation for: ${uncited.join(", ")}\n`,
-  );
-}

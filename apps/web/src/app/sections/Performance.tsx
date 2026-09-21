@@ -1,16 +1,26 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "01 Performance".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
 //
-// The one deliberate divergence: every bundle-size figure is read from the
-// measurement (src/lib/bundle-size.ts) rather than copied from the design file.
-// The design file said 9 KB; the banner measures 16.1 KB. A number that has to
-// stay true cannot live in a static port.
-import { BANNER_SIZE, barWidth, BUNDLE_SIZE, sizeComparison } from "@/lib/bundle-size";
+// The deliberate divergence: both charts are drawn from a published benchmark
+// run (src/lib/banner-bench.ts) rather than from the design file. The design's
+// competitor figures had no source anywhere, which is no basis for a comparison
+// on a public page.
+import type { ReactNode } from "react";
+import {
+  BENCH,
+  BYTES_NOT_MEASURED,
+  formatMs,
+  leadOver,
+  logWidth,
+  TIME_TO_BANNER,
+  TRANSFERRED,
+} from "@/lib/banner-bench";
 
 export function Performance() {
-  const banner = BUNDLE_SIZE.layers.banner;
-  const [figure, unit] = BANNER_SIZE.split(" ");
-  const vsOneTrust = sizeComparison("OneTrust");
+  const transferred = TRANSFERRED.map((row) => row.kb);
+  const timings = TIME_TO_BANNER.map((row) => row.ms);
+  const ourBytes = TRANSFERRED[0];
+  const ourTime = TIME_TO_BANNER[0];
   return (
     <section
       className="cy-band-light section--beveled-panel section--beveled-panel"
@@ -191,7 +201,7 @@ export function Performance() {
             >
               {"The whole point of frontend-native: it barely touches the page."}
               <br />
-              {"Weight and first-paint cost, below."}
+              {"Transferred bytes and time to banner, below."}
             </p>{" "}
           </div>{" "}
         </div>{" "}
@@ -205,811 +215,329 @@ export function Performance() {
           }}
         >
           {" "}
-          <div
-            style={{
-              borderRadius: "16px",
-              border: "1px solid rgb(227, 229, 241)",
-              background: "var(--cy-surface)",
-              padding: "var(--cy-space-32)",
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              gap: "var(--cy-space-24)",
-              minWidth: "0px",
-            }}
+          <ChartCard
+            figure={String(ourBytes.kb)}
+            unit="KB"
+            lead={`/ ${leadOver(transferred)}× lighter`}
+            caption="Transferred bytes · log scale"
+            icon={
+              <path
+                d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5M16 5.25l-8 4.5"
+                stroke="var(--cy-accent)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            }
+            footnote={`${BYTES_NOT_MEASURED.join(", ")} — bytes not measurable: their scripts are served cross-origin, which hides resource sizes from the collector.`}
           >
-            {" "}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "var(--cy-space-20)",
-              }}
-            >
-              {" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--cy-space-8)",
-                  minWidth: "0px",
-                }}
-              >
-                {" "}
-                <div
-                  style={{
-                    display: "flex",
-                    flexFlow: "wrap",
-                    alignItems: "baseline",
-                    gap: "var(--cy-space-12)",
-                  }}
-                >
-                  {" "}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "baseline",
-                      gap: "var(--cy-space-4)",
-                    }}
-                  >
-                    {" "}
-                    <span
-                      className="cy-num"
-                      data-count={figure}
-                      style={{
-                        fontFamily: "Poppins, Inter, sans-serif",
-                        fontWeight: "500",
-                        fontSize: "4rem",
-                        lineHeight: "0.85",
-                        letterSpacing: "-2px",
-                        color: "var(--cy-accent)",
-                      }}
-                    >
-                      {figure}
-                    </span>{" "}
-                    <span
-                      style={{
-                        fontFamily: "Poppins, Inter, sans-serif",
-                        fontWeight: "500",
-                        fontSize: "1.75rem",
-                        lineHeight: "1",
-                        letterSpacing: "-1px",
-                        color: "var(--cy-accent)",
-                      }}
-                    >
-                      {unit}
-                    </span>{" "}
-                  </div>{" "}
-                  {vsOneTrust ? (
-                    <span
-                      style={{
-                        fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
-                        fontWeight: "600",
-                        fontSize: "1.375rem",
-                        lineHeight: "26px",
-                        color: "var(--cy-fg)",
-                      }}
-                    >
-                      {`/ ${vsOneTrust.ratio}× smaller`}
-                    </span>
-                  ) : null}{" "}
-                </div>{" "}
-                <span
-                  style={{
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "500",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    letterSpacing: "1.2px",
-                    textTransform: "uppercase",
-                    color: "rgba(var(--cy-muted-rgb),0.6)",
-                  }}
-                >
-                  {"Bundle size, gzip · log scale"}
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "13px",
-                  background: "rgba(var(--cy-accent-rgb),0.09)",
-                  flexShrink: "0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {" "}
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  {" "}
-                  <path
-                    d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5M16 5.25l-8 4.5"
-                    stroke="var(--cy-accent)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />{" "}
-                </svg>{" "}
-              </div>{" "}
-            </div>{" "}
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--cy-space-16)" }}>
-              {" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "600",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-fg)",
-                  }}
-                >
-                  {"cookieyes"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: barWidth(banner.kb),
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "var(--cy-accent)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count={figure}
-                    data-suffix={` ${unit}`}
-                    style={{ fontWeight: "600", color: "var(--cy-accent)" }}
-                  >
-                    {BANNER_SIZE}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-muted)",
-                  }}
-                >
-                  {"c15t"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: "34%",
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "rgba(var(--cy-accent-rgb),0.32)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count="34"
-                    data-suffix=" KB"
-                    style={{ fontWeight: "600", color: "var(--cy-fg)" }}
-                  >
-                    {"34 KB"}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-muted)",
-                  }}
-                >
-                  {"Cookiebot"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: "59%",
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "rgba(var(--cy-accent-rgb),0.32)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count="190"
-                    data-suffix=" KB"
-                    style={{ fontWeight: "600", color: "var(--cy-fg)" }}
-                  >
-                    {"190 KB"}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-muted)",
-                  }}
-                >
-                  {"OneTrust"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: "64%",
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "rgba(var(--cy-accent-rgb),0.32)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.3s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count="260"
-                    data-suffix=" KB"
-                    style={{ fontWeight: "600", color: "var(--cy-fg)" }}
-                  >
-                    {"260 KB"}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-            </div>{" "}
-          </div>{" "}
-          <div
-            style={{
-              borderRadius: "16px",
-              border: "1px solid rgb(227, 229, 241)",
-              background: "var(--cy-surface)",
-              padding: "var(--cy-space-32)",
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              gap: "var(--cy-space-24)",
-              minWidth: "0px",
-            }}
+            {TRANSFERRED.map((row, index) => (
+              <BarRow
+                key={row.label}
+                label={row.label}
+                value={`${row.kb} KB`}
+                count={String(row.kb)}
+                suffix=" KB"
+                width={logWidth(row.kb, transferred)}
+                delay={`${index * 0.1}s`}
+                ours={row.ours}
+              />
+            ))}
+          </ChartCard>{" "}
+          <ChartCard
+            figure={String(ourTime.ms)}
+            unit="ms"
+            lead={`/ ${leadOver(timings)}× faster`}
+            caption="Time to banner · log scale"
+            icon={
+              <>
+                <path
+                  d="M5.636 19.364a9 9 0 1 1 12.728 0"
+                  stroke="var(--cy-accent)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+                <path d="M16 9l-4 4" stroke="var(--cy-accent)" strokeWidth="2" strokeLinecap="round" />
+              </>
+            }
           >
-            {" "}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "var(--cy-space-20)",
-              }}
-            >
-              {" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "var(--cy-space-8)",
-                  minWidth: "0px",
-                }}
-              >
-                {" "}
-                <div
-                  style={{
-                    display: "flex",
-                    flexFlow: "wrap",
-                    alignItems: "baseline",
-                    gap: "var(--cy-space-12)",
-                  }}
-                >
-                  {" "}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "baseline",
-                      gap: "var(--cy-space-4)",
-                    }}
-                  >
-                    {" "}
-                    <span
-                      className="cy-num"
-                      data-count="6"
-                      style={{
-                        fontFamily: "Poppins, Inter, sans-serif",
-                        fontWeight: "500",
-                        fontSize: "4rem",
-                        lineHeight: "0.85",
-                        letterSpacing: "-2px",
-                        color: "var(--cy-accent)",
-                      }}
-                    >
-                      {"6"}
-                    </span>{" "}
-                    <span
-                      style={{
-                        fontFamily: "Poppins, Inter, sans-serif",
-                        fontWeight: "500",
-                        fontSize: "1.75rem",
-                        lineHeight: "1",
-                        letterSpacing: "-1px",
-                        color: "var(--cy-accent)",
-                      }}
-                    >
-                      {"ms"}
-                    </span>{" "}
-                  </div>{" "}
-                  <span
-                    style={{
-                      fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
-                      fontWeight: "600",
-                      fontSize: "1.375rem",
-                      lineHeight: "26px",
-                      color: "var(--cy-fg)",
-                    }}
-                  >
-                    {"/ 53× faster"}
-                  </span>{" "}
-                </div>{" "}
-                <span
-                  style={{
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "500",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    letterSpacing: "1.2px",
-                    textTransform: "uppercase",
-                    color: "rgba(var(--cy-muted-rgb),0.6)",
-                  }}
-                >
-                  {"First-paint impact · log scale"}
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  width: "48px",
-                  height: "48px",
-                  borderRadius: "13px",
-                  background: "rgba(var(--cy-accent-rgb),0.09)",
-                  flexShrink: "0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {" "}
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  {" "}
-                  <path
-                    d="M5.636 19.364a9 9 0 1 1 12.728 0"
-                    stroke="var(--cy-accent)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />{" "}
-                  <path
-                    d="M16 9l-4 4"
-                    stroke="var(--cy-accent)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />{" "}
-                </svg>{" "}
-              </div>{" "}
-            </div>{" "}
-            <div style={{ display: "flex", flexDirection: "column", gap: "var(--cy-space-16)" }}>
-              {" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "600",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-fg)",
-                  }}
-                >
-                  {"cookieyes"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: "11%",
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "var(--cy-accent)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count="6"
-                    data-suffix=" ms"
-                    style={{ fontWeight: "600", color: "var(--cy-accent)" }}
-                  >
-                    {"6 ms"}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-muted)",
-                  }}
-                >
-                  {"c15t"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: "36%",
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "rgba(var(--cy-accent-rgb),0.32)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count="38"
-                    data-suffix=" ms"
-                    style={{ fontWeight: "600", color: "var(--cy-fg)" }}
-                  >
-                    {"38 ms"}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-muted)",
-                  }}
-                >
-                  {"Cookiebot"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: "58%",
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "rgba(var(--cy-accent-rgb),0.32)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.2s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count="210"
-                    data-suffix=" ms"
-                    style={{ fontWeight: "600", color: "var(--cy-fg)" }}
-                  >
-                    {"210 ms"}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "var(--cy-space-12)",
-                  alignItems: "center",
-                }}
-              >
-                {" "}
-                <span
-                  style={{
-                    width: "76px",
-                    flexShrink: "0",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontWeight: "400",
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                    color: "var(--cy-muted)",
-                  }}
-                >
-                  {"OneTrust"}
-                </span>{" "}
-                <div
-                  style={{
-                    flex: "1 1 0%",
-                    minWidth: "0px",
-                    height: "14px",
-                    borderRadius: "4px",
-                    background: "var(--cy-track)",
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    className="cy-bar"
-                    style={{
-                      width: "64%",
-                      height: "100%",
-                      borderRadius: "4px",
-                      background: "rgba(var(--cy-accent-rgb),0.32)",
-                      transformOrigin: "left center",
-                      animation:
-                        "0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.3s 1 normal both running cyGrow",
-                    }}
-                  />
-                </div>{" "}
-                <span
-                  style={{
-                    width: "60px",
-                    flexShrink: "0",
-                    textAlign: "right",
-                    fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                    fontSize: "12px",
-                    lineHeight: "16px",
-                  }}
-                >
-                  <span
-                    className="cy-num"
-                    data-count="320"
-                    data-suffix=" ms"
-                    style={{ fontWeight: "600", color: "var(--cy-fg)" }}
-                  >
-                    {"320 ms"}
-                  </span>
-                </span>{" "}
-              </div>{" "}
-            </div>{" "}
-          </div>{" "}
+            {TIME_TO_BANNER.map((row, index) => {
+              const { count, suffix } = formatMs(row.ms);
+              return (
+                <BarRow
+                  key={row.label}
+                  label={row.label}
+                  value={`${count}${suffix}`}
+                  count={count}
+                  suffix={suffix}
+                  width={logWidth(row.ms, timings)}
+                  delay={`${index * 0.1}s`}
+                  ours={row.ours}
+                />
+              );
+            })}
+          </ChartCard>{" "}
         </div>{" "}
+        <p
+          style={{
+            margin: "0px",
+            fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
+            fontSize: "12px",
+            lineHeight: "18px",
+            color: "rgba(var(--cy-muted-rgb),0.75)",
+          }}
+        >
+          {`Measured by Cookiebannerbench on ${BENCH.runDate} — ${BENCH.condition}, ${BENCH.measured}. `}
+          <a href={BENCH.runUrl} style={{ color: "var(--cy-accent)" }}>
+            {"See the run"}
+          </a>
+        </p>{" "}
       </div>{" "}
     </section>
+  );
+}
+
+/**
+ * A chart card: the headline figure, the metric's name, and the bars passed as children.
+ * Both charts on this section are the same card with different contents.
+ */
+function ChartCard({
+  figure,
+  unit,
+  lead,
+  caption,
+  icon,
+  footnote,
+  children,
+}: {
+  figure: string;
+  unit: string;
+  lead: string;
+  caption: string;
+  icon: ReactNode;
+  footnote?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: "16px",
+        border: "1px solid rgb(227, 229, 241)",
+        background: "var(--cy-surface)",
+        padding: "var(--cy-space-32)",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: "var(--cy-space-24)",
+        minWidth: "0px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "var(--cy-space-20)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--cy-space-8)",
+            minWidth: "0px",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexFlow: "wrap",
+              alignItems: "baseline",
+              gap: "var(--cy-space-12)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "baseline",
+                gap: "var(--cy-space-4)",
+              }}
+            >
+              <span
+                className="cy-num"
+                data-count={figure}
+                style={{
+                  fontFamily: "Poppins, Inter, sans-serif",
+                  fontWeight: "500",
+                  fontSize: "4rem",
+                  lineHeight: "0.85",
+                  letterSpacing: "-2px",
+                  color: "var(--cy-accent)",
+                }}
+              >
+                {figure}
+              </span>{" "}
+              <span
+                style={{
+                  fontFamily: "Poppins, Inter, sans-serif",
+                  fontWeight: "500",
+                  fontSize: "1.75rem",
+                  lineHeight: "1",
+                  letterSpacing: "-1px",
+                  color: "var(--cy-accent)",
+                }}
+              >
+                {unit}
+              </span>
+            </div>{" "}
+            <span
+              style={{
+                fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
+                fontWeight: "600",
+                fontSize: "1.375rem",
+                lineHeight: "26px",
+                color: "var(--cy-fg)",
+              }}
+            >
+              {lead}
+            </span>
+          </div>{" "}
+          <span
+            style={{
+              fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
+              fontWeight: "500",
+              fontSize: "12px",
+              lineHeight: "16px",
+              letterSpacing: "1.2px",
+              textTransform: "uppercase",
+              color: "rgba(var(--cy-muted-rgb),0.6)",
+            }}
+          >
+            {caption}
+          </span>
+        </div>{" "}
+        <div
+          style={{
+            width: "48px",
+            height: "48px",
+            borderRadius: "13px",
+            background: "rgba(var(--cy-accent-rgb),0.09)",
+            flexShrink: "0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            {icon}
+          </svg>
+        </div>
+      </div>{" "}
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--cy-space-16)" }}>
+        {children}
+      </div>
+      {footnote ? (
+        <p
+          style={{
+            margin: "0px",
+            fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
+            fontSize: "11px",
+            lineHeight: "16px",
+            color: "rgba(var(--cy-muted-rgb),0.7)",
+          }}
+        >
+          {footnote}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** One labelled bar. `ours` is the row for CookieYes, which the design draws in full accent. */
+function BarRow({
+  label,
+  value,
+  count,
+  suffix,
+  width,
+  delay,
+  ours,
+}: {
+  label: string;
+  value: string;
+  count: string;
+  suffix: string;
+  width: string;
+  delay: string;
+  ours?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        gap: "var(--cy-space-12)",
+        alignItems: "center",
+      }}
+    >
+      <span
+        style={{
+          width: "76px",
+          flexShrink: "0",
+          fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
+          fontWeight: ours ? "600" : "400",
+          fontSize: "12px",
+          lineHeight: "16px",
+          color: ours ? "var(--cy-fg)" : "var(--cy-muted)",
+        }}
+      >
+        {label}
+      </span>{" "}
+      <div
+        style={{
+          flex: "1 1 0%",
+          minWidth: "0px",
+          height: "14px",
+          borderRadius: "4px",
+          background: "var(--cy-track)",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          className="cy-bar"
+          style={{
+            width,
+            height: "100%",
+            borderRadius: "4px",
+            background: ours ? "var(--cy-accent)" : "rgba(var(--cy-accent-rgb),0.32)",
+            transformOrigin: "left center",
+            animation: `0.9s cubic-bezier(0.22, 1, 0.36, 1) ${delay} 1 normal both running cyGrow`,
+          }}
+        />
+      </div>{" "}
+      <span
+        style={{
+          width: "60px",
+          flexShrink: "0",
+          textAlign: "right",
+          fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
+          fontSize: "12px",
+          lineHeight: "16px",
+        }}
+      >
+        <span
+          className="cy-num"
+          data-count={count}
+          data-suffix={suffix}
+          style={{ fontWeight: "600", color: ours ? "var(--cy-accent)" : "var(--cy-fg)" }}
+        >
+          {value}
+        </span>
+      </span>
+    </div>
   );
 }
