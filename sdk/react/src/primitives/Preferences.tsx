@@ -7,6 +7,7 @@ import {
   forwardRef,
   type ReactNode,
   useContext,
+  useId,
   useRef,
 } from "react";
 import { CookieYesLogo } from "../components/icons.js";
@@ -33,6 +34,8 @@ type HeadingProps = ComponentPropsWithoutRef<"h2">;
 
 type PreferencesContextValue = {
   containerRef: React.RefObject<HTMLDivElement | null>;
+  /** Shared so the dialog can be named by its own visible heading. */
+  titleId: string;
 };
 
 const PreferencesContext = createContext<PreferencesContextValue | null>(null);
@@ -52,8 +55,8 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
     const open = usePreferencesOpen();
     const { hidePreferences } = useConsentActions();
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const titleId = useId();
     const { theme, colorScheme } = useThemeConfig();
-    const t = useTranslations();
 
     useEscapeKey(open, hidePreferences);
     useFocusTrap(open, containerRef);
@@ -63,7 +66,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
     if (!open) return null;
 
     return (
-      <PreferencesContext.Provider value={{ containerRef }}>
+      <PreferencesContext.Provider value={{ containerRef, titleId }}>
         <div
           ref={(node) => {
             containerRef.current = node;
@@ -72,7 +75,8 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
           }}
           role="dialog"
           aria-modal="true"
-          aria-label={t.preferencesDialogLabel}
+          // Named by the heading the visitor can see, so the spoken and printed names match.
+          aria-labelledby={titleId}
           tabIndex={-1}
           data-cy-part={CY_PART.dialog.overlay}
           {...props}
@@ -88,9 +92,10 @@ const Title = forwardRef<HTMLHeadingElement, HeadingProps>(function PreferencesT
   { children, ...props },
   ref,
 ) {
+  const { titleId } = usePreferencesContext();
   const t = useTranslations();
   return (
-    <h2 ref={ref} data-cy-part={CY_PART.dialog.title} {...props}>
+    <h2 id={titleId} ref={ref} data-cy-part={CY_PART.dialog.title} {...props}>
       {children ?? t.preferencesTitle}
     </h2>
   );
@@ -318,7 +323,8 @@ const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function Preferences
       href="https://www.cookieyes.com"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={t.poweredBy}
+      // Neither the visible text nor the logo says the link opens a new tab.
+      aria-label={`${t.poweredBy} (${t.opensInNewTab})`}
       data-cy-part={CY_PART.dialog.branding}
       {...props}
     >

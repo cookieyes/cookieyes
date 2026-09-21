@@ -48,24 +48,33 @@ describe("accessible labels are translatable", () => {
     expect(document.body.textContent).not.toContain("Always Active");
   });
 
-  it("takes the preferences dialog's accessible name from translations", () => {
+  // The dialog is named by its own visible heading, so the accessible name follows it.
+  it("takes the preferences dialog's accessible name from its visible heading", () => {
     initCookieYes({
       mode: "cookie-only",
-      i18n: { messages: { de: { preferencesDialogLabel: "Cookie-Einstellungen" } } },
+      i18n: {
+        messages: { de: { preferencesTitle: "Einstellungen für die Zustimmung anpassen" } },
+      },
     });
     act(() => getCookieYes().manager.showPreferences());
     render(<CookiePreferences />);
 
-    const dialog = document.querySelector('[role="dialog"]');
-    expect(dialog?.getAttribute("aria-label")).toBe("Cookie preferences");
+    const nameOfDialog = () => {
+      const dialog = document.querySelector('[role="dialog"]');
+      const id = dialog?.getAttribute("aria-labelledby");
+      expect(id, "dialog should be labelled by its heading").toBeTruthy();
+      const heading = id ? document.getElementById(id) : null;
+      expect(heading?.tagName, "the label should be the visible heading").toBe("H2");
+      return heading?.textContent;
+    };
+
+    expect(nameOfDialog()).toBe("Customise Consent Preferences");
 
     act(() => {
       void getCookieYes().setLanguage("de");
     });
 
-    expect(document.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe(
-      "Cookie-Einstellungen",
-    );
+    expect(nameOfDialog()).toBe("Einstellungen für die Zustimmung anpassen");
   });
 
   it("takes the recall button's accessible name and tooltip from translations", () => {

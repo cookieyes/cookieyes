@@ -67,7 +67,7 @@ const publicOutFile = join(publicOutDir, "cookieyes.tokens.json");
 const sidecarPath = join(webRoot, "content", "docs", "styling", "css-variables.sidecar.ts");
 
 const EXPECTED_TOKEN_COUNT = 12;
-const EXPECTED_HARDCODED_COUNT = 17;
+const EXPECTED_HARDCODED_COUNT = 14;
 /** Plausibility floors — see the module doc comment above. */
 const MIN_CONSUMER_ENTRIES = 45;
 const MIN_HARDCODED_ENTRIES = 10;

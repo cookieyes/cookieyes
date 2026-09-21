@@ -10,9 +10,10 @@ export const de: TranslationMap = {
   savePreferences: "Speichern Sie meine Einstellungen",
   doNotSell: "Verkaufen oder teilen Sie meine persönlichen Daten nicht",
   ccpaDescription:
-    'Diese Website oder ihre Tools von Drittanbietern verarbeiten personenbezogene Daten. Sie können den Verkauf Ihrer persönlichen Daten abbestellen, indem Sie auf den Link "Verkaufen oder teilen Sie meine persönlichen Daten nicht" klicken.',
+    'Diese Website oder ihre Tools von Drittanbietern verarbeiten personenbezogene Daten. Sie können den Verkauf Ihrer persönlichen Daten abbestellen, indem Sie auf die Schaltfläche "Verkaufen oder teilen Sie meine persönlichen Daten nicht" klicken.',
   accept: "Akzeptieren",
   poweredBy: "Bereitgestellt von CookieYes",
+  opensInNewTab: "wird in einem neuen Tab geöffnet",
   preferencesTitle: "Einstellungen für die Zustimmung anpassen",
   preferencesIntro:
     "Wir verwenden Cookies, damit Sie effizient navigieren und bestimmte Funktionen ausführen können. Detaillierte Informationen zu allen Cookies finden Sie unten unter jeder Einwilligungskategorie.",
@@ -53,7 +54,7 @@ export const de: TranslationMap = {
       "Wir verwenden Cookies von Drittanbietern, mit deren Hilfe wir analysieren können, wie Sie diese Website nutzen, Ihre Präferenzen speichern und die für Sie relevanten Inhalte und Anzeigen bereitstellen. Sie können diese Cookies jedoch ablehnen, indem Sie „Verkaufen oder teilen Sie meine persönlichen Daten nicht“ aktivieren und auf die Schaltfläche „Speichern Sie meine Einstellungen“ klicken. Nachdem Sie sich abgemeldet haben, können Sie sich jederzeit wieder anmelden, indem Sie das Kontrollkästchen „Verkaufen oder teilen Sie meine persönlichen Daten nicht“ deaktivieren und auf die Schaltfläche „Speichern Sie meine Einstellungen“ klicken.",
     cancel: "Stornieren",
     successText: "Ihre Abmeldung wurde gespeichert und wird berücksichtigt.",
-    successCountdown: "Das Banner schließt sich in {seconds} s automatisch.",
+    successCountdown: "Das Banner schließt sich in {seconds} Sekunden automatisch.",
   },
   bannerCloseLabel: "Schließen",
   preferencesCloseLabel: "Einstellungen schließen",

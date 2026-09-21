@@ -10,9 +10,10 @@ export const fr: TranslationMap = {
   savePreferences: "Enregistrer mes préférences",
   doNotSell: "Ne pas vendre ou partager mes informations personnelles",
   ccpaDescription:
-    "Ce site Web ou ses outils tiers traitent des données personnelles. Vous pouvez refuser la vente de vos informations personnelles en cliquant sur le lien «Ne pas vendre ou partager mes informations personnelles».",
+    "Ce site Web ou ses outils tiers traitent des données personnelles. Vous pouvez refuser la vente de vos informations personnelles en cliquant sur le bouton «Ne pas vendre ou partager mes informations personnelles».",
   accept: "Accepter",
   poweredBy: "Propulsé par CookieYes",
+  opensInNewTab: "s'ouvre dans un nouvel onglet",
   preferencesTitle: "Personnaliser les préférences en matière de consentement",
   preferencesIntro:
     "Nous utilisons des cookies pour vous aider à naviguer efficacement et à exécuter certaines fonctionnalités. Vous trouverez des informations détaillées sur tous les cookies sous chaque catégorie de consentement ci-dessous.",
@@ -53,7 +54,7 @@ export const fr: TranslationMap = {
       "Nous utilisons des cookies tiers qui nous aident à analyser la façon dont vous utilisez ce site Web, à enregistrer vos préférences et à vous fournir le contenu et les publicités qui vous sont utiles. Toutefois, vous pouvez refuser ces cookies en cochant la case « Ne pas vendre ou partager mes informations personnelles » et en cliquant sur le bouton « Enregistrer mes préférences ». Une fois que vous avez choisi de vous désinscrire, vous pouvez le faire à nouveau à tout moment en décochant la case « Ne pas vendre ou partager mes informations personnelles » et en cliquant sur le bouton « Enregistrer mes préférences ».",
     cancel: "Annuler",
     successText: "Votre choix de désinscription a été enregistré et pris en compte.",
-    successCountdown: "La bannière se ferme automatiquement dans {seconds} s...",
+    successCountdown: "La bannière se ferme automatiquement dans {seconds} secondes...",
   },
   bannerCloseLabel: "Fermer",
   preferencesCloseLabel: "Fermer les préférences",

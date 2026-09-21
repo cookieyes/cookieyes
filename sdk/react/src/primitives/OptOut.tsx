@@ -7,6 +7,7 @@ import {
   type ReactNode,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -40,6 +41,8 @@ type OptOutContextValue = {
   saved: boolean;
   setSaved: (v: boolean) => void;
   secondsLeft: number;
+  /** Shared so the dialog can be named by its own visible heading. */
+  titleId: string;
 };
 
 const OptOutContext = createContext<OptOutContextValue | null>(null);
@@ -60,12 +63,12 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   const snapshot = useConsent();
   const { hideOptOut } = useConsentActions();
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
   const isCurrentlyOptedOut = snapshot.categories.analytics !== true;
   const [optOut, setOptOut] = useState(isCurrentlyOptedOut);
   const [saved, setSaved] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
   const { theme, colorScheme } = useThemeConfig();
-  const t = useTranslations();
 
   useEscapeKey(open, hideOptOut);
   useFocusTrap(open, containerRef);
@@ -100,7 +103,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   if (!open) return null;
 
   return (
-    <OptOutContext.Provider value={{ optOut, setOptOut, saved, setSaved, secondsLeft }}>
+    <OptOutContext.Provider value={{ optOut, setOptOut, saved, setSaved, secondsLeft, titleId }}>
       <div
         ref={(node) => {
           containerRef.current = node;
@@ -109,7 +112,8 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
         }}
         role="dialog"
         aria-modal="true"
-        aria-label={t.optOutDialogLabel}
+        // Named by the heading the visitor can see, so the spoken and printed names match.
+        aria-labelledby={titleId}
         tabIndex={-1}
         data-cy-part={CY_PART.optOut.root}
         {...props}
@@ -124,9 +128,10 @@ const Title = forwardRef<HTMLHeadingElement, HeadingProps>(function OptOutTitle(
   { children, ...props },
   ref,
 ) {
+  const { titleId } = useOptOutContext();
   const t = useTranslations();
   return (
-    <h2 ref={ref} data-cy-part={CY_PART.optOut.title} {...props}>
+    <h2 id={titleId} ref={ref} data-cy-part={CY_PART.optOut.title} {...props}>
       {children ?? t.optOut.title}
     </h2>
   );
@@ -310,7 +315,10 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
           </div>
           <div className="cy-optout-success-text">{t.optOut.successText}</div>
         </div>
-        <div className="cy-optout-success-subtext-wrapper">
+        {/* Visible, but outside the announced content: `role="status"` re-announces on
+            every change, and this ticks once a second. The confirmation above is what
+            gets announced, once. */}
+        <div className="cy-optout-success-subtext-wrapper" aria-hidden="true">
           <p className="cy-optout-success-subtext">
             {countdown[0]}
             <span className="cy-optout-countdown">{secondsLeft}</span>
@@ -333,7 +341,8 @@ const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function OptOutBrand
       href="https://www.cookieyes.com"
       target="_blank"
       rel="noopener noreferrer"
-      aria-label={t.poweredBy}
+      // Neither the visible text nor the logo says the link opens a new tab.
+      aria-label={`${t.poweredBy} (${t.opensInNewTab})`}
       {...props}
     >
       {children ?? (
