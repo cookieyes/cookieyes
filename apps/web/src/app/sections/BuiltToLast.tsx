@@ -1,9 +1,11 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "05 Built to last".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
 //
-// The one deliberate divergence: the bundle-size figure is read from the
-// measurement (src/lib/bundle-size.ts) rather than copied from the design file.
+// The deliberate divergences: the bundle size is read from the measurement
+// (src/lib/bundle-size.ts) and the version from the SDK's manifest, rather than
+// copied from the design file.
 import { BANNER_SIZE } from "@/lib/bundle-size";
+import sdkManifest from "../../../../../sdk/react/package.json";
 
 export function BuiltToLast() {
   return (
@@ -361,7 +363,7 @@ export function BuiltToLast() {
                     color: "var(--cy-const)",
                   }}
                 >
-                  {"v1.0.0"}
+                  {`v${sdkManifest.version}`}
                 </span>
                 <span
                   style={{
@@ -553,7 +555,7 @@ export function BuiltToLast() {
                   color: "rgba(var(--cy-muted-rgb),0.6)",
                 }}
               >
-                <span>{"2018 · first commit"}</span>
+                <span>{"2026 · first commit"}</span>
                 <span style={{ color: "var(--cy-accent-dim)" }}>{"1.5M sites today"}</span>
               </div>{" "}
             </div>{" "}

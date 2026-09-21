@@ -1,5 +1,16 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "04 You own the record".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+//
+// The deliberate divergences: the bundle size is read from the measurement
+// (src/lib/bundle-size.ts), and the package, repository and git figures name this
+// repository rather than the design file's placeholders.
+import { BANNER_SIZE } from "@/lib/bundle-size";
+
+// Counted with `git rev-list --count HEAD` and `git shortlog -sn`. CI checks out shallow,
+// so these cannot be generated at build time — refresh them when they drift.
+const COMMIT_COUNT = "242";
+const CONTRIBUTOR_COUNT = "5";
+
 export function OwnTheRecord() {
   return (
     <section
@@ -282,8 +293,8 @@ export function OwnTheRecord() {
                         animation: "0.3s ease 1.15s 1 normal both running bpFade",
                       }}
                     >
-                      <span data-loop="tmGlow 4s ease 1.6s infinite">{"@cookieyes/dev"}</span>
-                      <span>{"9 kb"}</span>
+                      <span data-loop="tmGlow 4s ease 1.6s infinite">{"@cookieyes/react"}</span>
+                      <span>{BANNER_SIZE}</span>
                     </span>{" "}
                   </div>{" "}
                 </div>{" "}
@@ -316,12 +327,12 @@ export function OwnTheRecord() {
                       color: "rgb(20, 20, 42)",
                     }}
                   >
-                    {"@cookieyes/dev"}
+                    {"@cookieyes/react"}
                   </span>{" "}
                   <span
                     style={{ fontSize: "8.5px", lineHeight: "11px", color: "var(--cy-accent)" }}
                   >
-                    {"9 kb gzip · 0 deps"}
+                    {`${BANNER_SIZE} gzip · 0 third-party deps`}
                   </span>{" "}
                 </div>{" "}
               </div>{" "}
@@ -494,7 +505,7 @@ export function OwnTheRecord() {
                         color: "rgb(20, 20, 42)",
                       }}
                     >
-                      {"cookieyes/dev"}
+                      {"cookieyes/cookieyes"}
                     </span>
                   </span>{" "}
                   <span
@@ -529,7 +540,7 @@ export function OwnTheRecord() {
                   }}
                 >
                   {" "}
-                  <span>{"2,140 commits"}</span> <span>{"84 contributors"}</span>{" "}
+                  <span>{`${COMMIT_COUNT} commits`}</span> <span>{`${CONTRIBUTOR_COUNT} contributors`}</span>{" "}
                 </div>{" "}
                 <div
                   data-anim="gfPop 0.35s cubic-bezier(0.34,1.56,0.64,1) 1.55s both"

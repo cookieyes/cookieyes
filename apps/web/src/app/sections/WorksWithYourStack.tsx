@@ -387,7 +387,7 @@ export function WorksWithYourStack() {
                     color: "rgb(154, 158, 191)",
                   }}
                 >
-                  {"@cookieyes/next"}
+                  {"@cookieyes/nextjs"}
                 </span>
               </span>
             </div>{" "}
