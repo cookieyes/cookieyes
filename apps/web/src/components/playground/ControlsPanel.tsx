@@ -186,12 +186,6 @@ function Appearance({
       </div>
 
       <SegmentedControl
-        label="Font"
-        value={config.font}
-        options={FONT_OPTIONS}
-        onChange={(font) => onChange({ font })}
-      />
-      <SegmentedControl
         label="Mode"
         value={config.colorScheme}
         options={[
@@ -199,6 +193,12 @@ function Appearance({
           { value: "dark", label: "Dark" },
         ]}
         onChange={(colorScheme) => onChange({ colorScheme })}
+      />
+      <SegmentedControl
+        label="Font"
+        value={config.font}
+        options={FONT_OPTIONS}
+        onChange={(font) => onChange({ font })}
       />
     </Section>
   );
