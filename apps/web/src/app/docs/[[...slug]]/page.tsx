@@ -1,5 +1,3 @@
-import { stat } from "node:fs/promises";
-
 // Notebook, not docs: the page components are paired with the layout they render
 // under, and src/app/docs/layout.tsx uses the notebook layout for its top header.
 import { findNeighbour } from "fumadocs-core/page-tree";
@@ -8,7 +6,6 @@ import { createRelativeLink } from "fumadocs-ui/mdx";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
-import { LastUpdated } from "@/components/docs/LastUpdated";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
 import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
@@ -35,40 +32,6 @@ function issueUrl(title: string, url: string): string {
   return `${REPO}/issues/new?${params}`;
 }
 
-/**
- * Last-updated date for a page.
- *
- * Fumadocs derives this from `git log`, which is the right source — but it yields
- * nothing for a file that has never been committed, and the docs tree is not yet in
- * git. Falling back to the file's mtime keeps the stamp meaningful while the content
- * is being authored. Once a page is committed, git wins, so a CI checkout (where
- * every mtime is the checkout time) never produces a misleading date.
- */
-async function lastUpdated(
-  fromGit: Date | undefined,
-  absolutePath: string | undefined,
-): Promise<Date | undefined> {
-  if (fromGit) return fromGit;
-  if (!absolutePath) return undefined;
-  try {
-    return (await stat(absolutePath)).mtime;
-  } catch {
-    return undefined;
-  }
-}
-
-/** The newest release the changelog lists, read from the release pages' own slugs. */
-function newestReleaseDate(): Date | undefined {
-  const newest = source
-    .getPages()
-    .filter((page) => page.slugs[0] === "changelog" && page.slugs.length === 2)
-    .map((page) => page.slugs[1])
-    .sort()
-    .at(-1);
-  // Midday UTC so the date reads the same wherever the page is rendered.
-  return newest ? new Date(`${newest}T12:00:00Z`) : undefined;
-}
-
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
   const page = source.getPage(params.slug);
@@ -92,14 +55,6 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const isChangelogSection = page.slugs[0] === "changelog";
   const isReleasePage = isChangelogSection && page.slugs.length === 2;
   const isChangelogIndex = isChangelogSection && page.slugs.length === 1;
-
-  // The changelog index is generated, so neither source of a date tells the truth about
-  // it: `git log` still answers for its path with the hand-written file it replaced, and
-  // its mtime is whenever the build ran. What the page was last updated *on* is the day
-  // of the newest release it lists, which its own children carry in their slugs.
-  const lastModified = isChangelogIndex
-    ? newestReleaseDate()
-    : await lastUpdated(page.data.lastModified, page.absolutePath);
 
   // Design's .pnav-b (docs.html:279-283) carries only a literal "Previous"/"Next"
   // caption (`.nl`) and the neighbouring page's title (`.nt`) — never its description.
@@ -182,14 +137,6 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           <DocsDescription className="cy-doc-pd">
             <LinkedDescription text={page.data.description ?? ""} />
           </DocsDescription>
-
-          {/* .pmeta now holds only the last-updated stamp (docs.html:2130) — the Markdown
-              actions moved into .cy-doc-ptitle above. */}
-          <div className="cy-doc-pmeta">
-            {lastModified ? <LastUpdated date={lastModified} /> : null}
-          </div>
-
-          <div className="cy-doc-phr" />
         </>
       )}
 

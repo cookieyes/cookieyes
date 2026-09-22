@@ -262,7 +262,7 @@ export function Performance() {
                 strokeLinejoin="round"
               />
             }
-            footnote={`${BYTES_NOT_MEASURED.join(", ")} — bytes not measurable: their scripts are served cross-origin, which hides resource sizes from the collector.`}
+            footnote={`Bytes are not measurable for ${BYTES_NOT_MEASURED.join(", ")}: their scripts are served cross-origin, which hides resource sizes from the collector.`}
           >
             {TRANSFERRED.map((row, index) => (
               <BarRow
@@ -287,7 +287,7 @@ export function Performance() {
             color: "rgba(var(--cy-muted-rgb),0.75)",
           }}
         >
-          {`Measured by Cookiebannerbench — ${BENCH.condition}, ${BENCH.measured}. `}
+          {`Measured by Cookiebannerbench: ${BENCH.condition}, ${BENCH.measured}. `}
           <a href={BENCH.runUrl} style={{ color: "var(--cy-accent)" }}>
             {"See the run"}
           </a>

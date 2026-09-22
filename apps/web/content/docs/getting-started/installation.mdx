@@ -5,7 +5,7 @@ description: Install the CookieYes SDK package your framework needs, and what ea
 
 ## When to use it
 
-Read this if you are adding CookieYes to an app for the first time. If you would rather have the files written for you, run the CLI in [Quick start](/docs/getting-started/quick-start) instead — it detects your framework and layout and does the wiring.
+Read this if you are adding CookieYes to an app for the first time. If you would rather have the files written for you, run the CLI in [Quick start](/docs/getting-started/quick-start) instead. It detects your framework and layout and does the wiring.
 
 You do **not** need this page to add a second package later. `@cookieyes/nextjs` already depends on `@cookieyes/react` and `@cookieyes/core`, so installing it pulls both in.
 
@@ -14,7 +14,7 @@ You do **not** need this page to add a second package later. `@cookieyes/nextjs`
 {/* The three ```npm fences below are the only fences in the docs without a title=.
     That is deliberate: remark-npm turns each into a package-manager tab group, and the
     npm|pnpm|yarn|bun tab bar already serves as the block's header. Adding title="Terminal"
-    renders a second caption row beneath the tabs (verified) — redundant chrome. Leave them
+    renders a second caption row beneath the tabs (verified): redundant chrome. Leave them
     untitled; this is an exception to the house rule, not an oversight. */}
 
 ### Next.js (App Router or Pages Router)
@@ -42,11 +42,11 @@ import "@cookieyes/react/styles.css";
 ```
 
 <Callout type="warn">
-  The stylesheet is **required**, and skipping it fails silently: no error, no console warning, no build failure. The banner and dialogs still render — just as unstyled text with no layout.
+  The stylesheet is **required**, and skipping it fails silently: no error, no console warning, no build failure. The banner and dialogs still render, just as unstyled text with no layout.
 
-  Import it **once, at your app root**, not inside a route or a component that might not mount first. `Banner.Root` and `RecallButton` portal into `<body>` (via `useBodyPortalRoot`), so the stylesheet must already be present before that portal paints — a root-level import is the only placement guaranteed to run regardless of which route rendered first.
+  Import it **once, at your app root**, not inside a route or a component that might not mount first. `Banner.Root` and `RecallButton` portal into `<body>` (via `useBodyPortalRoot`), so the stylesheet must already be present before that portal paints. A root-level import is the only placement guaranteed to run regardless of which route rendered first.
 
-  **Exception:** if you're building your own UI entirely on the headless `Banner.*` / `Preferences.*` / `OptOut.*` primitives with your own CSS, you don't need this import. Primitives carry `data-cy-part` and behavior only (`data-cy-state` is set by the presets, not the primitives — if you build on primitives you set it yourself) — the `cy-*` classes this sheet styles are applied by the presets (`CookieBanner`, `CookiePreferences`, `RecallButton`), not by the primitives themselves.
+  **Exception:** if you're building your own UI entirely on the headless `Banner.*` / `Preferences.*` / `OptOut.*` primitives with your own CSS, you don't need this import. Primitives carry `data-cy-part` and behavior only (`data-cy-state` is set by the presets, not the primitives; if you build on primitives you set it yourself). The `cy-*` classes this sheet styles are applied by the presets (`CookieBanner`, `CookiePreferences`, `RecallButton`), not by the primitives themselves.
 </Callout>
 
 ## Options
@@ -57,10 +57,10 @@ Every published package, and when you need it.
 | --- | --- | --- | --- | --- |
 | `@cookieyes/nextjs` | 0.5.1 | Optional | `react`, `core`, `scripts` | Everything in `react`, plus `@cookieyes/nextjs/server` for reading consent during SSR |
 | `@cookieyes/react` | 0.5.0 | Optional | `core` | Components, headless primitives, hooks, and the stylesheets |
-| `@cookieyes/core` | 0.4.0 | **Yes** (transitively) | — | The consent engine. Zero dependencies. Install directly only for vanilla JS |
-| `@cookieyes/translations` | 0.2.0 | Optional | — | Ready-made catalogs for `en`, `es`, `fr`, `de`, `it` |
+| `@cookieyes/core` | 0.4.0 | **Yes** (transitively) | None | The consent engine. Zero dependencies. Install directly only for vanilla JS |
+| `@cookieyes/translations` | 0.2.0 | Optional | None | Ready-made catalogs for `en`, `es`, `fr`, `de`, `it` |
 | `@cookieyes/scripts` | 0.1.1 | Optional | `@cookieyes/core` (types only at runtime) | Integration presets (Segment, Meta, Google) for the `integrations` config key |
-| `@cookieyes/cli` | 0.3.1 | Optional | — | `npx @cookieyes/cli init` — scaffolds setup into an existing app |
+| `@cookieyes/cli` | 0.3.1 | Optional | None | `npx @cookieyes/cli init` scaffolds setup into an existing app |
 | `@cookieyes/test` | dev-only | Optional | `core` | Headless test double that runs the real engine, for testing consent-dependent code |
 
 Peer requirements:
@@ -86,7 +86,7 @@ Install `@cookieyes/nextjs`, not `@cookieyes/react`. It mirrors the entire `reac
 
 `critical.css` is a **supplement, never a replacement**. Every rule in it is byte-identical to the same rule in `styles.css` (a test enforces this), so the two can never disagree. But if you ship only `critical.css`, the preferences dialog is unstyled the moment a visitor opens it.
 
-**Why you might want it.** An app-root `import` puts `styles.css` on the critical path — which sounds right, and is the problem. The browser cannot paint until the stylesheet arrives, and the stylesheet is a *second* round trip after the HTML. On a slow connection that round trip costs more than the whole SDK: on the Lighthouse Mobile profile, first paint moves from 468 ms to 224 ms and the banner is styled at 183 ms instead of 451 ms when the banner's rules travel inside the HTML instead. On fast desktop the difference is nil.
+**Why you might want it.** An app-root `import` puts `styles.css` on the critical path, which sounds right, and is the problem. The browser cannot paint until the stylesheet arrives, and the stylesheet is a *second* round trip after the HTML. On a slow connection that round trip costs more than the whole SDK: on the Lighthouse Mobile profile, first paint moves from 468 ms to 224 ms and the banner is styled at 183 ms instead of 451 ms when the banner's rules travel inside the HTML instead. On fast desktop the difference is nil.
 
 **In Next.js this is two lines.** `@cookieyes/nextjs/server` exports `<CookieYesStyles />`, which inlines `critical.css` in `<head>` and loads the full sheet without blocking render, and `@cookieyes/nextjs/styles-route` serves that sheet so there is nothing to copy:
 
@@ -107,7 +107,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 export { GET } from "@cookieyes/nextjs/styles-route";
 ```
 
-Then **remove** `import "@cookieyes/nextjs/styles.css"` — leaving it puts the sheet back on the critical path and cancels the gain.
+Then **remove** `import "@cookieyes/nextjs/styles.css"`. Leaving it puts the sheet back on the critical path and cancels the gain.
 
 If you run a strict `Content-Security-Policy`, the inlined block needs one hash added to `style-src`; it is exported as `CRITICAL_CSS_HASH` and published with every release. See [CSP](/docs/styling/csp). Without a CSP there is nothing further to do.
 
@@ -117,16 +117,16 @@ If you run a strict `Content-Security-Policy`, the inlined block needs one hash 
 | --- | --- |
 | Node.js | ≥20 |
 | React | ≥18 |
-| Next.js | ≥14 — **both** App Router and Pages Router are supported |
+| Next.js | ≥14, and **both** App Router and Pages Router are supported |
 
 | Framework | Supported | Package |
 | --- | --- | --- |
 | Next.js (App Router or Pages Router) | Yes | `@cookieyes/nextjs` |
 | React (Vite, CRA, Remix, any React app) | Yes | `@cookieyes/react` |
 | Vanilla JS / no framework | Yes | `@cookieyes/core` |
-| Vue, Svelte, Angular, Solid | **No** — no adapter exists today | — |
+| Vue, Svelte, Angular, Solid | **No**, no adapter exists today | None |
 
-**Time estimate (manual route):** typically 5–10 minutes — install the package, write the
+**Time estimate (manual route):** typically 5–10 minutes: install the package, write the
 consent-manager file, import the stylesheet, and wire it into your layout. If you'd rather skip
 the manual wiring, the CLI in [Quick start](/docs/getting-started/quick-start) does it for you in
 about a minute.
@@ -176,10 +176,10 @@ export function CookieYesRoot() {
 ## Common mistakes
 
 **The banner renders as unstyled text.**
-You did not import the stylesheet. This fails silently — no error, no console warning, no build failure. Add the stylesheet import at your app root: `import "@cookieyes/react/styles.css";` in a React app, `import "@cookieyes/nextjs/styles.css";` in a Next.js one. Under pnpm's strict `node_modules` layout an app that installed only `@cookieyes/nextjs` cannot resolve `@cookieyes/react`, so a Next.js app must import `@cookieyes/nextjs/styles.css` — the same sheet, re-exported from the package you actually installed. npm and Yarn Classic hoist `@cookieyes/react` and resolve either path, but the `nextjs` one is correct everywhere.
+You did not import the stylesheet. This fails silently: no error, no console warning, no build failure. Add the stylesheet import at your app root: `import "@cookieyes/react/styles.css";` in a React app, `import "@cookieyes/nextjs/styles.css";` in a Next.js one. Under pnpm's strict `node_modules` layout an app that installed only `@cookieyes/nextjs` cannot resolve `@cookieyes/react`, so a Next.js app must import `@cookieyes/nextjs/styles.css`, the same sheet, re-exported from the package you actually installed. npm and Yarn Classic hoist `@cookieyes/react` and resolve either path, but the `nextjs` one is correct everywhere.
 
-**Nothing renders — no banner, no error anywhere.**
-`initCookieYes()` has not run by the time a component rendered. This fails silently rather than loudly: every hook and every styled component reads the runtime through a non-throwing accessor, so a missing runtime never crashes the render or logs anything — it just produces nothing. The call must live in a module marked `"use client"` that is actually imported on the path to your components, and the components themselves must be in a `"use client"` file too. See [Quick start](/docs/getting-started/quick-start). You will only see a thrown error — `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.` — from code that calls `getCookieYes()` or `useConsentRuntime()` directly.
+**Nothing renders: no banner, no error anywhere.**
+`initCookieYes()` has not run by the time a component rendered. This fails silently rather than loudly: every hook and every styled component reads the runtime through a non-throwing accessor, so a missing runtime never crashes the render or logs anything; it just produces nothing. The call must live in a module marked `"use client"` that is actually imported on the path to your components, and the components themselves must be in a `"use client"` file too. See [Quick start](/docs/getting-started/quick-start). You will only see a thrown error, `Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.`, from code that calls `getCookieYes()` or `useConsentRuntime()` directly.
 
 **`You're importing a component that needs "use client"`** (Next.js App Router)
 You called `initCookieYes()` in a Server Component. Move it into a `"use client"` module, as in the example above.
@@ -189,10 +189,10 @@ You inlined `critical.css` and skipped `styles.css`. Load both.
 
 ## Across the SDK
 
-The `CookieYesConfig` object is identical in `core`, `react`, and `nextjs` — a config is copy-pasteable between them with zero edits. `@cookieyes/nextjs` re-exports the whole `@cookieyes/react` surface, so imports can be switched by changing only the module specifier.
+The `CookieYesConfig` object is identical in `core`, `react`, and `nextjs`, so a config is copy-pasteable between them with zero edits. `@cookieyes/nextjs` re-exports the whole `@cookieyes/react` surface, so imports can be switched by changing only the module specifier.
 
 ## See also
 
-- [Quick start](/docs/getting-started/quick-start) — a working banner, with a way to verify it
-- [Configuration (initCookieYes)](/docs/getting-started/configuration) — every option
-- [Which API should I use?](/docs/getting-started/which-api) — components, primitives, or hooks
+- [Quick start](/docs/getting-started/quick-start): a working banner, with a way to verify it
+- [Configuration (initCookieYes)](/docs/getting-started/configuration): every option
+- [Which API should I use?](/docs/getting-started/which-api): components, primitives, or hooks

@@ -5,7 +5,7 @@ description: A working consent banner in your app, end to end, with a way to ver
 
 ## When to use it
 
-Start here if you have never set up the SDK in this app. If you already have a banner rendering and want to change how it behaves, go to [Configuration](/docs/getting-started/configuration) instead. If you are deciding between the styled components and building your own UI, read [Which API should I use?](/docs/getting-started/which-api) first — this page uses the styled components.
+Start here if you have never set up the SDK in this app. If you already have a banner rendering and want to change how it behaves, go to [Configuration](/docs/getting-started/configuration) instead. If you are deciding between the styled components and building your own UI, read [Which API should I use?](/docs/getting-started/which-api) first. This page uses the styled components.
 
 **Prerequisites:** Node 20+, and React 18+ (Next.js 14+ if you are on Next). See [Installation's prerequisites & framework support table](/docs/getting-started/installation#prerequisites--framework-support) for the full framework matrix.
 
@@ -20,23 +20,23 @@ yarn dlx @cookieyes/cli init # yarn
 bunx @cookieyes/cli init     # bun
 ```
 
-**Prerequisites:** Node ≥20, and an existing project — the CLI adds consent to a project you already have, it does not scaffold a new app.
+**Prerequisites:** Node ≥20, and an existing project. The CLI adds consent to a project you already have; it does not scaffold a new app.
 
-The CLI detects your framework, your layout file, and your package manager, then writes the setup for you — including the `styles.css` import that is easy to forget. It asks a short series of questions, in this order:
+The CLI detects your framework, your layout file, and your package manager, then writes the setup for you, including the `styles.css` import that is easy to forget. It asks a short series of questions, in this order:
 
 1. Which framework you're using (detected automatically, pre-selected, never forced)
-2. Backend mode — **Cookie-only** (no backend, stored in a browser cookie) or **Self-hosted**
-3. Backend URL, the full POST endpoint — **only if you chose Self-hosted**
+2. Backend mode: **Cookie-only** (no backend, stored in a browser cookie) or **Self-hosted**
+3. Backend URL, the full POST endpoint (**only if you chose Self-hosted**)
 4. Which privacy regulation applies
 5. Color scheme
 6. Extra languages, beyond English
 7. Confirmation before it installs the package
 
-**Overwrite behavior.** The CLI never *replaces* a file wholesale, but it does edit two kinds of file differently. Files it would **generate** (`components/consent-manager/provider.tsx` and `index.tsx`) are skipped if they already exist — it prints `"<label> already exists — skipped."` and leaves your version untouched. Your **layout or entry file** (`app/layout.tsx`, `pages/_app`, or a React entry) is *patched in place*: it inserts the import and wraps your tree, then reports `"Updated <label>"`. That is an edit to a file you own, so commit your work before running it. When it can't patch a file automatically — a Pages Router `_app` it can't find, or no `<App/>` match in a React entry file — it prints a paste-able snippet under "Manual step needed" instead of guessing.
+**Overwrite behavior.** The CLI never *replaces* a file wholesale, but it does edit two kinds of file differently. Files it would **generate** (`components/consent-manager/provider.tsx` and `index.tsx`) are skipped if they already exist. It prints `"<label> already exists — skipped."` and leaves your version untouched. Your **layout or entry file** (`app/layout.tsx`, `pages/_app`, or a React entry) is *patched in place*: it inserts the import and wraps your tree, then reports `"Updated <label>"`. That is an edit to a file you own, so commit your work before running it. When it can't patch a file automatically (a Pages Router `_app` it can't find, or no `<App/>` match in a React entry file), it prints a paste-able snippet under "Manual step needed" instead of guessing.
 
-**Telemetry: none.** The CLI collects no analytics, usage data, or telemetry of any kind. There is nothing to opt out of — it runs entirely locally and only touches your project files.
+**Telemetry: none.** The CLI collects no analytics, usage data, or telemetry of any kind. There is nothing to opt out of. It runs entirely locally and only touches your project files.
 
-**Time estimate:** about a minute — cold tooling start-up, six prompts (seven if you pick Self-hosted), and the install.
+**Time estimate:** about a minute: cold tooling start-up, six prompts (seven if you pick Self-hosted), and the install.
 
 ### Manual setup
 
@@ -90,13 +90,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-That is the whole setup. After a single `initCookieYes()` call, every component and every hook wires up against the registered runtime automatically — there is nothing else to pass around.
+That is the whole setup. After a single `initCookieYes()` call, every component and every hook wires up against the registered runtime automatically. There is nothing else to pass around.
 
 ## Verify it works
 
 Three concrete things you should see. If any is missing, the setup is not complete.
 
-1. **The banner appears** at the bottom of the page on first load, with Accept All, Reject All, and a Customise button — and it is **styled** (a white card with a blue primary button, not bare text).
+1. **The banner appears** at the bottom of the page on first load, with Accept All, Reject All, and a Customise button, and it is **styled** (a white card with a blue primary button, not bare text).
 2. **Open DevTools → Application → Cookies.** After clicking Accept All, a cookie named `cookieyes-consent` exists, and its value contains `consent:yes` along with `analytics:yes`, `advertisement:yes`, and the rest.
 3. **Reload the page.** The banner does **not** come back, and a small round recall widget appears in the corner instead. Clicking it reopens the preferences dialog.
 
@@ -110,7 +110,7 @@ If something doesn't match, here's the fast path from symptom to cause (the full
 
 **To re-show the banner while testing.** Clear the `cookieyes-consent` cookie (DevTools → Application → Cookies, or `document.cookie = "cookieyes-consent=; max-age=0; path=/"` then reload), or call `useConsentActions().reset()` from a dev-only button.
 
-**Your location does not hide the banner.** Unlike some consent SDKs, this one does not geo-suppress: the banner shows whenever the visitor has not yet acted, whatever `regulation` resolves to. If you are not seeing it, you have already acted in this browser — clear the cookie as above. What `regulation` does change is the *starting state* of the categories: under `"CCPA"` every non-required category begins granted (opt-out), while under `"GDPR"` and `"DEFAULT"` only required categories begin granted (opt-in). To test the opt-in path from anywhere, set `regulation: "GDPR"` explicitly rather than relying on detection.
+**Your location does not hide the banner.** Unlike some consent SDKs, this one does not geo-suppress: the banner shows whenever the visitor has not yet acted, whatever `regulation` resolves to. If you are not seeing it, you have already acted in this browser. Clear the cookie as above. What `regulation` does change is the *starting state* of the categories: under `"CCPA"` every non-required category begins granted (opt-out), while under `"GDPR"` and `"DEFAULT"` only required categories begin granted (opt-in). To test the opt-in path from anywhere, set `regulation: "GDPR"` explicitly rather than relying on detection.
 
 ## Options
 
@@ -118,14 +118,14 @@ The four options that matter for a first setup. The [full reference](/docs/getti
 
 | Option | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `mode` | `"cookie-only" \| "self-hosted"` | **Yes** | — | `cookie-only` stores consent in a cookie and makes zero network requests. `self-hosted` also POSTs each decision to your backend |
+| `mode` | `"cookie-only" \| "self-hosted"` | **Yes** | None | `cookie-only` stores consent in a cookie and makes zero network requests. `self-hosted` also POSTs each decision to your backend |
 | `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | No | `"DEFAULT"` | Which regulation applies. GDPR is opt-in, CCPA is opt-out |
 | `colorScheme` | `"light" \| "dark" \| "system"` | No | `"system"` | Theme mode |
-| `theme` | `ThemeConfig` | No | — | Colors, radius, font. See [Theme tokens](/docs/styling/theme-tokens) |
+| `theme` | `ThemeConfig` | No | None | Colors, radius, font. See [Theme tokens](/docs/styling/theme-tokens) |
 
 ## Behaviour and trade-offs
 
-### `mode` — start with `cookie-only`
+### `mode`: start with `cookie-only`
 
 `cookie-only` is the right default. Consent lives entirely in the `cookieyes-consent` cookie, no network request is ever made, and there is no backend to run. Move to `self-hosted` only when you have a legal or internal requirement to keep a server-side consent log. Switching later is a one-line change plus an `apiUrl`.
 
@@ -137,15 +137,15 @@ The four options that matter for a first setup. The [full reference](/docs/getti
 
 At module scope in a `"use client"` file, not inside a component body. At module scope it runs exactly once when the module is first imported. Inside a component it would re-run on every render.
 
-**Why it matters where, specifically.** `CookieBanner` and `RecallButton` portal into `<body>` (via `useBodyPortalRoot`) — `CookiePreferences` renders inline where you place it — so the runtime needs to be registered before the module tree that defines those components ever renders. Keeping the call — and the components — in one small client island at the bottom of the tree also keeps the banner from interrupting the main content's reading and tab order for screen readers and keyboard users.
+**Why it matters where, specifically.** `CookieBanner` and `RecallButton` portal into `<body>` (via `useBodyPortalRoot`), while `CookiePreferences` renders inline where you place it, so the runtime needs to be registered before the module tree that defines those components ever renders. Keeping the call, and the components, in one small client island at the bottom of the tree also keeps the banner from interrupting the main content's reading and tab order for screen readers and keyboard users.
 
-**Calling it twice.** A second `initCookieYes()` call doesn't error — it logs `[cookieyes] initCookieYes() called more than once. Replacing the previous runtime.` and **silently replaces** the first runtime, discarding whatever `mode`, `theme`, or `regulation` the first call set. This is usually a sign the config lives somewhere that gets imported/executed more than once; put it in exactly one module.
+**Calling it twice.** A second `initCookieYes()` call doesn't error. It logs `[cookieyes] initCookieYes() called more than once. Replacing the previous runtime.` and **silently replaces** the first runtime, discarding whatever `mode`, `theme`, or `regulation` the first call set. This is usually a sign the config lives somewhere that gets imported/executed more than once; put it in exactly one module.
 
 ### `"use client"` applies to the components too
 
-It's not just `initCookieYes()` that needs a client module — `CookieBanner`, `CookiePreferences`, and `RecallButton` do too, since they use hooks internally. That's why both examples on this page put the call *and* the components in one small `app/cookieyes.tsx` file, rather than adding `"use client"` to the root layout itself.
+It's not just `initCookieYes()` that needs a client module. `CookieBanner`, `CookiePreferences`, and `RecallButton` do too, since they use hooks internally. That's why both examples on this page put the call *and* the components in one small `app/cookieyes.tsx` file, rather than adding `"use client"` to the root layout itself.
 
-If isolating a client file feels awkward for your app's structure, `@cookieyes/nextjs`'s `getServerConsent()` + `CookieYesProvider` (shown in [Complete example](#complete-example) below) let the root layout **stay** a Server Component while still avoiding the hydration flash — that's the specific problem those two exports solve.
+If isolating a client file feels awkward for your app's structure, `@cookieyes/nextjs`'s `getServerConsent()` + `CookieYesProvider` (shown in [Complete example](#complete-example) below) let the root layout **stay** a Server Component while still avoiding the hydration flash. That's the specific problem those two exports solve.
 
 ## Complete example
 
@@ -215,8 +215,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
 ## Common mistakes
 
-**Nothing renders anywhere — no banner, no recall widget, and no error.**
-`initCookieYes()` has not run by the time a component rendered — usually the config lives in a module nothing imports, or in a Server Component. This fails silently: every hook and every styled component reads the runtime through a non-throwing accessor, so a missing runtime never crashes the render, it just produces nothing. Put `initCookieYes()` at module scope in the same `"use client"` file that exports your components, as above. Remember that `"use client"` [applies to the components too](#use-client-applies-to-the-components-too), not just the `initCookieYes()` call. The only place you will see a real thrown error is code that calls `getCookieYes()` or `useConsentRuntime()` directly:
+**Nothing renders anywhere: no banner, no recall widget, and no error.**
+`initCookieYes()` has not run by the time a component rendered. Usually the config lives in a module nothing imports, or in a Server Component. This fails silently: every hook and every styled component reads the runtime through a non-throwing accessor, so a missing runtime never crashes the render, it just produces nothing. Put `initCookieYes()` at module scope in the same `"use client"` file that exports your components, as above. Remember that `"use client"` [applies to the components too](#use-client-applies-to-the-components-too), not just the `initCookieYes()` call. The only place you will see a real thrown error is code that calls `getCookieYes()` or `useConsentRuntime()` directly:
 
 ```text title="Console error"
 Error: [cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.
@@ -232,14 +232,14 @@ You already accepted in this browser. Clear the `cookieyes-consent` cookie, or c
 Missing `import "@cookieyes/react/styles.css";`.
 
 **Nothing renders and there is no error.**
-The components are mounted, but the `Banner.Root` inside `CookieBanner` renders nothing because consent was already given. (`CookieBanner` itself still renders a visually-hidden `aria-live` region, which is why nothing is visible but the element is present in the DOM.) That is correct behaviour — see the recall widget in the corner.
+The components are mounted, but the `Banner.Root` inside `CookieBanner` renders nothing because consent was already given. (`CookieBanner` itself still renders a visually-hidden `aria-live` region, which is why nothing is visible but the element is present in the DOM.) That is correct behaviour. See the recall widget in the corner.
 
 ## Across the SDK
 
-The same two files work in a plain React app: change every `@cookieyes/nextjs` import to `@cookieyes/react` and drop the `CookieYesProvider`/`getServerConsent` part, which is Next-specific. In vanilla JS, call `initCookieYes()` from `@cookieyes/core` and build the UI against `consentStore` — see [Which API should I use?](/docs/getting-started/which-api).
+The same two files work in a plain React app: change every `@cookieyes/nextjs` import to `@cookieyes/react` and drop the `CookieYesProvider`/`getServerConsent` part, which is Next-specific. In vanilla JS, call `initCookieYes()` from `@cookieyes/core` and build the UI against `consentStore`. See [Which API should I use?](/docs/getting-started/which-api).
 
 ## See also
 
-- [Configuration (initCookieYes)](/docs/getting-started/configuration) — every option, with defaults
-- [CookieBanner](/docs/components/cookie-banner) — the banner's own props and parts
-- [Styling overview](/docs/styling/overview) — make it match your brand
+- [Configuration (initCookieYes)](/docs/getting-started/configuration): every option, with defaults
+- [CookieBanner](/docs/components/cookie-banner): the banner's own props and parts
+- [Styling overview](/docs/styling/overview): make it match your brand

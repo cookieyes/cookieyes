@@ -131,7 +131,7 @@ export function OwnTheRecord() {
               }}
             >
               {
-                "Everything runs in your stack. Consent state is yours to persist — you choose how and where it’s stored."
+                "Everything runs in your stack. Consent state is yours to persist. You choose how and where it’s stored."
               }
             </p>{" "}
           </div>{" "}

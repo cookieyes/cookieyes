@@ -595,11 +595,12 @@ export function WorksWithYourStack() {
               <span
                 aria-hidden="true"
                 style={{
-                  width: "18px",
-                  height: "18px",
+                  width: "16px",
+                  height: "16px",
+                  flexShrink: "0",
                   display: "block",
-                  backgroundColor: "rgb(36, 111, 219)",
-                  mask: 'url("https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/googletagmanager.svg") center center / contain no-repeat',
+                  backgroundColor: "rgb(82, 189, 148)",
+                  mask: 'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
                 }}
               />
               <span
@@ -608,9 +609,10 @@ export function WorksWithYourStack() {
                   fontWeight: "500",
                   fontSize: "14px",
                   color: "var(--cy-fg)",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {"Tag Manager"}
+                {"Microsoft Clarity"}
               </span>
               <span
                 style={{
@@ -651,15 +653,14 @@ export function WorksWithYourStack() {
                   animation: "6s ease-out 1s infinite normal none running ccRing",
                 }}
               />
-              <span
-                aria-hidden="true"
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  display: "block",
-                  background: 'url("figma-logos/meta-infinity.png") 50% 53% / 148% no-repeat',
-                }}
-              />
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48">
+                <g transform="skewX(-16)">
+                  <rect x="19" y="21" width="7" height="17" rx="2" fill="#1D4AFF" />
+                  <rect x="29" y="14" width="7" height="24" rx="2" fill="#F54E00" />
+                  <rect x="39" y="7" width="7" height="31" rx="2" fill="#F9BD2B" />
+                </g>
+                <path d="M 31 38 L 45 38 L 45 30.5 Z" fill="var(--cy-fg)" />
+              </svg>
               <span
                 style={{
                   fontFamily: "Inter, sans-serif",
@@ -668,7 +669,7 @@ export function WorksWithYourStack() {
                   color: "var(--cy-fg)",
                 }}
               >
-                {"Meta Pixel"}
+                {"PostHog"}
               </span>
               <span
                 style={{
@@ -710,12 +711,11 @@ export function WorksWithYourStack() {
               <span
                 aria-hidden="true"
                 style={{
-                  width: "16px",
-                  height: "16px",
+                  width: "20px",
+                  height: "20px",
                   flexShrink: "0",
                   display: "block",
-                  backgroundColor: "rgb(82, 189, 148)",
-                  mask: 'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
+                  background: 'url("figma-logos/meta-infinity.png") 50% 53% / 148% no-repeat',
                   filter: "grayscale(1)",
                 }}
               />
@@ -727,7 +727,7 @@ export function WorksWithYourStack() {
                   color: "var(--cy-muted)",
                 }}
               >
-                {"Microsoft Clarity"}
+                {"Meta Pixel"}
               </span>
               <span
                 style={{
@@ -766,20 +766,18 @@ export function WorksWithYourStack() {
                   background: "rgb(201, 205, 222)",
                 }}
               />
-              <svg
+              <span
                 aria-hidden="true"
-                width="18"
-                height="18"
-                viewBox="0 0 48 48"
-                style={{ filter: "grayscale(1)" }}
-              >
-                <g transform="skewX(-16)">
-                  <rect x="19" y="21" width="7" height="17" rx="2" fill="#1D4AFF" />
-                  <rect x="29" y="14" width="7" height="24" rx="2" fill="#F54E00" />
-                  <rect x="39" y="7" width="7" height="31" rx="2" fill="#F9BD2B" />
-                </g>
-                <path d="M 31 38 L 45 38 L 45 30.5 Z" fill="#14142A" />
-              </svg>
+                style={{
+                  width: "16px",
+                  height: "16px",
+                  flexShrink: "0",
+                  display: "block",
+                  backgroundColor: "rgb(66, 133, 244)",
+                  mask: 'url("figma-logos/google-ads.svg") center center / contain no-repeat',
+                  filter: "grayscale(1)",
+                }}
+              />
               <span
                 style={{
                   fontFamily: "Inter, sans-serif",
@@ -788,7 +786,7 @@ export function WorksWithYourStack() {
                   color: "var(--cy-muted)",
                 }}
               >
-                {"PostHog"}
+                {"Google Ads"}
               </span>
               <span
                 style={{

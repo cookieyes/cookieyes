@@ -4,7 +4,6 @@ import { usePathname } from "fumadocs-core/framework";
 import Link from "fumadocs-core/link";
 import { useNotebookLayout } from "fumadocs-ui/layouts/notebook";
 import { LinkItem, type LinkItemType, type MainItemType } from "fumadocs-ui/layouts/shared";
-import { useEffect, useState } from "react";
 import { ThemeToggle } from "../ThemeToggle";
 
 /** Fumadocs' own classes on the header element. Kept verbatim: they carry the grid

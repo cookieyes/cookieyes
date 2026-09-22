@@ -1263,53 +1263,6 @@
   box-shadow: inset 0 0 0 1px var(--cy-doc-gr-bd);
 }
 
-/* .phr — hairline after .pmeta (docs.html:147). .cy-doc-pd (below) keeps its own
-   border-bottom, so the reordered header paints two hairlines in quick succession
-   — one under the description, one under the meta row. That is the prototype's
-   own assembly, not an authoring accident to collapse away (design doc §2.6). */
-.cy-doc-phr {
-  height: 1px;
-  background: var(--cy-doc-bd);
-  margin: 0 0 28px;
-}
-
-/* .pmeta — now holds only the last-updated stamp; the Markdown actions moved into
-   .cy-doc-ptitle above (docs.html:150). */
-.cy-doc-pmeta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  line-height: 1;
-  color: var(--cy-doc-tx3);
-  margin: 0 0 20px;
-}
-
-.cy-doc-pmeta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--cy-doc-tx3);
-}
-
-.cy-doc-pmeta .cy-doc-pmeta-item {
-  margin-right: 6px;
-}
-
-/* No forced width/height here (docs.html:153-154, .pm-i svg): the new calendar
-   icon (LastUpdated.tsx) sets its own 14x14 size directly on the <svg>, and
-   forcing 13px here would fight that literal size for no reason. The .pm-split
-   button's own icons are sized separately, above (.cy-doc-pm-* rules). */
-.cy-doc-pmeta-item svg {
-  flex-shrink: 0;
-  opacity: 0.75;
-}
-
 /* ── Markdown viewer modal ───────────────────────────────────────────────── */
 
 /* The design's .mdov overlay and .mdbx panel. Built on a native <dialog>, so the
@@ -2627,9 +2580,8 @@
 }
 
 /* Vertical rhythm through the page head now comes from the header's own wrapper
-   margins (.cy-doc-ptitle: 16px, .cy-doc-pd: 32px, .cy-doc-pmeta: 20px, .cy-doc-phr:
-   28px), not from h1 directly — the design's h1 itself has margin-bottom: 0
-   (docs.html:143). */
+   margins (.cy-doc-ptitle: 16px, .cy-doc-pd: 32px), not from h1 directly — the
+   design's h1 itself has margin-bottom: 0 (docs.html:143). */
 #nd-page h1 {
   margin-bottom: 0;
 }
