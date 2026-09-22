@@ -237,49 +237,6 @@
   margin-top: 0;
 }
 
-/* "Show earlier releases" fold — prototype `.cl-more` (margin-top:20px) wrapping a
-   `.pnav-b`-styled button with `background:none`. The prev/next footer is disabled
-   across the changelog section, so `.cy-doc-pnav`'s rules (which are coupled to
-   Fumadocs' own Footer DOM shape) never apply here — these are standalone, matching
-   the prototype's `.pnav-b` / `.nl` / `.nt` values directly. */
-
-.cy-doc-cl-more {
-  margin-top: 20px;
-}
-
-.cy-doc-cl-more-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
-  border: none;
-  border-radius: var(--cy-doc-radius);
-  padding: 12px 0;
-  background: none;
-  font-family: var(--font-ui);
-  font-size: 13.5px;
-  color: var(--cy-doc-tx2);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.cy-doc-cl-more-label {
-  display: block;
-  font-size: 11px;
-  color: var(--cy-doc-tx3);
-  margin-bottom: 2px;
-}
-
-.cy-doc-cl-more-title {
-  font-weight: 500;
-  color: var(--cy-doc-tx);
-}
-
-.cy-doc-cl-more-btn:hover .cy-doc-cl-more-title {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
 /* ── Release notes (per-release detail page) ─────────────────────────────── */
 
 .cy-doc-rl-badges {
@@ -611,6 +568,14 @@
 }
 
 /* Release links — prototype `.sb-cla`: wrapping, muted, no pill, branch rule. */
+/* The changelog index's own nav link. It has to stay in the page tree — `root: true`
+   binds the section through it, and without it the sidebar falls back to the whole docs
+   tree — but the design's release list shows releases only, so the link itself is not
+   drawn. The header's Changelog tab is how a reader gets back to the index. */
+#nd-sidebar a[href="/docs/changelog"] {
+  display: none;
+}
+
 #nd-sidebar a[href^="/docs/changelog/"] {
   align-items: flex-start;
   padding: 2px 0 2px 12px;

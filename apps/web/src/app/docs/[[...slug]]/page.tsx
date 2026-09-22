@@ -57,6 +57,18 @@ async function lastUpdated(
   }
 }
 
+/** The newest release the changelog lists, read from the release pages' own slugs. */
+function newestReleaseDate(): Date | undefined {
+  const newest = source
+    .getPages()
+    .filter((page) => page.slugs[0] === "changelog" && page.slugs.length === 2)
+    .map((page) => page.slugs[1])
+    .sort()
+    .at(-1);
+  // Midday UTC so the date reads the same wherever the page is rendered.
+  return newest ? new Date(`${newest}T12:00:00Z`) : undefined;
+}
+
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
   const page = source.getPage(params.slug);
@@ -64,7 +76,30 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
 
   const MDX = page.data.body;
   const md = markdownUrl(page.slugs);
-  const lastModified = await lastUpdated(page.data.lastModified, page.absolutePath);
+
+  // Where in the changelog this page sits. Purely structural, from the slugs: the index
+  // is `["changelog"]`, a release page `["changelog", "2026-09-18"]`.
+  //
+  // - the whole section drops Fumadocs' previous/next footer, navigating instead by the
+  //   index's cards and the sidebar's release list;
+  // - a release page puts badges and summary directly under its h1, with no generic
+  //   chrome in between (design doc §2.6);
+  // - the index is the one page whose breadcrumb would only repeat its own title;
+  // - no changelog page offers "Edit page" or "Report issue": every one of them is
+  //   generated, so there is no file on GitHub to edit, and the text they carry comes
+  //   from the packages' own CHANGELOG.md rather than from anything a reader could
+  //   correct here. The design draws no feedback footer on the changelog either.
+  const isChangelogSection = page.slugs[0] === "changelog";
+  const isReleasePage = isChangelogSection && page.slugs.length === 2;
+  const isChangelogIndex = isChangelogSection && page.slugs.length === 1;
+
+  // The changelog index is generated, so neither source of a date tells the truth about
+  // it: `git log` still answers for its path with the hand-written file it replaced, and
+  // its mtime is whenever the build ran. What the page was last updated *on* is the day
+  // of the newest release it lists, which its own children carry in their slugs.
+  const lastModified = isChangelogIndex
+    ? newestReleaseDate()
+    : await lastUpdated(page.data.lastModified, page.absolutePath);
 
   // Design's .pnav-b (docs.html:279-283) carries only a literal "Previous"/"Next"
   // caption (`.nl`) and the neighbouring page's title (`.nt`) — never its description.
@@ -77,18 +112,6 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   // prop with the description forced to the design's literal caption instead.
   const { previous, next } = findNeighbour(source.pageTree, page.url);
 
-  // A release detail page (`/docs/changelog/v1-4-0`) has its own explicit content
-  // order — badges/summary directly under the h1, no generic chrome in between
-  // (design doc §2.6). `page.slugs` for the index is `["changelog"]`; for a
-  // release page it's `["changelog", "v1-4-0"]` — a purely structural check, no
-  // new frontmatter keys.
-  const isReleasePage = page.slugs[0] === "changelog" && page.slugs.length === 2;
-
-  // The changelog navigates by its own affordances — the index's cards, the sidebar
-  // release list and the breadcrumb — so Fumadocs' previous/next footer is suppressed
-  // across the whole section. Every other docs page keeps it.
-  const isChangelogSection = page.slugs[0] === "changelog";
-
   // "v1.4.0 — Critical CSS, …" -> "v1.4.0". Em-dash split, falling back to the whole
   // title if a release page is ever authored without one.
   const releaseVersionLabel = page.data.title.split("—")[0]?.trim() ?? page.data.title;
@@ -100,7 +123,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
       // The design shows the full trail including the current page —
       // "Getting Started › Quickstart" — rather than the parent alone.
       breadcrumb={{
-        enabled: true,
+        enabled: !isChangelogIndex,
         includePage: true,
         includeSeparator: true,
         className: "cy-doc-bc",
@@ -112,7 +135,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         // attributes — the cast reflects a real, verified runtime prop, not a
         // type escape hatch for unrelated code.
         list: { "data-cy-toc-list": "" } as ComponentProps<"div">,
-        footer: (
+        footer: isChangelogSection ? undefined : (
           <TocFooter editUrl={editUrl(page.path)} issueUrl={issueUrl(page.data.title, page.url)} />
         ),
       }}

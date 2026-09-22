@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
 
 /**
@@ -43,14 +44,22 @@ const PACKAGES: PackageOption[] = [
 ];
 
 /**
- * Package switcher and version select, mounted as the sidebar banner. Together they
- * reproduce the design's .psw and .vsel controls above the nav tree.
+ * Package switcher, mounted as the sidebar banner — the design's .psw control above the
+ * nav tree. The design also mocks a .vsel version row, which is not reproduced: there is
+ * one set of docs, describing the current release, so there is nothing to switch between.
+ * The changelog is where a reader sees what changed.
+ *
+ * Absent across the changelog, where the sidebar is a list of releases rather than the
+ * docs tree and no page varies by package — the design hides its whole `#sbDocs` block,
+ * switcher included, for that section.
  */
-export function SidebarControls({ versions }: { versions: string[] }) {
+export function SidebarControls() {
+  const pathname = usePathname();
+  if (pathname.startsWith("/docs/changelog")) return null;
+
   return (
     <div className="cy-doc-sb-controls">
       <PackageSwitcher />
-      <VersionSelect versions={versions} />
       <div className="cy-doc-sb-rule" aria-hidden="true" />
     </div>
   );
@@ -202,34 +211,6 @@ function PackageSwitcher() {
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-/**
- * The design's .vsel row.
- *
- * Only the versions that actually have content are offered. The design mocks
- * v1.4–v1.1, but Fumadocs has no built-in versioning and no older content exists,
- * so listing them would be four options that silently do nothing. Once versioned
- * content lands, pass the full list in.
- */
-function VersionSelect({ versions }: { versions: string[] }) {
-  const id = useId();
-  const single = versions.length <= 1;
-
-  return (
-    <div className="cy-doc-vsel">
-      <label className="cy-doc-vsel-label" htmlFor={id}>
-        Version
-      </label>
-      <select id={id} className="cy-doc-vsel-select" defaultValue={versions[0]} disabled={single}>
-        {versions.map((version, index) => (
-          <option key={version} value={version}>
-            {index === 0 ? `${version} (latest)` : version}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }

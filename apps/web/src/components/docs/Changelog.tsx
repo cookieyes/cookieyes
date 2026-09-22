@@ -2,23 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useState } from "react";
 import { formatChangelogDate } from "./changelog-date";
 
-/** "v1.4.0" -> "v1-4-0" — the release page's slug segment. */
-function versionToSlug(version: string): string {
-  return version.replace(/\./g, "-");
-}
-
 interface ChangelogEntryProps {
-  /** Umbrella SDK version for this release, e.g. "v1.4.0". */
+  /** How the release is named, e.g. "18 September 2026". */
   version: string;
-  /** ISO 8601 calendar date — rendered via formatChangelogDate. */
+  /** ISO 8601 calendar date. Rendered via formatChangelogDate, and the page's slug. */
   date: string;
   /** Release qualifier shown beside the date. */
   kind?: "release" | "stable" | undefined;
-  /** Headline for this release, without the version prefix. */
-  title: string;
+  /** Optional headline, shown after the name. */
+  title?: string | undefined;
   /**
    * One condensed line per change kind — a taste of the release, not its full
    * contents. Each `text` is a summary of that kind's bullets on the release page;
@@ -37,7 +31,7 @@ interface ChangelogHighlight {
 /**
  * One row in the changelog listing: date, kind, a hover-revealed "Read release
  * notes" link, the version/title line, and one summary line per change kind. The
- * full detail lives only on the release page (`/docs/changelog/v1-4-0`) — the card
+ * full detail lives only on the release page (`/docs/changelog/2026-09-18`) — the card
  * says what moved, the page says what it means.
  *
  * The card is an <article> with an onClick rather than a wrapping <a>: an anchor
@@ -52,7 +46,8 @@ export function ChangelogEntry({
   highlights,
 }: ChangelogEntryProps) {
   const router = useRouter();
-  const href = `/docs/changelog/${versionToSlug(version)}`;
+  // The release page is named by its date, which is also this card's slug.
+  const href = `/docs/changelog/${date}`;
 
   return (
     /* biome-ignore lint/a11y/useKeyWithClickEvents: pointer-only convenience navigation —
@@ -75,13 +70,11 @@ export function ChangelogEntry({
           <ChevronRightIcon />
         </Link>
       </div>
-      <div className="cy-doc-cl-title">
-        {version} — {title}
-      </div>
+      <div className="cy-doc-cl-title">{title ? `${version} — ${title}` : version}</div>
       {highlights?.length ? (
         <dl className="cy-doc-cl-hls">
           {highlights.map((highlight) => (
-            <div className="cy-doc-cl-hl" key={highlight.kind}>
+            <div className="cy-doc-cl-hl" key={`${highlight.kind}:${highlight.text}`}>
               <dt className="cy-doc-cl-grp">{highlight.kind}</dt>
               <dd className="cy-doc-cl-hl-text">{highlight.text}</dd>
             </div>
@@ -89,31 +82,6 @@ export function ChangelogEntry({
         </dl>
       ) : null}
     </article>
-  );
-}
-
-/**
- * The prototype's "Show earlier releases" fold (`.cl-more` / `showOlderCl`). Older
- * entries render only after a click, and the button then unmounts — the prototype
- * did the same with `btn.closest('.cl-more').remove()`.
- *
- * Wrap ONLY entry cards in this, never a month heading. Fumadocs builds "On this
- * page" from the MDX at build time, so a heading hidden behind the fold would still
- * be listed in the TOC while having no height in the document — which made
- * scroll-spy skip the month before it.
- */
-export function ChangelogOlderReveal({ children }: { children: ReactNode }) {
-  const [shown, setShown] = useState(false);
-
-  if (shown) return <>{children}</>;
-
-  return (
-    <div className="cy-doc-cl-more">
-      <button type="button" className="cy-doc-cl-more-btn" onClick={() => setShown(true)}>
-        <span className="cy-doc-cl-more-label">Older</span>
-        <span className="cy-doc-cl-more-title">Show earlier releases</span>
-      </button>
-    </div>
   );
 }
 
