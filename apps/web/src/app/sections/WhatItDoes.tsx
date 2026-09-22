@@ -135,6 +135,7 @@ export function WhatItDoes() {
           >
             {" "}
             <div
+              data-ill-edge="soft"
               data-bento="0"
               style={{
                 background: "var(--cy-surface)",
@@ -342,6 +343,7 @@ export function WhatItDoes() {
               </div>{" "}
             </div>{" "}
             <div
+              data-ill-edge="soft"
               data-bento="2"
               style={{
                 background: "var(--cy-surface)",
@@ -454,7 +456,7 @@ export function WhatItDoes() {
                       alignSelf: "center",
                       borderRadius: "10px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.28) 0px 14px 30px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.28) 0px 14px 30px",
                       padding: "var(--cy-space-4)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -651,7 +653,7 @@ export function WhatItDoes() {
                       alignSelf: "stretch",
                       borderRadius: "12px",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.16) 0px 16px 34px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.16) 0px 16px 34px",
                       padding: "var(--cy-space-20)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -697,6 +699,7 @@ export function WhatItDoes() {
                     >
                       {" "}
                       <span
+                        data-ill-edge="soft"
                         data-i18n-reject=""
                         style={{
                           padding: "6px 14px",
@@ -752,6 +755,7 @@ export function WhatItDoes() {
               </div>{" "}
             </div>{" "}
             <div
+              data-ill-edge="soft"
               data-bento="3"
               style={{
                 background: "var(--cy-surface)",
@@ -884,7 +888,7 @@ export function WhatItDoes() {
                       width: "188px",
                       borderRadius: "12px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.12) 0px 6px 16px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.12) 0px 6px 16px",
                       padding: "var(--cy-space-12) var(--cy-space-16)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -987,7 +991,7 @@ export function WhatItDoes() {
                         border: "1px solid rgb(231, 234, 244)",
                         boxSizing: "border-box",
                         background: "var(--cy-surface)",
-                        boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
+                        boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                         padding: "15.7px",
                         display: "flex",
                         flexDirection: "column",
@@ -1090,6 +1094,7 @@ export function WhatItDoes() {
               </div>{" "}
             </div>{" "}
             <div
+              data-ill-edge="soft"
               data-bento="5"
               style={{
                 background: "var(--cy-surface)",
@@ -1224,7 +1229,7 @@ export function WhatItDoes() {
                       borderRadius: "10px",
                       border: "1px solid rgb(231, 234, 244)",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                       overflow: "hidden",
                       fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
                       fontSize: "10px",
@@ -1328,7 +1333,7 @@ export function WhatItDoes() {
                       width: "184px",
                       borderRadius: "12px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.22) 0px 16px 34px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                       padding: "var(--cy-space-12) var(--cy-space-16)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -1381,6 +1386,7 @@ export function WhatItDoes() {
                         <span data-ac-line="">{"marketing"}</span>
                       </span>{" "}
                       <span style={{ color: "rgb(121, 184, 255)" }}>{"→ true"}</span>{" "}
+                        data-ill-edge="soft"
                     </div>{" "}
                   </div>{" "}
                 </div>{" "}
@@ -1498,7 +1504,7 @@ export function WhatItDoes() {
                       width: "100%",
                       borderRadius: "10px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.22) 0px 16px 34px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                       padding: "var(--cy-space-12) var(--cy-space-16)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -1543,7 +1549,7 @@ export function WhatItDoes() {
                           height: "13px",
                           borderRadius: "50%",
                           background: "var(--cy-surface)",
-                          boxShadow: "rgba(var(--cy-fg-rgb), 0.3) 0px 1px 2px",
+                          boxShadow: "rgba(var(--cy-shadow-rgb), 0.3) 0px 1px 2px",
                           transform: "translateX(15px)",
                           transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
                         }}
@@ -1751,7 +1757,7 @@ export function WhatItDoes() {
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 8px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1792,7 +1798,7 @@ export function WhatItDoes() {
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 8px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1833,7 +1839,7 @@ export function WhatItDoes() {
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 8px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1874,7 +1880,7 @@ export function WhatItDoes() {
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 8px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1915,7 +1921,7 @@ export function WhatItDoes() {
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 8px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1956,7 +1962,7 @@ export function WhatItDoes() {
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
                       background: "var(--cy-surface)",
-                      boxShadow: "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 8px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",

@@ -51,6 +51,7 @@ export function Performance() {
       >
         {" "}
         <div
+          data-glow-blob="1"
           style={{
             position: "absolute",
             left: "0px",
@@ -320,6 +321,7 @@ function ChartCard({
 }) {
   return (
     <div
+      data-ill-edge="soft"
       style={{
         borderRadius: "16px",
         border: "1px solid rgb(227, 229, 241)",

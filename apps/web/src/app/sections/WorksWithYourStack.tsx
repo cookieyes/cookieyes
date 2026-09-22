@@ -122,6 +122,7 @@ export function WorksWithYourStack() {
                 </radialGradient>{" "}
               </defs>{" "}
               <path
+                data-ill-wire="1"
                 d="M 240 124 C 330 124, 350 160, 428 178"
                 className="cc-flow"
                 style={{
@@ -134,6 +135,7 @@ export function WorksWithYourStack() {
                 }}
               />{" "}
               <path
+                data-ill-wire="1"
                 d="M 240 244 C 330 244, 350 215, 428 202"
                 className="cc-flow"
                 style={{
@@ -176,6 +178,7 @@ export function WorksWithYourStack() {
                 }}
               />{" "}
               <path
+                data-ill-wire="1"
                 d="M 596 199 C 680 212, 690 256, 764 256"
                 className="cc-flow"
                 style={{
@@ -188,6 +191,7 @@ export function WorksWithYourStack() {
                 }}
               />{" "}
               <path
+                data-ill-wire="1"
                 d="M 596 208 C 680 230, 690 322, 764 322"
                 className="cc-flow"
                 style={{
@@ -285,6 +289,7 @@ export function WorksWithYourStack() {
               }}
             >
               <span
+                data-ill-edge="face"
                 style={{
                   width: "56px",
                   height: "56px",
@@ -293,7 +298,7 @@ export function WorksWithYourStack() {
                   boxSizing: "border-box",
                   background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                   boxShadow:
-                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, rgb(255, 255, 255) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
+                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, var(--cy-ill-edge) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -344,6 +349,7 @@ export function WorksWithYourStack() {
               }}
             >
               <span
+                data-ill-edge="face"
                 style={{
                   width: "56px",
                   height: "56px",
@@ -352,7 +358,7 @@ export function WorksWithYourStack() {
                   boxSizing: "border-box",
                   background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                   boxShadow:
-                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, rgb(255, 255, 255) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
+                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, var(--cy-ill-edge) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -392,6 +398,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-gate-glow="1"
               aria-hidden="true"
               style={{
                 position: "absolute",
@@ -406,6 +413,7 @@ export function WorksWithYourStack() {
               }}
             />{" "}
             <div
+              data-ill-edge="ring"
               aria-hidden="true"
               style={{
                 position: "absolute",
@@ -420,6 +428,7 @@ export function WorksWithYourStack() {
               }}
             />{" "}
             <div
+              data-ill-edge="face"
               style={{
                 position: "absolute",
                 left: "437px",
@@ -431,7 +440,7 @@ export function WorksWithYourStack() {
                 boxSizing: "border-box",
                 background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(24, 99, 220, 0.2) 0px 18px 48px, rgba(24, 99, 220, 0.1) 0px 2px 4px, rgb(255, 255, 255) 0px 2px 0px inset, rgba(24, 99, 220, 0.07) 0px -12px 20px inset",
+                  "rgba(24, 99, 220, 0.2) 0px 18px 48px, rgba(24, 99, 220, 0.1) 0px 2px 4px, var(--cy-ill-edge) 0px 2px 0px inset, rgba(24, 99, 220, 0.07) 0px -12px 20px inset",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -505,6 +514,7 @@ export function WorksWithYourStack() {
               </span>
             </span>{" "}
             <div
+              data-ill-edge="soft"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -515,7 +525,7 @@ export function WorksWithYourStack() {
                 border: "1px solid rgb(227, 229, 241)",
                 background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(var(--cy-fg-rgb), 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-shadow-rgb), 0.06) 0px 3px 8px, var(--cy-ill-edge) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -565,6 +575,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-ill-edge="soft"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -575,7 +586,7 @@ export function WorksWithYourStack() {
                 border: "1px solid rgb(227, 229, 241)",
                 background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(var(--cy-fg-rgb), 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-shadow-rgb), 0.06) 0px 3px 8px, var(--cy-ill-edge) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -626,6 +637,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-ill-edge="soft"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -636,7 +648,7 @@ export function WorksWithYourStack() {
                 border: "1px solid rgb(227, 229, 241)",
                 background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(var(--cy-fg-rgb), 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-shadow-rgb), 0.06) 0px 3px 8px, var(--cy-ill-edge) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -683,6 +695,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-ill-edge="line"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -701,6 +714,7 @@ export function WorksWithYourStack() {
               }}
             >
               <span
+                data-ill-dot="muted"
                 style={{
                   width: "6px",
                   height: "6px",
@@ -741,6 +755,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-ill-edge="line"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -759,6 +774,7 @@ export function WorksWithYourStack() {
               }}
             >
               <span
+                data-ill-dot="muted"
                 style={{
                   width: "6px",
                   height: "6px",

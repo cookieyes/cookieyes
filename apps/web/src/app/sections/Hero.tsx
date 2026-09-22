@@ -223,7 +223,7 @@ export function Hero() {
                 textDecoration: "none",
                 color: "var(--cy-on-accent)",
                 boxShadow:
-                  "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(var(--cy-fg-rgb), 0.18) 0px 1px 2px",
+                  "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(var(--cy-shadow-rgb), 0.18) 0px 1px 2px",
                 transition: "background 0.2s, transform 0.12s",
               }}
             >

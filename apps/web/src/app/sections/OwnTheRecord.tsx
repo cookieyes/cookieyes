@@ -29,12 +29,13 @@ export function OwnTheRecord() {
       {" "}
       <div
         aria-hidden="true"
+        data-own-wash="1"
         style={{
           position: "absolute",
           inset: "0px",
           pointerEvents: "none",
           background:
-            "linear-gradient(rgba(19, 111, 232, 0.14) 0%, rgba(19, 111, 232, 0.05) 22%, rgba(19, 111, 232, 0) 42%)",
+            "linear-gradient(rgba(var(--cy-accent-rgb), 0.14) 0%, rgba(var(--cy-accent-rgb), 0.05) 22%, rgba(var(--cy-accent-rgb), 0) 42%)",
         }}
       />{" "}
       <div
@@ -193,7 +194,7 @@ export function OwnTheRecord() {
                     width: "206px",
                     borderRadius: "12px",
                     background: "rgb(23, 26, 33)",
-                    boxShadow: "rgba(var(--cy-fg-rgb), 0.22) 0px 16px 34px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                     padding: "var(--cy-space-12) var(--cy-space-16)",
                     boxSizing: "border-box",
                     display: "flex",
@@ -308,7 +309,7 @@ export function OwnTheRecord() {
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
                     background: "var(--cy-surface)",
-                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     display: "flex",
                     flexDirection: "column",
@@ -466,7 +467,7 @@ export function OwnTheRecord() {
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
                     background: "var(--cy-surface)",
-                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     boxSizing: "border-box",
                     display: "flex",
@@ -552,7 +553,7 @@ export function OwnTheRecord() {
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
                     background: "var(--cy-surface)",
-                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     display: "flex",
                     flexDirection: "row",
@@ -683,7 +684,7 @@ export function OwnTheRecord() {
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
                     background: "var(--cy-surface)",
-                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     overflow: "hidden",
                   }}
                 >
@@ -905,7 +906,7 @@ export function OwnTheRecord() {
                     bottom: "4px",
                     borderRadius: "12px",
                     background: "rgb(23, 26, 33)",
-                    boxShadow: "rgba(var(--cy-fg-rgb), 0.22) 0px 16px 34px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                     padding: "var(--cy-space-12) var(--cy-space-16)",
                     boxSizing: "border-box",
                     display: "flex",

@@ -41,6 +41,7 @@ export function StartWithInstall() {
         }}
       />{" "}
       <div
+        data-ill-edge="soft"
         data-card="1"
         style={{
           position: "relative",
@@ -85,6 +86,7 @@ export function StartWithInstall() {
         >
           {" "}
           <div
+            data-glow-blob="1"
             style={{
               position: "absolute",
               left: "0px",
@@ -166,7 +168,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(var(--cy-fg-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-fg-rgb), 0.05) 0px 3px 10px",
+                    "rgba(var(--cy-shadow-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-shadow-rgb), 0.05) 0px 3px 10px",
                   transform: "translateY(0px) scale(0.64)",
                   willChange: "transform",
                   transition: "none",
@@ -368,7 +370,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 6px, rgba(var(--cy-fg-rgb), 0.13) 0px 6px 28px",
+                    "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 6px, rgba(var(--cy-shadow-rgb), 0.13) 0px 6px 28px",
                   transform: "translateY(140px) scale(1)",
                   willChange: "transform",
                   transition: "none",
@@ -588,7 +590,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(var(--cy-fg-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-fg-rgb), 0.05) 0px 3px 10px",
+                    "rgba(var(--cy-shadow-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-shadow-rgb), 0.05) 0px 3px 10px",
                   transform: "translateY(280px) scale(0.64)",
                   willChange: "transform",
                   transition: "none",
@@ -808,7 +810,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(var(--cy-fg-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-fg-rgb), 0.05) 0px 3px 10px",
+                    "rgba(var(--cy-shadow-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-shadow-rgb), 0.05) 0px 3px 10px",
                   transform: "translateY(-140px) scale(0.64)",
                   willChange: "transform",
                   transition: "none",
@@ -1085,7 +1087,7 @@ export function StartWithInstall() {
                   textDecoration: "none",
                   color: "var(--cy-on-accent)",
                   boxShadow:
-                    "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(var(--cy-fg-rgb), 0.18) 0px 1px 2px",
+                    "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(var(--cy-shadow-rgb), 0.18) 0px 1px 2px",
                   transition: "background 0.2s, transform 0.12s",
                 }}
               >
