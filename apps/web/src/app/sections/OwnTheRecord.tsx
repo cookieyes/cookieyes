@@ -23,7 +23,7 @@ export function OwnTheRecord() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}
@@ -193,7 +193,7 @@ export function OwnTheRecord() {
                     width: "206px",
                     borderRadius: "12px",
                     background: "rgb(23, 26, 33)",
-                    boxShadow: "rgba(20, 20, 42, 0.22) 0px 16px 34px",
+                    boxShadow: "rgba(var(--cy-fg-rgb), 0.22) 0px 16px 34px",
                     padding: "var(--cy-space-12) var(--cy-space-16)",
                     boxSizing: "border-box",
                     display: "flex",
@@ -238,7 +238,7 @@ export function OwnTheRecord() {
                     }}
                   >
                     {" "}
-                    <span style={{ color: "rgb(86, 96, 121)" }}>{"$ vite build"}</span>{" "}
+                    <span style={{ color: "var(--cy-muted)" }}>{"$ vite build"}</span>{" "}
                     <span
                       data-anim="bpFade 0.3s ease 0.35s both"
                       style={{
@@ -307,8 +307,8 @@ export function OwnTheRecord() {
                     top: "0px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     display: "flex",
                     flexDirection: "column",
@@ -324,7 +324,7 @@ export function OwnTheRecord() {
                       fontSize: "9.5px",
                       lineHeight: "13px",
                       fontWeight: "600",
-                      color: "rgb(20, 20, 42)",
+                      color: "var(--cy-fg)",
                     }}
                   >
                     {"@cookieyes/react"}
@@ -465,8 +465,8 @@ export function OwnTheRecord() {
                     width: "208px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     boxSizing: "border-box",
                     display: "flex",
@@ -502,7 +502,7 @@ export function OwnTheRecord() {
                         fontSize: "10px",
                         lineHeight: "14px",
                         fontWeight: "600",
-                        color: "rgb(20, 20, 42)",
+                        color: "var(--cy-fg)",
                       }}
                     >
                       {"cookieyes/cookieyes"}
@@ -514,7 +514,7 @@ export function OwnTheRecord() {
                       lineHeight: "11px",
                       letterSpacing: "0.5px",
                       fontWeight: "600",
-                      color: "rgb(0, 117, 78)",
+                      color: "var(--cy-ok)",
                       border: "1px solid rgba(0, 117, 78, 0.35)",
                       borderRadius: "999px",
                       padding: "2px 7px",
@@ -551,8 +551,8 @@ export function OwnTheRecord() {
                     bottom: "8px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     display: "flex",
                     flexDirection: "row",
@@ -682,8 +682,8 @@ export function OwnTheRecord() {
                     width: "252px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-fg-rgb), 0.14) 0px 12px 28px",
                     overflow: "hidden",
                   }}
                 >
@@ -703,7 +703,7 @@ export function OwnTheRecord() {
                         fontSize: "9.5px",
                         lineHeight: "13px",
                         fontWeight: "600",
-                        color: "rgb(255, 255, 255)",
+                        color: "var(--cy-on-accent)",
                       }}
                     >
                       {"consent_records"}
@@ -727,7 +727,7 @@ export function OwnTheRecord() {
                       background: "rgb(247, 249, 253)",
                       borderBottom: "1px solid rgb(237, 240, 248)",
                       fontSize: "7px",
-                      color: "rgb(143, 146, 175)",
+                      color: "var(--cy-faint)",
                     }}
                   >
                     <span>{"timestamp"}</span>
@@ -767,11 +767,11 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:14:52"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                       </div>{" "}
                       <div
                         style={{
@@ -785,10 +785,10 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:14:09"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
@@ -805,7 +805,7 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:13:35"}
                         </span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
@@ -827,10 +827,10 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:12:04"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
@@ -847,11 +847,11 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:11:47"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                       </div>{" "}
                       <div
                         style={{
@@ -865,13 +865,13 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:10:31"}
                         </span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                       </div>{" "}
                       <div
                         style={{
@@ -885,10 +885,10 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:09:58"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
@@ -905,7 +905,7 @@ export function OwnTheRecord() {
                     bottom: "4px",
                     borderRadius: "12px",
                     background: "rgb(23, 26, 33)",
-                    boxShadow: "rgba(20, 20, 42, 0.22) 0px 16px 34px",
+                    boxShadow: "rgba(var(--cy-fg-rgb), 0.22) 0px 16px 34px",
                     padding: "var(--cy-space-12) var(--cy-space-16)",
                     boxSizing: "border-box",
                     display: "flex",

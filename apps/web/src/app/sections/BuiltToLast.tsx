@@ -18,7 +18,7 @@ export function BuiltToLast() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}

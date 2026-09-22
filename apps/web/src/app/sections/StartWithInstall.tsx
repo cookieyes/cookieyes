@@ -16,7 +16,7 @@ export function StartWithInstall() {
           flexDirection: "column",
           alignItems: "center",
           "--cy-section-y": "calc(var(--cy-space-section) + 80px)",
-          background: "rgb(248, 249, 250)",
+          background: "light-dark(rgb(248, 249, 250), #15171a)",
         } as CSSProperties
       }
     >
@@ -66,7 +66,7 @@ export function StartWithInstall() {
             inset: "0px",
             pointerEvents: "none",
             zIndex: "0",
-            background: "linear-gradient(rgba(241, 246, 253, 0) 0%, rgb(241, 246, 253) 100%)",
+            background: "linear-gradient(rgba(var(--cy-bg-rgb), 0) 0%, var(--cy-bg) 100%)",
           }}
         />{" "}
         <div
@@ -166,7 +166,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(20, 20, 42, 0.04) 0px 1px 2px, rgba(20, 20, 42, 0.05) 0px 3px 10px",
+                    "rgba(var(--cy-fg-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-fg-rgb), 0.05) 0px 3px 10px",
                   transform: "translateY(0px) scale(0.64)",
                   willChange: "transform",
                   transition: "none",
@@ -295,7 +295,7 @@ export function StartWithInstall() {
                         fontSize: "8px",
                         lineHeight: "12px",
                         letterSpacing: "0.5px",
-                        color: "rgb(255, 255, 255)",
+                        color: "var(--cy-on-accent)",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -368,7 +368,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(20, 20, 42, 0.06) 0px 2px 6px, rgba(20, 20, 42, 0.13) 0px 6px 28px",
+                    "rgba(var(--cy-fg-rgb), 0.06) 0px 2px 6px, rgba(var(--cy-fg-rgb), 0.13) 0px 6px 28px",
                   transform: "translateY(140px) scale(1)",
                   willChange: "transform",
                   transition: "none",
@@ -497,7 +497,7 @@ export function StartWithInstall() {
                         fontSize: "8px",
                         lineHeight: "12px",
                         letterSpacing: "0.5px",
-                        color: "rgb(255, 255, 255)",
+                        color: "var(--cy-on-accent)",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -588,7 +588,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(20, 20, 42, 0.04) 0px 1px 2px, rgba(20, 20, 42, 0.05) 0px 3px 10px",
+                    "rgba(var(--cy-fg-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-fg-rgb), 0.05) 0px 3px 10px",
                   transform: "translateY(280px) scale(0.64)",
                   willChange: "transform",
                   transition: "none",
@@ -717,7 +717,7 @@ export function StartWithInstall() {
                         fontSize: "8px",
                         lineHeight: "12px",
                         letterSpacing: "0.5px",
-                        color: "rgb(255, 255, 255)",
+                        color: "var(--cy-on-accent)",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -808,7 +808,7 @@ export function StartWithInstall() {
                   boxSizing: "border-box",
                   background: "var(--cy-surface)",
                   boxShadow:
-                    "rgba(20, 20, 42, 0.04) 0px 1px 2px, rgba(20, 20, 42, 0.05) 0px 3px 10px",
+                    "rgba(var(--cy-fg-rgb), 0.04) 0px 1px 2px, rgba(var(--cy-fg-rgb), 0.05) 0px 3px 10px",
                   transform: "translateY(-140px) scale(0.64)",
                   willChange: "transform",
                   transition: "none",
@@ -937,7 +937,7 @@ export function StartWithInstall() {
                         fontSize: "8px",
                         lineHeight: "12px",
                         letterSpacing: "0.5px",
-                        color: "rgb(255, 255, 255)",
+                        color: "var(--cy-on-accent)",
                         whiteSpace: "nowrap",
                       }}
                     >
@@ -1083,9 +1083,9 @@ export function StartWithInstall() {
                   alignItems: "center",
                   gap: "var(--cy-space-8)",
                   textDecoration: "none",
-                  color: "rgb(255, 255, 255)",
+                  color: "var(--cy-on-accent)",
                   boxShadow:
-                    "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(20, 20, 42, 0.18) 0px 1px 2px",
+                    "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(var(--cy-fg-rgb), 0.18) 0px 1px 2px",
                   transition: "background 0.2s, transform 0.12s",
                 }}
               >

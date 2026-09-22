@@ -46,7 +46,7 @@ export default function NotFound() {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#F8F9FA",
+          background: "light-dark(#F8F9FA, #15171a)",
         }}
       >
         <div
@@ -145,7 +145,7 @@ export default function NotFound() {
                 display: "inline-flex",
                 alignItems: "center",
                 textDecoration: "none",
-                color: "rgb(255, 255, 255)",
+                color: "var(--cy-on-accent)",
                 boxShadow:
                   "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(20, 20, 42, 0.18) 0px 1px 2px",
                 fontFamily: "Poppins, Inter, sans-serif",

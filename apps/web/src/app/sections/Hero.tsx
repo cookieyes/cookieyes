@@ -13,7 +13,7 @@ export function Hero() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}
@@ -100,7 +100,7 @@ export function Hero() {
             padding: "6px 10px 6px 14px",
             borderRadius: "10px",
             border: "1px solid rgb(93, 210, 216)",
-            background: "rgb(189, 244, 246)",
+            background: "light-dark(rgb(189, 244, 246), #0a3c44)",
             textDecoration: "none",
             transition: "background 0.15s, border-color 0.15s",
           }}
@@ -114,7 +114,7 @@ export function Hero() {
               lineHeight: "12px",
               letterSpacing: "1px",
               textTransform: "uppercase",
-              color: "rgb(14, 70, 72)",
+              color: "light-dark(rgb(14, 70, 72), #94dce9)",
             }}
           >
             {"New"}
@@ -125,7 +125,7 @@ export function Hero() {
               fontWeight: "500",
               fontSize: "12px",
               lineHeight: "16px",
-              color: "rgb(14, 70, 72)",
+              color: "light-dark(rgb(14, 70, 72), #94dce9)",
             }}
           >
             {/* Read from the package rather than typed here: the design's placeholder claimed a
@@ -138,7 +138,7 @@ export function Hero() {
             height="12"
             viewBox="0 0 16 16"
             fill="none"
-            style={{ flexShrink: "0", color: "rgb(14, 70, 72)" }}
+            style={{ flexShrink: "0", color: "light-dark(rgb(14, 70, 72), #94dce9)" }}
           >
             <path
               d="M6 4l4 4-4 4"
@@ -221,9 +221,9 @@ export function Hero() {
                 alignItems: "center",
                 gap: "var(--cy-space-8)",
                 textDecoration: "none",
-                color: "rgb(255, 255, 255)",
+                color: "var(--cy-on-accent)",
                 boxShadow:
-                  "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(20, 20, 42, 0.18) 0px 1px 2px",
+                  "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(var(--cy-fg-rgb), 0.18) 0px 1px 2px",
                 transition: "background 0.2s, transform 0.12s",
               }}
             >

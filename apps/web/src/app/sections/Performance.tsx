@@ -32,7 +32,7 @@ export function Performance() {
         flexDirection: "column",
         alignItems: "center",
         overflow: "hidden",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}

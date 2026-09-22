@@ -11,7 +11,7 @@ export function WorksWithYourStack() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}
@@ -232,7 +232,7 @@ export function WorksWithYourStack() {
                 r="3.5"
                 style={{
                   fill: 'url("#ccDotGrey")',
-                  filter: "drop-shadow(rgba(20, 20, 42, 0.2) 0px 1px 2px)",
+                  filter: "drop-shadow(rgba(var(--cy-fg-rgb), 0.2) 0px 1px 2px)",
                 }}
               />
               <circle
@@ -241,7 +241,7 @@ export function WorksWithYourStack() {
                 r="3.5"
                 style={{
                   fill: 'url("#ccDotGrey")',
-                  filter: "drop-shadow(rgba(20, 20, 42, 0.2) 0px 1px 2px)",
+                  filter: "drop-shadow(rgba(var(--cy-fg-rgb), 0.2) 0px 1px 2px)",
                 }}
               />{" "}
             </svg>{" "}
@@ -291,7 +291,7 @@ export function WorksWithYourStack() {
                   borderRadius: "50%",
                   border: "1px solid rgb(237, 241, 250)",
                   boxSizing: "border-box",
-                  background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(245, 248, 253) 100%)",
+                  background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                   boxShadow:
                     "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, rgb(255, 255, 255) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
                   display: "inline-flex",
@@ -316,7 +316,7 @@ export function WorksWithYourStack() {
                     fontFamily: "Inter, sans-serif",
                     fontWeight: "500",
                     fontSize: "15px",
-                    color: "rgb(20, 20, 42)",
+                    color: "var(--cy-fg)",
                   }}
                 >
                   {"React"}
@@ -350,7 +350,7 @@ export function WorksWithYourStack() {
                   borderRadius: "50%",
                   border: "1px solid rgb(237, 241, 250)",
                   boxSizing: "border-box",
-                  background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(245, 248, 253) 100%)",
+                  background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                   boxShadow:
                     "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, rgb(255, 255, 255) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
                   display: "inline-flex",
@@ -375,7 +375,7 @@ export function WorksWithYourStack() {
                     fontFamily: "Inter, sans-serif",
                     fontWeight: "500",
                     fontSize: "15px",
-                    color: "rgb(20, 20, 42)",
+                    color: "var(--cy-fg)",
                   }}
                 >
                   {"Next.js"}
@@ -429,7 +429,7 @@ export function WorksWithYourStack() {
                 borderRadius: "50%",
                 border: "1px solid rgb(237, 241, 250)",
                 boxSizing: "border-box",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(244, 247, 253) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
                   "rgba(24, 99, 220, 0.2) 0px 18px 48px, rgba(24, 99, 220, 0.1) 0px 2px 4px, rgb(255, 255, 255) 0px 2px 0px inset, rgba(24, 99, 220, 0.07) 0px -12px 20px inset",
                 display: "flex",
@@ -443,22 +443,22 @@ export function WorksWithYourStack() {
                 <path
                   transform="translate(0 25.268)"
                   d="M 17.554 0 L 0 0 L 16.05 29.985 L 33.604 29.985 L 17.554 0 Z"
-                  fill="#0056A7"
+                  fill="var(--cy-logo-mark)"
                 />{" "}
                 <path
                   transform="translate(15.714 34.196)"
                   d="M 0 20.215 L 0.502 21.057 L 18.056 21.057 L 6.52 0 L 0 20.215 Z"
-                  fill="#2E3191"
+                  fill="var(--cy-logo-mark)"
                 />{" "}
                 <path
                   transform="translate(16.216 0)"
                   d="M 31.598 0 L 0 55.254 L 17.554 55.254 L 49.152 0 L 31.598 0 Z"
-                  fill="#0056A7"
+                  fill="var(--cy-logo-mark)"
                 />{" "}
                 <path
                   transform="translate(16.216 63.507)"
                   d="M 0 0 L 17.053 0 L 17.053 17.351 L 0 17.351 L 0 0 Z"
-                  fill="#0056A7"
+                  fill="var(--cy-logo-mark)"
                 />{" "}
               </svg>{" "}
             </div>{" "}
@@ -496,7 +496,7 @@ export function WorksWithYourStack() {
                   background: "rgba(63, 185, 80, 0.08)",
                   fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
                   fontSize: "12px",
-                  color: "rgb(31, 143, 68)",
+                  color: "var(--cy-ok)",
                   whiteSpace: "nowrap",
                   animation: "6s ease-in-out 0s infinite normal none running ccBlink",
                 }}
@@ -513,9 +513,9 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px solid rgb(227, 229, 241)",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(247, 249, 254) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(20, 20, 42, 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-fg-rgb), 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -547,7 +547,7 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(20, 20, 42)",
+                  color: "var(--cy-fg)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -573,9 +573,9 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px solid rgb(227, 229, 241)",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(247, 249, 254) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(20, 20, 42, 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-fg-rgb), 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -607,7 +607,7 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(20, 20, 42)",
+                  color: "var(--cy-fg)",
                 }}
               >
                 {"Tag Manager"}
@@ -632,9 +632,9 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px solid rgb(227, 229, 241)",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(247, 249, 254) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(20, 20, 42, 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-fg-rgb), 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -665,7 +665,7 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(20, 20, 42)",
+                  color: "var(--cy-fg)",
                 }}
               >
                 {"Meta Pixel"}
@@ -690,7 +690,7 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px dashed rgb(201, 205, 222)",
-                background: "rgb(251, 253, 255)",
+                background: "var(--cy-surface-2)",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -724,7 +724,7 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(78, 75, 102)",
+                  color: "var(--cy-muted)",
                 }}
               >
                 {"Microsoft Clarity"}
@@ -749,7 +749,7 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px dashed rgb(201, 205, 222)",
-                background: "rgb(251, 253, 255)",
+                background: "var(--cy-surface-2)",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -785,7 +785,7 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(78, 75, 102)",
+                  color: "var(--cy-muted)",
                 }}
               >
                 {"PostHog"}
