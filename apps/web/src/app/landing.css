@@ -609,17 +609,10 @@ footer a:hover {
   text-decoration: underline !important;
   text-underline-offset: 4px;
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-::view-transition-old(root) {
-  z-index: 1;
-}
-::view-transition-new(root) {
-  z-index: 9999;
-}
+/* The view-transition rules live in global.css, which the docs load too. The copy that
+   used to sit here came over with the port and carried `animation: none` without the
+   reveal that replaces it — and because this sheet loads later, it silently cancelled the
+   theme-switch animation. */
 ::selection {
   background: rgba(19, 111, 232, 0.22);
 }
@@ -1722,19 +1715,19 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  /* 40px box, 10px radius, page ground and a hairline — the design's own values. */
+  width: 40px;
+  height: 40px;
   box-sizing: border-box;
   padding: 0;
-  border: 1px solid var(--cy-faint);
-  border-radius: 4px;
-  background: var(--cy-surface);
-  color: var(--cy-muted);
+  border: 1px solid var(--cy-border);
+  border-radius: 10px;
+  background: var(--cy-bg);
+  color: var(--cy-fg);
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
 .cy-nav-theme:hover {
-  color: var(--cy-fg);
   border-color: rgba(var(--cy-muted-rgb), 0.65);
 }
 .cy-nav-theme:focus-visible {

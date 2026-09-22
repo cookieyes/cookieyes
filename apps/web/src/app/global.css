@@ -14,3 +14,35 @@
 html {
   scrollbar-gutter: stable;
 }
+
+/* Theme switch reveal — transcribed from the design's own rules. The new page is
+   revealed by a circle growing from the toggle; ThemeToggle sets --vt-x / --vt-y / --vt-r
+   from the button's position before starting the transition. Both halves of the site load
+   this file, so the landing page and the docs animate the same way. */
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999;
+  animation: cyThemeReveal var(--vt-dur, 400ms) ease-in-out both;
+}
+@keyframes cyThemeReveal {
+  from {
+    clip-path: circle(0 at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+  to {
+    clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
+  }
+}

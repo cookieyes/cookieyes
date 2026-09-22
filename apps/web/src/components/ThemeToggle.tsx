@@ -1,7 +1,8 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 
 /**
  * The design's `#themeBtn` (docs.html:335/2195-2201) — a single-glyph square button
@@ -20,6 +21,48 @@ import { useEffect, useState } from "react";
  * does the icon reconcile with the real resolved theme. That is a plain post-mount
  * state update, not a hydration mismatch.
  */
+
+/**
+ * Switches the theme behind a circular reveal growing from the button.
+ *
+ * Transcribed from the design's `applyTheme(dark, animate, origin)`: the radius reaches
+ * the furthest page corner from the click, and the position and radius are handed to the
+ * `cyThemeReveal` keyframes through `--vt-x` / `--vt-y` / `--vt-r` on `:root`.
+ *
+ * Falls back to switching outright where `startViewTransition` is unavailable, and skips
+ * the animation entirely for a reader who prefers reduced motion.
+ */
+function revealTheme(event: MouseEvent<HTMLButtonElement>, change: () => void): void {
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduced || !document.startViewTransition) {
+    change();
+    return;
+  }
+
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = rect.left + rect.width / 2;
+  const y = rect.top + rect.height / 2;
+  const radius = Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y),
+  );
+  const diagonal = Math.hypot(window.innerWidth, window.innerHeight) / Math.SQRT2;
+
+  const root = document.documentElement.style;
+  root.setProperty("--vt-x", `${((x / window.innerWidth) * 100).toFixed(3)}%`);
+  root.setProperty("--vt-y", `${((y / window.innerHeight) * 100).toFixed(3)}%`);
+  root.setProperty("--vt-r", `${((radius / diagonal) * 100).toFixed(3)}%`);
+
+  // `startViewTransition` snapshots the page, runs the callback, then snapshots again —
+  // so the callback has to change the DOM *synchronously*. `setTheme` is a React state
+  // update, which is not: without the flush the class lands after the second snapshot and
+  // the reveal animates one frame against an identical one (verified — the class was
+  // still unchanged when the callback returned).
+  document.startViewTransition(() => {
+    flushSync(change);
+  });
+}
+
 export function ThemeToggle({ className }: { className: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -36,7 +79,7 @@ export function ThemeToggle({ className }: { className: string }) {
       className={className}
       aria-label="Toggle dark mode"
       title="Toggle dark mode"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={(event) => revealTheme(event, () => setTheme(isDark ? "light" : "dark"))}
     >
       {isDark ? <SunIcon /> : <MoonIcon />}
     </button>

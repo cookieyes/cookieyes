@@ -466,7 +466,23 @@ class DesignMotion {
     }
   }
 
+  /** Repaint when the theme switches; `.dark` on <html> is what next-themes toggles. */
+  watchColorScheme() {
+    let wasDark = document.documentElement.classList.contains("dark");
+    this._schemeObserver = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains("dark");
+      if (isDark === wasDark) return;
+      wasDark = isDark;
+      this.applyColorScheme();
+    });
+    this._schemeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+  }
+
   componentDidMount() {
+    this.watchColorScheme();
     this.applyAccent();
     this.applyLines();
     this._linesIv = setInterval(() => this.applyLines(), 350);
@@ -922,6 +938,7 @@ class DesignMotion {
   }
 
   componentWillUnmount() {
+    if (this._schemeObserver) this._schemeObserver.disconnect();
     if (this._linesIv) clearInterval(this._linesIv);
     if (this._hoverBound) {
       for (const [el, type, fn] of this._hoverBound) el.removeEventListener(type, fn);
@@ -1267,6 +1284,29 @@ class DesignMotion {
       this.projectGlobeMarkers();
     };
     loop();
+  }
+
+  /**
+   * Re-colours everything that reads the colour scheme, after the scheme changes.
+   *
+   * The globe is a Three.js scene built once, so its material, atmosphere and layer
+   * colours are set at construction and do not follow a later theme change on their own —
+   * the design's own `applyTheme` re-applies exactly these. `applyAccent()` covers the
+   * CSS custom properties the canvases derive from.
+   */
+  applyColorScheme() {
+    const dark = document.documentElement.classList.contains("dark");
+    if (this._Globe) {
+      try {
+        this._Globe.showAtmosphere(!dark);
+        this._Globe.globeMaterial().color.set(dark ? "#1A1D21" : "#000000");
+        this._Globe.pathColor(() =>
+          dark ? "rgba(191,207,233,0.7)" : "rgba(11,46,102,0.45)",
+        );
+        this.applyGlobeAccent();
+      } catch (e) {}
+    }
+    this.applyAccent();
   }
 
   applyGlobeAccent() {
