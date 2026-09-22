@@ -201,7 +201,7 @@ export function Performance() {
             >
               {"The whole point of frontend-native: it barely touches the page."}
               <br />
-              {"Transferred bytes and time to banner, below."}
+              {"Time to banner and transferred bytes, below."}
             </p>{" "}
           </div>{" "}
         </div>{" "}
@@ -215,35 +215,6 @@ export function Performance() {
           }}
         >
           {" "}
-          <ChartCard
-            figure={String(ourBytes.kb)}
-            unit="KB"
-            lead={`/ ${leadOver(transferred)}× lighter`}
-            caption="Transferred bytes · log scale"
-            icon={
-              <path
-                d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5M16 5.25l-8 4.5"
-                stroke="var(--cy-accent)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            }
-            footnote={`${BYTES_NOT_MEASURED.join(", ")} — bytes not measurable: their scripts are served cross-origin, which hides resource sizes from the collector.`}
-          >
-            {TRANSFERRED.map((row, index) => (
-              <BarRow
-                key={row.label}
-                label={row.label}
-                value={`${row.kb} KB`}
-                count={String(row.kb)}
-                suffix=" KB"
-                width={logWidth(row.kb, transferred)}
-                delay={`${index * 0.1}s`}
-                ours={row.ours}
-              />
-            ))}
-          </ChartCard>{" "}
           <ChartCard
             figure={String(ourTime.ms)}
             unit="ms"
@@ -277,6 +248,35 @@ export function Performance() {
               );
             })}
           </ChartCard>{" "}
+          <ChartCard
+            figure={String(ourBytes.kb)}
+            unit="KB"
+            lead={`/ ${leadOver(transferred)}× lighter`}
+            caption="Transferred bytes · log scale"
+            icon={
+              <path
+                d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 12l8-4.5M12 12v9M12 12L4 7.5M16 5.25l-8 4.5"
+                stroke="var(--cy-accent)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            }
+            footnote={`${BYTES_NOT_MEASURED.join(", ")} — bytes not measurable: their scripts are served cross-origin, which hides resource sizes from the collector.`}
+          >
+            {TRANSFERRED.map((row, index) => (
+              <BarRow
+                key={row.label}
+                label={row.label}
+                value={`${row.kb} KB`}
+                count={String(row.kb)}
+                suffix=" KB"
+                width={logWidth(row.kb, transferred)}
+                delay={`${index * 0.1}s`}
+                ours={row.ours}
+              />
+            ))}
+          </ChartCard>{" "}
         </div>{" "}
         <p
           style={{
@@ -287,7 +287,7 @@ export function Performance() {
             color: "rgba(var(--cy-muted-rgb),0.75)",
           }}
         >
-          {`Measured by Cookiebannerbench on ${BENCH.runDate} — ${BENCH.condition}, ${BENCH.measured}. `}
+          {`Measured by Cookiebannerbench — ${BENCH.condition}, ${BENCH.measured}. `}
           <a href={BENCH.runUrl} style={{ color: "var(--cy-accent)" }}>
             {"See the run"}
           </a>

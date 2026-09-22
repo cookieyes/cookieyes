@@ -433,7 +433,9 @@ export function Hero() {
             </div>{" "}
           </div>{" "}
           <a
-            href="/docs"
+            /* `?pkg=` beats the reader's stored choice, so this always opens the
+               Next.js docs — without it the switcher keeps whatever was picked last. */
+            href="/docs?pkg=nextjs"
             className="scp1"
             style={{
               marginTop: "var(--cy-space-16)",

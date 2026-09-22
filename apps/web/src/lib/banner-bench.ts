@@ -8,8 +8,9 @@
  * versions that run actually loaded — a figure is only citable beside the version
  * it came from, and ours move faster than the benchmark re-runs.
  *
- * Every figure here is the p75 of 20 loads on the fast-desktop, cold-cache
- * condition, the closest of the published conditions to how this page is read.
+ * Every figure here is the p75 of 20 loads on the throttled-mobile, cold-cache
+ * condition — the view the benchmark presents by default, so the numbers here are the
+ * ones a reader sees when they follow the link.
  *
  * Only what the run could measure appears. The vendor-script installations serve
  * from hosts that expose no cross-origin resource sizes, so their transferred
@@ -21,8 +22,7 @@
  */
 export const BENCH = {
   runUrl: "https://cookiebannerbench.com/",
-  runDate: "15 September 2026",
-  condition: "fast desktop · cold cache · p75",
+  condition: "throttled mobile · cold cache · p75",
   measured: "@cookieyes/react 0.8.0",
 };
 
@@ -35,15 +35,17 @@ export const TRANSFERRED = [
 /** Providers whose bytes the run could not read, listed so their absence is not read as zero. */
 export const BYTES_NOT_MEASURED = ["enzuzo", "iubenda", "ketch", "onetrust", "osano"];
 
-/** Navigation start to the consent banner being visible. */
+/**
+ * Navigation start to the consent banner being visible.
+ *
+ * The same two installations as {@link TRANSFERRED}, and for the same reason: a reader
+ * comparing the two charts should be comparing the same things. c15t is the only other
+ * installation the run could measure bytes for, so it is the only one that can appear in
+ * both. Both rows are the React package, like for like.
+ */
 export const TIME_TO_BANNER = [
-  { label: "cookieyes", ms: 112, ours: true },
-  { label: "iubenda", ms: 241 },
-  { label: "onetrust", ms: 277 },
-  { label: "enzuzo", ms: 402 },
-  { label: "osano", ms: 434 },
-  { label: "c15t", ms: 1200 },
-  { label: "ketch", ms: 1500 },
+  { label: "cookieyes", ms: 463, ours: true },
+  { label: "c15t", ms: 2700 },
 ];
 
 /** How many times lighter or faster we are than the worst measured row, to one decimal. */
