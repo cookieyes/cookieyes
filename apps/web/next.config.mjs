@@ -37,11 +37,23 @@ const config = {
       permanent: false,
     }));
     // The primitives overview was folded into the Banner page.
-    const moved = ["nextjs", "react"].map((fw) => ({
-      source: `/docs/${fw}/headless/overview`,
-      destination: `/docs/${fw}/headless/banner`,
-      permanent: true,
-    }));
+    const moved = ["nextjs", "react"].flatMap((fw) => [
+      {
+        source: `/docs/${fw}/headless/overview`,
+        destination: `/docs/${fw}/headless/banner`,
+        permanent: true,
+      },
+      {
+        source: `/docs/${fw}/reopening-preferences`,
+        destination: `/docs/${fw}/hooks/use-consent-actions`,
+        permanent: true,
+      },
+      {
+        source: `/docs/${fw}/rendering-and-selector-contract`,
+        destination: `/docs/${fw}/styling/part-and-state-contract`,
+        permanent: true,
+      },
+    ]);
     const byQuery = ["react", "core"].flatMap((pkg) => [
       {
         source: "/docs",

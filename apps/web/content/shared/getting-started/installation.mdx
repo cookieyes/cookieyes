@@ -226,7 +226,7 @@ The stylesheet import is missing. Keep the `styles.css` import in `consent-manag
 `consent-manager.tsx` lost its `"use client"` line, or you called `initCookieYes()` directly in `layout.tsx`. Keep the call and the components in the client file.
 
 **The banner appears for a second, then disappears, for a visitor who already chose.**
-Expected by default: the server does not know the visitor's decision, so it renders the banner and the browser removes it. To fix it, read the decision on the server and pass it in. See [Rendering & selector contract → Server-rendering helpers](/docs/rendering-and-selector-contract#server-rendering-helpers).
+Expected by default: the server does not know the visitor's decision, so it renders the banner and the browser removes it. To fix it, read the decision on the server and pass it in. See [Runtime and server helpers](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server).
 
 </Framework>
 

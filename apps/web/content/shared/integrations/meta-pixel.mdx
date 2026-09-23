@@ -11,7 +11,7 @@ Use `metaPixel()` when you want Meta Pixel (`fbq`), conversion tracking and audi
 Skip it if:
 
 - Meta Pixel is already loaded through a Google Tag Manager container. The container's tags are opaque to this SDK: see [Google Consent Mode v2 → GTM is a special case](/docs/integrations/google-consent-mode#gtm-is-a-special-case). Configuring `metaPixel()` *and* a GTM tag for the same pixel double-loads and double-counts it.
-- You only need the pixel gone from a page you don't control (a hard-coded snippet in a CMS template). That's [`networkBlocker`](/docs/network-blocking#starter-rules-for-common-vendors), which already ships a starter rule for Meta's `/tr` endpoint: active blocking, not this preset.
+- You only need the pixel gone from a page you don't control (a hard-coded snippet in a CMS template). That's [`networkBlocker`](/docs/network-blocking) with a rule for `facebook.com`, `pathIncludes: "/tr"`, under `advertisement`: active blocking, not this preset.
 
 Meta Pixel does **not** read Google Consent Mode. It has its own consent API (`fbq('consent', ...)`), which is exactly what `metaPixel()` drives: see below.
 

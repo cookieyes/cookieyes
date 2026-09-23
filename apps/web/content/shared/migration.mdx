@@ -528,7 +528,7 @@ registerNetworkBlocker();
 
 **Do not skip this.** Configuring `networkBlocker` without registering logs an error to the console and blocks nothing: your rules are silently inert. The error names the exact import, but nothing else surfaces it, so check the console after upgrading.
 
-Nothing else changes: the `networkBlocker` config shape is identical, and a registered blocker installs during setup and patches the browser's networking immediately, exactly as before. It is a separate import rather than an on-demand load precisely so that timing does not change: see [Network blocking → Why the extra line](/docs/network-blocking#why-the-extra-line).
+Nothing else changes: the `networkBlocker` config shape is identical, and a registered blocker installs during setup and patches the browser's networking immediately, exactly as before. It is a separate import rather than an on-demand load precisely so that timing does not change: see [Network blocking](/docs/network-blocking).
 
 For a typical setup, one `createCookieYes()` call, no custom `backend` adapter, no old-style `integrations` vendor list, migrating is a rename-and-flatten exercise: swap the chain for an object literal, rename `backendURL` → `apiUrl` and `blockNetwork` → `networkBlocker`, drop `.mount()`. Budget **15–30 minutes**. It runs longer only if you're also carrying an old `integrations: [{ vendor: ... }]` or `builtInIntegrations` list that needs a real preset swap, not just a rename.
 

@@ -177,6 +177,8 @@ An earlier version of the stylesheet wrapped its rules in `@layer cookieyes`, on
 
 `data-cy-part`, `data-cy-state`, and the `cy-*` class names are the public, versioned contract: a rename to any of them is a breaking change. Everything else about the rendered markup, element tags, nesting depth, the number of wrapper `div`s, attribute order, is an implementation detail and can change in a minor or patch release. Write selectors against parts and classes; avoid tag or structural selectors (`.cy-banner > div:nth-child(2)`) for anything you want to survive an upgrade.
 
+Two more things are stable and safe to build tests on: the portal container `#cookieyes-portal-root`, and `[data-cky-banner]`, the visible banner card. Two things are not: `data-cy-entered`, an internal animation marker, and the position of the banner in the DOM, which moves into the portal container after the page loads. The two dialogs are added to the page only when opened, so a selector for them matches nothing until a visitor opens one.
+
 ### Verifying a rule is actually applying
 
 Open your browser's element inspector, select the target element, and check the computed value plus the "winning" declaration the panel shows you:

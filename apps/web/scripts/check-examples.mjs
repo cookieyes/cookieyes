@@ -46,8 +46,6 @@ const ENABLED_FILES = [
   "components/gated-script.mdx",
   "components/gated-frame.mdx",
   "components/reload-notice.mdx",
-  "reopening-preferences.mdx",
-  "rendering-and-selector-contract.mdx",
   "troubleshooting.mdx",
   "network-blocking.mdx",
   "styling/overview.mdx",
