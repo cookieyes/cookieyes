@@ -136,7 +136,7 @@ The same applies to `showPreferences()` with no `<CookiePreferences />` mounted.
 
 **Why.** You gated on the **live** values (`useConsent().categories`), which reflect in-progress toggles, rather than the **committed** values, which only change on a real decision.
 
-**Fix.** Gate on [`useConsentCategory(id)`](/docs/hooks/focused-hooks), or on `useConsent().committedCategories`. See [`categories` vs `committedCategories`](/docs/hooks/use-consent#categories-vs-committedcategories): this is the single most consequential distinction in the API.
+**Fix.** Gate on [`useConsentCategory(id)`](/docs/hooks/focused-hooks), or on `useConsent().committedCategories`. See [useConsent → Saved values vs live values](/docs/hooks/use-consent#saved-values-vs-live-values): this is the single most consequential distinction in the API.
 
 ### My custom categories did not appear
 
