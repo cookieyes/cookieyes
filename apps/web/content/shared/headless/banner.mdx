@@ -56,7 +56,7 @@ Each piece renders with the translated text for the active language. Pass `child
 | `Banner.RejectAll` | `<button>` | Rejects every optional category |
 | `Banner.OpenPreferences` | `<button>` | Opens the preferences dialog, so render `CookiePreferences` too |
 | `Banner.DoNotSell` | `<button>` | Opens the CCPA opt-out dialog, so render `CookieOptOut` too |
-| `Banner.Close` | `<button>` | **Accepts every category**, the same as Accept All. Under GDPR, leave it out |
+| `Banner.Close` | `<button>` | Hides the banner for this page view. Saves nothing; the banner returns on the next page load |
 | `Banner.Branding` | `<a>` | The "Powered by" link |
 
 Every piece takes `className`, `style` and the other props of the element it renders. The part names for CSS are the same as on [`CookieBanner`](/docs/components/cookie-banner#restyle-it).

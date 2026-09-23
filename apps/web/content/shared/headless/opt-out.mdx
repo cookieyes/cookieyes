@@ -43,7 +43,7 @@ export function ConsentOptOut() {
 }
 ```
 
-Give the checkbox an `id` and the label the matching `htmlFor`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after saving, the buttons disappear and the confirmation takes their place.
+Give the checkbox an `id` and the label the matching `htmlFor`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after an opt-out, the buttons disappear and the confirmation takes their place. Saving without an opt-out closes the dialog at once.
 
 ## The pieces
 
@@ -57,8 +57,8 @@ Give the checkbox an `id` and the label the matching `htmlFor`, so clicking the 
 | `OptOut.CheckboxLabel` | `<label>` | The checkbox text |
 | `OptOut.Cancel` | `<button>` | Closes without saving |
 | `OptOut.Save` | `<button>` | Saves and shows the confirmation |
-| `OptOut.Buttons` | `<div>` | Holds Cancel and Save. Hidden after saving |
-| `OptOut.Success` | `<div>` | The confirmation and a ten-second countdown, then the dialog closes. Shown only after saving |
+| `OptOut.Buttons` | `<div>` | Holds Cancel and Save. Hidden while the confirmation shows |
+| `OptOut.Success` | `<div>` | The confirmation after an opt-out, with a ten-second countdown, then the dialog closes. It receives focus so screen readers announce it |
 | `OptOut.Branding` | `<a>` | The "Powered by" link |
 
 Every piece takes `className`, `style` and the other props of the element it renders, and renders the translated text for the active language; pass `children` to replace it. `Close`, `Cancel` and `Save` accept `asChild` for your own button component, the same way as on [Banner](/docs/headless/banner#use-your-own-button-component).
@@ -72,8 +72,8 @@ Save with the box **ticked** rejects every optional category. Save with the box 
 **`Error: OptOut.* sub-components must be rendered inside <OptOut.Root>`.**
 `Checkbox`, `Save`, `Buttons` or `Success` sits outside `OptOut.Root`. Move it inside.
 
-**Nothing happens after Save, then the dialog closes.**
-`OptOut.Success` is not rendered, so the confirmation had nowhere to show.
+**Nothing shows after Save.**
+If the box was not ticked, the dialog simply closes; that is expected. If it was ticked, `OptOut.Success` is not rendered.
 
 **Clicking the label does not tick the box.**
 The checkbox `id` and the label `htmlFor` do not match.

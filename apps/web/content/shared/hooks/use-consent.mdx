@@ -41,6 +41,7 @@ export function ConsentStatus() {
 | `categories` | The **live** values: the same map, but it changes while the visitor flips switches in the dialog, before Save |
 | `regulation` | `"GDPR"` or `"CCPA"`. `"DEFAULT"` means none was set and behaves as GDPR |
 | `isPreferencesOpen`, `isOptOutOpen` | Whether a dialog is open right now |
+| `isBannerDismissed` | `true` after the visitor closed the banner without choosing, until the next page load |
 | `consentId`, `lastRenewed` | The record id and the time of the last decision |
 
 ## Saved values vs live values

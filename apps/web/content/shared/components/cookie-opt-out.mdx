@@ -6,7 +6,7 @@ frameworks: [nextjs, react]
 
 ## What it does
 
-Under `regulation: "CCPA"` the banner shows a **Do Not Sell** button. This is the dialog it opens: one checkbox and a Save button. Saving with the box ticked rejects every optional category; saving with it unticked accepts them all. After saving, a confirmation shows and the dialog closes by itself after ten seconds.
+Under `regulation: "CCPA"` the banner shows a **Do Not Sell** button. This is the dialog it opens: one checkbox and a Save button. Saving with the box ticked rejects every optional category; saving with it unticked accepts them all. After an opt-out, a confirmation shows and the dialog closes by itself after ten seconds; saving without opting out closes it at once.
 
 If the visitor's browser sends a Global Privacy Control signal, they start opted out before they see anything.
 

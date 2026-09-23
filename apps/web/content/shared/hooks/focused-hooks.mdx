@@ -48,7 +48,7 @@ export function AnalyticsWidget() {
 
 ## The banner and the dialogs
 
-`useBannerVisibility()` is `true` while the banner is on screen: the visitor has not chosen yet and no dialog is open. Use it to move your own floating elements out of the way. It is not "has the visitor decided": for that, read `useConsent().hasActed`.
+`useBannerVisibility()` is `true` while the banner is on screen: the visitor has not chosen, has not closed it, and no dialog is open. Use it to move your own floating elements out of the way. It is not "has the visitor decided": for that, read `useConsent().hasActed`.
 
 `usePreferencesOpen()` and `useOptOutOpen()` report the two dialogs.
 
