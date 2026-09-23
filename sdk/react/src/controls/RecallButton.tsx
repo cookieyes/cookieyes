@@ -12,7 +12,7 @@ import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { chain, useBodyPortalRoot } from "../primitives/utils.js";
+import { chain, composeRefs, useBodyPortalRoot } from "../primitives/utils.js";
 import { CY_PART } from "../styles/parts.js";
 
 export type RecallButtonProps = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
@@ -42,11 +42,7 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
 
   const button = (
     <button
-      ref={(node) => {
-        containerRef.current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) ref.current = node;
-      }}
+      ref={composeRefs(containerRef, ref)}
       type="button"
       aria-label={t.recallButtonLabel}
       className={className ?? "cy-widget"}

@@ -2,6 +2,7 @@
 
 import {
   type CSSProperties,
+  type Ref,
   type RefObject,
   type SyntheticEvent,
   useEffect,
@@ -17,6 +18,16 @@ export const VISUALLY_HIDDEN: CSSProperties = {
   clip: "rect(0,0,0,0)",
   whiteSpace: "nowrap",
 };
+
+/** Point every ref at the same node. */
+export function composeRefs<T>(...refs: Array<Ref<T> | undefined>): (node: T | null) => void {
+  return (node) => {
+    for (const ref of refs) {
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as { current: T | null }).current = node;
+    }
+  };
+}
 
 export function chain<E extends SyntheticEvent>(
   userHandler: ((e: E) => void) | undefined,

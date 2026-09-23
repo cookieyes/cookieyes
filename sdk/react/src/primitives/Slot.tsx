@@ -11,17 +11,9 @@ import {
   type Ref,
 } from "react";
 
-type AnyProps = Record<string, unknown>;
+import { composeRefs } from "./utils.js";
 
-/** Point every ref at the same node. */
-function composeRefs<T>(...refs: Array<Ref<T> | undefined>): (node: T | null) => void {
-  return (node) => {
-    for (const ref of refs) {
-      if (typeof ref === "function") ref(node);
-      else if (ref) (ref as { current: T | null }).current = node;
-    }
-  };
-}
+type AnyProps = Record<string, unknown>;
 
 /**
  * The child's ref, read in a way that works on both React 18 (ref lives on the

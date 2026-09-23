@@ -17,7 +17,7 @@ import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
 import { Slot } from "./Slot.js";
-import { chain, useBodyPortalRoot } from "./utils.js";
+import { chain, composeRefs, useBodyPortalRoot } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -71,11 +71,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   // Callers can still pass `role` and other attributes via props.
   const content = (
     <div
-      ref={(node) => {
-        containerRef.current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) ref.current = node;
-      }}
+      ref={composeRefs(containerRef, ref)}
       data-cy-part={CY_PART.banner.root}
       // Suppresses the entry animation on the card below — see `wasVisible`.
       {...(isReparent ? { "data-cy-entered": "" } : {})}

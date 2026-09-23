@@ -20,7 +20,14 @@ import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
 import { Slot } from "./Slot.js";
-import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap, VISUALLY_HIDDEN } from "./utils.js";
+import {
+  chain,
+  composeRefs,
+  useAutoFocusDialog,
+  useEscapeKey,
+  useFocusTrap,
+  VISUALLY_HIDDEN,
+} from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -105,11 +112,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   return (
     <OptOutContext.Provider value={{ optOut, setOptOut, saved, setSaved, secondsLeft, titleId }}>
       <div
-        ref={(node) => {
-          containerRef.current = node;
-          if (typeof ref === "function") ref(node);
-          else if (ref) ref.current = node;
-        }}
+        ref={composeRefs(containerRef, ref)}
         role="dialog"
         aria-modal="true"
         // Named by the heading the visitor can see, so the spoken and printed names match.
@@ -304,16 +307,7 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
   if (!saved) return null;
   const countdown = t.optOut.successCountdown.split("{seconds}");
   return (
-    <div
-      ref={(node) => {
-        innerRef.current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) ref.current = node;
-      }}
-      role="status"
-      tabIndex={-1}
-      {...props}
-    >
+    <div ref={composeRefs(innerRef, ref)} role="status" tabIndex={-1} {...props}>
       <div className="cy-optout-success-inner">
         <div className="cy-optout-success-row">
           <div className="cy-optout-success-icon" aria-hidden="true">
