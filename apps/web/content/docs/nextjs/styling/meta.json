@@ -3,13 +3,13 @@
   "pages": [
     "overview",
     "theme-tokens",
-    "css-variables",
-    "part-and-state-contract",
-    "critical-css",
-    "custom-css",
-    "tailwind",
     "color-scheme",
-    "csp"
+    "custom-css",
+    "part-and-state-contract",
+    "tailwind",
+    "critical-css",
+    "csp",
+    "css-variables"
   ],
   "defaultOpen": true,
   "collapsible": true
