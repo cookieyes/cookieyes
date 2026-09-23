@@ -11,7 +11,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { CookieYesLogo } from "../components/icons.js";
+import { BrandingLink } from "../components/BrandingLink.js";
+import { CrossIcon } from "../components/icons.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
@@ -19,7 +20,7 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
-import { Slot } from "./Slot.js";
+import { renderAction } from "./Slot.js";
 import {
   chain,
   composeRefs,
@@ -166,34 +167,7 @@ const Close = forwardRef<HTMLButtonElement, ActionProps>(function OptOutClose(
     onClick: chain(onClick, hideOptOut),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? (
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M1 1L9 9M9 1L1 9"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, <CrossIcon size={10} />);
 });
 
 const Checkbox = forwardRef<HTMLInputElement, InputProps>(function OptOutCheckbox(
@@ -235,18 +209,7 @@ const Cancel = forwardRef<HTMLButtonElement, ActionProps>(function OptOutCancel(
   const { hideOptOut } = useConsentActions();
   const t = useTranslations();
   const behavior = { onClick: chain(onClick, hideOptOut), ...rest };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.optOut.cancel}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.optOut.cancel);
 });
 
 const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
@@ -271,18 +234,7 @@ const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
     }),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.savePreferences}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.savePreferences);
 });
 
 const Buttons = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
@@ -347,28 +299,8 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
   );
 });
 
-const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function OptOutBranding(
-  { children, ...props },
-  ref,
-) {
-  const t = useTranslations();
-  return (
-    <a
-      ref={ref}
-      href="https://www.cookieyes.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      // Neither the visible text nor the logo says the link opens a new tab.
-      aria-label={`${t.poweredBy} (${t.opensInNewTab})`}
-      {...props}
-    >
-      {children ?? (
-        <>
-          Powered by <CookieYesLogo />
-        </>
-      )}
-    </a>
-  );
+const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function OptOutBranding(props, ref) {
+  return <BrandingLink ref={ref} {...props} />;
 });
 
 export const OptOut = {

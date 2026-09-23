@@ -2,6 +2,7 @@
 
 import {
   Children,
+  type ComponentPropsWithoutRef,
   type CSSProperties,
   cloneElement,
   forwardRef,
@@ -67,3 +68,28 @@ export const Slot = forwardRef<HTMLElement, { children?: ReactNode } & AnyProps>
 
   return cloneElement(child, merged);
 });
+
+/**
+ * An action rendered as the caller's own element (`asChild`) or as our `<button>`,
+ * with the same behaviour props either way. `fallback` is the button's default content.
+ */
+export function renderAction(
+  asChild: boolean | undefined,
+  ref: Ref<HTMLButtonElement>,
+  behavior: ComponentPropsWithoutRef<"button">,
+  children: ReactNode,
+  fallback: ReactNode,
+): ReactElement {
+  if (asChild) {
+    return (
+      <Slot ref={ref} {...behavior}>
+        {children}
+      </Slot>
+    );
+  }
+  return (
+    <button ref={ref} type="button" {...behavior}>
+      {children ?? fallback}
+    </button>
+  );
+}

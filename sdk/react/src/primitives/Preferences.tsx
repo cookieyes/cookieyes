@@ -10,7 +10,8 @@ import {
   useId,
   useRef,
 } from "react";
-import { CookieYesLogo } from "../components/icons.js";
+import { BrandingLink } from "../components/BrandingLink.js";
+import { CrossIcon } from "../components/icons.js";
 import { useCategories } from "../hooks/useCategories.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
@@ -20,7 +21,7 @@ import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { _tryGetCookieYes } from "../runtime.js";
 import { CY_PART } from "../styles/parts.js";
-import { Slot } from "./Slot.js";
+import { renderAction } from "./Slot.js";
 import {
   chain,
   composeRefs,
@@ -139,34 +140,7 @@ const Close = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesClo
     onClick: chain(onClick, hidePreferences),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? (
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M1 1L11 11M11 1L1 11"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, <CrossIcon size={12} strokeWidth={1.8} />);
 });
 
 const Categories = forwardRef<
@@ -252,18 +226,7 @@ const AcceptAll = forwardRef<HTMLButtonElement, ActionProps>(function Preference
     onClick: chain(onClick, acceptAll),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.acceptAll}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.acceptAll);
 });
 
 const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesRejectAll(
@@ -277,18 +240,7 @@ const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function Preference
     onClick: chain(onClick, rejectAll),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.rejectAll}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.rejectAll);
 });
 
 const Save = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesSave(
@@ -302,44 +254,14 @@ const Save = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesSave
     onClick: chain(onClick, save),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.savePreferences}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.savePreferences);
 });
 
-const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function PreferencesBranding(
-  { children, ...props },
-  ref,
-) {
-  const t = useTranslations();
-  return (
-    <a
-      ref={ref}
-      href="https://www.cookieyes.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      // Neither the visible text nor the logo says the link opens a new tab.
-      aria-label={`${t.poweredBy} (${t.opensInNewTab})`}
-      data-cy-part={CY_PART.dialog.branding}
-      {...props}
-    >
-      {children ?? (
-        <>
-          Powered by <CookieYesLogo />
-        </>
-      )}
-    </a>
-  );
-});
+const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(
+  function PreferencesBranding(props, ref) {
+    return <BrandingLink ref={ref} data-cy-part={CY_PART.dialog.branding} {...props} />;
+  },
+);
 
 export const Preferences = {
   Root,
