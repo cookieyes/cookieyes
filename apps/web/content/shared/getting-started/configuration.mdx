@@ -62,13 +62,13 @@ Each rule takes `id`, `domain` and `category`, and optionally `pathIncludes` and
 
 ## Choosing a privacy law: the `regulation` option
 
-| | `"GDPR"` and `"DEFAULT"` | `"CCPA"` |
+| | `"GDPR"` | `"CCPA"` |
 | --- | --- | --- |
 | Optional categories before the visitor chooses | Off, the visitor opts in | On, the visitor opts out |
 | Banner buttons | Accept All, Reject All, Customise | Do Not Sell |
 | Global Privacy Control | Not used | Honoured |
 
-Set the strictest law your visitors fall under, `"GDPR"` for most sites, and ship it for everyone. To choose per visitor, set `region` instead: it maps the visitor's country to a regulation. A manual `regulation` always wins over `region`, so set one or the other.
+Set the strictest law your visitors fall under, `"GDPR"` for most sites, and ship it for everyone. If you set nothing, the banner behaves as under `"GDPR"`. To choose per visitor, set `region` instead: it maps the visitor's country to a regulation. A manual `regulation` always wins over `region`, so set one or the other.
 
 <Framework when="nextjs react">
 

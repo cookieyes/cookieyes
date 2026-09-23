@@ -46,7 +46,7 @@ export function ConsentStatus() {
 | `hasActed` | `boolean` | Whether a real decision has been made. Drives banner visibility |
 | `categories` | `Record<string, boolean>` | **Live** values: reflect unsaved dialog toggles. Drive checkboxes |
 | `committedCategories` | `Record<string, boolean>` | **Committed** values: change only on a real decision. Gate on these |
-| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | The regulation in effect |
+| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | The law in effect. `"DEFAULT"` means none was set and behaves as GDPR |
 | `lastRenewed` | `number \| undefined` | Timestamp of the last decision |
 | `taxonomyHash` | `string \| undefined` | Fingerprint of the category list this consent was recorded under. When it stops matching your config, the visitor is [re-prompted](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) |
 | `isPreferencesOpen` | `boolean` | Whether the preferences dialog is open |

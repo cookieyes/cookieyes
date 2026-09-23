@@ -60,7 +60,7 @@ Two steps, about five minutes.
 npm install @cookieyes/nextjs
 ```
 
-This is the only package you install. It contains everything in `@cookieyes/react`, and adds server helpers for Next.js.
+This is the only package you install.
 
 </Framework>
 
@@ -70,7 +70,7 @@ This is the only package you install. It contains everything in `@cookieyes/reac
 npm install @cookieyes/react
 ```
 
-This is the only package you install. The consent engine, `@cookieyes/core`, comes with it.
+This is the only package you install.
 
 </Framework>
 
@@ -90,7 +90,7 @@ This is also the package for Vue, Svelte, Angular, Solid and any other framework
 
 ## 2. Create the consent manager
 
-One client file: the configuration, the stylesheet, and the three components.
+One file: the configuration, the stylesheet, and the three components.
 
 <Framework when="nextjs">
 
@@ -102,7 +102,7 @@ import "@cookieyes/react/styles.css";
 
 initCookieYes({
   mode: "cookie-only", // no backend needed
-  regulation: "GDPR", // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR", // "GDPR" | "CCPA"
 });
 
 export function CookieYesRoot() {
@@ -128,7 +128,7 @@ import "@cookieyes/react/styles.css";
 
 initCookieYes({
   mode: "cookie-only", // no backend needed
-  regulation: "GDPR", // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR", // "GDPR" | "CCPA"
 });
 
 export function CookieYesRoot() {
@@ -200,7 +200,7 @@ import { initCookieYes } from "@cookieyes/core";
 
 export const { consentStore, consentManager } = initCookieYes({
   mode: "cookie-only", // no backend needed
-  regulation: "GDPR", // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR", // "GDPR" | "CCPA"
 });
 ```
 
@@ -216,7 +216,7 @@ Done. `consentStore` tells you what to show and `consentManager` records what th
 The stylesheet import is missing. Keep the `styles.css` import in `consent-manager.tsx`, where the example above has it.
 
 **Nothing renders: no banner, no error anywhere.**
-`initCookieYes()` never ran, because the file that calls it is not imported anywhere. Make sure `<CookieYesRoot />` is rendered in your layout, as in step 3. This fails silently on purpose: the components read the runtime through a non-throwing accessor, so a missing runtime produces nothing rather than a crash.
+`initCookieYes()` never ran, because the file that calls it is not imported anywhere. Make sure `<CookieYesRoot />` is rendered, as in step 3. There is no error by design.
 
 </Framework>
 

@@ -169,7 +169,7 @@ export function ChatLauncher() {
 
 ### Which law applies, and why
 
-`useRegulation()` returns the law in effect: `"GDPR"`, `"CCPA"`, or `"DEFAULT"`. **If that is all you need, it is enough**; reach for `useRegion()` only when the answer surprises you.
+`useRegulation()` returns the law in effect: `"GDPR"` or `"CCPA"`, or `"DEFAULT"` when `regulation` was never set, which behaves as GDPR. **If that is all you need, it is enough**; reach for `useRegion()` only when the answer surprises you.
 
 `useRegion()` returns the whole decision, which makes it the tool for *"why is this visitor seeing the wrong banner?"*: the question this trips people on. `source` is usually the field that explains it:
 

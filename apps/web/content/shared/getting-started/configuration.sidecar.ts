@@ -34,11 +34,11 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "regulation",
     group: "setup",
     description:
-      "Which privacy regulation applies (GDPR, CCPA, or DEFAULT). A manual value here always wins over region detection.",
+      'Which privacy law applies: "GDPR" (opt-in) or "CCPA" (opt-out). Leave it out and the banner behaves as under GDPR. A manual value here always wins over region detection.',
     default: '"DEFAULT"',
     defaultLocation: "core/runtime.ts:69 (also react/runtime.ts:291)",
     ifOmitted:
-      'Defaults to "DEFAULT": a generic regulation profile that is neither GDPR-strict nor CCPA-specific. If `region` is also configured, its detected regulation is used instead; with neither set, every visitor sees the DEFAULT banner regardless of where they are.',
+      'Behaves as GDPR: optional categories start off and the visitor opts in; the stored value is "DEFAULT". If `region` is configured, its detected regulation is used instead.',
   },
   {
     path: "region",
@@ -48,7 +48,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     default: null,
     defaultLocation: null,
     ifOmitted:
-      "No geo-detection runs. The active regulation is whatever `regulation` resolves to (default \"DEFAULT\") for every visitor, regardless of where they actually are.",
+      "No geo-detection runs. Every visitor gets the `regulation` you set, or GDPR behaviour if you set none, regardless of where they are.",
   },
   {
     path: "overrides",

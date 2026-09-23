@@ -59,7 +59,7 @@ Call `initCookieYes()` once, at module scope, and export what it returns. A seco
 | `consents` | `Record<string, boolean>` | The **live** toggles, including a switch the visitor has flipped but not yet saved |
 | `committedConsents` | `Record<string, boolean>` | The saved values, kept separately so a preferences dialog can show live toggles and still know what is in force |
 | `activeUI` | `"banner" \| "dialog" \| null` | Which surface should be open. The store tracks it; drawing it is your job |
-| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | The regulation that resolved for this visitor, which sets the starting state of the categories |
+| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | The law in effect for this visitor, which sets the starting state of the categories. `"DEFAULT"` means none was set and behaves as GDPR |
 | `consentId` | `string` | A stable id for the saved record, for your own logs |
 
 Two helpers on the same object: `has(category)` reads one saved value, and `setConsent(category, value)` flips one live toggle without saving.
