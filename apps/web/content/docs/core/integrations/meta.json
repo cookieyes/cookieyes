@@ -1,0 +1,17 @@
+{
+  "title": "Integrations",
+  "root": true,
+  "pages": [
+    "index",
+    "google-consent-mode",
+    "custom-integration",
+    "--- Integrations ---",
+    "ga4",
+    "google-tag-manager",
+    "google-ads",
+    "meta-pixel",
+    "microsoft-clarity",
+    "posthog",
+    "segment"
+  ]
+}

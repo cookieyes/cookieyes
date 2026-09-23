@@ -3,13 +3,21 @@
 import { findNeighbour } from "fumadocs-core/page-tree";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/notebook/page";
 import { createRelativeLink } from "fumadocs-ui/mdx";
+import type { MDXComponents } from "mdx/types";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { ComponentProps } from "react";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
 import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
 import { getMDXComponents } from "@/components/mdx";
+import {
+  DEFAULT_FRAMEWORK,
+  type Framework,
+  frameworkOf,
+  resolveDocsHref,
+  sharedPath,
+} from "@/lib/framework-docs";
 import { source } from "@/lib/source";
 
 /** Where the MDX for a page is served as raw Markdown. See app/api/md. */
@@ -19,9 +27,39 @@ function markdownUrl(slugs: string[]): string {
 
 const REPO = "https://github.com/cookieyes/cookieyes";
 
-/** Where a reader edits this page, and where they report a problem with it. */
-function editUrl(path: string): string {
-  return `${REPO}/edit/main/apps/web/content/docs/${path}`;
+/**
+ * Where a reader edits this page, and where they report a problem with it.
+ *
+ * A framework page's own file is a generated wrapper (scripts/generate-framework-docs.mjs),
+ * so "Edit page" points at the shared body the text actually lives in.
+ */
+function editUrl(slugs: string[], path: string): string {
+  const file = frameworkOf(slugs) ? `shared/${sharedPath(path)}` : `docs/${path}`;
+  return `${REPO}/edit/main/apps/web/content/${file}`;
+}
+
+/**
+ * MDX link components for a page under one framework. Bodies are written with
+ * framework-less links (`/docs/hooks/use-consent`); these send the reader to that page
+ * under their own framework, or under the first one that has it. `Card` needs the same
+ * treatment as `a` because Fumadocs' Card renders its own Link, not the MDX `a`.
+ */
+function frameworkLinkComponents(
+  framework: Framework | null,
+  page: NonNullable<ReturnType<typeof source.getPage>>,
+): MDXComponents {
+  const exists = (fw: Framework, rest: string) =>
+    source.getPage([fw, ...rest.split("/")]) !== undefined;
+  const relative = createRelativeLink(source, page);
+  const resolve = (href: string | undefined) =>
+    typeof href === "string" ? resolveDocsHref(href, framework, exists) : href;
+
+  const Card = getMDXComponents().Card as (props: ComponentProps<"a">) => React.ReactNode;
+
+  return {
+    a: (props: ComponentProps<"a">) => relative({ ...props, href: resolve(props.href) }),
+    Card: (props: ComponentProps<"a">) => <Card {...props} href={resolve(props.href)} />,
+  };
 }
 
 function issueUrl(title: string, url: string): string {
@@ -34,9 +72,14 @@ function issueUrl(title: string, url: string): string {
 
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
+  // `/docs` itself has no page: every section lives under a framework root, and the
+  // sidebar and header choose theirs from the URL. Old un-prefixed links are redirected in
+  // next.config.mjs; this handles the bare path.
+  if (!params.slug?.length) redirect(`/docs/${DEFAULT_FRAMEWORK}`);
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
+  const framework = frameworkOf(page.slugs);
   const MDX = page.data.body;
   const md = markdownUrl(page.slugs);
 
@@ -67,83 +110,94 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   // prop with the description forced to the design's literal caption instead.
   const { previous, next } = findNeighbour(source.pageTree, page.url);
 
-  // "v1.4.0 — Critical CSS, …" -> "v1.4.0". Em-dash split, falling back to the whole
+  // "react 0.9.0: Critical CSS, …" -> "react 0.9.0". Colon split, falling back to the whole
   // title if a release page is ever authored without one.
-  const releaseVersionLabel = page.data.title.split("—")[0]?.trim() ?? page.data.title;
+  const releaseVersionLabel = page.data.title.split(":")[0]?.trim() ?? page.data.title;
 
   return (
-    <DocsPage
-      toc={page.data.toc}
-      full={page.data.full}
-      // The design shows the full trail including the current page —
-      // "Getting Started › Quickstart" — rather than the parent alone.
-      breadcrumb={{
-        enabled: !isChangelogIndex,
-        includePage: true,
-        includeSeparator: true,
-        className: "cy-doc-bc",
-      }}
-      tableOfContent={{
-        // TOCItemsProps spreads unrecognized keys onto the rendered container
-        // <div> (verified in fumadocs-ui's default.js), but its type is typed
-        // as ComponentProps<'div'>, which has no index signature for data-*
-        // attributes — the cast reflects a real, verified runtime prop, not a
-        // type escape hatch for unrelated code.
-        list: { "data-cy-toc-list": "" } as ComponentProps<"div">,
-        footer: isChangelogSection ? undefined : (
-          <TocFooter editUrl={editUrl(page.path)} issueUrl={issueUrl(page.data.title, page.url)} />
-        ),
-      }}
-      // Fumadocs' own default Footer renders unconditionally today with no class of
-      // its own (verified: neither <footer> nor [data-footer] exist anywhere in its
-      // render tree — the theme.css selectors that used to target those matched
-      // nothing). This restyles Fumadocs' own element, the same "restyle, don't
-      // rebuild" call the TOC rail and Steps rail already made — see design doc
-      // §2.6. `items` (below) now supplies previous/next explicitly instead of
-      // leaving Footer to compute — and render its description — itself.
-      footer={{
-        enabled: !isChangelogSection,
-        className: "cy-doc-pnav",
-        items: {
-          previous: previous ? { ...previous, description: "Previous" } : undefined,
-          next: next ? { ...next, description: "Next" } : undefined,
-        },
-      }}
-    >
-      {/* Header: .bc (breadcrumb prop, above) → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
+    <>
+      {/* Next.js scrolls to the top after a navigation only if the page segment's first
+          element is a real, non-sticky box that is off-screen. Fumadocs' notebook page
+          starts with <main class="contents"> (zero-size, skipped) followed by the sticky
+          TOC (skipped), so without this 1px anchor the new page opened at the old scroll
+          position. */}
+      <div className="cy-doc-scroll-anchor" aria-hidden="true" />
+      <DocsPage
+        toc={page.data.toc}
+        full={page.data.full}
+        // The design shows the full trail including the current page —
+        // "Getting Started › Quickstart" — rather than the parent alone.
+        breadcrumb={{
+          enabled: !isChangelogIndex,
+          includePage: true,
+          includeSeparator: true,
+          className: "cy-doc-bc",
+        }}
+        tableOfContent={{
+          // TOCItemsProps spreads unrecognized keys onto the rendered container
+          // <div> (verified in fumadocs-ui's default.js), but its type is typed
+          // as ComponentProps<'div'>, which has no index signature for data-*
+          // attributes — the cast reflects a real, verified runtime prop, not a
+          // type escape hatch for unrelated code.
+          list: { "data-cy-toc-list": "" } as ComponentProps<"div">,
+          footer: isChangelogSection ? undefined : (
+            <TocFooter
+              editUrl={editUrl(page.slugs, page.path)}
+              issueUrl={issueUrl(page.data.title, page.url)}
+            />
+          ),
+        }}
+        // Fumadocs' own default Footer renders unconditionally today with no class of
+        // its own (verified: neither <footer> nor [data-footer] exist anywhere in its
+        // render tree — the theme.css selectors that used to target those matched
+        // nothing). This restyles Fumadocs' own element, the same "restyle, don't
+        // rebuild" call the TOC rail and Steps rail already made — see design doc
+        // §2.6. `items` (below) now supplies previous/next explicitly instead of
+        // leaving Footer to compute — and render its description — itself.
+        footer={{
+          enabled: !isChangelogSection,
+          className: "cy-doc-pnav",
+          items: {
+            previous: previous ? { ...previous, description: "Previous" } : undefined,
+            next: next ? { ...next, description: "Next" } : undefined,
+          },
+        }}
+      >
+        {/* Header: .bc (breadcrumb prop, above) → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
           matching docs.html's own runtime assembly (initPageMeta(), docs.html:2119-2168). */}
-      <div className="cy-doc-ptitle">
-        {/* A release page's frontmatter title carries "vX.Y.Z — Headline" so the sidebar
+        <div className="cy-doc-ptitle">
+          {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}
-        <DocsTitle>{isReleasePage ? releaseVersionLabel : page.data.title}</DocsTitle>
+          <DocsTitle>{isReleasePage ? releaseVersionLabel : page.data.title}</DocsTitle>
 
-        {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
+          {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
             See design doc content-tier-d.md. */}
-        <div className="cy-doc-page-actions">
-          <PmSplit markdownUrl={md} />
+          <div className="cy-doc-page-actions">
+            <PmSplit markdownUrl={md} />
+          </div>
         </div>
-      </div>
 
-      {/* Suppressed on a release detail page (§2.6): frontmatter `description` is
+        {/* Suppressed on a release detail page (§2.6): frontmatter `description` is
           retained there only for generateMetadata's SEO/social tags, never rendered,
           and <DocsBody> begins immediately after the h1 with <ReleaseBadges> etc. */}
-      {!isReleasePage && (
-        <>
-          {/* The design hyperlinks "Keep a Changelog" / "Semantic Versioning" inside .pd
+        {!isReleasePage && (
+          <>
+            {/* The design hyperlinks "Keep a Changelog" / "Semantic Versioning" inside .pd
               (docs.html:1780). `description` is a plain frontmatter string reused as the SEO
               meta description below, so the anchors are applied at render — see
               LinkedDescription. A description with no known phrase renders unchanged. */}
-          <DocsDescription className="cy-doc-pd">
-            <LinkedDescription text={page.data.description ?? ""} />
-          </DocsDescription>
-        </>
-      )}
+            <DocsDescription className="cy-doc-pd">
+              <LinkedDescription text={page.data.description ?? ""} />
+            </DocsDescription>
+          </>
+        )}
 
-      <DocsBody>
-        <MDX components={getMDXComponents({ a: createRelativeLink(source, page) })} />
-      </DocsBody>
-    </DocsPage>
+        <DocsBody>
+          <MDX components={getMDXComponents(frameworkLinkComponents(framework, page))} />
+        </DocsBody>
+      </DocsPage>
+    </>
   );
 }
 

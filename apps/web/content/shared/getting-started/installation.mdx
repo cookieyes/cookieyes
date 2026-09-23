@@ -1,0 +1,259 @@
+---
+title: Installation
+description: Install the CookieYes SDK and get a working banner in three steps.
+frameworks: [nextjs, react, core]
+---
+
+<Framework when="nextjs react">
+
+Three steps, about five minutes. If you would rather have the files written for you, run `npx @cookieyes/cli init`: it does exactly what this page does. See [Quick start](/docs/getting-started/quick-start).
+
+</Framework>
+
+<Framework when="core">
+
+Two steps, about five minutes.
+
+</Framework>
+
+## Prerequisites
+
+<Framework when="nextjs">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20 |
+| Next.js | 14, App Router or Pages Router |
+| React | 18 |
+
+</Framework>
+
+<Framework when="react">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20 |
+| React | 18 (Vite, Create React App, Remix, or any other React setup) |
+
+</Framework>
+
+<Framework when="core">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20, for your build tooling |
+| Browser | Any modern browser. The engine has no dependencies and no framework requirement |
+
+</Framework>
+
+## 1. Install
+
+{/* The three ```npm fences below are the only fences in the docs without a title=.
+    That is deliberate: remark-npm turns each into a package-manager tab group, and the
+    npm|pnpm|yarn|bun tab bar already serves as the block's header. Adding title="Terminal"
+    renders a second caption row beneath the tabs (verified): redundant chrome. Leave them
+    untitled; this is an exception to the house rule, not an oversight. */}
+
+<Framework when="nextjs">
+
+```npm
+npm install @cookieyes/nextjs
+```
+
+This is the only package you install. It contains everything in `@cookieyes/react`, and adds server helpers for Next.js.
+
+</Framework>
+
+<Framework when="react">
+
+```npm
+npm install @cookieyes/react
+```
+
+This is the only package you install. The consent engine, `@cookieyes/core`, comes with it.
+
+</Framework>
+
+<Framework when="core">
+
+```npm
+npm install @cookieyes/core
+```
+
+`@cookieyes/core` is the engine alone: it stores and applies consent, runs integrations and blocks requests, and draws nothing. The banner is yours to build, on [the consent store](/docs/store/using-the-store).
+
+This is also the package for Vue, Svelte, Angular, Solid and any other framework without a CookieYes adapter.
+
+</Framework>
+
+<Framework when="nextjs react">
+
+## 2. Create the consent manager
+
+One client file: the configuration, the stylesheet, and the three components.
+
+<Framework when="nextjs">
+
+```tsx title="app/consent-manager.tsx" group="setup"
+"use client";
+
+import { CookieBanner, CookiePreferences, RecallButton, initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+
+initCookieYes({
+  mode: "cookie-only", // no backend needed
+  regulation: "GDPR", // "GDPR" | "CCPA" | "DEFAULT"
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </>
+  );
+}
+```
+
+The file must start with `"use client"`: the banner runs in the browser, and so does `initCookieYes()`.
+
+</Framework>
+
+<Framework when="react">
+
+```tsx title="src/consent-manager.tsx" group="setup"
+import { CookieBanner, CookiePreferences, RecallButton, initCookieYes } from "@cookieyes/react";
+import "@cookieyes/react/styles.css";
+
+initCookieYes({
+  mode: "cookie-only", // no backend needed
+  regulation: "GDPR", // "GDPR" | "CCPA" | "DEFAULT"
+});
+
+export function CookieYesRoot() {
+  return (
+    <>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </>
+  );
+}
+```
+
+</Framework>
+
+The stylesheet import is required. The components ship no inline styling, so without it they render as plain text, with no error to tell you why.
+
+## 3. Render it once
+
+<Framework when="nextjs">
+
+```tsx title="app/layout.tsx" group="setup"
+import { CookieYesRoot } from "./consent-manager";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <CookieYesRoot />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+The layout stays a Server Component; only `consent-manager.tsx` is client code.
+
+</Framework>
+
+<Framework when="react">
+
+```tsx title="src/main.tsx" group="setup"
+import { createRoot } from "react-dom/client";
+import { CookieYesRoot } from "./consent-manager";
+
+createRoot(document.getElementById("root") as HTMLElement).render(
+  <>
+    <CookieYesRoot />
+    <h1>Your app</h1>
+  </>,
+);
+```
+
+</Framework>
+
+Put it before your page content, so the banner is early in the DOM: screen readers announce it first, and it paints before the rest of the page.
+
+Done. Reload the page and the banner appears. If it does not, see [Common mistakes](#common-mistakes).
+
+</Framework>
+
+<Framework when="core">
+
+## 2. Initialise the runtime
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+
+export const { consentStore, consentManager } = initCookieYes({
+  mode: "cookie-only", // no backend needed
+  regulation: "GDPR", // "GDPR" | "CCPA" | "DEFAULT"
+});
+```
+
+Done. `consentStore` tells you what to show and `consentManager` records what the visitor chose. [Build your own UI](/docs/store/build-your-own-ui) renders a banner from them in about 60 lines.
+
+</Framework>
+
+## Common mistakes
+
+<Framework when="nextjs react">
+
+**The banner renders as unstyled text.**
+The stylesheet import is missing. Keep the `styles.css` import in `consent-manager.tsx`, where the example above has it.
+
+**Nothing renders: no banner, no error anywhere.**
+`initCookieYes()` never ran, because the file that calls it is not imported anywhere. Make sure `<CookieYesRoot />` is rendered in your layout, as in step 3. This fails silently on purpose: the components read the runtime through a non-throwing accessor, so a missing runtime produces nothing rather than a crash.
+
+</Framework>
+
+<Framework when="nextjs">
+
+**`You're importing a component that needs "use client"`**
+`consent-manager.tsx` lost its `"use client"` line, or you called `initCookieYes()` directly in `layout.tsx`. Keep the call and the components in the client file.
+
+**The banner appears for a second, then disappears, for a visitor who already chose.**
+Expected by default: the server does not know the visitor's decision, so it renders the banner and the browser removes it. To fix it, read the decision on the server and pass it in. See [Rendering & selector contract → Server-rendering helpers](/docs/rendering-and-selector-contract#server-rendering-helpers).
+
+</Framework>
+
+<Framework when="core">
+
+**Nothing appears on the page.**
+Nothing is meant to. `@cookieyes/core` draws no UI; it decides what should show and records what the visitor chose. Render the banner yourself from `consentStore`, as in [Build your own UI](/docs/store/build-your-own-ui).
+
+**`initCookieYes()` seems to run twice.**
+The module that calls it is imported from two places under a bundler that duplicates it, or you call it inside a function. Each call replaces the runtime and logs a warning. Call it once, at module scope, and import the result.
+
+</Framework>
+
+## Next steps
+
+<Framework when="nextjs react">
+
+- [Configuration](/docs/getting-started/configuration): every option of `initCookieYes()`, including CCPA and languages
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="core">
+
+- [Using the store directly](/docs/store/using-the-store): read, change and react to consent from plain JavaScript
+- [Build your own UI](/docs/store/build-your-own-ui): a banner and a preferences dialog rendered from the store
+- [Configuration](/docs/getting-started/configuration): every option of `initCookieYes()`
+
+</Framework>

@@ -1,9 +1,10 @@
 "use client";
 
 import { useDocsSearch } from "fumadocs-core/search/client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useSearchIndex } from "@/components/docs/search-index-context";
+import { DEFAULT_FRAMEWORK, frameworkOf } from "@/lib/framework-docs";
 import type { SearchIndexEntry } from "@/lib/search-index";
 
 interface SearchDialogProps {
@@ -28,9 +29,17 @@ interface Row extends SearchIndexEntry {
  * /api/search route — so only the presentation is ours.
  */
 export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
-  const pageIndex = useSearchIndex();
   const router = useRouter();
-  const { search, setSearch, query } = useDocsSearch({ type: "fetch" });
+  const pathname = usePathname();
+  // Results stay inside the root the reader is in — a JavaScript reader is not offered
+  // React hooks, and the changelog searches only itself. Pages are tagged with their root
+  // in app/api/search/route.ts. One tag, not a list: the fetch client sends a list as a
+  // single comma-joined value, which no page carries.
+  const tag = pathname.startsWith("/docs/changelog")
+    ? "changelog"
+    : (frameworkOf(pathname) ?? DEFAULT_FRAMEWORK);
+  const pageIndex = useSearchIndex().filter((entry) => entry.url.split("/")[2] === tag);
+  const { search, setSearch, query } = useDocsSearch({ type: "fetch", tag });
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

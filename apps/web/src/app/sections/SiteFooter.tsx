@@ -147,7 +147,7 @@ export function SiteFooter() {
                 {"Product"}
               </span>{" "}
               <a
-                href="/docs"
+                href="/docs/nextjs"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0 var(--cy-space-12)",
@@ -163,7 +163,7 @@ export function SiteFooter() {
                 {"Documentation"}
               </a>{" "}
               <a
-                href="/docs/getting-started/installation?pkg=nextjs"
+                href="/docs/nextjs/getting-started/installation"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -179,7 +179,7 @@ export function SiteFooter() {
                 {"Next.js"}
               </a>{" "}
               <a
-                href="/docs/getting-started/installation?pkg=react"
+                href="/docs/react/getting-started/installation"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -195,7 +195,7 @@ export function SiteFooter() {
                 {"React"}
               </a>{" "}
               <a
-                href="/docs/integrations"
+                href="/docs/nextjs/integrations"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",

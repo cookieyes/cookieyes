@@ -1,0 +1,59 @@
+---
+title: RecallButton
+description: A floating button that lets a visitor change their cookie choice later.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+A small round button in the bottom-left corner. It appears once the banner is gone and opens the preferences dialog, or the Do Not Sell dialog under CCPA. It hides itself while the banner or a dialog is showing.
+
+Visitors must be able to change their choice as easily as they made it. This button is the ready-made way to give them that.
+
+You already render it if you followed [Installation](/docs/getting-started/installation).
+
+```tsx check="false"
+<CookieBanner />
+<CookiePreferences />
+<RecallButton />
+```
+
+## Prefer your own link
+
+A "Cookie settings" link in your footer does the same job. Render that instead of the button, or as well as it. See [Reopening the preferences dialog](/docs/reopening-preferences).
+
+## Change what it shows
+
+The tooltip and screen-reader label come from the `recallButtonLabel` text in `i18n` ([Translations](/docs/translations)). Pass `children` for your own icon:
+
+```tsx check="false"
+<RecallButton>
+  <CookieIcon />
+</RecallButton>
+```
+
+The position is fixed to the bottom-left corner.
+
+## Restyle it
+
+Target `[data-cy-part="recall"]` in your CSS. Passing `className` **replaces** the button's own class, so the default look disappears; include `cy-widget` if you want to keep it:
+
+```tsx check="false"
+<RecallButton className="cy-widget my-extra-class" />
+```
+
+## Common mistakes
+
+**The button never appears.**
+Under GDPR it appears only after the visitor has chosen. Accept or reject first.
+
+**The button is an unstyled circle.**
+You passed `className`, which replaced the default class. Add `cy-widget` to it.
+
+**Clicking it does nothing.**
+The dialog it opens is not rendered: `CookiePreferences` under GDPR, `CookieOptOut` under CCPA.
+
+## Next steps
+
+- [Reopening the preferences dialog](/docs/reopening-preferences): a footer link or settings page instead of the button
+- [CookiePreferences](/docs/components/cookie-preferences): the dialog it opens

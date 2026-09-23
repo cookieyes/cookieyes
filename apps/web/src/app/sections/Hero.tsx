@@ -208,7 +208,7 @@ export function Hero() {
           <div style={{ display: "flex", flexFlow: "wrap", gap: "var(--cy-space-12)" }}>
             {" "}
             <a
-              href="/docs/getting-started/installation?pkg=nextjs"
+              href="/docs/nextjs/getting-started/installation"
               className="scp5 scp6"
               style={{
                 height: "52px",
@@ -252,7 +252,7 @@ export function Hero() {
               </span>
             </a>{" "}
             <a
-              href="/docs/getting-started/installation?pkg=react"
+              href="/docs/react/getting-started/installation"
               className="scp7 scp6"
               style={{
                 height: "52px",
@@ -433,9 +433,9 @@ export function Hero() {
             </div>{" "}
           </div>{" "}
           <a
-            /* `?pkg=` beats the reader's stored choice, so this always opens the
-               Next.js docs — without it the switcher keeps whatever was picked last. */
-            href="/docs?pkg=nextjs"
+            /* The framework is in the URL, so this always opens the Next.js docs whatever
+               the reader picked last time. */
+            href="/docs/nextjs"
             className="scp1"
             style={{
               marginTop: "var(--cy-space-16)",

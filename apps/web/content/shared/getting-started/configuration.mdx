@@ -1,0 +1,132 @@
+---
+title: Configuration
+description: Every option of initCookieYes(), grouped by what it changes.
+frameworks: [nextjs, react, core]
+---
+
+`initCookieYes(config)` is the one place you configure CookieYes. `mode` is the only required option; everything else has a sensible default.
+
+```ts check="false"
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  theme: { primaryColor: "#1863dc" },
+});
+```
+
+## Options
+
+### Setup
+
+<ConfigOptionsTable group="setup" />
+
+### Appearance
+
+<ConfigOptionsTable group="appearance" />
+
+### Language
+
+<ConfigOptionsTable group="language" />
+
+### Storage and blocking
+
+<ConfigOptionsTable group="storage" />
+
+### Callbacks
+
+<ConfigOptionsTable group="callbacks" />
+
+### `theme`
+
+<Framework when="core">
+
+`@cookieyes/core` draws no UI, so it accepts `theme` and ignores it.
+
+</Framework>
+
+<ConfigNestedTable path="theme" />
+
+### `region`
+
+<ConfigNestedTable path="region" />
+
+### `i18n`
+
+<ConfigNestedTable path="i18n" />
+
+### `networkBlocker`
+
+<ConfigNestedTable path="networkBlocker" />
+
+Each rule takes `id`, `domain` and `category`, and optionally `pathIncludes` and `methods`. This option needs `registerNetworkBlocker()` called once before `initCookieYes()`; see [Network blocking](/docs/network-blocking).
+
+## Choosing a privacy law: the `regulation` option
+
+| | `"GDPR"` and `"DEFAULT"` | `"CCPA"` |
+| --- | --- | --- |
+| Optional categories before the visitor chooses | Off, the visitor opts in | On, the visitor opts out |
+| Banner buttons | Accept All, Reject All, Customise | Do Not Sell |
+| Global Privacy Control | Not used | Honoured |
+
+Set the strictest law your visitors fall under, `"GDPR"` for most sites, and ship it for everyone. To choose per visitor, set `region` instead: it maps the visitor's country to a regulation. A manual `regulation` always wins over `region`, so set one or the other.
+
+<Framework when="nextjs react">
+
+Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens it.
+
+</Framework>
+
+## Consent categories
+
+Leave `categories` out and you get the built-in five: `necessary` (required), `functional`, `analytics`, `performance` and `advertisement`, translated and mapped to Google Consent Mode. To use your own list:
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+
+initCookieYes({
+  mode: "cookie-only",
+  categories: [
+    { id: "necessary", required: true, label: "Essential" },
+    { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+    { id: "marketing", label: "Marketing", gcm: ["ad_storage", "ad_user_data"] },
+  ],
+});
+```
+
+Three rules: ids are unique, ids contain no `,` or `:`, and at least one category is `required: true`. A list that breaks one is rejected with a console warning and the built-in five are used instead.
+
+Decide your ids early. Adding, removing or renaming a category id later makes every returning visitor choose again; changing a label or description does not.
+
+## `cookie-only` or `self-hosted`
+
+`cookie-only` keeps the visitor's choice in a cookie in their browser and makes no network requests. Start here.
+
+`self-hosted` does the same and also sends each choice to your server with one `POST` to `apiUrl`, so you can keep a record. `apiKey` is sent as a `Bearer` header, but it runs in the browser, so anyone can read it: use it to route or rate-limit, never as a secret. For a different payload or transport, pass a `backend` with your own `persist(payload)` function instead of `apiUrl`.
+
+## Common mistakes
+
+**`'apiUrl' does not exist in type 'CookieYesOfflineConfig'`.**
+You set `apiUrl` or `backend` under `mode: "cookie-only"`. Switch to `"self-hosted"` or remove them.
+
+**`regulation is set manually, so region detection is ignored`.**
+You set both `regulation` and `region`. Keep one.
+
+**A custom category does not appear.**
+Your `categories` list broke one of the three rules; the console warning says which. The built-in five are shown instead.
+
+## Next steps
+
+<Framework when="nextjs react">
+
+- [Translations](/docs/translations): every text in every language, through `i18n`
+- [Theme tokens](/docs/styling/theme-tokens): what each `theme` value changes
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+
+</Framework>
+
+<Framework when="core">
+
+- [Using the store directly](/docs/store/using-the-store): read and change consent from the runtime `initCookieYes()` returns
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+
+</Framework>

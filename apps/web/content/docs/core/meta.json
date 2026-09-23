@@ -1,0 +1,10 @@
+{
+  "title": "JavaScript",
+  "root": true,
+  "pages": [
+    "getting-started",
+    "store",
+    "network-blocking",
+    "migration"
+  ]
+}

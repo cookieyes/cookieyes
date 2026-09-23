@@ -37,7 +37,7 @@ export function HardcodedColorsTable() {
               {entry.followUpCandidate ? (
                 <>
                   {" "}
-                  <em>(no dedicated token yet — see below)</em>
+                  <em>(no dedicated token yet; see below)</em>
                 </>
               ) : null}
             </td>

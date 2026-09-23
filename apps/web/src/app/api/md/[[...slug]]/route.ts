@@ -1,5 +1,7 @@
 import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { notFound } from "next/navigation";
+import { composeMarkdown, frameworkOf, sharedPath } from "@/lib/framework-docs";
 import { source } from "@/lib/source";
 
 /**
@@ -7,16 +9,35 @@ import { source } from "@/lib/source";
  *
  * Backs the "Copy as Markdown" and "View as Markdown" actions in the page meta row:
  * Fumadocs' MarkdownCopyButton fetches this URL, and ViewOptionsPopover links to it.
- * Serving the file itself — rather than re-serialising the rendered DOM the way the
- * design prototype does — keeps the frontmatter, MDX components and code fences
- * intact, which is what someone pasting this into an LLM actually wants.
+ * Serving Markdown — rather than re-serialising the rendered DOM the way the design
+ * prototype does — keeps the frontmatter, MDX components and code fences intact, which
+ * is what someone pasting this into an LLM actually wants.
+ *
+ * A framework page's own file is a generated wrapper around a shared body
+ * (scripts/generate-framework-docs.mjs), so the file itself would be one <include> line.
+ * What is served instead is the body, composed for that framework the way the page was:
+ * <Framework> blocks resolved and package names swapped (composeMarkdown mirrors
+ * remark-framework-docs). The wrapper's frontmatter is kept, since it is the page's.
  */
 export async function GET(_request: Request, { params }: { params: Promise<{ slug?: string[] }> }) {
   const { slug } = await params;
   const page = source.getPage(slug);
   if (!page?.absolutePath) notFound();
 
-  const content = await readFile(page.absolutePath, "utf8");
+  const wrapper = await readFile(page.absolutePath, "utf8");
+  const framework = frameworkOf(page.slugs);
+
+  let content = wrapper;
+  if (framework) {
+    // `page.path` is the wrapper's path under content/docs, e.g. `core/integrations/index.mdx`;
+    // the body sits at the same path under content/shared, framework segment removed.
+    const body = await readFile(
+      join(process.cwd(), "content", "shared", sharedPath(page.path)),
+      "utf8",
+    );
+    const frontmatter = /^---\r?\n[\s\S]*?\r?\n---\r?\n/.exec(wrapper)?.[0] ?? "";
+    content = `${frontmatter}\n${composeMarkdown(body, framework)}`;
+  }
 
   return new Response(content, {
     headers: {

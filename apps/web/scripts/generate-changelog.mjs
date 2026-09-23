@@ -14,9 +14,11 @@
  * Output is `apps/web/content/docs/changelog/` — index, one page per release, and
  * meta.json for the sidebar. The whole directory is generated and gitignored.
  */
+
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { replaceEmDashes } from "./lib/replace-em-dashes.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..", "..");
@@ -182,10 +184,10 @@ function releaseName(release) {
   return `${lead.name} ${lead.version}`;
 }
 
-/** "react 0.9.0 — Accessibility fixes…", or just the version when none is written. */
+/** "react 0.9.0: Accessibility fixes…", or just the version when none is written. */
 function releaseLabel(release) {
   const headline = releaseTitles[release.date];
-  return headline ? `${releaseName(release)} — ${headline}` : releaseName(release);
+  return headline ? `${releaseName(release)}: ${headline}` : releaseName(release);
 }
 function orderedPackages(release) {
   return [...release.packages.entries()]
@@ -226,7 +228,7 @@ function releasePage(release) {
     // The full label titles the sidebar entry and the breadcrumb; the page's own h1
     // shows just the part before the em dash, which the docs route already handles.
     `title: ${jsx(releaseLabel(release))}`,
-    `description: ${jsx(`${headline ?? name} — the CookieYes SDK release of ${longDate(release.date)}.`)}`,
+    `description: ${jsx(`${headline ?? name}. The CookieYes SDK release of ${longDate(release.date)}.`)}`,
     "---",
     "",
     `<ReleaseBadges date="${release.date}" />`,
@@ -323,10 +325,12 @@ function metaJson() {
 
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, "index.mdx"), indexPage());
+writeFileSync(join(outDir, "index.mdx"), replaceEmDashes(indexPage()));
 writeFileSync(join(outDir, "meta.json"), metaJson());
 for (const release of ordered) {
-  writeFileSync(join(outDir, `${release.date}.mdx`), releasePage(release));
+  // The release text is copied from the packages' own CHANGELOG.md files; the site
+  // prints it with plain punctuation, and those files are left as written.
+  writeFileSync(join(outDir, `${release.date}.mdx`), replaceEmDashes(releasePage(release)));
 }
 
 process.stdout.write(

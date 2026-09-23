@@ -18,7 +18,7 @@ export function TokenDefaultsBlock({ scheme }: TokenDefaultsBlockProps) {
   const block = data.defaultsBlocks[scheme];
   if (!block) {
     throw new Error(
-      `<TokenDefaultsBlock scheme="${scheme}"> — no pre-rendered block for this scheme in the ` +
+      `<TokenDefaultsBlock scheme="${scheme}">: no pre-rendered block for this scheme in the ` +
         `generated CSS variables reference. Re-run generate-css-variables-reference.mjs.`,
     );
   }

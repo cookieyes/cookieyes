@@ -1,0 +1,70 @@
+---
+title: Critical CSS
+description: Paint the banner on the first frame by inlining its rules in the HTML, and load the full stylesheet without blocking render.
+frameworks: [nextjs, react]
+---
+
+## When to use it
+
+An app-root `import "@cookieyes/react/styles.css"` puts the stylesheet on the critical path: the browser cannot paint until it arrives, and it is a second round trip after the HTML. On a fast desktop connection nobody notices. On a slow mobile connection that round trip costs more than the whole SDK: on the Lighthouse Mobile profile, first paint moves from 468 ms to 224 ms, and the banner is styled at 183 ms instead of 451 ms, when the banner's rules travel inside the HTML.
+
+Skip this page if your Lighthouse scores are fine. It is an optimisation, not a requirement.
+
+## The two stylesheets
+
+| Import | Contents | Size | When |
+| --- | --- | --- | --- |
+| `@cookieyes/react/styles.css` | Banner, preferences dialog, opt-out, toggles, recall widget, reload notice | ~17 KB raw / ~3.7 KB gzipped | **Always.** Load once per app |
+| `@cookieyes/react/critical.css` | Only the rules needed to paint the banner | ~1.6 KB gzipped | Optional. Inline in `<head>` so the banner paints before the full sheet arrives |
+
+`critical.css` is a **supplement, never a replacement**. Every rule in it is byte-identical to the same rule in `styles.css` (a test enforces this), so the two can never disagree. But if you ship only `critical.css`, the preferences dialog is unstyled the moment a visitor opens it.
+
+## Basic usage
+
+<Framework when="nextjs">
+
+Two lines. `@cookieyes/nextjs/server` exports `<CookieYesStyles />`, which inlines `critical.css` in `<head>` and loads the full sheet without blocking render, and `@cookieyes/nextjs/styles-route` serves that sheet so there is nothing to copy:
+
+```tsx title="app/layout.tsx"
+import { CookieYesStyles } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head><CookieYesStyles /></head>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+```ts title="app/cookieyes/styles.css/route.ts"
+export { GET } from "@cookieyes/nextjs/styles-route";
+```
+
+Then **remove** `import "@cookieyes/nextjs/styles.css"` from your layout. Leaving it puts the sheet back on the critical path and cancels the gain.
+
+</Framework>
+
+<Framework when="react">
+
+There is no helper for this outside Next.js, because there is no shared server to inline from. Copy the contents of `@cookieyes/react/critical.css` into a `<style>` block in your HTML `<head>`, and load the full sheet without blocking render, for example with `<link rel="preload" as="style" onload="this.rel='stylesheet'">`. Then **remove** `import "@cookieyes/react/styles.css"` from your entry file, or the sheet is back on the critical path.
+
+</Framework>
+
+## Content-Security-Policy
+
+If you run a strict `Content-Security-Policy`, the inlined block needs one hash added to `style-src`. It is exported as `CRITICAL_CSS_HASH` and published with every release; see [CSP](/docs/styling/csp). Without a CSP there is nothing further to do.
+
+## Common mistakes
+
+**The preferences dialog is unstyled but the banner looks right.**
+You inlined `critical.css` and skipped `styles.css`. Load both.
+
+**Lighthouse shows no improvement.**
+The full stylesheet is still imported at the app root, so it still blocks the first paint. Remove the import and let the non-blocking load bring it in.
+
+## See also
+
+- [Installation → Create the consent manager](/docs/getting-started/installation#2-create-the-consent-manager): the normal stylesheet import this page replaces
+- [CSP](/docs/styling/csp): the `style-src` hash for the inlined block

@@ -70,7 +70,7 @@ export function ChangelogEntry({
           <ChevronRightIcon />
         </Link>
       </div>
-      <div className="cy-doc-cl-title">{title ? `${version} — ${title}` : version}</div>
+      <div className="cy-doc-cl-title">{title ? `${version}: ${title}` : version}</div>
       {highlights?.length ? (
         <dl className="cy-doc-cl-hls">
           {highlights.map((highlight) => (

@@ -4,7 +4,21 @@ import { usePathname } from "fumadocs-core/framework";
 import Link from "fumadocs-core/link";
 import { useNotebookLayout } from "fumadocs-ui/layouts/notebook";
 import { LinkItem, type LinkItemType, type MainItemType } from "fumadocs-ui/layouts/shared";
+import { DEFAULT_FRAMEWORK, frameworkOf } from "@/lib/framework-docs";
 import { ThemeToggle } from "../ThemeToggle";
+
+/**
+ * The section links are declared framework-less in layout.shared.tsx (`/docs`,
+ * `/docs/integrations`). Here they point into the framework the reader is on, so the
+ * header never takes them out of it: on `/docs/react/hooks/…`, "SDKs" is `/docs/react` and
+ * "Integrations" is `/docs/react/integrations`. The changelog has no framework and keeps
+ * its URL. Off any framework (the changelog itself), the default one is used.
+ */
+function inFramework(url: string, pathname: string): string {
+  if (!url.startsWith("/docs") || url.startsWith("/docs/changelog")) return url;
+  const framework = frameworkOf(pathname) ?? DEFAULT_FRAMEWORK;
+  return url.replace(/^\/docs/, `/docs/${framework}`);
+}
 
 /** Fumadocs' own classes on the header element. Kept verbatim: they carry the grid
  *  placement, sticky offset and stacking the layout depends on. Only what sits
@@ -69,7 +83,9 @@ export function DocsHeader() {
   const { open } = slots.sidebar?.useSidebar?.() ?? {};
   const pathname = usePathname();
 
-  const sectionLinks = navItems.filter(isSectionLink);
+  const sectionLinks = navItems
+    .filter(isSectionLink)
+    .map((item) => ({ ...item, url: inFramework(item.url, pathname) }));
   const iconLinks = navItems.filter((item) => item.type === "icon").filter(hasUrl);
   const activeUrl = activeSectionUrl(
     pathname,

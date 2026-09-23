@@ -1,0 +1,76 @@
+---
+title: "Which API should I use?"
+description: "Presets, primitives or hooks: pick the layer that fits, and the one hook for each job."
+frameworks: [nextjs, react]
+---
+
+Most apps need only `CookieBanner` and `CookiePreferences`, styled with a `theme`. Read on if the defaults do not fit your design, or you need consent somewhere other than the banner.
+
+## Pick a layer
+
+| Layer | You write | Choose when |
+| --- | --- | --- |
+| **Presets**: `CookieBanner`, `CookiePreferences`, `RecallButton` | Nothing. Theme with `theme` config or [CSS](/docs/styling/custom-css) | The default. Start here |
+| **Primitives**: `Banner.*`, `Preferences.*`, `OptOut.*` | Your markup and classes; behaviour and accessibility come built in | Your design system needs its own markup |
+| **Hooks**: `useConsent()`, `useConsentActions()` | Everything | You are building something that is not a banner |
+
+The layers mix freely. A common setup is the preset banner, a preferences dialog built from primitives to match a design system, and one hook to load analytics.
+
+## Read and change consent
+
+Two hooks cover almost every custom need. `useConsent()` reads the state and re-renders when it changes; `useConsentActions()` changes it and never re-renders.
+
+```tsx title="app/consent-status.tsx"
+"use client";
+
+import { useConsent, useConsentActions } from "@cookieyes/react";
+
+export function ConsentStatus() {
+  const { hasActed, committedCategories } = useConsent();
+  const { showPreferences } = useConsentActions();
+
+  if (!hasActed) return null;
+  return (
+    <p>
+      Analytics: {committedCategories.analytics ? "on" : "off"}{" "}
+      <button type="button" onClick={showPreferences}>Change</button>
+    </p>
+  );
+}
+```
+
+## Find your situation
+
+| You want to | Use |
+| --- | --- |
+| Read consent inside a component | [`useConsent()`](/docs/hooks/use-consent) |
+| Accept, reject, or open a dialog | [`useConsentActions()`](/docs/hooks/use-consent-actions) |
+| Run code when consent changes, inside a component | [`useOnConsentChange()`](/docs/hooks/use-on-consent-change) |
+| Load one script only when its category is granted | [`useConsentCategory("analytics")`](/docs/hooks/focused-hooks), or [`GatedScript`](/docs/components/gated-script) with no code at all |
+| Know the region, language, or whether the banner is showing | [Focused hooks](/docs/hooks/focused-hooks) |
+| Call the runtime from an event handler or a plain module | [`getCookieYes()`](/docs/hooks/low-level-hooks#module-level-registry) |
+| Read a returning visitor's consent on the server | [`getServerConsent()`](/docs/rendering-and-selector-contract#server-rendering-helpers) |
+| Use consent with no React at all | [`consentStore`](/docs/store/using-the-store) from `@cookieyes/core` |
+
+## Gate on committed values
+
+`useConsent()` exposes two views of the categories. `categories` is the live copy and changes on every toggle in the dialog, even before Save. `committedCategories` changes only on a real decision: accept, reject, save or reset.
+
+Load scripts, embeds and trackers from `committedCategories`, or from `useConsentCategory()`, which reads the committed value for one category. Use `categories` only to drive your own dialog's checkboxes.
+
+## Common mistakes
+
+**A script loads as soon as someone flips a toggle, before Save.**
+It reads `categories` (live) instead of `committedCategories` or `useConsentCategory()` (committed).
+
+**A primitive renders but does nothing.**
+It sits outside its root. Every `Preferences.*` must be inside `Preferences.Root`, every `Banner.*` inside `Banner.Root`, every `OptOut.*` inside `OptOut.Root`.
+
+**You rebuilt the banner with hooks to change one button.**
+You wanted [Custom CSS](/docs/styling/custom-css) or the primitives. The presets can be restyled part by part without replacing them.
+
+## Next steps
+
+- [useConsent](/docs/hooks/use-consent) and [useConsentActions](/docs/hooks/use-consent-actions): the two hooks in full
+- [Banner primitives](/docs/headless/banner): the banner and dialogs with your own markup
+- [Integrations](/docs/integrations): Google Analytics, Meta Pixel and other tags, loaded only after consent

@@ -8,6 +8,63 @@ const config = {
   agentRules: false,
 
   /**
+   * The docs moved under a framework root: `/docs/<section>/…` is now
+   * `/docs/{nextjs,react,core}/<section>/…`. These keep every old link working — the ones
+   * in READMEs, issues and bookmarks — by sending them to the default framework, or to the
+   * one a `?pkg=` link asked for. Sections that exist under one framework only still land
+   * on the default; the page then offers the framework that has it.
+   */
+  async redirects() {
+    const sections = [
+      "getting-started",
+      "components",
+      "headless",
+      "hooks",
+      "styling",
+      "integrations",
+      "translations",
+      "accessibility",
+      "reopening-preferences",
+      "network-blocking",
+      "rendering-and-selector-contract",
+      "migration",
+      "troubleshooting",
+    ];
+    // A framework root has no page of its own: the first thing to read is how to install.
+    const roots = ["nextjs", "react", "core"].map((fw) => ({
+      source: `/docs/${fw}`,
+      destination: `/docs/${fw}/getting-started/installation`,
+      permanent: false,
+    }));
+    // The primitives overview was folded into the Banner page.
+    const moved = ["nextjs", "react"].map((fw) => ({
+      source: `/docs/${fw}/headless/overview`,
+      destination: `/docs/${fw}/headless/banner`,
+      permanent: true,
+    }));
+    const byQuery = ["react", "core"].flatMap((pkg) => [
+      {
+        source: "/docs",
+        has: [{ type: "query", key: "pkg", value: pkg }],
+        destination: `/docs/${pkg}/getting-started/installation`,
+        permanent: false,
+      },
+      ...sections.map((section) => ({
+        source: `/docs/${section}/:path*`,
+        has: [{ type: "query", key: "pkg", value: pkg }],
+        destination: `/docs/${pkg}/${section}/:path*`,
+        permanent: false,
+      })),
+    ]);
+    const byPath = sections.map((section) => ({
+      source: `/docs/${section}/:path*`,
+      destination: `/docs/nextjs/${section}/:path*`,
+      permanent: true,
+    }));
+    return [...roots, ...moved, ...byQuery, ...byPath];
+  },
+
+  /**
    * A miss on a file — an image, a font, a stylesheet — answers in plain text instead of
    * rendering the whole 404 page into something that only wanted bytes.
    *

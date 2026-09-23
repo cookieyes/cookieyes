@@ -32,7 +32,7 @@ const repoRoot = join(webRoot, "..", "..");
 const reactSrcRoot = join(repoRoot, "sdk", "react", "src");
 const outDir = join(webRoot, ".generated");
 const outFile = join(outDir, "component-reference.json");
-const sidecarPath = join(webRoot, "content", "docs", "components", "component-props.sidecar.ts");
+const sidecarPath = join(webRoot, "content", "shared", "components", "component-props.sidecar.ts");
 
 /**
  * The six components with real props, and the file each one's `*Props` type

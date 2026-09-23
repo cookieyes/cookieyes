@@ -1,0 +1,115 @@
+---
+title: Preferences
+description: Build the preferences dialog with your own markup.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+`Preferences.*` gives you the preferences dialog in pieces: when it opens, the list of categories, each category's label and switch state, and the buttons that save. You supply the elements and the classes. Focus handling, `Escape` to close and the dialog roles come with `Preferences.Root`, so you do not rebuild them.
+
+Use it only when [`CookiePreferences`](/docs/components/cookie-preferences) cannot produce the markup your design needs, most often when a category row must be your own component. For colours and spacing, restyle `CookiePreferences` instead.
+
+## Build a dialog
+
+Render this in place of `<CookiePreferences />`. `Preferences.Root` is the overlay: it renders nothing while the dialog is closed, so keep it as the outer element.
+
+```tsx title="app/consent-preferences.tsx"
+"use client";
+
+import { Preferences } from "@cookieyes/react";
+
+export function ConsentPreferences() {
+  return (
+    <Preferences.Root className="overlay">
+      <div className="dialog">
+        <Preferences.Title className="dialog-title" />
+        <Preferences.Close className="dialog-close" />
+        <Preferences.Intro className="dialog-text" />
+
+        <Preferences.Categories className="category-list">
+          {(category) => (
+            <Preferences.Category category={category} className="category-row">
+              {({ label, description, checked, disabled, toggle }) => (
+                <label className="category">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={(event) => toggle(event.target.checked)}
+                  />
+                  <span>{label}</span>
+                  <small>{description}</small>
+                </label>
+              )}
+            </Preferences.Category>
+          )}
+        </Preferences.Categories>
+
+        <div className="dialog-actions">
+          <Preferences.RejectAll className="btn" />
+          <Preferences.AcceptAll className="btn" />
+          <Preferences.Save className="btn btn-primary" />
+        </div>
+      </div>
+    </Preferences.Root>
+  );
+}
+```
+
+`Categories` calls your function once per category in your `categories` list, so custom categories appear without any change here. `Category` hands you the resolved text and state for one row; you decide how the row looks.
+
+## The pieces
+
+| Piece | Renders | What it does |
+| --- | --- | --- |
+| `Preferences.Root` | `<div>` | The overlay. Opens and closes the dialog, traps focus, closes on `Escape`. Keep it as the wrapper |
+| `Preferences.Title` | `<h2>` | The dialog heading |
+| `Preferences.Intro` | `<p>` | The dialog text |
+| `Preferences.Close` | `<button>` | Closes without saving |
+| `Preferences.Categories` | `<div role="list">` | Calls your function once per category |
+| `Preferences.Category` | `<div>` | One row. Gives your function `label`, `description`, `checked`, `disabled` and `toggle(next)` |
+| `Preferences.AcceptAll` | `<button>` | Accepts every category and saves |
+| `Preferences.RejectAll` | `<button>` | Rejects every optional category and saves |
+| `Preferences.Save` | `<button>` | Saves the switches as they are |
+| `Preferences.Branding` | `<a>` | The "Powered by" link |
+
+Every piece takes `className`, `style` and the other props of the element it renders, and renders the translated text for the active language; pass `children` to replace it. The part names for CSS are the same as on [`CookiePreferences`](/docs/components/cookie-preferences#restyle-it).
+
+## Good to know
+
+**A switch changes nothing until Save.** `toggle` updates the row; `Save`, `AcceptAll` or `RejectAll` records the choice. Always render at least one of them.
+
+**A required category arrives locked.** Its `checked` is `true`, `disabled` is `true`, and `toggle` does nothing. Show it as text such as "Always active" rather than a switch that does not work.
+
+**`toggle` takes the new value, not the event.** Write `onChange={(event) => toggle(event.target.checked)}`. A component whose change handler already gives you a boolean, such as a Switch, can take `toggle` directly.
+
+## Use your own button component
+
+Add `asChild` to `Close`, `AcceptAll`, `RejectAll` or `Save` and pass one element:
+
+```tsx check="false"
+<Preferences.Save asChild>
+  <MyButton variant="primary">Save preferences</MyButton>
+</Preferences.Save>
+```
+
+## Common mistakes
+
+**Switches turn on but never off.**
+`onChange={toggle}` passes the event, which counts as `true`. Use `onChange={(event) => toggle(event.target.checked)}`.
+
+**Choices are lost when the dialog closes.**
+There is no `Save`, `AcceptAll` or `RejectAll` in your dialog.
+
+**A custom category is missing.**
+You listed category ids by hand instead of using `Preferences.Categories`.
+
+**The dialog never opens.**
+Nothing opens it. Render `Banner.OpenPreferences`, `RecallButton`, or your own button calling `useConsentActions().showPreferences()`.
+
+## Next steps
+
+- [Banner](/docs/headless/banner): build the banner the same way
+- [OptOut](/docs/headless/opt-out): the CCPA opt-out dialog
+- [Translations](/docs/translations): the dialog and category text in every language

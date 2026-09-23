@@ -79,7 +79,7 @@ if (!report.sdkFingerprint) {
  */
 const LAYERS = {
   core: "The headless consent engine, with no UI.",
-  banner: "The whole banner — everything needed to render and run it.",
+  banner: "The whole banner: everything needed to render and run it.",
   interface: "Banner, preferences dialog and recall button together.",
 };
 

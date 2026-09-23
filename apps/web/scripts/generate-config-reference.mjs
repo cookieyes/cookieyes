@@ -25,7 +25,13 @@ const repoRoot = join(webRoot, "..", "..");
 const entry = join(repoRoot, "sdk", "core", "src", "types.ts");
 const outDir = join(webRoot, ".generated");
 const outFile = join(outDir, "config-reference.json");
-const sidecarPath = join(webRoot, "content", "docs", "getting-started", "configuration.sidecar.ts");
+const sidecarPath = join(
+  webRoot,
+  "content",
+  "shared",
+  "getting-started",
+  "configuration.sidecar.ts",
+);
 
 const TOP_LEVEL_TYPE_NAME = "CookieYesConfig";
 

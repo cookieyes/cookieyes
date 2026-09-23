@@ -2851,3 +2851,17 @@
     padding-top: 0 !important;
   }
 }
+
+/* ── Scroll anchor ───────────────────────────────────────────────────────── */
+
+/* The first element of every docs page (see page.tsx). Out of the grid flow, so it
+   changes no layout; 1px so Next.js does not treat it as hidden. */
+.cy-doc-scroll-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
+}
