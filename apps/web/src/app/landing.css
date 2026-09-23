@@ -1633,6 +1633,11 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
     display: flex !important;
   }
 }
+@media (max-width: 1100px) {
+  [data-nav-dl] {
+    display: none !important;
+  }
+}
 @media (max-width: 1024px) {
   section[data-screen-label="Playground"] {
     display: none !important;

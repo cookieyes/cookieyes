@@ -627,10 +627,10 @@
 
    Techniques are matched per asset to what index.mdx's own Card icons already use
    for these same files (design doc §2.4):
-     - flat mask + brand hex   : ga4, google-tag-manager, microsoft-clarity
+     - flat mask + brand hex   : ga4, google-tag-manager
      - flat mask + currentColor: google-ads, segment (no brand hex exists for these)
      - positioned background   : meta-pixel (not a flat silhouette)
-     - content: url(...)       : posthog (multi-colour mark)
+     - content: url(...)       : posthog, microsoft-clarity (multi-colour marks)
 
    Brand hexes are fixed in both themes, never a --cy-doc-* token — the same rule
    SidebarControls.tsx documents for its framework logos: "a brand mark that flips
@@ -668,9 +668,7 @@
 }
 
 #nd-sidebar a[href="/docs/integrations/microsoft-clarity"]::before {
-  background-color: #52bd94;
-  -webkit-mask: url(/figma-logos/microsoft-clarity.svg) center / contain no-repeat;
-  mask: url(/figma-logos/microsoft-clarity.svg) center / contain no-repeat;
+  content: url(/figma-logos/microsoft-clarity.svg);
 }
 
 /* No brand hex exists for these two — the mock's #sbInt doesn't list them at all.

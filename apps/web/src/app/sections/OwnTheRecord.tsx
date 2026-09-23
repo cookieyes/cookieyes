@@ -4,7 +4,21 @@
 // The deliberate divergences: the bundle size is read from the measurement
 // (src/lib/bundle-size.ts), and the package, repository and git figures name this
 // repository rather than the design file's placeholders.
+import type { CSSProperties } from "react";
 import { BANNER_SIZE } from "@/lib/bundle-size";
+
+// The four floating mocks are pictures of product UI, so in dark mode they keep the light
+// palette instead of flipping with the page, exactly as the design file does. Every value
+// here is the light theme's own, so light mode renders identically to before.
+const LIGHT_MOCK = {
+  "--cy-surface": "#ffffff",
+  "--cy-accent": "oklch(56.4% 0.2002 258.3)",
+  "--cy-accent-rgb": "19, 111, 232",
+  "--cy-on-accent": "#ffffff",
+  "--cy-fg": "#14142a",
+  "--cy-faint": "#8f92af",
+  "--cy-ok": "#00754e",
+} as CSSProperties;
 
 // Counted with `git rev-list --count HEAD` and `git shortlog -sn`. CI checks out shallow,
 // so these cannot be generated at build time — refresh them when they drift.
@@ -302,6 +316,7 @@ export function OwnTheRecord() {
                 <div
                   data-anim="gfPop 0.35s cubic-bezier(0.34,1.56,0.64,1) 1.5s both"
                   style={{
+                    ...LIGHT_MOCK,
                     opacity: "0",
                     position: "absolute",
                     right: "0px",
@@ -459,6 +474,7 @@ export function OwnTheRecord() {
                 <div
                   className="bp-fade"
                   style={{
+                    ...LIGHT_MOCK,
                     opacity: "0",
                     position: "absolute",
                     left: "0px",
@@ -546,6 +562,7 @@ export function OwnTheRecord() {
                 <div
                   data-anim="gfPop 0.35s cubic-bezier(0.34,1.56,0.64,1) 1.55s both"
                   style={{
+                    ...LIGHT_MOCK,
                     opacity: "0",
                     position: "absolute",
                     right: "0px",
@@ -677,6 +694,7 @@ export function OwnTheRecord() {
                 {" "}
                 <div
                   style={{
+                    ...LIGHT_MOCK,
                     position: "absolute",
                     left: "0px",
                     top: "0px",

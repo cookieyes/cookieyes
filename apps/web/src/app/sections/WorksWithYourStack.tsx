@@ -610,8 +610,8 @@ export function WorksWithYourStack() {
                   height: "16px",
                   flexShrink: "0",
                   display: "block",
-                  backgroundColor: "rgb(82, 189, 148)",
-                  mask: 'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
+                  background:
+                    'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
                 }}
               />
               <span
