@@ -42,6 +42,27 @@ describe("createConsentManager", () => {
     expect(listener).toHaveBeenCalledOnce();
   });
 
+  it("dismissBanner hides the banner without saving or changing consent", () => {
+    const mgr = createConsentManager({ regulation: "GDPR" });
+    const before = mgr.categories;
+    const listener = vi.fn();
+    mgr.subscribe(listener);
+    mgr.dismissBanner();
+    expect(mgr.isBannerDismissed).toBe(true);
+    expect(mgr.hasActed).toBe(false);
+    expect(mgr.categories).toEqual(before);
+    expect(mgr.committedCategories).toEqual(before);
+    expect(document.cookie).toBe("");
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it("resetConsent clears a banner dismissal", () => {
+    const mgr = createConsentManager({ regulation: "GDPR" });
+    mgr.dismissBanner();
+    mgr.resetConsent();
+    expect(mgr.isBannerDismissed).toBe(false);
+  });
+
   it("rejectAll sets non-necessary categories to false", () => {
     const mgr = createConsentManager({ regulation: "GDPR" });
     mgr.rejectAll();

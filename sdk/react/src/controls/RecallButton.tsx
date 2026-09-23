@@ -35,7 +35,8 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
 
   if (bannerVisible) return null;
   if (preferencesOpen || optOutOpen) return null;
-  if (!snapshot.hasActed && regulation !== "CCPA") return null;
+  // A dismissed banner still needs a way back to the choice.
+  if (!snapshot.hasActed && !snapshot.isBannerDismissed && regulation !== "CCPA") return null;
 
   const onActivate = regulation === "CCPA" ? showOptOut : showPreferences;
 

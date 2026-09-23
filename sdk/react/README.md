@@ -615,11 +615,13 @@ If you're building a custom UI on the headless primitives (`Banner`,
 
 - **Tab order** follows DOM order in every preset — e.g. Preferences goes
   Close → category toggles → Reject All → Save → Accept All → branding link.
-  The banner is **not modal**, so Tab can leave it into the rest of your page;
-  `<CookiePreferences />` and `<CookieOptOut />` **are** modal and trap focus.
-- **`Esc`** closes `<CookiePreferences />` and `<CookieOptOut />`.
-- **Focus trap**: while a dialog is open, `Tab` / `Shift+Tab` cycle only
-  through its own controls.
+  `<CookieBanner />`, `<CookiePreferences />` and `<CookieOptOut />` are all
+  modal (`aria-modal="true"`) and trap focus.
+- **`Esc`** closes `<CookiePreferences />` and `<CookieOptOut />`. It does not
+  close the banner: the banner is something the visitor answers, not dismisses.
+- **Focus trap**: while the banner or a dialog is open, `Tab` / `Shift+Tab`
+  cycle only through its own controls. The banner does not take focus when it
+  appears; the first `Tab` from the page moves focus onto its first control.
 - **Focus management on open/close**: opening a dialog moves focus into it
   (onto the dialog element itself, which carries its `aria-label`); closing it
   — via Save, Cancel, or `Esc` — returns focus to whatever control opened it.

@@ -138,10 +138,14 @@ export function useFocusTrap(enabled: boolean, containerRef: RefObject<HTMLEleme
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       if (!first || !last) return;
-      if (e.shiftKey && document.activeElement === first) {
+      const active = document.activeElement;
+      // Focus on the page behind (the banner never takes focus on its own) or on
+      // the container itself (a dialog right after it opens): pull it inside.
+      const outside = active === container || !container.contains(active);
+      if (e.shiftKey && (active === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (active === last || outside)) {
         e.preventDefault();
         first.focus();
       }

@@ -11,23 +11,35 @@
     "next": "16.3.0",
     "react": "19.2.8"
   },
-  "measuredAt": "2026-09-18T09:44:21.455Z",
+  "measuredAt": "2026-09-23T07:05:29.917Z",
   "node": "v22.16.0",
   "versions": {
-    "@cookieyes/core": "0.6.0",
-    "@cookieyes/react": "0.8.0",
-    "@cookieyes/nextjs": "0.6.0"
+    "@cookieyes/core": "0.7.0",
+    "@cookieyes/react": "0.9.0",
+    "@cookieyes/nextjs": "0.6.1"
   },
-  "sdkFingerprint": "9751caa2b67390a9",
+  "sdkFingerprint": "e0710b21fec97208",
   "apps": {
     "baseline": {
       "label": "empty Next.js app (control)",
       "fixture": "tools/size/fixtures/baseline",
       "initial": {
-        "raw": 564251,
-        "gzip": 172152,
-        "brotli": 148567,
+        "raw": 564273,
+        "gzip": 172156,
+        "brotli": 148537,
         "files": [
+          {
+            "file": "baseline/.next/static/chunks/06jzlkmlm6jqj.js",
+            "raw": 181687,
+            "gzip": 47792,
+            "brotli": 40290
+          },
+          {
+            "file": "baseline/.next/static/chunks/0c9datk_ls7ys.js",
+            "raw": 229073,
+            "gzip": 71448,
+            "brotli": 61204
+          },
           {
             "file": "baseline/.next/static/chunks/0cz1d0mv5g_q7.js",
             "raw": 112594,
@@ -35,42 +47,42 @@
             "brotli": 35158
           },
           {
-            "file": "baseline/.next/static/chunks/0skzyagpekkfp.js",
-            "raw": 14375,
-            "gzip": 3649,
-            "brotli": 3255
-          },
-          {
-            "file": "baseline/.next/static/chunks/21lfpi17-70om.js",
-            "raw": 181663,
-            "gzip": 47793,
-            "brotli": 40366
-          },
-          {
-            "file": "baseline/.next/static/chunks/23r1x7ztg9jxw.js",
-            "raw": 229078,
-            "gzip": 71446,
-            "brotli": 61160
-          },
-          {
-            "file": "baseline/.next/static/chunks/2u72x7m69rcwp.js",
+            "file": "baseline/.next/static/chunks/0iskat0tx6juj.js",
             "raw": 16922,
-            "gzip": 5927,
-            "brotli": 5223
+            "gzip": 5932,
+            "brotli": 5219
           },
           {
-            "file": "baseline/.next/static/chunks/turbopack-1b3fx3a02v9-7.js",
+            "file": "baseline/.next/static/chunks/3b4hwgldof54r.js",
+            "raw": 14378,
+            "gzip": 3652,
+            "brotli": 3265
+          },
+          {
+            "file": "baseline/.next/static/chunks/turbopack-3v24nbqj84qz7.js",
             "raw": 9619,
-            "gzip": 3817,
-            "brotli": 3405
+            "gzip": 3812,
+            "brotli": 3401
           }
         ]
       },
       "total": {
-        "raw": 564251,
-        "gzip": 172152,
-        "brotli": 148567,
+        "raw": 564273,
+        "gzip": 172156,
+        "brotli": 148537,
         "files": [
+          {
+            "file": "baseline/.next/static/chunks/06jzlkmlm6jqj.js",
+            "raw": 181687,
+            "gzip": 47792,
+            "brotli": 40290
+          },
+          {
+            "file": "baseline/.next/static/chunks/0c9datk_ls7ys.js",
+            "raw": 229073,
+            "gzip": 71448,
+            "brotli": 61204
+          },
           {
             "file": "baseline/.next/static/chunks/0cz1d0mv5g_q7.js",
             "raw": 112594,
@@ -78,34 +90,22 @@
             "brotli": 35158
           },
           {
-            "file": "baseline/.next/static/chunks/0skzyagpekkfp.js",
-            "raw": 14375,
-            "gzip": 3649,
-            "brotli": 3255
-          },
-          {
-            "file": "baseline/.next/static/chunks/21lfpi17-70om.js",
-            "raw": 181663,
-            "gzip": 47793,
-            "brotli": 40366
-          },
-          {
-            "file": "baseline/.next/static/chunks/23r1x7ztg9jxw.js",
-            "raw": 229078,
-            "gzip": 71446,
-            "brotli": 61160
-          },
-          {
-            "file": "baseline/.next/static/chunks/2u72x7m69rcwp.js",
+            "file": "baseline/.next/static/chunks/0iskat0tx6juj.js",
             "raw": 16922,
-            "gzip": 5927,
-            "brotli": 5223
+            "gzip": 5932,
+            "brotli": 5219
           },
           {
-            "file": "baseline/.next/static/chunks/turbopack-1b3fx3a02v9-7.js",
+            "file": "baseline/.next/static/chunks/3b4hwgldof54r.js",
+            "raw": 14378,
+            "gzip": 3652,
+            "brotli": 3265
+          },
+          {
+            "file": "baseline/.next/static/chunks/turbopack-3v24nbqj84qz7.js",
             "raw": 9619,
-            "gzip": 3817,
-            "brotli": 3405
+            "gzip": 3812,
+            "brotli": 3401
           }
         ]
       }
@@ -114,9 +114,9 @@
       "label": "@cookieyes/core — headless engine",
       "fixture": "tools/size/fixtures/with-core",
       "initial": {
-        "raw": 584009,
-        "gzip": 179295,
-        "brotli": 154804,
+        "raw": 584156,
+        "gzip": 179343,
+        "brotli": 154724,
         "files": [
           {
             "file": "with-core/.next/static/chunks/0cz1d0mv5g_q7.js",
@@ -125,41 +125,41 @@
             "brotli": 35158
           },
           {
-            "file": "with-core/.next/static/chunks/2fgh6344vjc21.js",
-            "raw": 229068,
-            "gzip": 71439,
-            "brotli": 61200
+            "file": "with-core/.next/static/chunks/0d83-bwe-hhg5.js",
+            "raw": 181698,
+            "gzip": 47807,
+            "brotli": 40314
           },
           {
-            "file": "with-core/.next/static/chunks/2zda5j2n4ghw1.js",
-            "raw": 16920,
-            "gzip": 5930,
-            "brotli": 5225
+            "file": "with-core/.next/static/chunks/1l9-4fq51z489.js",
+            "raw": 34242,
+            "gzip": 10816,
+            "brotli": 9512
           },
           {
-            "file": "with-core/.next/static/chunks/3ol1lgn1g2-v3.js",
-            "raw": 181667,
-            "gzip": 47809,
-            "brotli": 40357
+            "file": "with-core/.next/static/chunks/1ntgg5xqkptyd.js",
+            "raw": 16923,
+            "gzip": 5934,
+            "brotli": 5223
           },
           {
-            "file": "with-core/.next/static/chunks/3uprzk2bjxkab.js",
-            "raw": 34141,
-            "gzip": 10780,
-            "brotli": 9456
+            "file": "with-core/.next/static/chunks/2eiwuigwn1-ku.js",
+            "raw": 229081,
+            "gzip": 71453,
+            "brotli": 61118
           },
           {
-            "file": "with-core/.next/static/chunks/turbopack-12oy49wwdjncq.js",
-            "raw": 9619,
-            "gzip": 3817,
-            "brotli": 3408
+            "file": "with-core/.next/static/chunks/turbopack-0q6pggdt81pt8.js",
+            "raw": 9618,
+            "gzip": 3813,
+            "brotli": 3399
           }
         ]
       },
       "total": {
-        "raw": 587833,
-        "gzip": 180956,
-        "brotli": 156224,
+        "raw": 587980,
+        "gzip": 181003,
+        "brotli": 156141,
         "files": [
           {
             "file": "with-core/.next/static/chunks/0cz1d0mv5g_q7.js",
@@ -168,40 +168,40 @@
             "brotli": 35158
           },
           {
-            "file": "with-core/.next/static/chunks/2fgh6344vjc21.js",
-            "raw": 229068,
-            "gzip": 71439,
-            "brotli": 61200
+            "file": "with-core/.next/static/chunks/0d83-bwe-hhg5.js",
+            "raw": 181698,
+            "gzip": 47807,
+            "brotli": 40314
           },
           {
-            "file": "with-core/.next/static/chunks/2zda5j2n4ghw1.js",
-            "raw": 16920,
-            "gzip": 5930,
-            "brotli": 5225
+            "file": "with-core/.next/static/chunks/1l9-4fq51z489.js",
+            "raw": 34242,
+            "gzip": 10816,
+            "brotli": 9512
           },
           {
-            "file": "with-core/.next/static/chunks/3ol1lgn1g2-v3.js",
-            "raw": 181667,
-            "gzip": 47809,
-            "brotli": 40357
+            "file": "with-core/.next/static/chunks/1ntgg5xqkptyd.js",
+            "raw": 16923,
+            "gzip": 5934,
+            "brotli": 5223
           },
           {
-            "file": "with-core/.next/static/chunks/3uprzk2bjxkab.js",
-            "raw": 34141,
-            "gzip": 10780,
-            "brotli": 9456
+            "file": "with-core/.next/static/chunks/2eiwuigwn1-ku.js",
+            "raw": 229081,
+            "gzip": 71453,
+            "brotli": 61118
           },
           {
-            "file": "with-core/.next/static/chunks/3yvfj4kggq24q.js",
+            "file": "with-core/.next/static/chunks/3f0ar7xgalrxt.js",
             "raw": 3824,
-            "gzip": 1661,
-            "brotli": 1420
+            "gzip": 1660,
+            "brotli": 1417
           },
           {
-            "file": "with-core/.next/static/chunks/turbopack-12oy49wwdjncq.js",
-            "raw": 9619,
-            "gzip": 3817,
-            "brotli": 3408
+            "file": "with-core/.next/static/chunks/turbopack-0q6pggdt81pt8.js",
+            "raw": 9618,
+            "gzip": 3813,
+            "brotli": 3399
           }
         ]
       }
@@ -210,9 +210,9 @@
       "label": "@cookieyes/react — banner only",
       "fixture": "tools/size/fixtures/with-react-banner",
       "initial": {
-        "raw": 606830,
-        "gzip": 186407,
-        "brotli": 160771,
+        "raw": 607151,
+        "gzip": 186499,
+        "brotli": 160762,
         "files": [
           {
             "file": "with-react-banner/.next/static/chunks/0cz1d0mv5g_q7.js",
@@ -221,54 +221,48 @@
             "brotli": 35158
           },
           {
-            "file": "with-react-banner/.next/static/chunks/2bd05mm7f4oo9.js",
+            "file": "with-react-banner/.next/static/chunks/1za8db_1u8r97.js",
             "raw": 20845,
-            "gzip": 6998,
-            "brotli": 6145
+            "gzip": 6997,
+            "brotli": 6148
           },
           {
-            "file": "with-react-banner/.next/static/chunks/2t4owza4rgrp2.js",
-            "raw": 14584,
-            "gzip": 3753,
-            "brotli": 3359
+            "file": "with-react-banner/.next/static/chunks/2cxsttrdwwo4f.js",
+            "raw": 14583,
+            "gzip": 3743,
+            "brotli": 3352
           },
           {
-            "file": "with-react-banner/.next/static/chunks/3050a7sfxzsph.js",
-            "raw": 177759,
-            "gzip": 46803,
-            "brotli": 39516
+            "file": "with-react-banner/.next/static/chunks/399bywsqnjayg.js",
+            "raw": 177771,
+            "gzip": 46816,
+            "brotli": 39449
           },
           {
-            "file": "with-react-banner/.next/static/chunks/3sfaftisaod3i.js",
-            "raw": 229068,
-            "gzip": 71435,
-            "brotli": 61198
+            "file": "with-react-banner/.next/static/chunks/3nlxlfgcsqsc-.js",
+            "raw": 42670,
+            "gzip": 14172,
+            "brotli": 12085
           },
           {
-            "file": "with-react-banner/.next/static/chunks/3w615eukig3di.js",
-            "raw": 42362,
-            "gzip": 14085,
-            "brotli": 11993
+            "file": "with-react-banner/.next/static/chunks/3qsvpirfw9b4v.js",
+            "raw": 229069,
+            "gzip": 71436,
+            "brotli": 61171
           },
           {
-            "file": "with-react-banner/.next/static/chunks/turbopack-09t8sa4hl2b_h.js",
-            "raw": 9618,
-            "gzip": 3813,
-            "brotli": 3402
+            "file": "with-react-banner/.next/static/chunks/turbopack-3u-cvl1wxyf9o.js",
+            "raw": 9619,
+            "gzip": 3815,
+            "brotli": 3399
           }
         ]
       },
       "total": {
-        "raw": 612809,
-        "gzip": 189101,
-        "brotli": 163107,
+        "raw": 613129,
+        "gzip": 189191,
+        "brotli": 163097,
         "files": [
-          {
-            "file": "with-react-banner/.next/static/chunks/0_lai-zfvy3qw.js",
-            "raw": 3824,
-            "gzip": 1660,
-            "brotli": 1418
-          },
           {
             "file": "with-react-banner/.next/static/chunks/0cz1d0mv5g_q7.js",
             "raw": 112594,
@@ -276,46 +270,52 @@
             "brotli": 35158
           },
           {
-            "file": "with-react-banner/.next/static/chunks/1zoxrq2gwgxvn.js",
+            "file": "with-react-banner/.next/static/chunks/1d7s8_6hapmkx.js",
+            "raw": 3823,
+            "gzip": 1659,
+            "brotli": 1417
+          },
+          {
+            "file": "with-react-banner/.next/static/chunks/1za8db_1u8r97.js",
+            "raw": 20845,
+            "gzip": 6997,
+            "brotli": 6148
+          },
+          {
+            "file": "with-react-banner/.next/static/chunks/1zispedxxv5ix.js",
             "raw": 2155,
-            "gzip": 1034,
+            "gzip": 1033,
             "brotli": 918
           },
           {
-            "file": "with-react-banner/.next/static/chunks/2bd05mm7f4oo9.js",
-            "raw": 20845,
-            "gzip": 6998,
-            "brotli": 6145
+            "file": "with-react-banner/.next/static/chunks/2cxsttrdwwo4f.js",
+            "raw": 14583,
+            "gzip": 3743,
+            "brotli": 3352
           },
           {
-            "file": "with-react-banner/.next/static/chunks/2t4owza4rgrp2.js",
-            "raw": 14584,
-            "gzip": 3753,
-            "brotli": 3359
+            "file": "with-react-banner/.next/static/chunks/399bywsqnjayg.js",
+            "raw": 177771,
+            "gzip": 46816,
+            "brotli": 39449
           },
           {
-            "file": "with-react-banner/.next/static/chunks/3050a7sfxzsph.js",
-            "raw": 177759,
-            "gzip": 46803,
-            "brotli": 39516
+            "file": "with-react-banner/.next/static/chunks/3nlxlfgcsqsc-.js",
+            "raw": 42670,
+            "gzip": 14172,
+            "brotli": 12085
           },
           {
-            "file": "with-react-banner/.next/static/chunks/3sfaftisaod3i.js",
-            "raw": 229068,
-            "gzip": 71435,
-            "brotli": 61198
+            "file": "with-react-banner/.next/static/chunks/3qsvpirfw9b4v.js",
+            "raw": 229069,
+            "gzip": 71436,
+            "brotli": 61171
           },
           {
-            "file": "with-react-banner/.next/static/chunks/3w615eukig3di.js",
-            "raw": 42362,
-            "gzip": 14085,
-            "brotli": 11993
-          },
-          {
-            "file": "with-react-banner/.next/static/chunks/turbopack-09t8sa4hl2b_h.js",
-            "raw": 9618,
-            "gzip": 3813,
-            "brotli": 3402
+            "file": "with-react-banner/.next/static/chunks/turbopack-3u-cvl1wxyf9o.js",
+            "raw": 9619,
+            "gzip": 3815,
+            "brotli": 3399
           }
         ]
       }
@@ -324,14 +324,14 @@
       "label": "@cookieyes/react — banner + preferences + recall",
       "fixture": "tools/size/fixtures/with-react",
       "initial": {
-        "raw": 609315,
-        "gzip": 186978,
-        "brotli": 161153,
+        "raw": 609571,
+        "gzip": 187070,
+        "brotli": 161244,
         "files": [
           {
-            "file": "with-react/.next/static/chunks/092xh_j49_ye7.js",
+            "file": "with-react/.next/static/chunks/00-lnk68dc7bm.js",
             "raw": 20841,
-            "gzip": 6992,
+            "gzip": 6994,
             "brotli": 6154
           },
           {
@@ -341,53 +341,47 @@
             "brotli": 35158
           },
           {
-            "file": "with-react/.next/static/chunks/12ucpf3z20k48.js",
+            "file": "with-react/.next/static/chunks/17x-ozhtrez-8.js",
             "raw": 14585,
-            "gzip": 3755,
-            "brotli": 3355
+            "gzip": 3757,
+            "brotli": 3360
           },
           {
-            "file": "with-react/.next/static/chunks/1u-r-egkp8i7u.js",
-            "raw": 229074,
-            "gzip": 71443,
-            "brotli": 61162
+            "file": "with-react/.next/static/chunks/1dfrqnygipjuu.js",
+            "raw": 229071,
+            "gzip": 71436,
+            "brotli": 61176
           },
           {
-            "file": "with-react/.next/static/chunks/1yo5t0x2cu42p.js",
-            "raw": 177771,
-            "gzip": 46807,
-            "brotli": 39486
+            "file": "with-react/.next/static/chunks/29o-w93hvh_x6.js",
+            "raw": 177721,
+            "gzip": 46814,
+            "brotli": 39477
           },
           {
-            "file": "with-react/.next/static/chunks/3jkc7zykk4utn.js",
-            "raw": 44832,
-            "gzip": 14646,
-            "brotli": 12430
+            "file": "with-react/.next/static/chunks/33l2a435eaif0.js",
+            "raw": 45140,
+            "gzip": 14731,
+            "brotli": 12514
           },
           {
-            "file": "with-react/.next/static/chunks/turbopack-1xzyn0yvolhy_.js",
-            "raw": 9618,
-            "gzip": 3815,
-            "brotli": 3408
+            "file": "with-react/.next/static/chunks/turbopack-0ebvauc-f6_id.js",
+            "raw": 9619,
+            "gzip": 3818,
+            "brotli": 3405
           }
         ]
       },
       "total": {
-        "raw": 615294,
-        "gzip": 189671,
-        "brotli": 163489,
+        "raw": 615550,
+        "gzip": 189763,
+        "brotli": 163578,
         "files": [
           {
-            "file": "with-react/.next/static/chunks/092xh_j49_ye7.js",
+            "file": "with-react/.next/static/chunks/00-lnk68dc7bm.js",
             "raw": 20841,
-            "gzip": 6992,
+            "gzip": 6994,
             "brotli": 6154
-          },
-          {
-            "file": "with-react/.next/static/chunks/0_whghxly6xda.js",
-            "raw": 3824,
-            "gzip": 1660,
-            "brotli": 1418
           },
           {
             "file": "with-react/.next/static/chunks/0cz1d0mv5g_q7.js",
@@ -396,40 +390,46 @@
             "brotli": 35158
           },
           {
-            "file": "with-react/.next/static/chunks/12ucpf3z20k48.js",
+            "file": "with-react/.next/static/chunks/17x-ozhtrez-8.js",
             "raw": 14585,
-            "gzip": 3755,
-            "brotli": 3355
+            "gzip": 3757,
+            "brotli": 3360
           },
           {
-            "file": "with-react/.next/static/chunks/1u-r-egkp8i7u.js",
-            "raw": 229074,
-            "gzip": 71443,
-            "brotli": 61162
+            "file": "with-react/.next/static/chunks/1dfrqnygipjuu.js",
+            "raw": 229071,
+            "gzip": 71436,
+            "brotli": 61176
           },
           {
-            "file": "with-react/.next/static/chunks/1yo5t0x2cu42p.js",
-            "raw": 177771,
-            "gzip": 46807,
-            "brotli": 39486
+            "file": "with-react/.next/static/chunks/29o-w93hvh_x6.js",
+            "raw": 177721,
+            "gzip": 46814,
+            "brotli": 39477
           },
           {
-            "file": "with-react/.next/static/chunks/36_31wquvj1ud.js",
+            "file": "with-react/.next/static/chunks/2ofvo62mvwr13.js",
             "raw": 2155,
             "gzip": 1033,
-            "brotli": 918
+            "brotli": 917
           },
           {
-            "file": "with-react/.next/static/chunks/3jkc7zykk4utn.js",
-            "raw": 44832,
-            "gzip": 14646,
-            "brotli": 12430
+            "file": "with-react/.next/static/chunks/33l2a435eaif0.js",
+            "raw": 45140,
+            "gzip": 14731,
+            "brotli": 12514
           },
           {
-            "file": "with-react/.next/static/chunks/turbopack-1xzyn0yvolhy_.js",
-            "raw": 9618,
-            "gzip": 3815,
-            "brotli": 3408
+            "file": "with-react/.next/static/chunks/3dzs1p9j7uoiu.js",
+            "raw": 3824,
+            "gzip": 1660,
+            "brotli": 1417
+          },
+          {
+            "file": "with-react/.next/static/chunks/turbopack-0ebvauc-f6_id.js",
+            "raw": 9619,
+            "gzip": 3818,
+            "brotli": 3405
           }
         ]
       }
@@ -438,15 +438,21 @@
       "label": "@cookieyes/nextjs — banner + preferences (mirrors fair-cookieyes)",
       "fixture": "tools/size/fixtures/with-nextjs",
       "initial": {
-        "raw": 609273,
-        "gzip": 186972,
-        "brotli": 161146,
+        "raw": 609514,
+        "gzip": 187067,
+        "brotli": 161267,
         "files": [
           {
-            "file": "with-nextjs/.next/static/chunks/06ntnd8avzkbt.js",
-            "raw": 44814,
-            "gzip": 14643,
-            "brotli": 12434
+            "file": "with-nextjs/.next/static/chunks/03xslu4940vyn.js",
+            "raw": 177726,
+            "gzip": 46822,
+            "brotli": 39481
+          },
+          {
+            "file": "with-nextjs/.next/static/chunks/0bkqz52mjmk00.js",
+            "raw": 20832,
+            "gzip": 6994,
+            "brotli": 6151
           },
           {
             "file": "with-nextjs/.next/static/chunks/0cz1d0mv5g_q7.js",
@@ -455,47 +461,47 @@
             "brotli": 35158
           },
           {
-            "file": "with-nextjs/.next/static/chunks/1e_afzyb7dxjy.js",
-            "raw": 20840,
-            "gzip": 6987,
-            "brotli": 6144
+            "file": "with-nextjs/.next/static/chunks/1oooxrqdbig2g.js",
+            "raw": 229059,
+            "gzip": 71444,
+            "brotli": 61188
           },
           {
-            "file": "with-nextjs/.next/static/chunks/1w8b74zsf1mwt.js",
-            "raw": 229080,
-            "gzip": 71448,
-            "brotli": 61146
+            "file": "with-nextjs/.next/static/chunks/3k1ab7dhwkn6f.js",
+            "raw": 14563,
+            "gzip": 3743,
+            "brotli": 3356
           },
           {
-            "file": "with-nextjs/.next/static/chunks/1xp78z6t9_r0m.js",
-            "raw": 14580,
-            "gzip": 3748,
-            "brotli": 3351
+            "file": "with-nextjs/.next/static/chunks/3ks0y0cugewfn.js",
+            "raw": 45121,
+            "gzip": 14728,
+            "brotli": 12529
           },
           {
-            "file": "with-nextjs/.next/static/chunks/34bgz2y1clmcf.js",
-            "raw": 177746,
-            "gzip": 46810,
-            "brotli": 39511
-          },
-          {
-            "file": "with-nextjs/.next/static/chunks/turbopack-44_6sbo33no-m.js",
+            "file": "with-nextjs/.next/static/chunks/turbopack-1q4d4udu95mxv.js",
             "raw": 9619,
             "gzip": 3816,
-            "brotli": 3402
+            "brotli": 3404
           }
         ]
       },
       "total": {
-        "raw": 615252,
-        "gzip": 189665,
-        "brotli": 163480,
+        "raw": 615492,
+        "gzip": 189758,
+        "brotli": 163598,
         "files": [
           {
-            "file": "with-nextjs/.next/static/chunks/06ntnd8avzkbt.js",
-            "raw": 44814,
-            "gzip": 14643,
-            "brotli": 12434
+            "file": "with-nextjs/.next/static/chunks/03xslu4940vyn.js",
+            "raw": 177726,
+            "gzip": 46822,
+            "brotli": 39481
+          },
+          {
+            "file": "with-nextjs/.next/static/chunks/0bkqz52mjmk00.js",
+            "raw": 20832,
+            "gzip": 6994,
+            "brotli": 6151
           },
           {
             "file": "with-nextjs/.next/static/chunks/0cz1d0mv5g_q7.js",
@@ -504,46 +510,40 @@
             "brotli": 35158
           },
           {
-            "file": "with-nextjs/.next/static/chunks/0gzpp8jr0si41.js",
-            "raw": 2155,
-            "gzip": 1033,
-            "brotli": 918
-          },
-          {
-            "file": "with-nextjs/.next/static/chunks/1e_afzyb7dxjy.js",
-            "raw": 20840,
-            "gzip": 6987,
-            "brotli": 6144
-          },
-          {
-            "file": "with-nextjs/.next/static/chunks/1w8b74zsf1mwt.js",
-            "raw": 229080,
-            "gzip": 71448,
-            "brotli": 61146
-          },
-          {
-            "file": "with-nextjs/.next/static/chunks/1xp78z6t9_r0m.js",
-            "raw": 14580,
-            "gzip": 3748,
-            "brotli": 3351
-          },
-          {
-            "file": "with-nextjs/.next/static/chunks/34bgz2y1clmcf.js",
-            "raw": 177746,
-            "gzip": 46810,
-            "brotli": 39511
-          },
-          {
-            "file": "with-nextjs/.next/static/chunks/3t7epyxmd01jp.js",
+            "file": "with-nextjs/.next/static/chunks/0j9rw1v8qi0m8.js",
             "raw": 3824,
-            "gzip": 1660,
-            "brotli": 1416
+            "gzip": 1659,
+            "brotli": 1415
           },
           {
-            "file": "with-nextjs/.next/static/chunks/turbopack-44_6sbo33no-m.js",
+            "file": "with-nextjs/.next/static/chunks/1oooxrqdbig2g.js",
+            "raw": 229059,
+            "gzip": 71444,
+            "brotli": 61188
+          },
+          {
+            "file": "with-nextjs/.next/static/chunks/3k1ab7dhwkn6f.js",
+            "raw": 14563,
+            "gzip": 3743,
+            "brotli": 3356
+          },
+          {
+            "file": "with-nextjs/.next/static/chunks/3ks0y0cugewfn.js",
+            "raw": 45121,
+            "gzip": 14728,
+            "brotli": 12529
+          },
+          {
+            "file": "with-nextjs/.next/static/chunks/3o3g-3z-fx2ik.js",
+            "raw": 2154,
+            "gzip": 1032,
+            "brotli": 916
+          },
+          {
+            "file": "with-nextjs/.next/static/chunks/turbopack-1q4d4udu95mxv.js",
             "raw": 9619,
             "gzip": 3816,
-            "brotli": 3402
+            "brotli": 3404
           }
         ]
       }
@@ -552,61 +552,61 @@
   "deltas": {
     "core": {
       "initial": {
-        "raw": 19758,
-        "gzip": 7143,
-        "brotli": 6237
+        "raw": 19883,
+        "gzip": 7187,
+        "brotli": 6187
       },
       "total": {
-        "raw": 23582,
-        "gzip": 8804,
-        "brotli": 7657
+        "raw": 23707,
+        "gzip": 8847,
+        "brotli": 7604
       }
     },
     "banner": {
       "initial": {
-        "raw": 42579,
-        "gzip": 14255,
-        "brotli": 12204
+        "raw": 42878,
+        "gzip": 14343,
+        "brotli": 12225
       },
       "total": {
-        "raw": 48558,
-        "gzip": 16949,
-        "brotli": 14540
+        "raw": 48856,
+        "gzip": 17035,
+        "brotli": 14560
       }
     },
     "interface": {
       "initial": {
-        "raw": 45064,
-        "gzip": 14826,
-        "brotli": 12586
+        "raw": 45298,
+        "gzip": 14914,
+        "brotli": 12707
       },
       "total": {
-        "raw": 51043,
-        "gzip": 17519,
-        "brotli": 14922
+        "raw": 51277,
+        "gzip": 17607,
+        "brotli": 15041
       }
     },
     "nextjs": {
       "initial": {
-        "raw": 45022,
-        "gzip": 14820,
-        "brotli": 12579
+        "raw": 45241,
+        "gzip": 14911,
+        "brotli": 12730
       },
       "total": {
-        "raw": 51001,
-        "gzip": 17513,
-        "brotli": 14913
+        "raw": 51219,
+        "gzip": 17602,
+        "brotli": 15061
       }
     }
   },
   "interfaceOverCore": {
     "initial": {
-      "gzip": 7683,
-      "brotli": 6349
+      "gzip": 7727,
+      "brotli": 6520
     },
     "total": {
-      "gzip": 8715,
-      "brotli": 7265
+      "gzip": 8760,
+      "brotli": 7437
     }
   },
   "stylesheet": {

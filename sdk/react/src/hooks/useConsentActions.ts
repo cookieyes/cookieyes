@@ -16,6 +16,8 @@ export type ConsentActions = {
   hidePreferences: () => void;
   showOptOut: () => void;
   hideOptOut: () => void;
+  /** Close the banner without a decision; nothing is saved. */
+  dismissBanner: () => void;
 };
 
 const NOOP_ACTIONS: ConsentActions = {
@@ -29,11 +31,12 @@ const NOOP_ACTIONS: ConsentActions = {
   hidePreferences: () => undefined,
   showOptOut: () => undefined,
   hideOptOut: () => undefined,
+  dismissBanner: () => undefined,
 };
 
 /**
  * Imperative actions for driving consent (accept/reject/save/reset, open or
- * close the preferences dialog). Pair this with `useConsent()` for
+ * close the preferences dialog, dismiss the banner). Pair this with `useConsent()` for
  * reading state — this hook only writes, it does not subscribe to changes.
  */
 export function useConsentActions(): ConsentActions {
@@ -57,6 +60,7 @@ export function useConsentActions(): ConsentActions {
         runtime.showOptOut();
       },
       hideOptOut: () => runtime.hideOptOut(),
+      dismissBanner: () => runtime.manager.dismissBanner(),
     };
   }, [runtime]);
 }

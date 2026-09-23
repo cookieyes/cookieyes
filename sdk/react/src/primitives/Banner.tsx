@@ -197,12 +197,13 @@ const Close = forwardRef<HTMLButtonElement, ActionProps>(function BannerClose(
   { children, onClick, "aria-label": ariaLabel, asChild, ...rest },
   ref,
 ) {
-  const { acceptAll } = useConsentActions();
+  const { dismissBanner } = useConsentActions();
   const t = useTranslations();
   const behavior = {
     "aria-label": ariaLabel ?? t.bannerCloseLabel,
     "data-cy-part": CY_PART.banner.close,
-    onClick: chain(onClick, acceptAll),
+    // Only closes: no consent is saved, granted or denied.
+    onClick: chain(onClick, dismissBanner),
     ...rest,
   };
   if (asChild) {

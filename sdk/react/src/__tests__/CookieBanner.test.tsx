@@ -46,6 +46,58 @@ describe("CookieBanner — GDPR", () => {
   });
 });
 
+describe("CookieBanner — focus trap", () => {
+  function tab(shiftKey = false) {
+    fireEvent.keyDown(document, { key: "Tab", shiftKey });
+  }
+
+  it("is a modal dialog", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    expect(screen.getByRole("dialog").getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("does not take focus on its own when it appears", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("pulls the first Tab from the page into the banner", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    tab();
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Close");
+  });
+
+  it("wraps Tab from the last control back to the first, and Shift+Tab the other way", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    const dialog = screen.getByRole("dialog");
+    const last = dialog.querySelector<HTMLElement>("a[href]");
+    last?.focus();
+    tab();
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Close");
+    tab(true);
+    expect(document.activeElement).toBe(last);
+  });
+});
+
+describe("CookieBanner — close button", () => {
+  it.each(["GDPR", "CCPA"] as const)("%s: only closes, saves no consent", (regulation) => {
+    const rt = mountOffline(regulation);
+    const before = rt.getSnapshot().committedCategories;
+    render(<CookieBanner />);
+    // CCPA writes an undecided default cookie on load; the click must not change it.
+    const cookieBefore = document.cookie;
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(rt.getSnapshot().hasActed).toBe(false);
+    expect(rt.getSnapshot().committedCategories).toEqual(before);
+    expect(document.cookie).toBe(cookieBefore);
+  });
+});
+
 describe("CookieBanner — DOM placement", () => {
   it("portals to the front of <body>, regardless of where it's rendered", () => {
     mountOffline("GDPR");

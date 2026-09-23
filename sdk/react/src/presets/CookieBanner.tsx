@@ -1,10 +1,11 @@
 "use client";
 
-import { type CSSProperties, useEffect, useId, useState } from "react";
+import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { Banner } from "../primitives/Banner.js";
+import { useFocusTrap } from "../primitives/utils.js";
 import { CY_PART } from "../styles/parts.js";
 
 const ANNOUNCE_DELAY_MS = 700;
@@ -38,6 +39,10 @@ export function CookieBanner({ className, style, classNames, styles }: CookieBan
   const titleId = useId();
   const isCCPA = reg === "CCPA";
   const visible = useBannerVisibility();
+  // Modal: Tab stays inside the banner until the visitor answers. Focus is not
+  // moved in on load; the first Tab from the page lands on the banner.
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(visible, cardRef);
 
   // Rendered outside <Banner.Root> (unconditionally, not tied to the
   // banner's own mount/hide cycle) and populated after a real delay, not
@@ -87,17 +92,18 @@ export function CookieBanner({ className, style, classNames, styles }: CookieBan
           `data-cky-banner` hook + dialog role, and (via `display: contents` on
           the wrapper) is the only measurable banner box. */}
         <div
+          ref={cardRef}
           className={["cy-banner", className, classNames?.root].filter(Boolean).join(" ")}
           style={{ ...style, ...styles?.root }}
           data-cky-banner=""
           data-cy-part={CY_PART.banner.root}
           role="dialog"
-          aria-modal="false"
+          aria-modal="true"
           // Named by the visible title. No `aria-live`: the sr-only announcer above is
           // the only live region, and two would announce the banner twice.
           aria-labelledby={titleId}
         >
-          {isCCPA && <Banner.Close {...part("close", "cy-banner-close")} />}
+          <Banner.Close {...part("close", "cy-banner-close")} />
 
           <div className="cy-banner-text">
             <Banner.Title id={titleId} {...part("title", "cy-banner-title")} />
