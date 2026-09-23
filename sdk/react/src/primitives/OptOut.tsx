@@ -20,7 +20,7 @@ import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
 import { Slot } from "./Slot.js";
-import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
+import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap, VISUALLY_HIDDEN } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -249,15 +249,20 @@ const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
   ref,
 ) {
   const { optOut, setSaved } = useOptOutContext();
-  const { acceptAll, rejectAll } = useConsentActions();
+  const { acceptAll, rejectAll, hideOptOut } = useConsentActions();
   const t = useTranslations();
 
   const behavior = {
     "data-cy-part": CY_PART.optOut.confirm,
+    // The success message confirms an opt-out only; saving without one just closes.
     onClick: chain(onClick, () => {
-      if (optOut) rejectAll();
-      else acceptAll();
-      setSaved(true);
+      if (optOut) {
+        rejectAll();
+        setSaved(true);
+      } else {
+        acceptAll();
+        hideOptOut();
+      }
     }),
     ...rest,
   };
@@ -290,10 +295,25 @@ const Buttons = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
 const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(props, ref) {
   const { saved, secondsLeft } = useOptOutContext();
   const t = useTranslations();
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  // The focused Save button is gone once saved. Move focus here, so the confirmation
+  // is read and keyboard users keep their place inside the dialog.
+  useEffect(() => {
+    if (saved) innerRef.current?.focus();
+  }, [saved]);
   if (!saved) return null;
   const countdown = t.optOut.successCountdown.split("{seconds}");
   return (
-    <div ref={ref} role="status" tabIndex={-1} {...props}>
+    <div
+      ref={(node) => {
+        innerRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      }}
+      role="status"
+      tabIndex={-1}
+      {...props}
+    >
       <div className="cy-optout-success-inner">
         <div className="cy-optout-success-row">
           <div className="cy-optout-success-icon" aria-hidden="true">
@@ -315,9 +335,10 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
           </div>
           <div className="cy-optout-success-text">{t.optOut.successText}</div>
         </div>
-        {/* Visible, but outside the announced content: `role="status"` re-announces on
-            every change, and this ticks once a second. The confirmation above is what
-            gets announced, once. */}
+        {/* Screen readers get the countdown as one fixed sentence, read once with the
+            confirmation. The visible one below ticks every second, and `role="status"`
+            would re-announce each tick, so it is hidden from them instead. */}
+        <p style={VISUALLY_HIDDEN}>{countdown.join(`${COUNTDOWN_SECONDS}`)}</p>
         <div className="cy-optout-success-subtext-wrapper" aria-hidden="true">
           <p className="cy-optout-success-subtext">
             {countdown[0]}

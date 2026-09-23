@@ -1,6 +1,22 @@
 "use client";
 
-import { type RefObject, type SyntheticEvent, useEffect, useState } from "react";
+import {
+  type CSSProperties,
+  type RefObject,
+  type SyntheticEvent,
+  useEffect,
+  useState,
+} from "react";
+
+/** Hidden on screen, still read by screen readers. Inline, so it works without our stylesheet. */
+export const VISUALLY_HIDDEN: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  overflow: "hidden",
+  clip: "rect(0,0,0,0)",
+  whiteSpace: "nowrap",
+};
 
 export function chain<E extends SyntheticEvent>(
   userHandler: ((e: E) => void) | undefined,

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CookieOptOut } from "../presets/CookieOptOut.js";
 import { clearCookie, mountOffline, teardown } from "./test-utils.js";
@@ -34,5 +34,32 @@ describe("CookieOptOut", () => {
     fireEvent.click(screen.getByText("Save My Preferences"));
 
     expect(rt.getSnapshot().hasActed).toBe(true);
+  });
+
+  it("closes straight away, with no success message, when saved without opting out", () => {
+    const rt = mountOffline("CCPA");
+    rt.showOptOut();
+    render(<CookieOptOut />);
+    fireEvent.click(screen.getByText("Save My Preferences"));
+
+    expect(rt.getSnapshot().hasActed).toBe(true);
+    expect(rt.getSnapshot().isOptOutOpen).toBe(false);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("moves focus to the confirmation and tells screen readers it closes automatically", () => {
+    const rt = mountOffline("CCPA");
+    rt.showOptOut();
+    render(<CookieOptOut />);
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByText("Save My Preferences"));
+
+    const status = screen.getByRole("status");
+    expect(document.activeElement).toBe(status);
+    const spoken = within(status).getByText("Banner closes automatically in 10 seconds...");
+    expect(spoken.closest("[aria-hidden]")).toBeNull();
+    expect(
+      status.querySelector(".cy-optout-countdown")?.closest('[aria-hidden="true"]'),
+    ).toBeTruthy();
   });
 });
