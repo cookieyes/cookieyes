@@ -17,7 +17,13 @@ import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
 import { Slot } from "./Slot.js";
-import { chain, composeRefs, useBodyPortalRoot } from "./utils.js";
+import {
+  chain,
+  composeRefs,
+  OPT_OUT_DIALOG_ID,
+  PREFERENCES_DIALOG_ID,
+  useBodyPortalRoot,
+} from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -60,6 +66,12 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   const wasVisible = useRef(false);
   const isReparent = visible && wasVisible.current;
   useEffect(() => {
+    // Closed by a decision or the X: the focused button went with it, so hand focus
+    // to the revisit button. No-op when a dialog opened instead: the revisit button
+    // is not rendered then, and the dialog moves focus itself.
+    if (wasVisible.current && !visible && document.activeElement === document.body) {
+      document.querySelector<HTMLElement>(".cy-widget")?.focus();
+    }
     wasVisible.current = visible;
   }, [visible]);
 
@@ -172,6 +184,8 @@ const OpenPreferences = forwardRef<HTMLButtonElement, ActionProps>(function Bann
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.banner.customise,
+    "aria-haspopup": "dialog" as const,
+    "aria-controls": PREFERENCES_DIALOG_ID,
     onClick: chain(onClick, showPreferences),
     ...rest,
   };
@@ -240,6 +254,8 @@ const DoNotSell = forwardRef<HTMLButtonElement, ActionProps>(function BannerDoNo
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.banner.doNotSell,
+    "aria-haspopup": "dialog" as const,
+    "aria-controls": OPT_OUT_DIALOG_ID,
     onClick: chain(onClick, showOptOut),
     ...rest,
   };

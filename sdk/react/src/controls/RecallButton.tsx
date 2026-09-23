@@ -12,7 +12,13 @@ import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { chain, composeRefs, useBodyPortalRoot } from "../primitives/utils.js";
+import {
+  chain,
+  composeRefs,
+  OPT_OUT_DIALOG_ID,
+  PREFERENCES_DIALOG_ID,
+  useBodyPortalRoot,
+} from "../primitives/utils.js";
 import { CY_PART } from "../styles/parts.js";
 
 export type RecallButtonProps = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
@@ -45,6 +51,8 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
       ref={composeRefs(containerRef, ref)}
       type="button"
       aria-label={t.recallButtonLabel}
+      aria-haspopup="dialog"
+      aria-controls={regulation === "CCPA" ? OPT_OUT_DIALOG_ID : PREFERENCES_DIALOG_ID}
       className={className ?? "cy-widget"}
       data-cy-part={CY_PART.recall.root}
       data-pos="bottom-left"

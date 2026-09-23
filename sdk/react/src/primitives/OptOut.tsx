@@ -23,6 +23,7 @@ import { Slot } from "./Slot.js";
 import {
   chain,
   composeRefs,
+  OPT_OUT_DIALOG_ID,
   useAutoFocusDialog,
   useEscapeKey,
   useFocusTrap,
@@ -93,16 +94,16 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
 
   useEffect(() => {
     if (!saved) return;
-    setSecondsLeft(COUNTDOWN_SECONDS);
+    let left = COUNTDOWN_SECONDS;
+    setSecondsLeft(left);
+    // Closed from the timer, not inside a state update, so the revisit button is
+    // already on the page when focus is handed back to it.
     const interval = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(interval);
-          hideOptOut();
-          return 0;
-        }
-        return s - 1;
-      });
+      setSecondsLeft(--left);
+      if (!left) {
+        clearInterval(interval);
+        hideOptOut();
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [saved, hideOptOut]);
@@ -113,6 +114,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
     <OptOutContext.Provider value={{ optOut, setOptOut, saved, setSaved, secondsLeft, titleId }}>
       <div
         ref={composeRefs(containerRef, ref)}
+        id={OPT_OUT_DIALOG_ID}
         role="dialog"
         aria-modal="true"
         // Named by the heading the visitor can see, so the spoken and printed names match.

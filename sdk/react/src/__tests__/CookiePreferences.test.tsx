@@ -17,6 +17,13 @@ describe("CookiePreferences", () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it("carries the id the opening buttons point at with aria-controls", () => {
+    const rt = mountOffline("GDPR");
+    rt.manager.showPreferences();
+    render(<CookiePreferences />);
+    expect(screen.getByRole("dialog").id).toBe("cookieyes-preferences");
+  });
+
   it("renders the dialog with category labels once opened", () => {
     const rt = mountOffline("GDPR");
     rt.manager.showPreferences();

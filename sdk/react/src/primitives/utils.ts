@@ -19,6 +19,10 @@ export const VISUALLY_HIDDEN: CSSProperties = {
   whiteSpace: "nowrap",
 };
 
+/** Fixed dialog ids, so the buttons that open them can point there with `aria-controls`. */
+export const PREFERENCES_DIALOG_ID = "cookieyes-preferences";
+export const OPT_OUT_DIALOG_ID = "cookieyes-optout";
+
 /** Point every ref at the same node. */
 export function composeRefs<T>(...refs: Array<Ref<T> | undefined>): (node: T | null) => void {
   return (node) => {

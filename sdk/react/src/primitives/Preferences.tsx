@@ -21,7 +21,14 @@ import { useTranslations } from "../hooks/useTranslations.js";
 import { _tryGetCookieYes } from "../runtime.js";
 import { CY_PART } from "../styles/parts.js";
 import { Slot } from "./Slot.js";
-import { chain, composeRefs, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
+import {
+  chain,
+  composeRefs,
+  PREFERENCES_DIALOG_ID,
+  useAutoFocusDialog,
+  useEscapeKey,
+  useFocusTrap,
+} from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -69,6 +76,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
       <PreferencesContext.Provider value={{ containerRef, titleId }}>
         <div
           ref={composeRefs(containerRef, ref)}
+          id={PREFERENCES_DIALOG_ID}
           role="dialog"
           aria-modal="true"
           // Named by the heading the visitor can see, so the spoken and printed names match.

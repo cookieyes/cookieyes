@@ -1,5 +1,6 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { RecallButton } from "../controls/RecallButton.js";
 import { CookieOptOut } from "../presets/CookieOptOut.js";
 import { clearCookie, mountOffline, teardown } from "./test-utils.js";
 
@@ -14,6 +15,13 @@ describe("CookieOptOut", () => {
     mountOffline("CCPA");
     const { container } = render(<CookieOptOut />);
     expect(container.firstChild).toBeNull();
+  });
+
+  it("carries the id the opening buttons point at with aria-controls", () => {
+    const rt = mountOffline("CCPA");
+    rt.showOptOut();
+    render(<CookieOptOut />);
+    expect(screen.getByRole("dialog").id).toBe("cookieyes-optout");
   });
 
   it("renders the opt-out dialog with a toggle once opened", () => {
@@ -45,6 +53,30 @@ describe("CookieOptOut", () => {
     expect(rt.getSnapshot().hasActed).toBe(true);
     expect(rt.getSnapshot().isOptOutOpen).toBe(false);
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("closes itself after the countdown and hands focus to the revisit button", () => {
+    vi.useFakeTimers();
+    try {
+      const rt = mountOffline("CCPA");
+      rt.showOptOut();
+      render(
+        <>
+          <CookieOptOut />
+          <RecallButton />
+        </>,
+      );
+      fireEvent.click(screen.getByRole("checkbox"));
+      fireEvent.click(screen.getByText("Save My Preferences"));
+
+      act(() => {
+        vi.advanceTimersByTime(10_000);
+      });
+      expect(rt.getSnapshot().isOptOutOpen).toBe(false);
+      expect(document.activeElement?.getAttribute("aria-label")).toBe("Consent Preferences");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("moves focus to the confirmation and tells screen readers it closes automatically", () => {

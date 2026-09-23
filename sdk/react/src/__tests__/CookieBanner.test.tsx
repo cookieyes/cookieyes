@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { RecallButton } from "../controls/RecallButton.js";
 import { CookieBanner } from "../presets/CookieBanner.js";
 import { clearCookie, mountOffline, teardown } from "./test-utils.js";
 
@@ -96,6 +97,41 @@ describe("CookieBanner — close button", () => {
     expect(rt.getSnapshot().committedCategories).toEqual(before);
     expect(document.cookie).toBe(cookieBefore);
   });
+});
+
+describe("CookieBanner — dialog buttons and focus hand-off", () => {
+  it("marks Customise and Do Not Sell as opening their dialog", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    const customise = screen.getByText("Customise");
+    expect(customise.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(customise.getAttribute("aria-controls")).toBe("cookieyes-preferences");
+    cleanup();
+    teardown();
+
+    mountOffline("CCPA");
+    render(<CookieBanner />);
+    const doNotSell = screen.getByText("Do Not Sell or Share My Personal Information");
+    expect(doNotSell.getAttribute("aria-haspopup")).toBe("dialog");
+    expect(doNotSell.getAttribute("aria-controls")).toBe("cookieyes-optout");
+  });
+
+  it.each(["Accept All", "Reject All", "Close"])(
+    "moves focus to the revisit button after %s",
+    (name) => {
+      mountOffline("GDPR");
+      render(
+        <>
+          <CookieBanner />
+          <RecallButton />
+        </>,
+      );
+      const button = screen.getByRole("button", { name });
+      button.focus();
+      fireEvent.click(button);
+      expect(document.activeElement?.getAttribute("aria-label")).toBe("Consent Preferences");
+    },
+  );
 });
 
 describe("CookieBanner — DOM placement", () => {
