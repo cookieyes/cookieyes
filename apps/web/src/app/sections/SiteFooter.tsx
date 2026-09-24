@@ -48,12 +48,13 @@ export function SiteFooter() {
             }}
           >
             {" "}
-            <span aria-label="CookieYes" style={{ display: "block" }}>
+            <span role="img" aria-label="CookieYes" style={{ display: "block" }}>
               <svg
                 width="136"
                 height="22"
                 viewBox="0 0 154 25"
                 fill="none"
+                aria-hidden="true"
                 style={{ display: "block" }}
               >
                 <path

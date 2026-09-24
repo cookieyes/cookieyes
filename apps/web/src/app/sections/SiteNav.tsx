@@ -409,6 +409,8 @@ export function SiteNav() {
             </div>{" "}
             <div
               data-burger="1"
+              role="button"
+              tabIndex={0}
               aria-label="Open menu"
               style={{
                 display: "none",
