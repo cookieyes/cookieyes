@@ -153,7 +153,7 @@ export function SiteNav() {
                 />
                 <path
                   d="M109.459 16.7946L109.611 17.0548H115.042L111.477 10.5562L109.459 16.7946Z"
-                  fill="var(--cy-logo-mark)"
+                  fill="var(--cy-logo-mark-b)"
                 />
                 <path d="M119.33 0L109.56 17.0455H114.991L124.76 0H119.33Z" fill="var(--cy-logo-mark)" />
                 <path d="M109.56 19.5986H114.832V24.9479H109.56V19.5986Z" fill="var(--cy-logo-mark)" />
@@ -209,7 +209,7 @@ export function SiteNav() {
                 />
                 <path
                   d="M109.459 16.7946L109.611 17.0548H115.042L111.477 10.5562L109.459 16.7946Z"
-                  fill="var(--cy-logo-mark)"
+                  fill="var(--cy-logo-mark-b)"
                 />
                 <path d="M119.33 0L109.56 17.0455H114.991L124.76 0H119.33Z" fill="var(--cy-logo-mark)" />
                 <path d="M109.56 19.5986H114.832V24.9479H109.56V19.5986Z" fill="var(--cy-logo-mark)" />

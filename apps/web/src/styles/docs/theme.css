@@ -403,13 +403,18 @@
 }
 
 /* Logo lockup: wordmark baseline-aligned with a muted suffix.
-   --cy-doc-wordmark recolours the lettering; the blue glyph is fixed brand. */
+   --cy-doc-wordmark recolours the lettering. The "Y" mark follows the design's
+   --cy-mark-a / --cy-mark-b: brand blue and navy in light, white and blue-300 in dark. */
 :root {
   --cy-doc-wordmark: #404041;
+  --cy-doc-mark: #0056a7;
+  --cy-doc-mark-b: #2e3191;
 }
 
 .dark {
   --cy-doc-wordmark: #ecedef;
+  --cy-doc-mark: #ffffff;
+  --cy-doc-mark-b: #6c9bea;
 }
 
 .cy-doc-hd-logo {

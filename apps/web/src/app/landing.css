@@ -58,6 +58,7 @@
   --cy-logo: #0d47a1;
   --cy-wordmark: #404041;
   --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -102,6 +103,7 @@
   --cy-logo: var(--cy-accent);
   --cy-wordmark: #404041;
   --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -150,9 +152,9 @@
   --cy-row-hl: #0c2b5e; /* blue-800, action-surface */
   --cy-logo: var(--cy-accent);
   --cy-wordmark: #f1f3f5; /* text-primary */
-  /* No role covers a brand mark, and #0056a7 reads ~2.5:1 on surface-page. Lifted to
-     action-fill in dark, agreed with the design owner. */
-  --cy-logo-mark: var(--cy-accent);
+  /* The design's dark brand mark: --cy-mark-a #FFFFFF and --cy-mark-b #6C9BEA. */
+  --cy-logo-mark: #ffffff;
+  --cy-logo-mark-b: #6c9bea;
 
   /* surface-page / -raised / -inset, border-subtle, overlay-hover-layer */
   --cy-bg: #15171a;
@@ -254,6 +256,7 @@
   --cy-logo: #0d47a1;
   --cy-wordmark: #404041;
   --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -290,6 +293,7 @@
   --cy-logo: var(--cy-accent);
   --cy-wordmark: #404041;
   --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -337,9 +341,9 @@
   --cy-faint: #82868b; /* icon-subtle */
   --cy-logo: var(--cy-accent);
   --cy-wordmark: #f1f3f5; /* text-primary */
-  /* No role covers a brand mark, and #0056a7 reads ~2.5:1 on surface-page. Lifted to
-     action-fill in dark, agreed with the design owner. */
-  --cy-logo-mark: var(--cy-accent);
+  /* The design's dark brand mark: --cy-mark-a #FFFFFF and --cy-mark-b #6C9BEA. */
+  --cy-logo-mark: #ffffff;
+  --cy-logo-mark-b: #6c9bea;
   --cy-ok: #8fe786; /* status-success-text */
   --cy-err: #eac3c2;
   --cy-const: #edd2ad;
@@ -414,6 +418,7 @@
   --cy-logo: var(--cy-accent);
   --cy-wordmark: #404041;
   --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -1845,6 +1850,10 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
 .cy-page {
   position: relative;
   width: 100%;
+  /* The hero globe and a few decorative backgrounds reach past the viewport on purpose.
+     The design's page wrapper clips them the same way; without this the page scrolls
+     sideways. `clip` (not `hidden`) keeps the page from becoming a scroll container. */
+  overflow-x: clip;
 }
 
 .cy-page {

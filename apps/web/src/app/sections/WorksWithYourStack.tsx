@@ -457,7 +457,7 @@ export function WorksWithYourStack() {
                 <path
                   transform="translate(15.714 34.196)"
                   d="M 0 20.215 L 0.502 21.057 L 18.056 21.057 L 6.52 0 L 0 20.215 Z"
-                  fill="var(--cy-logo-mark)"
+                  fill="var(--cy-logo-mark-b)"
                 />{" "}
                 <path
                   transform="translate(16.216 0)"
