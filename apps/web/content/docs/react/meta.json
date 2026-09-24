@@ -1,0 +1,16 @@
+{
+  "title": "React",
+  "root": true,
+  "pages": [
+    "getting-started",
+    "components",
+    "headless",
+    "hooks",
+    "styling",
+    "translations",
+    "accessibility",
+    "network-blocking",
+    "migration",
+    "troubleshooting"
+  ]
+}

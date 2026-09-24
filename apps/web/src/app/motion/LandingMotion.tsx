@@ -8,7 +8,7 @@ const GLOBE_MOUNT_SELECTOR = "[data-globe-mount]";
 
 /**
  * Starts the design's motion: the decorative canvases, the looping card demos, the
- * scroll reveals, the typing headline, and the WebGL globe.
+ * scroll reveals, the typing headline, and the canvas globe.
  *
  * The motion code is imperative and finds its own elements by the data-attributes the
  * design puts on them, so this component only owns its lifetime — mount it once inside

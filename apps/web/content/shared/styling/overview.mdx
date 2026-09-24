@@ -1,0 +1,29 @@
+---
+title: Styling
+description: Change the colours, font and layout of the banner and dialogs, and know which tool to use for each.
+frameworks: [nextjs, react]
+---
+
+The components look finished out of the box. To make them match your site, pick the smallest tool that does the job:
+
+| You want to change | Use | Page |
+| --- | --- | --- |
+| Brand colour, corner radius, font, backgrounds | `theme` in `initCookieYes()` | [Theme tokens](/docs/styling/theme-tokens) |
+| Light, dark, or follow the device | `colorScheme` in `initCookieYes()` | [Colour scheme](/docs/styling/color-scheme) |
+| Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
+| The same, with utility classes | `className` and `@apply` | [Tailwind](/docs/styling/tailwind) |
+| The markup itself | Primitives | [Banner primitives](/docs/headless/banner) |
+
+Most sites stop at the first row.
+
+## Two rules
+
+1. **Load your CSS after the SDK's stylesheet.** The SDK's rules are plain single-class rules, so a rule of yours with the same selector strength wins only if it comes later. Import `styles.css` first and your own stylesheet after it. You never need `!important`.
+2. **Set a value in config or in CSS, not both.** A `theme` value is written straight onto the component, which beats any stylesheet rule for that variable. If you want to control `--cy-primary` from CSS, leave `primaryColor` out of `theme`.
+
+## Good to know
+
+- The banner, dialogs and recall button render into `<body>`, not where you placed them, so CSS scoped to your app (`.app [data-cy-part]`, CSS Modules) does not reach them. Use global CSS.
+- The banner does not inherit your page font. Set `theme.fontFamily`.
+- Every `data-cy-part`, `data-cy-state`, `--cy-*` and `cy-*` name is stable across minor versions. Renames come only with a major version.
+- Which buttons appear, and which one is primary, is not styling: it follows the privacy regulation.

@@ -1,0 +1,78 @@
+---
+title: CookiePreferences
+description: The dialog where a visitor turns each cookie category on or off.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Opens when a visitor clicks **Customise** on the banner, or the recall button. It lists your categories with a switch each; the required category shows "Always active" instead of a switch. Nothing is saved until the visitor presses **Save**, **Accept All** or **Reject All**.
+
+You already render it if you followed [Installation](/docs/getting-started/installation). Without it, Customise does nothing.
+
+```tsx check="false"
+<CookieBanner />
+<CookiePreferences />
+```
+
+## Change what it shows
+
+Nothing on the dialog is set through props. Everything comes from `initCookieYes()`:
+
+| To change | Set |
+| --- | --- |
+| Which categories appear, and their order | `categories`, see [Configuration](/docs/getting-started/configuration) |
+| The wording, labels and descriptions, in any language | `i18n`, see [Translations](/docs/translations) |
+| Colours, corner radius, font | `theme`, see [Theme tokens](/docs/styling/theme-tokens) |
+
+## Open it from your own button
+
+A "Cookie settings" link in your footer is the usual place:
+
+```tsx title="app/cookie-settings-link.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+export function CookieSettingsLink() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <button type="button" onClick={showPreferences}>
+      Cookie settings
+    </button>
+  );
+}
+```
+
+## Restyle it
+
+It accepts `className` and `style` like any element; they are added to the dialog's own styling. For one part, use its `data-cy-part` in your CSS:
+
+```css title="app/consent.css"
+[data-cy-part="dialog"] {
+  max-width: 40rem;
+}
+```
+
+The parts are `overlay`, `dialog`, `title`, `close`, `intro`, `category`, `category-label`, `category-description`, `toggle`, `accept-all`, `reject-all`, `save` and `branding`. For your own markup, use the [Preferences primitives](/docs/headless/preferences).
+
+## Changing categories re-prompts every returning visitor
+
+Saved choices are tied to your category list. If you add or remove a category, rename an `id`, or change which one is `required`, every returning visitor sees the banner again and chooses afresh. Changing a label or description does not. Decide your category ids early; change the wording as often as you like.
+
+## Common mistakes
+
+**Customise does nothing.**
+`<CookiePreferences />` is not rendered.
+
+**A category is missing.**
+Your `categories` list was rejected and the built-in five are shown instead. The console says why. See [Configuration](/docs/getting-started/configuration).
+
+**The Necessary switch cannot be turned off.**
+Correct. It is `required: true`, and required cookies need no consent.
+
+## Next steps
+
+- [CookieOptOut](/docs/components/cookie-opt-out): the dialog for CCPA
+- [RecallButton](/docs/components/recall-button): a ready-made floating button that reopens this dialog
+- [Preferences primitives](/docs/headless/preferences): the same dialog with your own markup

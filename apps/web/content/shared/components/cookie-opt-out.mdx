@@ -1,0 +1,47 @@
+---
+title: CookieOptOut
+description: The Do Not Sell dialog for CCPA.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Under `regulation: "CCPA"` the banner shows a **Do Not Sell** button. This is the dialog it opens: one checkbox and a Save button. Saving with the box ticked rejects every optional category; saving with it unticked accepts them all. After an opt-out, a confirmation shows and the dialog closes by itself after ten seconds; saving without opting out closes it at once.
+
+If the visitor's browser sends a Global Privacy Control signal, they start opted out before they see anything.
+
+## Add it
+
+Render it next to the banner whenever your site can be under CCPA. Without it, Do Not Sell does nothing and nothing warns you.
+
+```tsx check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+If you serve GDPR visitors too, render `CookiePreferences` as well. Each dialog appears only under its own regulation.
+
+## Change what it shows
+
+The wording comes from `i18n` ([Translations](/docs/translations)) and the colours from `theme` ([Theme tokens](/docs/styling/theme-tokens)), both set in `initCookieYes()`. There are no props for them.
+
+## Restyle it
+
+It accepts `className` and `style` like any element; they are added to the dialog's own styling. For one part, use its `data-cy-part` in your CSS. The parts are `optout`, `title`, `message`, `confirm` and `close`. For your own markup, use the [OptOut primitives](/docs/headless/opt-out).
+
+## Common mistakes
+
+**Do Not Sell does nothing.**
+`<CookieOptOut />` is not rendered.
+
+**The dialog never appears.**
+The visitor is not under CCPA. Check `regulation` in `initCookieYes()`.
+
+**Visitors are opted out before touching anything.**
+Their browser sends Global Privacy Control, which CookieYes honours by default.
+
+## Next steps
+
+- [CookieBanner](/docs/components/cookie-banner): the banner that opens this dialog
+- [RecallButton](/docs/components/recall-button): reopens it later
+- [OptOut primitives](/docs/headless/opt-out): the same dialog with your own markup

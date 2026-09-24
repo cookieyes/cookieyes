@@ -50,7 +50,7 @@ export function PropsTable({ type }: PropsTableProps) {
                 {node.default !== undefined && node.default !== null ? (
                   <code>{node.default}</code>
                 ) : (
-                  "—"
+                  "None"
                 )}
               </td>
               <td>{node.description}</td>

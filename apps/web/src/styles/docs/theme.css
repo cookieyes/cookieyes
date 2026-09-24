@@ -403,13 +403,18 @@
 }
 
 /* Logo lockup: wordmark baseline-aligned with a muted suffix.
-   --cy-doc-wordmark recolours the lettering; the blue glyph is fixed brand. */
+   --cy-doc-wordmark recolours the lettering. The "Y" mark follows the design's
+   --cy-mark-a / --cy-mark-b: brand blue and navy in light, white and blue-300 in dark. */
 :root {
   --cy-doc-wordmark: #404041;
+  --cy-doc-mark: #0056a7;
+  --cy-doc-mark-b: #2e3191;
 }
 
 .dark {
   --cy-doc-wordmark: #ecedef;
+  --cy-doc-mark: #ffffff;
+  --cy-doc-mark-b: #6c9bea;
 }
 
 .cy-doc-hd-logo {
@@ -655,7 +660,7 @@
 /* Transcribed from the design's .sb / .psw / .pdrop / .vsel / .sb-rule / .sb-sec /
    .sb-a / .sb-par / .sb-br rules. Class map, design → here:
      .psw    → .cy-doc-psw    .pdrop  → .cy-doc-pdrop  .pdi → .cy-doc-pdi
-     .vsel   → .cy-doc-vsel   .sb-rule → .cy-doc-sb-rule
+     .sb-rule → .cy-doc-sb-rule
      .sb-a   → Fumadocs' tree links, restyled below
      .sb-par → Fumadocs' folder trigger <button>, restyled below (only rendered for
                folders with collapsible: true — Getting Started's is a plain <div>)
@@ -824,41 +829,7 @@
   margin-left: auto;
 }
 
-/* Version select */
-.cy-doc-vsel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  /* .vsel{margin:0 12px 16px} (docs.html:83) — literal transcription. .vsel sits 12px
-     further in than .psw (which now has 0 horizontal margin, above); this asymmetry is
-     the design's own choice, not something to fix here. */
-  margin: 0 12px 16px;
-}
-
-.cy-doc-vsel-label {
-  font-size: 13px;
-  color: var(--cy-doc-tx3);
-}
-
-.cy-doc-vsel-select {
-  font-family: var(--font-ui);
-  font-size: 13.5px;
-  font-weight: 500;
-  padding: 3px 0;
-  border: none;
-  background: transparent;
-  color: var(--cy-doc-tx);
-  cursor: pointer;
-  text-align: right;
-}
-
-.cy-doc-vsel-select:disabled {
-  cursor: default;
-  opacity: 1;
-}
-
-/* Divider under the version row — .sb-rule (docs.html:66). Rendered by SidebarControls
+/* Divider under the sidebar controls — .sb-rule (docs.html:66). Rendered by SidebarControls
    itself (new markup, §5); .cy-doc-sb-controls is a flex column so this just needs its own
    box, no positioning. */
 .cy-doc-sb-rule {
@@ -1297,53 +1268,6 @@
   box-shadow: inset 0 0 0 1px var(--cy-doc-gr-bd);
 }
 
-/* .phr — hairline after .pmeta (docs.html:147). .cy-doc-pd (below) keeps its own
-   border-bottom, so the reordered header paints two hairlines in quick succession
-   — one under the description, one under the meta row. That is the prototype's
-   own assembly, not an authoring accident to collapse away (design doc §2.6). */
-.cy-doc-phr {
-  height: 1px;
-  background: var(--cy-doc-bd);
-  margin: 0 0 28px;
-}
-
-/* .pmeta — now holds only the last-updated stamp; the Markdown actions moved into
-   .cy-doc-ptitle above (docs.html:150). */
-.cy-doc-pmeta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  line-height: 1;
-  color: var(--cy-doc-tx3);
-  margin: 0 0 20px;
-}
-
-.cy-doc-pmeta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  font-family: var(--font-ui);
-  font-size: 12px;
-  color: var(--cy-doc-tx3);
-}
-
-.cy-doc-pmeta .cy-doc-pmeta-item {
-  margin-right: 6px;
-}
-
-/* No forced width/height here (docs.html:153-154, .pm-i svg): the new calendar
-   icon (LastUpdated.tsx) sets its own 14x14 size directly on the <svg>, and
-   forcing 13px here would fight that literal size for no reason. The .pm-split
-   button's own icons are sized separately, above (.cy-doc-pm-* rules). */
-.cy-doc-pmeta-item svg {
-  flex-shrink: 0;
-  opacity: 0.75;
-}
-
 /* ── Markdown viewer modal ───────────────────────────────────────────────── */
 
 /* The design's .mdov overlay and .mdbx panel. Built on a native <dialog>, so the
@@ -1433,9 +1357,10 @@
 /* ── Search modal ────────────────────────────────────────────────────────── */
 
 /* Transcribed value-for-value from the landing design's search overlay. Not scoped
-   to /docs: search opens from the landing nav too. Colours use the landing's own
-   tokens where they exist so the modal reads identically on both surfaces, with
-   docs tokens as the fallback for pages that do not load landing.css. */
+   to /docs: search opens from the landing nav too. Colours come from the docs tokens,
+   which are global and follow the theme: the dialog is rendered at <body> level, so the
+   landing page's own dark tokens (scoped to .cy-page) never reach it. Light values are
+   the landing design's; the .dark block keeps every text readable on the dark surface. */
 
 .cy-search-ov {
   position: fixed;
@@ -1456,9 +1381,9 @@
   max-width: 640px;
   max-height: 80vh;
   overflow: hidden;
-  background: var(--cy-surface, var(--cy-doc-surface));
-  border: 1px solid var(--cy-border, var(--cy-doc-bd));
-  box-shadow: var(--cy-nav-shadow, 0 16px 40px rgba(20, 20, 42, 0.12));
+  background: var(--cy-doc-surface);
+  border: 1px solid var(--cy-doc-bd);
+  box-shadow: 0 16px 40px rgba(20, 20, 42, 0.12);
 }
 
 /* Labels the dialog for assistive tech; the design shows no visible heading. */
@@ -1480,8 +1405,8 @@
   gap: 12px;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--cy-border, var(--cy-doc-bd));
-  color: var(--cy-muted, var(--cy-doc-tx2));
+  border-bottom: 1px solid var(--cy-doc-bd);
+  color: var(--cy-doc-tx2);
 }
 
 .cy-search-query > svg {
@@ -1498,29 +1423,29 @@
   font-family: var(--font-mono);
   font-size: 1rem;
   line-height: 24px;
-  color: var(--cy-fg, var(--cy-doc-tx));
+  color: var(--cy-doc-tx);
 }
 
 .cy-search-input::placeholder {
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.6);
+  color: rgba(78, 75, 102, 0.6);
 }
 
 .cy-search-esc {
   flex-shrink: 0;
   padding: 3px 8px;
-  border: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border: 1px solid var(--cy-doc-bd);
   border-radius: 0;
   background: none;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 14px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.7);
+  color: rgba(78, 75, 102, 0.7);
   transition: border-color 0.15s ease;
 }
 
 .cy-search-esc:hover {
-  border-color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.65);
+  border-color: rgba(78, 75, 102, 0.65);
 }
 
 /* Section eyebrow above the list */
@@ -1531,7 +1456,7 @@
   line-height: 14px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.45);
+  color: rgba(78, 75, 102, 0.45);
 }
 
 /* Result list */
@@ -1551,7 +1476,7 @@
   width: 100%;
   padding: 14px 20px;
   border: none;
-  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-top: 1px solid var(--cy-doc-bd);
   border-radius: 0;
   background: transparent;
   text-align: start;
@@ -1559,7 +1484,7 @@
 }
 
 .cy-search-row[data-active="true"] {
-  background: var(--cy-track, var(--cy-doc-bg3));
+  background: var(--cy-doc-bd);
 }
 
 .cy-search-row-main {
@@ -1575,7 +1500,7 @@
   font-weight: 500;
   font-size: 0.9375rem;
   line-height: 20px;
-  color: var(--cy-fg, var(--cy-doc-tx));
+  color: var(--cy-doc-tx);
 }
 
 .cy-search-row-desc {
@@ -1583,7 +1508,7 @@
   font-weight: 400;
   font-size: 0.8125rem;
   line-height: 18px;
-  color: var(--cy-muted, var(--cy-doc-tx2));
+  color: var(--cy-doc-tx2);
 }
 
 .cy-search-row-cat {
@@ -1591,15 +1516,15 @@
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 20px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.5);
+  color: rgba(78, 75, 102, 0.5);
 }
 
 .cy-search-empty {
   padding: 24px 20px;
-  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-top: 1px solid var(--cy-doc-bd);
   font-family: var(--font-mono);
   font-size: 12px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.6);
+  color: rgba(78, 75, 102, 0.6);
 }
 
 /* Keyboard legend pinned under the result list. */
@@ -1608,18 +1533,44 @@
   flex-direction: row;
   gap: 20px;
   padding: 12px 20px;
-  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-top: 1px solid var(--cy-doc-bd);
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 14px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.5);
+  color: rgba(78, 75, 102, 0.5);
+}
+
+/* Dark: the faint greys above are a light-surface device. On the dark surface the
+   category labels take the secondary text colour, the chrome (caption, hints, Esc,
+   empty state, placeholder) the tertiary one, and the active row sinks instead of
+   lifting, as the docs' own rows do. */
+.dark .cy-search-box {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+.dark .cy-search-row[data-active="true"] {
+  background: var(--cy-doc-bg3);
+}
+.dark .cy-search-row-cat {
+  color: var(--cy-doc-tx2);
+}
+.dark .cy-search-section,
+.dark .cy-search-hints,
+.dark .cy-search-empty,
+.dark .cy-search-esc,
+.dark .cy-search-input::placeholder {
+  color: var(--cy-doc-tx3);
+}
+.dark .cy-search-esc {
+  border-color: var(--cy-doc-bd2);
+}
+.dark .cy-search-esc:hover {
+  border-color: var(--cy-doc-bd3);
 }
 
 /* ── Table of contents ───────────────────────────────────────────────────── */
 
-/* "On this page" / "Was this helpful?" — shared title (.toc-title, docs.html:115).
-   Sans, flex row with an icon slot, 12px/500/0.08em tracking, no left padding — the
-   rail below carries its own inset instead. */
+/* "On this page" (.toc-title, docs.html:115). Sans, flex row with an icon slot,
+   12px/500/0.08em tracking, no left padding — the rail below carries its own inset. */
 #toc-title,
 .cy-doc-toc-title {
   display: flex;
@@ -1645,8 +1596,7 @@
    the exact glyph from docs.html is painted as a `mask-image` on a `::before` so it
    still themes through `currentColor` (background-color + the mask's alpha channel),
    taking the same first-child flex slot and gap the hidden svg held. Scoped to the ID
-   alone (not .cy-doc-toc-title) so "Was this helpful?" — which the design gives no
-   icon at all — is untouched. */
+   alone (not .cy-doc-toc-title), which carries no icon. */
 #toc-title svg {
   display: none;
 }
@@ -1746,51 +1696,6 @@
 /* Override of the shared .toc-title rule above (docs.html:124): the footer title
    has no icon (§2.2), so it resets the tracking/inset that rule adds for the icon
    row and keeps only the shared size/weight. */
-.cy-doc-tocft .cy-doc-toc-title {
-  letter-spacing: 0;
-  padding-left: 0;
-  margin-bottom: 14px;
-}
-
-.cy-doc-fb-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 0;
-}
-
-.cy-doc-fb-b {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 18px;
-  border: 1px solid var(--cy-doc-bd2);
-  border-radius: 10px;
-  /* --cy-doc-surface, not --cy-doc-bg2: the two are equal in dark (#313336)
-     but differ in light (#ffffff vs #f8f9fc) — the design's --sf2 is
-     --cy-doc-surface, verified against docs.html:125. */
-  background: var(--cy-doc-surface);
-  color: var(--cy-doc-tx);
-  font-family: var(--font-ui);
-  font-size: 14.5px;
-  cursor: pointer;
-  transition: all var(--cy-doc-transition);
-}
-
-.cy-doc-fb-b:hover {
-  border-color: var(--cy-doc-bd2);
-  color: var(--cy-doc-tx);
-}
-
-.cy-doc-fb-b[data-picked="true"] {
-  border-color: var(--cy-doc-ac-bd);
-  background: var(--cy-doc-ac-bg);
-  color: var(--cy-doc-ac);
-}
-
-.cy-doc-fb-b svg {
-  flex-shrink: 0;
-}
-
 /* New wrapper (§5): the divider that used to sit on .toc-ft moves here. */
 .cy-doc-tocft-links {
   margin-top: 34px;
@@ -2708,9 +2613,8 @@
 }
 
 /* Vertical rhythm through the page head now comes from the header's own wrapper
-   margins (.cy-doc-ptitle: 16px, .cy-doc-pd: 32px, .cy-doc-pmeta: 20px, .cy-doc-phr:
-   28px), not from h1 directly — the design's h1 itself has margin-bottom: 0
-   (docs.html:143). */
+   margins (.cy-doc-ptitle: 16px, .cy-doc-pd: 32px), not from h1 directly — the
+   design's h1 itself has margin-bottom: 0 (docs.html:143). */
 #nd-page h1 {
   margin-bottom: 0;
 }
@@ -2979,4 +2883,18 @@
     gap: 0 !important;
     padding-top: 0 !important;
   }
+}
+
+/* ── Scroll anchor ───────────────────────────────────────────────────────── */
+
+/* The first element of every docs page (see page.tsx). Out of the grid flow, so it
+   changes no layout; 1px so Next.js does not treat it as hidden. */
+.cy-doc-scroll-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  pointer-events: none;
 }

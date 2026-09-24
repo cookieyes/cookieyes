@@ -121,6 +121,7 @@ function mountRuntime(config: PlaygroundConfig, replayed: boolean): void {
  */
 export function PreviewApp() {
   const [config, setConfig] = useState<PlaygroundConfig | null>(null);
+  const [siteScheme, setSiteScheme] = useState<"light" | "dark">("light");
   const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
@@ -128,6 +129,7 @@ export function PreviewApp() {
       const message = parsePreviewMessage(event);
       if (!message) return;
       setConfig(message.config);
+      setSiteScheme(message.siteScheme);
     }
 
     window.addEventListener("message", onMessage);
@@ -157,10 +159,10 @@ export function PreviewApp() {
   }, [config]);
 
   return (
-    // The stand-in page follows the colour scheme too. Judging a brand colour against our
-    // dark background is the point of the control, and a dark banner floating on a white
-    // page is not what the visitor would actually ship.
-    <div className="cy-pg-page" data-scheme={config?.colorScheme ?? "light"}>
+    // The stand-in page is dressed by the site's own light/dark switch, not by the banner
+    // config: the config describes the banner, and the page behind it is standing in for
+    // the visitor's site, which is whatever the reader is currently looking at.
+    <div className="cy-pg-page" data-scheme={siteScheme}>
       <HostPageSkeleton />
       {/* Nothing until the parent's config lands: mounting on a guessed config first
           would show a banner that visibly flips a moment later. */}

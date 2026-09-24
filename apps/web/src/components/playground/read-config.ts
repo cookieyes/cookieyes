@@ -61,7 +61,7 @@ function readTheme(value: unknown, into: PlaygroundConfig): string | null {
     if (!match) return `\`borderRadius\` must look like \`"8px"\`, from 0 to ${MAX_RADIUS}.`;
     const px = Number(match[1]);
     if (px > MAX_RADIUS) {
-      return `\`borderRadius\` goes up to \`"${MAX_RADIUS}px"\` here — that is the slider's range.`;
+      return `\`borderRadius\` goes up to \`"${MAX_RADIUS}px"\` here; that is the slider's range.`;
     }
     into.borderRadius = px;
   }
@@ -128,7 +128,7 @@ function readCategories(value: unknown, into: PlaygroundConfig): string | null {
   // The SDK falls back to the built-in five, with a console warning, if nothing is
   // required — so an edit that drops it would silently stop matching the preview.
   if (!ids.includes(REQUIRED_CATEGORY_ID)) {
-    return `\`${REQUIRED_CATEGORY_ID}\` cannot be removed — one category must stay required.`;
+    return `\`${REQUIRED_CATEGORY_ID}\` cannot be removed; one category must stay required.`;
   }
 
   into.categories = ids;

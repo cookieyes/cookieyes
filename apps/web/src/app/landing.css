@@ -56,12 +56,18 @@
   --cy-muted-rgb: 78, 75, 102;
   --cy-faint: #8f92af;
   --cy-logo: #0d47a1;
+  --cy-wordmark: #404041;
+  --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
   --cy-err: #b9172b;
   --cy-ok: #0b7a52;
   --cy-nav-shadow: 0 16px 40px rgba(20, 20, 42, 0.12);
+  /* Ink for cast shadows. Dark casts pure black; the text colour must never be
+     used as a shadow, or every shadow becomes a glow. */
+  --cy-shadow-rgb: 20, 20, 42;
   --cy-ill-shadow: rgba(20, 20, 42, 0.08);
   --cy-ill-edge: rgba(255, 255, 255, 0.85);
   --cy-ill-sheen: rgba(255, 255, 255, 0.5);
@@ -81,6 +87,7 @@
 }
 .cy-page.cy-light {
   --cy-nav-shadow: 0 12px 32px rgba(20, 20, 42, 0.12);
+  --cy-shadow-rgb: 20, 20, 42;
   --cy-bg: #ffffff;
   --cy-bg-rgb: 255, 255, 255;
   --cy-surface: #ffffff;
@@ -94,6 +101,9 @@
   --cy-muted-rgb: 78, 75, 102;
   --cy-faint: #8f92af;
   --cy-logo: var(--cy-accent);
+  --cy-wordmark: #404041;
+  --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -115,6 +125,86 @@
   --cy-code-glow: rgba(var(--cy-accent-rgb), 0);
   --cy-cast: rgba(20, 20, 42, 0.07);
   --cy-cast-soft: rgba(20, 20, 42, 0.05);
+}
+
+/* ── Dark mode ────────────────────────────────────────────────────────────────
+   Every value below is a role from the design system's dark scope
+   (design/with-dark-mode/figma-dark/fig-tokens.css), named in the comment beside
+   it. Nothing here is a chosen number: where no role existed — the logo mark, the
+   shadow family, the version pill — the answer was decided with the design owner
+   and is recorded at the point of use.
+
+   `.dark` is set on <html> by next-themes, the same switch the docs already use, so
+   both halves of the site follow one preference. This block sits after
+   `.cy-page.cy-light` and matches its specificity, so it wins on source order and
+   the markup keeps its `cy-light` class untouched. */
+.dark .cy-page {
+  /* action-fill / -hover / -on-fill / -surface */
+  --cy-accent: #6c9bea;
+  --cy-accent-rgb: 108, 155, 234;
+  --cy-accent-dim: rgba(108, 155, 234, 0.85);
+  --cy-accent-glow: rgba(108, 155, 234, 0.8);
+  --cy-accent-deep: var(--cy-row-hl);
+  --cy-accent-bright: #bfcfe9; /* blue-300, action-text */
+  --cy-accent-tint: var(--cy-row-hl);
+  --cy-accent-hi: #bfcfe9; /* blue-300 */
+  --cy-on-accent: #0d0e11; /* neutral-1050 */
+  --cy-row-hl: #0c2b5e; /* blue-800, action-surface */
+  --cy-logo: var(--cy-accent);
+  --cy-wordmark: #f1f3f5; /* text-primary */
+  /* The design's dark brand mark: --cy-mark-a #FFFFFF and --cy-mark-b #6C9BEA. */
+  --cy-logo-mark: #ffffff;
+  --cy-logo-mark-b: #6c9bea;
+
+  /* surface-page / -raised / -inset, border-subtle, overlay-hover-layer */
+  --cy-bg: #15171a;
+  --cy-bg-rgb: 21, 23, 26;
+  --cy-surface: #313336;
+  --cy-surface-2: #1f2124;
+  --cy-track: #1f2124;
+  --cy-hover: rgba(255, 255, 255, 0.06);
+  --cy-border: rgba(255, 255, 255, 0.1);
+  --cy-border-soft: rgba(255, 255, 255, 0.06);
+
+  /* text-primary / -secondary, icon-subtle */
+  --cy-fg: #f1f3f5;
+  --cy-fg-rgb: 241, 243, 245;
+  --cy-muted: #b4b8bd;
+  --cy-muted-rgb: 180, 184, 189;
+  --cy-faint: #82868b;
+
+  /* status-*-text, accent-violet-text */
+  --cy-ok: #8fe786;
+  --cy-err: #eac3c2;
+  --cy-const: #edd2ad;
+  --cy-tag: #d59eff;
+  --cy-str: var(--cy-accent);
+
+  /* Shadow has no dark role — in dark the system sets --shadow-control to
+     --alpha-clear, so depth comes from the raised surface and its hairline instead
+     of from a cast shadow. Kept as transparent values rather than removed, so no
+     rule has to change shape between themes. */
+  --cy-nav-shadow: none;
+  --cy-shadow-rgb: 0, 0, 0;
+  --cy-cast: transparent;
+  --cy-cast-soft: transparent;
+  --cy-ill-shadow: transparent;
+  --cy-ill-drop: transparent;
+  --cy-ill-drop-sm: transparent;
+
+  /* Illustration surfaces sit on the raised surface with a hairline; their inks are
+     the muted neutrals the design instructions name for dark panels (§5). */
+  --cy-ill-card: #313336;
+  --cy-ill-fill: #313336;
+  --cy-ill-edge: rgba(255, 255, 255, 0.1);
+  --cy-ill-sheen: rgba(255, 255, 255, 0.06);
+  --cy-ill-inset: rgba(255, 255, 255, 0.06);
+  --cy-ill-line: rgba(255, 255, 255, 0.28);
+  --cy-ill-stroke: rgba(255, 255, 255, 0.28);
+  --cy-ill-stroke-strong: rgba(255, 255, 255, 0.5);
+  --cy-knob-hi: #b4b8bd; /* neutral-500 */
+  --cy-knob-lo: #82868b; /* neutral-600 */
+  --cy-code-glow: rgba(var(--cy-accent-rgb), 0);
 }
 .cy-page.cy-light [data-terminal],
 .cy-page.cy-light [data-css-panel] {
@@ -150,6 +240,7 @@
 }
 .cy-band-dark {
   --cy-nav-shadow: 0 16px 40px rgba(20, 20, 42, 0.12);
+  --cy-shadow-rgb: 20, 20, 42;
   --cy-bg: #f4f5fa;
   --cy-bg-rgb: 244, 245, 250;
   --cy-surface: #ffffff;
@@ -163,6 +254,9 @@
   --cy-muted-rgb: 78, 75, 102;
   --cy-faint: #8f92af;
   --cy-logo: #0d47a1;
+  --cy-wordmark: #404041;
+  --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -183,6 +277,7 @@
 }
 .cy-band-light {
   --cy-nav-shadow: 0 12px 32px rgba(20, 20, 42, 0.12);
+  --cy-shadow-rgb: 20, 20, 42;
   --cy-bg: #ffffff;
   --cy-bg-rgb: 255, 255, 255;
   --cy-surface: #ffffff;
@@ -196,6 +291,9 @@
   --cy-muted-rgb: 78, 75, 102;
   --cy-faint: #8f92af;
   --cy-logo: var(--cy-accent);
+  --cy-wordmark: #404041;
+  --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -217,6 +315,53 @@
   --cy-code-glow: rgba(var(--cy-accent-rgb), 0);
   --cy-cast: rgba(20, 20, 42, 0.07);
   --cy-cast-soft: rgba(20, 20, 42, 0.05);
+}
+
+/* The band blocks above re-declare the same tokens on each section, so they sit closer
+   to the content than `.dark .cy-page` and would win in dark. These twins restate the
+   dark scope at the same depth. Both bands resolve to the same dark roles — the light
+   design's two bands are a light-mode device (white band vs tinted band), and the dark
+   palette has one page surface. */
+.dark .cy-band-dark,
+.dark .cy-band-light {
+  --cy-nav-shadow: none;
+  --cy-shadow-rgb: 0, 0, 0;
+  --cy-bg: #15171a; /* surface-page */
+  --cy-bg-rgb: 21, 23, 26;
+  --cy-surface: #313336; /* surface-raised */
+  --cy-surface-2: #1f2124; /* surface-inset */
+  --cy-track: #1f2124;
+  --cy-hover: rgba(255, 255, 255, 0.06); /* overlay-hover-layer */
+  --cy-border: rgba(255, 255, 255, 0.1); /* border-subtle */
+  --cy-border-soft: rgba(255, 255, 255, 0.06);
+  --cy-fg: #f1f3f5; /* text-primary */
+  --cy-fg-rgb: 241, 243, 245;
+  --cy-muted: #b4b8bd; /* text-secondary */
+  --cy-muted-rgb: 180, 184, 189;
+  --cy-faint: #82868b; /* icon-subtle */
+  --cy-logo: var(--cy-accent);
+  --cy-wordmark: #f1f3f5; /* text-primary */
+  /* The design's dark brand mark: --cy-mark-a #FFFFFF and --cy-mark-b #6C9BEA. */
+  --cy-logo-mark: #ffffff;
+  --cy-logo-mark-b: #6c9bea;
+  --cy-ok: #8fe786; /* status-success-text */
+  --cy-err: #eac3c2;
+  --cy-const: #edd2ad;
+  --cy-tag: #d59eff;
+  --cy-str: var(--cy-accent);
+  --cy-cast: transparent;
+  --cy-cast-soft: transparent;
+  --cy-ill-shadow: transparent;
+  --cy-ill-drop: transparent;
+  --cy-ill-drop-sm: transparent;
+  --cy-ill-card: #313336;
+  --cy-ill-fill: #313336;
+  --cy-ill-edge: rgba(255, 255, 255, 0.1);
+  --cy-ill-sheen: rgba(255, 255, 255, 0.06);
+  --cy-ill-inset: rgba(255, 255, 255, 0.06);
+  --cy-ill-line: rgba(255, 255, 255, 0.28);
+  --cy-ill-stroke: rgba(255, 255, 255, 0.28);
+  --cy-ill-stroke-strong: rgba(255, 255, 255, 0.5);
 }
 .cy-band-light [data-terminal],
 .cy-band-light [data-css-panel] {
@@ -271,6 +416,9 @@
   --cy-muted-rgb: 78, 75, 102;
   --cy-faint: #8f92af;
   --cy-logo: var(--cy-accent);
+  --cy-wordmark: #404041;
+  --cy-logo-mark: #0056a7;
+  --cy-logo-mark-b: var(--cy-logo-mark); /* light keeps the one-colour mark */
   --cy-str: #1160c6;
   --cy-tag: #8250df;
   --cy-const: #a6742a;
@@ -373,14 +521,56 @@ footer.cy-band-light > div[aria-hidden] {
     rgba(222, 225, 240, 0) 100%
   ) !important;
 }
-.cy-page.cy-light [data-globe-mount],
-.cy-band-light [data-globe-mount] {
+/* The globe is drawn dark natively (a black sphere), so on light pages the mount is
+   colour-inverted. In dark mode the drawing is already the right way round, so the rule
+   is scoped to light pages rather than overridden (`.cy-page` carries `cy-light` in both
+   modes). The region tags are not inside the mount (see ensureFlagEls in
+   motion/design-motion.js), so no filter ever touches them: true colours in both modes. */
+html:not(.dark) .cy-page.cy-light [data-globe-mount],
+html:not(.dark) .cy-band-light [data-globe-mount] {
   filter: invert(1) hue-rotate(180deg) brightness(0.96);
 }
-.cy-page.cy-light [data-globe-flag],
-.cy-band-light [data-globe-flag] {
-  filter: invert(1) hue-rotate(180deg) !important;
+
+/* The blue conic blobs and the accent wash are sized for a white page. On the dark page
+   the same strength reads as a lit fog, so both are dimmed to the design's dark values.
+   The blobs carry their opacity inline, hence !important. */
+html.dark [data-glow-blob] {
+  opacity: 0.28 !important;
 }
+html.dark [data-own-wash] {
+  opacity: 0.55;
+}
+
+/* The illustrations were ported with the design's colour tokens already resolved to their
+   light values, so on the dark page their rings, borders, wires and dots stay pale. Light
+   keeps the ported values untouched; dark points each part back at a role. The inline
+   styles they override are why these need !important. */
+html.dark [data-gate-glow] {
+  background: radial-gradient(
+    circle,
+    rgba(var(--cy-accent-rgb), 0.22) 0%,
+    rgba(var(--cy-accent-rgb), 0) 70%
+  ) !important;
+}
+html.dark [data-ill-edge="ring"] {
+  border-color: rgba(var(--cy-accent-rgb), 0.3) !important;
+}
+html.dark [data-ill-edge="face"] {
+  border-color: var(--cy-surface-2) !important;
+}
+html.dark [data-ill-edge="soft"] {
+  border-color: var(--cy-border-soft) !important;
+}
+html.dark [data-ill-edge="line"] {
+  border-color: var(--cy-border) !important;
+}
+html.dark [data-ill-wire] {
+  stroke: var(--cy-border) !important;
+}
+html.dark [data-ill-dot="muted"] {
+  background: var(--cy-border) !important;
+}
+
 .cy-page.cy-nolines [data-gridline="v"],
 .cy-page.cy-nolines [data-gridline="bandedge"],
 .cy-page.cy-nolines [data-fx] {
@@ -441,6 +631,14 @@ body {
   padding: 0;
   background: #ffffff;
 }
+/* Dark is a separate rule rather than `light-dark()`: this project's CSS pipeline drops
+   declarations using it (verified — html and body painted transparent), though it works
+   in inline styles, which never reach the pipeline. Stylesheets therefore switch on
+   `.dark`, and only inline styles use `light-dark()`. Light mode is left untouched. */
+html.dark,
+html.dark body {
+  background: #15171a; /* surface-page */
+}
 a {
   color: var(--cy-muted);
 }
@@ -458,17 +656,10 @@ footer a:hover {
   text-decoration: underline !important;
   text-underline-offset: 4px;
 }
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-::view-transition-old(root) {
-  z-index: 1;
-}
-::view-transition-new(root) {
-  z-index: 9999;
-}
+/* The view-transition rules live in global.css, which the docs load too. The copy that
+   used to sit here came over with the port and carried `animation: none` without the
+   reveal that replaces it — and because this sheet loads later, it silently cancelled the
+   theme-switch animation. */
 ::selection {
   background: rgba(19, 111, 232, 0.22);
 }
@@ -563,6 +754,26 @@ input::placeholder {
   --cy-cast-soft: rgba(20, 20, 42, 0.06);
   --cy-hover: #f8f9fc;
 }
+/* The same mock with the SDK's own dark scheme (dark-mode-plan.md §2) — this is a picture
+   of the product, so it shows what a visitor on a dark site would actually see. */
+html.dark [data-cb-card]:not([data-css-panel]) {
+  --cy-bg: #1f2124; /* surface-inset */
+  --cy-bg-rgb: 31, 33, 36;
+  --cy-surface: #1f2124;
+  --cy-surface-2: #15171a;
+  --cy-track: #313336;
+  --cy-border: rgba(255, 255, 255, 0.1); /* border-subtle */
+  --cy-border-soft: rgba(255, 255, 255, 0.06);
+  --cy-fg: #f1f3f5; /* text-primary */
+  --cy-fg-rgb: 241, 243, 245;
+  --cy-muted: #b4b8bd; /* text-secondary */
+  --cy-muted-rgb: 180, 184, 189;
+  --cy-faint: #82868b;
+  --cy-ill-inset: rgba(255, 255, 255, 0.06);
+  --cy-cast: transparent;
+  --cy-cast-soft: transparent;
+  --cy-hover: rgba(255, 255, 255, 0.06);
+}
 /* ═══ DS SHAPE LAYER — CookieYes radii: buttons/inputs 4, banners/terminals 8, cards 12 ═══ */
 [data-bento],
 [data-feat-panel] {
@@ -602,6 +813,32 @@ input::placeholder {
 .cy-ill-card {
   border-radius: 12px;
   overflow: clip;
+}
+
+/* Illustration surfaces in dark (dark-mode-plan.md §2): the raised surface with a
+   hairline instead of the white card, and the card's radial tints dropped to the 0.12
+   alpha the plan specifies so they read as a tint rather than a wash. */
+html.dark .cy-fwbox,
+html.dark [data-bento] {
+  background: #313336 !important; /* surface-raised */
+  border-color: rgba(255, 255, 255, 0.1) !important; /* border-subtle */
+}
+html.dark .cy-ill-card {
+  background:
+    radial-gradient(
+      70% 60% at 8% -6%,
+      rgba(94, 135, 238, 0.12) 0%,
+      rgba(94, 135, 238, 0.06) 55%,
+      rgba(94, 135, 238, 0) 100%
+    ),
+    radial-gradient(
+      70% 60% at 92% -6%,
+      rgba(190, 178, 242, 0.12) 0%,
+      rgba(190, 178, 242, 0.06) 55%,
+      rgba(190, 178, 242, 0) 100%
+    ),
+    #313336 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 [data-terminal] {
   border-radius: 8px;
@@ -1334,7 +1571,8 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   font-size: 0.875rem !important;
   line-height: 21px !important;
 }
-.cy-page.cy-sim-mobile [data-globe-mount] {
+.cy-page.cy-sim-mobile [data-globe-mount],
+.cy-page.cy-sim-mobile [data-globe-flag] {
   display: none !important;
 }
 .cy-page.cy-sim-mobile canvas[data-deco="hot"] {
@@ -1456,7 +1694,8 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
     font-size: 0.875rem !important;
     line-height: 21px !important;
   }
-  [data-globe-mount] {
+  [data-globe-mount],
+  [data-globe-flag] {
     display: none !important;
   }
   canvas[data-deco="hot"] {
@@ -1517,6 +1756,57 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
 .cy-page .scp0:hover {
   color: rgb(255, 255, 255) !important;
 }
+/* Dark-mode switch in the nav (dark-mode-plan.md §3). Sized and bordered like the
+   search control beside it — 32px tall, the same hairline and surface — so the nav's
+   existing rhythm is unchanged. */
+.cy-nav-theme {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* 40px box, 10px radius, page ground and a hairline — the design's own values. */
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--cy-border);
+  border-radius: 10px;
+  background: var(--cy-bg);
+  color: var(--cy-fg);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.cy-nav-theme:hover {
+  border-color: rgba(var(--cy-muted-rgb), 0.65);
+}
+.cy-nav-theme:focus-visible {
+  outline: 2px solid var(--cy-accent);
+  outline-offset: 2px;
+}
+
+/* The GitHub link is an icon-only button since the downloads count went; the same 40px
+   box as the theme switch, so the row reads as three controls with even gaps. */
+.cy-nav-gh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border: 1px solid var(--cy-border);
+  border-radius: 10px;
+  background: var(--cy-bg);
+  transition: border-color 0.15s, color 0.15s;
+}
+.cy-nav-gh:hover {
+  border-color: rgba(var(--cy-muted-rgb), 0.65);
+}
+.cy-nav-gh:focus-visible {
+  outline: 2px solid var(--cy-accent);
+  outline-offset: 2px;
+}
+
 .cy-page .scp1:hover {
   color: var(--cy-fg) !important;
 }
@@ -1574,6 +1864,10 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
 .cy-page {
   position: relative;
   width: 100%;
+  /* The hero globe and a few decorative backgrounds reach past the viewport on purpose.
+     The design's page wrapper clips them the same way; without this the page scrolls
+     sideways. `clip` (not `hidden`) keeps the page from becoming a scroll container. */
+  overflow-x: clip;
 }
 
 .cy-page {
@@ -1581,6 +1875,8 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   --cy-accent-dim: oklch(56.4% 0.2002 258.3 / 0.85);
   --cy-accent-glow: oklch(56.4% 0.2002 258.3 / 0.8);
   --cy-accent-rgb: 19, 111, 232;
-  --cy-line-rgb: 0, 65, 155;
-  --cy-wash-rgb: 231, 237, 246;
+  /* --cy-line-rgb and --cy-wash-rgb are deliberately absent: applyAccent() derives them
+     from the accent and the colour scheme and writes them onto <html>. Declaring them
+     here put a nearer ancestor in the way, which left the globe on its light values in
+     dark mode. */
 }

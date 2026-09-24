@@ -13,7 +13,7 @@ export function WhatItDoes() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}
@@ -135,6 +135,7 @@ export function WhatItDoes() {
           >
             {" "}
             <div
+              data-ill-edge="soft"
               data-bento="0"
               style={{
                 background: "var(--cy-surface)",
@@ -214,7 +215,7 @@ export function WhatItDoes() {
                   boxSizing: "border-box",
                   borderRadius: "12px",
                   background:
-                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), rgb(248, 248, 249)",
+                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), var(--cy-surface-2)",
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
@@ -342,6 +343,7 @@ export function WhatItDoes() {
               </div>{" "}
             </div>{" "}
             <div
+              data-ill-edge="soft"
               data-bento="2"
               style={{
                 background: "var(--cy-surface)",
@@ -421,7 +423,7 @@ export function WhatItDoes() {
                   boxSizing: "border-box",
                   borderRadius: "12px",
                   background:
-                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), rgb(248, 248, 249)",
+                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), var(--cy-surface-2)",
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
@@ -454,7 +456,7 @@ export function WhatItDoes() {
                       alignSelf: "center",
                       borderRadius: "10px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(20, 20, 42, 0.28) 0px 14px 30px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.28) 0px 14px 30px",
                       padding: "var(--cy-space-4)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -650,8 +652,8 @@ export function WhatItDoes() {
                     style={{
                       alignSelf: "stretch",
                       borderRadius: "12px",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.16) 0px 16px 34px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.16) 0px 16px 34px",
                       padding: "var(--cy-space-20)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -667,7 +669,7 @@ export function WhatItDoes() {
                         fontWeight: "400",
                         fontSize: "14.5px",
                         lineHeight: "20px",
-                        color: "rgb(20, 20, 42)",
+                        color: "var(--cy-fg)",
                         transition: "opacity 0.25s",
                       }}
                     >
@@ -680,7 +682,7 @@ export function WhatItDoes() {
                         fontWeight: "400",
                         fontSize: "11.5px",
                         lineHeight: "16.5px",
-                        color: "rgb(110, 113, 145)",
+                        color: "var(--cy-muted)",
                         transition: "opacity 0.25s",
                       }}
                     >
@@ -697,6 +699,7 @@ export function WhatItDoes() {
                     >
                       {" "}
                       <span
+                        data-ill-edge="soft"
                         data-i18n-reject=""
                         style={{
                           padding: "6px 14px",
@@ -724,7 +727,7 @@ export function WhatItDoes() {
                           fontWeight: "400",
                           fontSize: "11.5px",
                           lineHeight: "16.5px",
-                          color: "rgb(255, 255, 255)",
+                          color: "var(--cy-on-accent)",
                           whiteSpace: "nowrap",
                           transition: "opacity 0.25s",
                         }}
@@ -739,7 +742,7 @@ export function WhatItDoes() {
                         fontWeight: "400",
                         fontSize: "11px",
                         lineHeight: "15px",
-                        color: "rgb(110, 113, 145)",
+                        color: "var(--cy-muted)",
                         textDecoration: "underline",
                         textUnderlineOffset: "2px",
                         transition: "opacity 0.25s",
@@ -752,6 +755,7 @@ export function WhatItDoes() {
               </div>{" "}
             </div>{" "}
             <div
+              data-ill-edge="soft"
               data-bento="3"
               style={{
                 background: "var(--cy-surface)",
@@ -831,7 +835,7 @@ export function WhatItDoes() {
                   boxSizing: "border-box",
                   borderRadius: "12px",
                   background:
-                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), rgb(248, 248, 249)",
+                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), var(--cy-surface-2)",
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
@@ -884,7 +888,7 @@ export function WhatItDoes() {
                       width: "188px",
                       borderRadius: "12px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(20, 20, 42, 0.12) 0px 6px 16px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.12) 0px 6px 16px",
                       padding: "var(--cy-space-12) var(--cy-space-16)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -986,8 +990,8 @@ export function WhatItDoes() {
                         borderRadius: "4px",
                         border: "1px solid rgb(231, 234, 244)",
                         boxSizing: "border-box",
-                        background: "rgb(255, 255, 255)",
-                        boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                        background: "var(--cy-surface)",
+                        boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                         padding: "15.7px",
                         display: "flex",
                         flexDirection: "column",
@@ -1002,7 +1006,7 @@ export function WhatItDoes() {
                           fontWeight: "700",
                           fontSize: "10.7px",
                           lineHeight: "13.9px",
-                          color: "rgb(20, 20, 42)",
+                          color: "var(--cy-fg)",
                         }}
                       >
                         {"This site uses cookies."}
@@ -1014,7 +1018,7 @@ export function WhatItDoes() {
                           fontWeight: "400",
                           fontSize: "8.2px",
                           lineHeight: "12px",
-                          color: "rgba(20, 20, 42, 0.62)",
+                          color: "rgba(var(--cy-fg-rgb), 0.62)",
                         }}
                       >
                         {
@@ -1037,7 +1041,7 @@ export function WhatItDoes() {
                             flex: "1 1 0%",
                             height: "24.1px",
                             borderRadius: "4px",
-                            border: "1px solid rgba(20, 20, 42, 0.22)",
+                            border: "1px solid rgba(var(--cy-fg-rgb), 0.22)",
                             boxSizing: "border-box",
                             display: "flex",
                             alignItems: "center",
@@ -1045,7 +1049,7 @@ export function WhatItDoes() {
                             fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
                             fontSize: "7.9px",
                             fontWeight: "500",
-                            color: "rgb(78, 75, 102)",
+                            color: "var(--cy-muted)",
                           }}
                         >
                           {"Reject all"}
@@ -1078,7 +1082,7 @@ export function WhatItDoes() {
                           fontSize: "7.4px",
                           lineHeight: "10.2px",
                           fontWeight: "500",
-                          color: "rgba(20, 20, 42, 0.5)",
+                          color: "rgba(var(--cy-fg-rgb), 0.5)",
                           textDecoration: "underline",
                         }}
                       >
@@ -1090,6 +1094,7 @@ export function WhatItDoes() {
               </div>{" "}
             </div>{" "}
             <div
+              data-ill-edge="soft"
               data-bento="5"
               style={{
                 background: "var(--cy-surface)",
@@ -1169,7 +1174,7 @@ export function WhatItDoes() {
                   boxSizing: "border-box",
                   borderRadius: "12px",
                   background:
-                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), rgb(248, 248, 249)",
+                    "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), var(--cy-surface-2)",
                   position: "relative",
                   display: "flex",
                   alignItems: "center",
@@ -1223,8 +1228,8 @@ export function WhatItDoes() {
                       width: "168px",
                       borderRadius: "10px",
                       border: "1px solid rgb(231, 234, 244)",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                       overflow: "hidden",
                       fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
                       fontSize: "10px",
@@ -1282,7 +1287,7 @@ export function WhatItDoes() {
                       data-ac-row="0"
                       style={{
                         padding: "var(--cy-space-8) var(--cy-space-12)",
-                        color: "rgb(58, 65, 96)",
+                        color: "var(--cy-muted)",
                         background: "var(--cy-row-hl)",
                         transition: "background 0.35s",
                       }}
@@ -1293,7 +1298,7 @@ export function WhatItDoes() {
                       data-ac-row="1"
                       style={{
                         padding: "var(--cy-space-8) var(--cy-space-12)",
-                        color: "rgb(58, 65, 96)",
+                        color: "var(--cy-muted)",
                         background: "transparent",
                         transition: "background 0.35s",
                       }}
@@ -1304,7 +1309,7 @@ export function WhatItDoes() {
                       data-ac-row="2"
                       style={{
                         padding: "var(--cy-space-8) var(--cy-space-12)",
-                        color: "rgb(58, 65, 96)",
+                        color: "var(--cy-muted)",
                         background: "transparent",
                         transition: "background 0.35s",
                       }}
@@ -1328,7 +1333,7 @@ export function WhatItDoes() {
                       width: "184px",
                       borderRadius: "12px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(20, 20, 42, 0.22) 0px 16px 34px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                       padding: "var(--cy-space-12) var(--cy-space-16)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -1381,6 +1386,7 @@ export function WhatItDoes() {
                         <span data-ac-line="">{"marketing"}</span>
                       </span>{" "}
                       <span style={{ color: "rgb(121, 184, 255)" }}>{"→ true"}</span>{" "}
+                      data-ill-edge="soft"
                     </div>{" "}
                   </div>{" "}
                 </div>{" "}
@@ -1453,7 +1459,7 @@ export function WhatItDoes() {
                   textWrap: "pretty",
                 }}
               >
-                {"Control when GA4, GTM, Meta Pixel, Mixpanel and 40+ integrations can run."}
+                {"Control when GA4, GTM, Meta Pixel and other integrations can run."}
               </span>{" "}
             </div>{" "}
             <div
@@ -1467,7 +1473,7 @@ export function WhatItDoes() {
                 minHeight: "280px",
                 borderRadius: "12px",
                 background:
-                  "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), rgb(248, 248, 249)",
+                  "radial-gradient(66% 66% at 83% 104%, rgba(217, 196, 233, 0.2) 0%, rgba(108, 155, 234, 0.2) 70%, rgba(24, 99, 220, 0.02) 100%), var(--cy-surface-2)",
                 padding: "var(--cy-space-32) var(--cy-space-36)",
                 boxSizing: "border-box",
                 overflow: "hidden",
@@ -1498,7 +1504,7 @@ export function WhatItDoes() {
                       width: "100%",
                       borderRadius: "10px",
                       background: "rgb(23, 26, 33)",
-                      boxShadow: "rgba(20, 20, 42, 0.22) 0px 16px 34px",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                       padding: "var(--cy-space-12) var(--cy-space-16)",
                       boxSizing: "border-box",
                       display: "flex",
@@ -1542,8 +1548,8 @@ export function WhatItDoes() {
                           width: "13px",
                           height: "13px",
                           borderRadius: "50%",
-                          background: "rgb(255, 255, 255)",
-                          boxShadow: "rgba(20, 20, 42, 0.3) 0px 1px 2px",
+                          background: "var(--cy-surface)",
+                          boxShadow: "rgba(var(--cy-shadow-rgb), 0.3) 0px 1px 2px",
                           transform: "translateX(15px)",
                           transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
                         }}
@@ -1750,8 +1756,8 @@ export function WhatItDoes() {
                       height: "28px",
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.06) 0px 2px 8px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1791,8 +1797,8 @@ export function WhatItDoes() {
                       height: "28px",
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.06) 0px 2px 8px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1832,8 +1838,8 @@ export function WhatItDoes() {
                       height: "28px",
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.06) 0px 2px 8px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1873,8 +1879,8 @@ export function WhatItDoes() {
                       height: "28px",
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.06) 0px 2px 8px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1914,8 +1920,8 @@ export function WhatItDoes() {
                       height: "28px",
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.06) 0px 2px 8px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",
@@ -1955,8 +1961,8 @@ export function WhatItDoes() {
                       height: "28px",
                       borderRadius: "8px",
                       border: "1px solid rgb(231, 234, 244)",
-                      background: "rgb(255, 255, 255)",
-                      boxShadow: "rgba(20, 20, 42, 0.06) 0px 2px 8px",
+                      background: "var(--cy-surface)",
+                      boxShadow: "rgba(var(--cy-shadow-rgb), 0.06) 0px 2px 8px",
                       display: "flex",
                       flexDirection: "row",
                       alignItems: "center",

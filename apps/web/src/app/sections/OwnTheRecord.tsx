@@ -1,5 +1,30 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "04 You own the record".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+//
+// The deliberate divergences: the bundle size is read from the measurement
+// (src/lib/bundle-size.ts), and the package, repository and git figures name this
+// repository rather than the design file's placeholders.
+import type { CSSProperties } from "react";
+import { BANNER_SIZE } from "@/lib/bundle-size";
+
+// The four floating mocks are pictures of product UI, so in dark mode they keep the light
+// palette instead of flipping with the page, exactly as the design file does. Every value
+// here is the light theme's own, so light mode renders identically to before.
+const LIGHT_MOCK = {
+  "--cy-surface": "#ffffff",
+  "--cy-accent": "oklch(56.4% 0.2002 258.3)",
+  "--cy-accent-rgb": "19, 111, 232",
+  "--cy-on-accent": "#ffffff",
+  "--cy-fg": "#14142a",
+  "--cy-faint": "#8f92af",
+  "--cy-ok": "#00754e",
+} as CSSProperties;
+
+// Counted with `git rev-list --count HEAD` and `git shortlog -sn`. CI checks out shallow,
+// so these cannot be generated at build time — refresh them when they drift.
+const COMMIT_COUNT = "242";
+const CONTRIBUTOR_COUNT = "5";
+
 export function OwnTheRecord() {
   return (
     <section
@@ -12,18 +37,19 @@ export function OwnTheRecord() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}
       <div
         aria-hidden="true"
+        data-own-wash="1"
         style={{
           position: "absolute",
           inset: "0px",
           pointerEvents: "none",
           background:
-            "linear-gradient(rgba(19, 111, 232, 0.14) 0%, rgba(19, 111, 232, 0.05) 22%, rgba(19, 111, 232, 0) 42%)",
+            "linear-gradient(rgba(var(--cy-accent-rgb), 0.14) 0%, rgba(var(--cy-accent-rgb), 0.05) 22%, rgba(var(--cy-accent-rgb), 0) 42%)",
         }}
       />{" "}
       <div
@@ -120,7 +146,7 @@ export function OwnTheRecord() {
               }}
             >
               {
-                "Everything runs in your stack. Consent state is yours to persist — you choose how and where it’s stored."
+                "Everything runs in your stack. Consent state is yours to persist. You choose how and where it’s stored."
               }
             </p>{" "}
           </div>{" "}
@@ -182,7 +208,7 @@ export function OwnTheRecord() {
                     width: "206px",
                     borderRadius: "12px",
                     background: "rgb(23, 26, 33)",
-                    boxShadow: "rgba(20, 20, 42, 0.22) 0px 16px 34px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                     padding: "var(--cy-space-12) var(--cy-space-16)",
                     boxSizing: "border-box",
                     display: "flex",
@@ -227,7 +253,7 @@ export function OwnTheRecord() {
                     }}
                   >
                     {" "}
-                    <span style={{ color: "rgb(86, 96, 121)" }}>{"$ vite build"}</span>{" "}
+                    <span style={{ color: "var(--cy-muted)" }}>{"$ vite build"}</span>{" "}
                     <span
                       data-anim="bpFade 0.3s ease 0.35s both"
                       style={{
@@ -282,22 +308,23 @@ export function OwnTheRecord() {
                         animation: "0.3s ease 1.15s 1 normal both running bpFade",
                       }}
                     >
-                      <span data-loop="tmGlow 4s ease 1.6s infinite">{"@cookieyes/dev"}</span>
-                      <span>{"9 kb"}</span>
+                      <span data-loop="tmGlow 4s ease 1.6s infinite">{"@cookieyes/react"}</span>
+                      <span>{BANNER_SIZE}</span>
                     </span>{" "}
                   </div>{" "}
                 </div>{" "}
                 <div
                   data-anim="gfPop 0.35s cubic-bezier(0.34,1.56,0.64,1) 1.5s both"
                   style={{
+                    ...LIGHT_MOCK,
                     opacity: "0",
                     position: "absolute",
                     right: "0px",
                     top: "0px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     display: "flex",
                     flexDirection: "column",
@@ -313,15 +340,15 @@ export function OwnTheRecord() {
                       fontSize: "9.5px",
                       lineHeight: "13px",
                       fontWeight: "600",
-                      color: "rgb(20, 20, 42)",
+                      color: "var(--cy-fg)",
                     }}
                   >
-                    {"@cookieyes/dev"}
+                    {"@cookieyes/react"}
                   </span>{" "}
                   <span
                     style={{ fontSize: "8.5px", lineHeight: "11px", color: "var(--cy-accent)" }}
                   >
-                    {"9 kb gzip · 0 deps"}
+                    {`${BANNER_SIZE} gzip · 0 third-party deps`}
                   </span>{" "}
                 </div>{" "}
               </div>{" "}
@@ -447,6 +474,7 @@ export function OwnTheRecord() {
                 <div
                   className="bp-fade"
                   style={{
+                    ...LIGHT_MOCK,
                     opacity: "0",
                     position: "absolute",
                     left: "0px",
@@ -454,8 +482,8 @@ export function OwnTheRecord() {
                     width: "208px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     boxSizing: "border-box",
                     display: "flex",
@@ -491,10 +519,10 @@ export function OwnTheRecord() {
                         fontSize: "10px",
                         lineHeight: "14px",
                         fontWeight: "600",
-                        color: "rgb(20, 20, 42)",
+                        color: "var(--cy-fg)",
                       }}
                     >
-                      {"cookieyes/dev"}
+                      {"cookieyes/cookieyes"}
                     </span>
                   </span>{" "}
                   <span
@@ -503,7 +531,7 @@ export function OwnTheRecord() {
                       lineHeight: "11px",
                       letterSpacing: "0.5px",
                       fontWeight: "600",
-                      color: "rgb(0, 117, 78)",
+                      color: "var(--cy-ok)",
                       border: "1px solid rgba(0, 117, 78, 0.35)",
                       borderRadius: "999px",
                       padding: "2px 7px",
@@ -529,19 +557,20 @@ export function OwnTheRecord() {
                   }}
                 >
                   {" "}
-                  <span>{"2,140 commits"}</span> <span>{"84 contributors"}</span>{" "}
+                  <span>{`${COMMIT_COUNT} commits`}</span> <span>{`${CONTRIBUTOR_COUNT} contributors`}</span>{" "}
                 </div>{" "}
                 <div
                   data-anim="gfPop 0.35s cubic-bezier(0.34,1.56,0.64,1) 1.55s both"
                   style={{
+                    ...LIGHT_MOCK,
                     opacity: "0",
                     position: "absolute",
                     right: "0px",
                     bottom: "8px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     padding: "var(--cy-space-8) var(--cy-space-12)",
                     display: "flex",
                     flexDirection: "row",
@@ -621,7 +650,7 @@ export function OwnTheRecord() {
                   color: "var(--cy-muted)",
                 }}
               >
-                {"No closed-source runtime dependency."}
+                {"No closed-source runtime dependency. Every line is yours to read."}
               </span>{" "}
             </div>{" "}
           </div>{" "}
@@ -665,14 +694,15 @@ export function OwnTheRecord() {
                 {" "}
                 <div
                   style={{
+                    ...LIGHT_MOCK,
                     position: "absolute",
                     left: "0px",
                     top: "0px",
                     width: "252px",
                     borderRadius: "10px",
                     border: "1px solid rgb(231, 234, 244)",
-                    background: "rgb(255, 255, 255)",
-                    boxShadow: "rgba(20, 20, 42, 0.14) 0px 12px 28px",
+                    background: "var(--cy-surface)",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.14) 0px 12px 28px",
                     overflow: "hidden",
                   }}
                 >
@@ -692,7 +722,7 @@ export function OwnTheRecord() {
                         fontSize: "9.5px",
                         lineHeight: "13px",
                         fontWeight: "600",
-                        color: "rgb(255, 255, 255)",
+                        color: "var(--cy-on-accent)",
                       }}
                     >
                       {"consent_records"}
@@ -716,7 +746,7 @@ export function OwnTheRecord() {
                       background: "rgb(247, 249, 253)",
                       borderBottom: "1px solid rgb(237, 240, 248)",
                       fontSize: "7px",
-                      color: "rgb(143, 146, 175)",
+                      color: "var(--cy-faint)",
                     }}
                   >
                     <span>{"timestamp"}</span>
@@ -756,11 +786,11 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:14:52"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                       </div>{" "}
                       <div
                         style={{
@@ -774,10 +804,10 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:14:09"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
@@ -794,7 +824,7 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:13:35"}
                         </span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
@@ -816,10 +846,10 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:12:04"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
@@ -836,11 +866,11 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:11:47"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                       </div>{" "}
                       <div
                         style={{
@@ -854,13 +884,13 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:10:31"}
                         </span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                       </div>{" "}
                       <div
                         style={{
@@ -874,10 +904,10 @@ export function OwnTheRecord() {
                           borderTop: "1px solid rgb(239, 242, 249)",
                         }}
                       >
-                        <span style={{ fontSize: "7px", color: "rgb(143, 146, 175)" }}>
+                        <span style={{ fontSize: "7px", color: "var(--cy-faint)" }}>
                           {"2026-07-15 09:09:58"}
                         </span>
-                        <span style={{ fontSize: "7px", color: "rgb(20, 20, 42)" }}>{"true"}</span>
+                        <span style={{ fontSize: "7px", color: "var(--cy-fg)" }}>{"true"}</span>
                         <span style={{ fontSize: "7px", color: "rgb(185, 191, 212)" }}>
                           {"false"}
                         </span>
@@ -894,7 +924,7 @@ export function OwnTheRecord() {
                     bottom: "4px",
                     borderRadius: "12px",
                     background: "rgb(23, 26, 33)",
-                    boxShadow: "rgba(20, 20, 42, 0.22) 0px 16px 34px",
+                    boxShadow: "rgba(var(--cy-shadow-rgb), 0.22) 0px 16px 34px",
                     padding: "var(--cy-space-12) var(--cy-space-16)",
                     boxSizing: "border-box",
                     display: "flex",

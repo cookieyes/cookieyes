@@ -1,0 +1,64 @@
+---
+title: useOnConsentChange
+description: Run your own code when the visitor's consent changes.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Calls your function whenever consent is saved, and once when the component mounts, with the current state. Use it to start something when a category is granted: initialise an analytics SDK, start a session recorder, sync the decision to your own backend. The subscription is removed when the component unmounts.
+
+To load a `<script>` tag, use [`GatedScript`](/docs/components/gated-script) instead: no code to write. To show or hide an element, use [`useConsentCategory()`](/docs/hooks/focused-hooks).
+
+## Example
+
+```tsx title="app/analytics.tsx"
+"use client";
+
+import { useOnConsentChange } from "@cookieyes/react";
+
+/** Whatever starts analytics in your app. Safe to call more than once. */
+declare function loadAnalytics(): void;
+
+export function Analytics() {
+  useOnConsentChange("change", ({ categories }) => {
+    if (categories.analytics) loadAnalytics();
+  });
+  return null;
+}
+```
+
+## Parameters
+
+```ts check="false"
+useOnConsentChange(type, listener, options?)
+```
+
+| Parameter | Values |
+| --- | --- |
+| `type` | `"change"`: only when a category's value actually changed. `"save"`: on every save, even if nothing changed |
+| `listener` | Receives `{ categories, changedCategories, isInitial }`: the saved map, the ids that changed, and whether this is the first call on mount |
+| `options` | `{ category: "analytics" }` to be called only when that category changed |
+
+Use `"change"` for loading things, so re-saving the same choices does not run your code twice. Use `"save"` for something that should happen on the act of saving, such as a "preferences saved" message.
+
+## It fires once on mount
+
+The first call happens when the component mounts, with `isInitial: true` and the visitor's saved state. That is how a returning visitor who accepted last week still gets analytics today. On that first call `changedCategories` is empty, so check `categories`, as the example above does. If you only check `changedCategories`, returning visitors are never handled.
+
+## Common mistakes
+
+**Analytics never loads for a returning visitor.**
+Your listener checks only `changedCategories`, which is empty on the first call. Check `categories`.
+
+**A "preferences saved" message shows on every page load.**
+The listener fires once on mount. Skip when `isInitial` is `true`.
+
+**The code runs twice when the visitor re-saves the same choices.**
+You used `"save"`. Use `"change"`.
+
+## Next steps
+
+- [GatedScript](/docs/components/gated-script): load a script after consent with no code
+- [Integrations](/docs/integrations): ready-made loaders for Google Analytics, Meta Pixel and more
+- [useConsent](/docs/hooks/use-consent): read the state instead of reacting to it

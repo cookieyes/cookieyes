@@ -1,5 +1,6 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import {
   configMessage,
@@ -26,6 +27,10 @@ export function PreviewFrame({
   replayCount: number;
   onLog: (event: LogEvent) => void;
 }) {
+  // The stand-in page behind the banner follows the site's own light/dark switch.
+  // `resolvedTheme` is undefined until next-themes has read the stored preference.
+  const { resolvedTheme } = useTheme();
+  const siteScheme = resolvedTheme === "dark" ? "dark" : "light";
   const frame = useRef<HTMLIFrameElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [ready, setReady] = useState(false);
@@ -72,8 +77,11 @@ export function PreviewFrame({
   // has mounted inside it, and a message sent in that gap has no listener yet.
   useEffect(() => {
     if (!ready) return;
-    frame.current?.contentWindow?.postMessage(configMessage(config), window.location.origin);
-  }, [ready, config]);
+    frame.current?.contentWindow?.postMessage(
+      configMessage(config, siteScheme),
+      window.location.origin,
+    );
+  }, [ready, config, siteScheme]);
 
   // Replaying reloads the frame rather than resetting state inside it. A script that has
   // already run cannot be un-run, so only a fresh document is honestly a first visit — and

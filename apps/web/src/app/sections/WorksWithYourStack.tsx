@@ -11,7 +11,7 @@ export function WorksWithYourStack() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}
@@ -122,6 +122,7 @@ export function WorksWithYourStack() {
                 </radialGradient>{" "}
               </defs>{" "}
               <path
+                data-ill-wire="1"
                 d="M 240 124 C 330 124, 350 160, 428 178"
                 className="cc-flow"
                 style={{
@@ -134,6 +135,7 @@ export function WorksWithYourStack() {
                 }}
               />{" "}
               <path
+                data-ill-wire="1"
                 d="M 240 244 C 330 244, 350 215, 428 202"
                 className="cc-flow"
                 style={{
@@ -176,6 +178,7 @@ export function WorksWithYourStack() {
                 }}
               />{" "}
               <path
+                data-ill-wire="1"
                 d="M 596 199 C 680 212, 690 256, 764 256"
                 className="cc-flow"
                 style={{
@@ -188,6 +191,7 @@ export function WorksWithYourStack() {
                 }}
               />{" "}
               <path
+                data-ill-wire="1"
                 d="M 596 208 C 680 230, 690 322, 764 322"
                 className="cc-flow"
                 style={{
@@ -232,7 +236,7 @@ export function WorksWithYourStack() {
                 r="3.5"
                 style={{
                   fill: 'url("#ccDotGrey")',
-                  filter: "drop-shadow(rgba(20, 20, 42, 0.2) 0px 1px 2px)",
+                  filter: "drop-shadow(rgba(var(--cy-fg-rgb), 0.2) 0px 1px 2px)",
                 }}
               />
               <circle
@@ -241,7 +245,7 @@ export function WorksWithYourStack() {
                 r="3.5"
                 style={{
                   fill: 'url("#ccDotGrey")',
-                  filter: "drop-shadow(rgba(20, 20, 42, 0.2) 0px 1px 2px)",
+                  filter: "drop-shadow(rgba(var(--cy-fg-rgb), 0.2) 0px 1px 2px)",
                 }}
               />{" "}
             </svg>{" "}
@@ -285,15 +289,16 @@ export function WorksWithYourStack() {
               }}
             >
               <span
+                data-ill-edge="face"
                 style={{
                   width: "56px",
                   height: "56px",
                   borderRadius: "50%",
                   border: "1px solid rgb(237, 241, 250)",
                   boxSizing: "border-box",
-                  background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(245, 248, 253) 100%)",
+                  background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                   boxShadow:
-                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, rgb(255, 255, 255) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
+                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, var(--cy-ill-edge) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -316,7 +321,7 @@ export function WorksWithYourStack() {
                     fontFamily: "Inter, sans-serif",
                     fontWeight: "500",
                     fontSize: "15px",
-                    color: "rgb(20, 20, 42)",
+                    color: "var(--cy-fg)",
                   }}
                 >
                   {"React"}
@@ -344,15 +349,16 @@ export function WorksWithYourStack() {
               }}
             >
               <span
+                data-ill-edge="face"
                 style={{
                   width: "56px",
                   height: "56px",
                   borderRadius: "50%",
                   border: "1px solid rgb(237, 241, 250)",
                   boxSizing: "border-box",
-                  background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(245, 248, 253) 100%)",
+                  background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                   boxShadow:
-                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, rgb(255, 255, 255) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
+                    "rgba(24, 99, 220, 0.14) 0px 6px 16px, rgba(24, 99, 220, 0.1) 0px 1px 2px, var(--cy-ill-edge) 0px 1px 0px inset, rgba(24, 99, 220, 0.06) 0px -6px 10px inset",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -375,7 +381,7 @@ export function WorksWithYourStack() {
                     fontFamily: "Inter, sans-serif",
                     fontWeight: "500",
                     fontSize: "15px",
-                    color: "rgb(20, 20, 42)",
+                    color: "var(--cy-fg)",
                   }}
                 >
                   {"Next.js"}
@@ -387,11 +393,12 @@ export function WorksWithYourStack() {
                     color: "rgb(154, 158, 191)",
                   }}
                 >
-                  {"@cookieyes/next"}
+                  {"@cookieyes/nextjs"}
                 </span>
               </span>
             </div>{" "}
             <div
+              data-gate-glow="1"
               aria-hidden="true"
               style={{
                 position: "absolute",
@@ -406,6 +413,7 @@ export function WorksWithYourStack() {
               }}
             />{" "}
             <div
+              data-ill-edge="ring"
               aria-hidden="true"
               style={{
                 position: "absolute",
@@ -420,6 +428,7 @@ export function WorksWithYourStack() {
               }}
             />{" "}
             <div
+              data-ill-edge="face"
               style={{
                 position: "absolute",
                 left: "437px",
@@ -429,9 +438,9 @@ export function WorksWithYourStack() {
                 borderRadius: "50%",
                 border: "1px solid rgb(237, 241, 250)",
                 boxSizing: "border-box",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(244, 247, 253) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(24, 99, 220, 0.2) 0px 18px 48px, rgba(24, 99, 220, 0.1) 0px 2px 4px, rgb(255, 255, 255) 0px 2px 0px inset, rgba(24, 99, 220, 0.07) 0px -12px 20px inset",
+                  "rgba(24, 99, 220, 0.2) 0px 18px 48px, rgba(24, 99, 220, 0.1) 0px 2px 4px, var(--cy-ill-edge) 0px 2px 0px inset, rgba(24, 99, 220, 0.07) 0px -12px 20px inset",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -443,22 +452,22 @@ export function WorksWithYourStack() {
                 <path
                   transform="translate(0 25.268)"
                   d="M 17.554 0 L 0 0 L 16.05 29.985 L 33.604 29.985 L 17.554 0 Z"
-                  fill="#0056A7"
+                  fill="var(--cy-logo-mark)"
                 />{" "}
                 <path
                   transform="translate(15.714 34.196)"
                   d="M 0 20.215 L 0.502 21.057 L 18.056 21.057 L 6.52 0 L 0 20.215 Z"
-                  fill="#2E3191"
+                  fill="var(--cy-logo-mark-b)"
                 />{" "}
                 <path
                   transform="translate(16.216 0)"
                   d="M 31.598 0 L 0 55.254 L 17.554 55.254 L 49.152 0 L 31.598 0 Z"
-                  fill="#0056A7"
+                  fill="var(--cy-logo-mark)"
                 />{" "}
                 <path
                   transform="translate(16.216 63.507)"
                   d="M 0 0 L 17.053 0 L 17.053 17.351 L 0 17.351 L 0 0 Z"
-                  fill="#0056A7"
+                  fill="var(--cy-logo-mark)"
                 />{" "}
               </svg>{" "}
             </div>{" "}
@@ -496,7 +505,7 @@ export function WorksWithYourStack() {
                   background: "rgba(63, 185, 80, 0.08)",
                   fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
                   fontSize: "12px",
-                  color: "rgb(31, 143, 68)",
+                  color: "var(--cy-ok)",
                   whiteSpace: "nowrap",
                   animation: "6s ease-in-out 0s infinite normal none running ccBlink",
                 }}
@@ -505,6 +514,7 @@ export function WorksWithYourStack() {
               </span>
             </span>{" "}
             <div
+              data-ill-edge="soft"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -513,9 +523,9 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px solid rgb(227, 229, 241)",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(247, 249, 254) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(20, 20, 42, 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-shadow-rgb), 0.06) 0px 3px 8px, var(--cy-ill-edge) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -547,7 +557,7 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(20, 20, 42)",
+                  color: "var(--cy-fg)",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -565,6 +575,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-ill-edge="soft"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -573,9 +584,9 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px solid rgb(227, 229, 241)",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(247, 249, 254) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(20, 20, 42, 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-shadow-rgb), 0.06) 0px 3px 8px, var(--cy-ill-edge) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -595,11 +606,12 @@ export function WorksWithYourStack() {
               <span
                 aria-hidden="true"
                 style={{
-                  width: "18px",
-                  height: "18px",
+                  width: "16px",
+                  height: "16px",
+                  flexShrink: "0",
                   display: "block",
-                  backgroundColor: "rgb(36, 111, 219)",
-                  mask: 'url("https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/googletagmanager.svg") center center / contain no-repeat',
+                  background:
+                    'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
                 }}
               />
               <span
@@ -607,10 +619,11 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(20, 20, 42)",
+                  color: "var(--cy-fg)",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {"Tag Manager"}
+                {"Microsoft Clarity"}
               </span>
               <span
                 style={{
@@ -624,6 +637,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-ill-edge="soft"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -632,9 +646,9 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px solid rgb(227, 229, 241)",
-                background: "linear-gradient(rgb(255, 255, 255) 0%, rgb(247, 249, 254) 100%)",
+                background: "linear-gradient(var(--cy-ill-card) 0%, var(--cy-surface-2) 100%)",
                 boxShadow:
-                  "rgba(20, 20, 42, 0.06) 0px 3px 8px, rgb(255, 255, 255) 0px 1px 0px inset",
+                  "rgba(var(--cy-shadow-rgb), 0.06) 0px 3px 8px, var(--cy-ill-edge) 0px 1px 0px inset",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -651,24 +665,23 @@ export function WorksWithYourStack() {
                   animation: "6s ease-out 1s infinite normal none running ccRing",
                 }}
               />
-              <span
-                aria-hidden="true"
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  display: "block",
-                  background: 'url("figma-logos/meta-infinity.png") 50% 53% / 148% no-repeat',
-                }}
-              />
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 48 48">
+                <g transform="skewX(-16)">
+                  <rect x="19" y="21" width="7" height="17" rx="2" fill="#1D4AFF" />
+                  <rect x="29" y="14" width="7" height="24" rx="2" fill="#F54E00" />
+                  <rect x="39" y="7" width="7" height="31" rx="2" fill="#F9BD2B" />
+                </g>
+                <path d="M 31 38 L 45 38 L 45 30.5 Z" fill="var(--cy-fg)" />
+              </svg>
               <span
                 style={{
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(20, 20, 42)",
+                  color: "var(--cy-fg)",
                 }}
               >
-                {"Meta Pixel"}
+                {"PostHog"}
               </span>
               <span
                 style={{
@@ -682,6 +695,7 @@ export function WorksWithYourStack() {
               </span>
             </div>{" "}
             <div
+              data-ill-edge="line"
               style={{
                 position: "absolute",
                 left: "768px",
@@ -690,7 +704,7 @@ export function WorksWithYourStack() {
                 height: "42px",
                 borderRadius: "999px",
                 border: "1px dashed rgb(201, 205, 222)",
-                background: "rgb(251, 253, 255)",
+                background: "var(--cy-surface-2)",
                 boxSizing: "border-box",
                 padding: "0px 14px",
                 display: "flex",
@@ -700,6 +714,67 @@ export function WorksWithYourStack() {
               }}
             >
               <span
+                data-ill-dot="muted"
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "rgb(201, 205, 222)",
+                }}
+              />
+              <span
+                aria-hidden="true"
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  flexShrink: "0",
+                  display: "block",
+                  background: 'url("figma-logos/meta-infinity.png") 50% 53% / 148% no-repeat',
+                  filter: "grayscale(1)",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: "500",
+                  fontSize: "14px",
+                  color: "var(--cy-muted)",
+                }}
+              >
+                {"Meta Pixel"}
+              </span>
+              <span
+                style={{
+                  marginLeft: "auto",
+                  fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
+                  fontSize: "11px",
+                  color: "rgb(154, 158, 191)",
+                }}
+              >
+                {"held"}
+              </span>
+            </div>{" "}
+            <div
+              data-ill-edge="line"
+              style={{
+                position: "absolute",
+                left: "768px",
+                top: "302px",
+                width: "224px",
+                height: "42px",
+                borderRadius: "999px",
+                border: "1px dashed rgb(201, 205, 222)",
+                background: "var(--cy-surface-2)",
+                boxSizing: "border-box",
+                padding: "0px 14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                opacity: "0.75",
+              }}
+            >
+              <span
+                data-ill-dot="muted"
                 style={{
                   width: "6px",
                   height: "6px",
@@ -714,8 +789,8 @@ export function WorksWithYourStack() {
                   height: "16px",
                   flexShrink: "0",
                   display: "block",
-                  backgroundColor: "rgb(82, 189, 148)",
-                  mask: 'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
+                  backgroundColor: "rgb(66, 133, 244)",
+                  mask: 'url("figma-logos/google-ads.svg") center center / contain no-repeat',
                   filter: "grayscale(1)",
                 }}
               />
@@ -724,71 +799,10 @@ export function WorksWithYourStack() {
                   fontFamily: "Inter, sans-serif",
                   fontWeight: "500",
                   fontSize: "14px",
-                  color: "rgb(78, 75, 102)",
+                  color: "var(--cy-muted)",
                 }}
               >
-                {"Microsoft Clarity"}
-              </span>
-              <span
-                style={{
-                  marginLeft: "auto",
-                  fontFamily: '"Geist Mono", ui-monospace, Menlo, monospace',
-                  fontSize: "11px",
-                  color: "rgb(154, 158, 191)",
-                }}
-              >
-                {"held"}
-              </span>
-            </div>{" "}
-            <div
-              style={{
-                position: "absolute",
-                left: "768px",
-                top: "302px",
-                width: "224px",
-                height: "42px",
-                borderRadius: "999px",
-                border: "1px dashed rgb(201, 205, 222)",
-                background: "rgb(251, 253, 255)",
-                boxSizing: "border-box",
-                padding: "0px 14px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                opacity: "0.75",
-              }}
-            >
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "rgb(201, 205, 222)",
-                }}
-              />
-              <svg
-                aria-hidden="true"
-                width="18"
-                height="18"
-                viewBox="0 0 48 48"
-                style={{ filter: "grayscale(1)" }}
-              >
-                <g transform="skewX(-16)">
-                  <rect x="19" y="21" width="7" height="17" rx="2" fill="#1D4AFF" />
-                  <rect x="29" y="14" width="7" height="24" rx="2" fill="#F54E00" />
-                  <rect x="39" y="7" width="7" height="31" rx="2" fill="#F9BD2B" />
-                </g>
-                <path d="M 31 38 L 45 38 L 45 30.5 Z" fill="#14142A" />
-              </svg>
-              <span
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontWeight: "500",
-                  fontSize: "14px",
-                  color: "rgb(78, 75, 102)",
-                }}
-              >
-                {"PostHog"}
+                {"Google Ads"}
               </span>
               <span
                 style={{

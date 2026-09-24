@@ -1,0 +1,149 @@
+---
+title: Translations
+description: Show the banner and dialogs in your visitors' language, or change any text.
+frameworks: [nextjs, react]
+---
+
+Every text the SDK shows comes from one translation map, in English by default. You can swap in a shipped language, write your own, or change a single string. All of it goes through the `i18n` option of `initCookieYes()`.
+
+## Use a shipped language
+
+English is built in. Spanish, French, German and Italian ship in `@cookieyes/translations`; import the one you need and pass it in.
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { fr } from "@cookieyes/translations/fr";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    locale: "fr",
+    messages: { fr },
+  },
+});
+```
+
+| Language | Import |
+| --- | --- |
+| Spanish | `import { es } from "@cookieyes/translations/es"` |
+| French | `import { fr } from "@cookieyes/translations/fr"` |
+| German | `import { de } from "@cookieyes/translations/de"` |
+| Italian | `import { it } from "@cookieyes/translations/it"` |
+
+Import each language from its own path, as above, so only the languages you use end up in your bundle.
+
+## Change any text
+
+Set only the keys you want to change. Everything else stays English, so one key is enough:
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    messages: {
+      en: {
+        bannerTitle: "We value your privacy",
+        acceptAll: "Sounds good",
+        categories: {
+          analytics: { label: "Statistics", description: "Helps us see which pages are useful." },
+        },
+      },
+    },
+  },
+});
+```
+
+The same works for any language: add the key under `messages.fr`, for example, and it replaces that string in French only.
+
+| Text | Key |
+| --- | --- |
+| Banner heading and text | `bannerTitle`, `bannerDescription` |
+| Buttons | `acceptAll`, `rejectAll`, `managePreferences`, `savePreferences`, `accept` |
+| Preferences dialog | `preferencesTitle`, `preferencesIntro`, `alwaysActive` |
+| A category's name and description | `categories.<id>.label`, `categories.<id>.description` |
+| CCPA banner and opt-out dialog | `doNotSell`, `ccpaDescription`, `optOut.title`, `optOut.description`, `optOut.cancel`, `optOut.successText`, `optOut.successCountdown` |
+| Blocked iframe placeholder | `gatedFrame.placeholder` (with `{category}`), `gatedFrame.action` |
+| Reload notice | `reloadNotice.message`, `reloadNotice.reloadButton`, `reloadNotice.dismissButton` |
+| Screen-reader labels | `recallButtonLabel`, `bannerCloseLabel`, `preferencesCloseLabel`, `optOutCloseLabel`, `preferencesDialogLabel`, `optOutDialogLabel`, `poweredBy`, `opensInNewTab` |
+
+## Let visitors switch language
+
+Bundle the languages you offer, then call `setLanguage()` from your own picker. The SDK does not remember the choice between visits; store it yourself and pass it back as `locale`.
+
+```tsx title="app/language-picker.tsx"
+"use client";
+
+import { useLanguage } from "@cookieyes/react";
+
+export function LanguagePicker() {
+  const { language, languages, setLanguage } = useLanguage();
+  return (
+    <select
+      value={language}
+      onChange={async (event) => {
+        await setLanguage(event.target.value);
+        localStorage.setItem("language", event.target.value);
+      }}
+    >
+      {languages.map((tag) => (
+        <option key={tag} value={tag}>
+          {tag}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+To load a language only when it is chosen, give `i18n` a `loadLanguage` function. The SDK calls it once per language the first time that language is needed:
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes, type PartialTranslations } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  i18n: {
+    loadLanguage: async (tag): Promise<PartialTranslations> =>
+      (await import(`@cookieyes/translations/${tag}`))[tag],
+  },
+});
+```
+
+On a site where the URL carries the language, call `setLanguage()` with the tag from the URL and set `detectBrowserLanguage: false`.
+
+## Good to know
+
+**The browser language is used by default.** With `messages: { fr }` and no `locale`, a visitor whose browser is French sees French and everyone else sees English. Set `detectBrowserLanguage: false` to always use `locale`.
+
+**Regional tags fall back to the language.** A visitor on `fr-CA` gets your `fr`.
+
+**Your own components can read the text.** `useTranslations()` returns the active language's map and re-renders when it changes.
+
+**Right-to-left languages.** The ready-made components always render left to right. For Arabic, Hebrew or another right-to-left language, build on the [Banner primitives](/docs/headless/banner) and set `dir={useLanguage().direction}` on your root element.
+
+## Common mistakes
+
+**`locale: "fr"` still shows English.**
+`fr` is not in `messages`. Import the catalog and add it.
+
+**The banner is in the browser's language, but you wanted one fixed language.**
+Set `detectBrowserLanguage: false`.
+
+**A changed key has no effect.**
+The key path is wrong. Keys are nested: `optOut.title`, not `optOutTitle`; category text is `categories.<id>.label`.
+
+**`setLanguage()` seems to do nothing.**
+It is async, and it warns in the console if the language is not in `messages` and no `loadLanguage` is set. Await it and check the console.
+
+## Next steps
+
+- [Configuration](/docs/getting-started/configuration#i18n): the `i18n` option in the reference table
+- [Focused hooks](/docs/hooks/focused-hooks): `useTranslations()` and `useLanguage()` in full
