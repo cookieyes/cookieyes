@@ -14,6 +14,19 @@ const config = {
    * one a `?pkg=` link asked for. Sections that exist under one framework only still land
    * on the default; the page then offers the framework that has it.
    */
+  // Only developers.cookieyes.com may be indexed. Every other host that serves this
+  // build (review deployments, previews, localhost) answers with noindex, so a copy of
+  // the site never competes with the real one in search results.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        missing: [{ type: "host", value: "developers\\.cookieyes\\.com" }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
+    ];
+  },
+
   async redirects() {
     const sections = [
       "getting-started",
