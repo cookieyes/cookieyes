@@ -39,14 +39,16 @@ export default function LandingPage() {
       <GridFrame />
       <SiteNav />
       <MobileMenu />
-      <Hero />
-      <Playground />
-      <Performance />
-      <WhatItDoes />
-      <WorksWithYourStack />
-      <OwnTheRecord />
-      <BuiltToLast />
-      <StartWithInstall />
+      <main>
+        <Hero />
+        <Playground />
+        <Performance />
+        <WhatItDoes />
+        <WorksWithYourStack />
+        <OwnTheRecord />
+        <BuiltToLast />
+        <StartWithInstall />
+      </main>
       <SiteFooter />
     </div>
   );
