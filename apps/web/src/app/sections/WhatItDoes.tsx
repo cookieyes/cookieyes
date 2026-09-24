@@ -1386,7 +1386,7 @@ export function WhatItDoes() {
                         <span data-ac-line="">{"marketing"}</span>
                       </span>{" "}
                       <span style={{ color: "rgb(121, 184, 255)" }}>{"→ true"}</span>{" "}
-                        data-ill-edge="soft"
+                      data-ill-edge="soft"
                     </div>{" "}
                   </div>{" "}
                 </div>{" "}
@@ -1459,7 +1459,7 @@ export function WhatItDoes() {
                   textWrap: "pretty",
                 }}
               >
-                {"Control when GA4, GTM, Meta Pixel and any of your integrations can run."}
+                {"Control when GA4, GTM, Meta Pixel and other integrations can run."}
               </span>{" "}
             </div>{" "}
             <div

@@ -650,7 +650,7 @@ export function OwnTheRecord() {
                   color: "var(--cy-muted)",
                 }}
               >
-                {"No closed-source runtime dependency."}
+                {"No closed-source runtime dependency. Every line is yours to read."}
               </span>{" "}
             </div>{" "}
           </div>{" "}
