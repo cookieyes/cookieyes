@@ -24,6 +24,21 @@ const config = {
         missing: [{ type: "host", value: "developers\\.cookieyes\\.com" }],
         headers: [{ key: "X-Robots-Tag", value: "noindex" }],
       },
+      // RFC 8288 Link headers for agents: every page has a Markdown form at its own URL,
+      // and the docs are the service documentation for the packages.
+      {
+        source: "/",
+        headers: [
+          {
+            key: "Link",
+            value: '</>; rel="alternate"; type="text/markdown", </docs/nextjs>; rel="service-doc"',
+          },
+        ],
+      },
+      {
+        source: "/docs/:path*",
+        headers: [{ key: "Link", value: '</docs/:path*>; rel="alternate"; type="text/markdown"' }],
+      },
     ];
   },
 
@@ -86,7 +101,16 @@ const config = {
       destination: `/docs/nextjs/${section}/:path*`,
       permanent: true,
     }));
-    return [...roots, ...moved, ...byQuery, ...byPath];
+    // Agent discovery documents that describe the CookieYes platform, not this site.
+    // They are published by www.cookieyes.com; point there instead of keeping a copy.
+    const parentSite = ["/.well-known/mcp/server-card.json", "/.well-known/api-catalog"].map(
+      (path) => ({
+        source: path,
+        destination: `https://www.cookieyes.com${path}`,
+        permanent: false,
+      }),
+    );
+    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite];
   },
 
   /**

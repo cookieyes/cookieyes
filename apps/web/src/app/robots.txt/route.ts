@@ -37,6 +37,12 @@ const body = [
   ...RULES,
   "",
   `Sitemap: ${SITE_URL}/sitemap.xml`,
+  `Agentmap: ${SITE_URL}/.well-known/ai-catalog.json`,
+  "",
+  "# Agent entry points",
+  `# Docs index for LLMs: ${SITE_URL}/llms.txt`,
+  `# Agent skills: ${SITE_URL}/.well-known/agent-skills/index.json`,
+  "# Markdown: send Accept: text/markdown to any page URL.",
   "",
 ].join("\n");
 
