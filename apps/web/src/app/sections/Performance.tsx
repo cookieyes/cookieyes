@@ -8,7 +8,6 @@
 import type { ReactNode } from "react";
 import {
   BENCH,
-  BYTES_NOT_MEASURED,
   formatMs,
   leadOver,
   logWidth,
@@ -219,7 +218,7 @@ export function Performance() {
           <ChartCard
             figure={String(ourTime.ms)}
             unit="ms"
-            lead={`/ ${leadOver(timings)}× faster`}
+            lead={`/ up to ${leadOver(timings)}× faster`}
             caption="Time to banner · log scale"
             icon={
               <>
@@ -252,7 +251,7 @@ export function Performance() {
           <ChartCard
             figure={String(ourBytes.kb)}
             unit="KB"
-            lead={`/ ${leadOver(transferred)}× lighter`}
+            lead={`/ up to ${leadOver(transferred)}× lighter`}
             caption="Transferred bytes · log scale"
             icon={
               <path
@@ -263,7 +262,6 @@ export function Performance() {
                 strokeLinejoin="round"
               />
             }
-            footnote={`Bytes are not measurable for ${BYTES_NOT_MEASURED.join(", ")}: their scripts are served cross-origin, which hides resource sizes from the collector.`}
           >
             {TRANSFERRED.map((row, index) => (
               <BarRow
@@ -289,7 +287,12 @@ export function Performance() {
           }}
         >
           {`Measured by Cookiebannerbench: ${BENCH.condition}, ${BENCH.measured}. `}
-          <a href={BENCH.runUrl} style={{ color: "var(--cy-accent)" }}>
+          <a
+            href={BENCH.runUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "var(--cy-accent)" }}
+          >
             {"See the run"}
           </a>
         </p>{" "}

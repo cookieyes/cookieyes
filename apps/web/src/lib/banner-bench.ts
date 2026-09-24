@@ -5,50 +5,44 @@
  * The benchmark publishes a site, not a package, so there is nothing to generate
  * from: these figures are transcribed from the run at {@link BENCH.runUrl} and
  * refreshed together whenever a newer run is published. `measured` names the
- * versions that run actually loaded — a figure is only citable beside the version
+ * version that run actually loaded — a figure is only citable beside the version
  * it came from, and ours move faster than the benchmark re-runs.
  *
- * Every figure here is the p75 of 20 loads on the throttled-mobile, cold-cache
- * condition — the view the benchmark presents by default, so the numbers here are the
- * ones a reader sees when they follow the link.
+ * Every figure is the p75 of 20 loads on the throttled-mobile, cold-cache condition,
+ * read from each installation's detail page (cookiebannerbench.com/cmp/<name>/).
  *
- * Only what the run could measure appears. The vendor-script installations serve
- * from hosts that expose no cross-origin resource sizes, so their transferred
- * bytes are unknown — not zero — and they are named in {@link BYTES_NOT_MEASURED}
- * rather than drawn as an empty bar.
- *
- * Both lists are ordered best first, with our row first, because the section
- * reads its headline figure from the first entry.
+ * Rows: our React package, then the four best-scoring competitors on that condition,
+ * one installation per vendor (c15t is its React package in offline mode, its better
+ * score). Vendors below them, OneTrust and Ketch, are left out by that rule, not by
+ * choice. Both lists hold the same five installations in the same order, so a reader
+ * comparing the two charts compares the same things. Our row comes first, because
+ * the section reads its headline figure from the first entry.
  */
 export const BENCH = {
   runUrl: "https://cookiebannerbench.com/",
   condition: "throttled mobile · cold cache · p75",
-  measured: "@cookieyes/react 0.8.0",
+  measured: "@cookieyes/react 0.8.0, run of 24 Sep 2026",
 };
 
-/** Bytes the page transferred beyond the same page with no consent SDK. */
+/** Bytes the page transferred over the wire beyond the same page with no consent SDK. */
 export const TRANSFERRED = [
-  { label: "cookieyes", kb: 19.8, ours: true },
-  { label: "c15t", kb: 58.0 },
+  { label: "cookieyes", kb: 21.7, ours: true },
+  { label: "c15t", kb: 58.8 },
+  { label: "osano", kb: 78.2 },
+  { label: "enzuzo", kb: 116.7 },
+  { label: "iubenda", kb: 131.0 },
 ];
 
-/** Providers whose bytes the run could not read, listed so their absence is not read as zero. */
-export const BYTES_NOT_MEASURED = ["enzuzo", "iubenda", "ketch", "onetrust", "osano"];
-
-/**
- * Navigation start to the consent banner being visible.
- *
- * The same two installations as {@link TRANSFERRED}, and for the same reason: a reader
- * comparing the two charts should be comparing the same things. c15t is the only other
- * installation the run could measure bytes for, so it is the only one that can appear in
- * both. Both rows are the React package, like for like.
- */
+/** Navigation start to the consent banner being visible. */
 export const TIME_TO_BANNER = [
-  { label: "cookieyes", ms: 463, ours: true },
-  { label: "c15t", ms: 2700 },
+  { label: "cookieyes", ms: 473, ours: true },
+  { label: "c15t", ms: 1700 },
+  { label: "osano", ms: 1700 },
+  { label: "enzuzo", ms: 1800 },
+  { label: "iubenda", ms: 2000 },
 ];
 
-/** How many times lighter or faster we are than the worst measured row, to one decimal. */
+/** How many times lighter or faster we are than the slowest or heaviest row shown, to one decimal. */
 export function leadOver(values: number[]): number {
   return Math.round((Math.max(...values) / Math.min(...values)) * 10) / 10;
 }

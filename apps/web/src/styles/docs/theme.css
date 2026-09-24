@@ -1357,9 +1357,10 @@
 /* ── Search modal ────────────────────────────────────────────────────────── */
 
 /* Transcribed value-for-value from the landing design's search overlay. Not scoped
-   to /docs: search opens from the landing nav too. Colours use the landing's own
-   tokens where they exist so the modal reads identically on both surfaces, with
-   docs tokens as the fallback for pages that do not load landing.css. */
+   to /docs: search opens from the landing nav too. Colours come from the docs tokens,
+   which are global and follow the theme: the dialog is rendered at <body> level, so the
+   landing page's own dark tokens (scoped to .cy-page) never reach it. Light values are
+   the landing design's; the .dark block keeps every text readable on the dark surface. */
 
 .cy-search-ov {
   position: fixed;
@@ -1380,9 +1381,9 @@
   max-width: 640px;
   max-height: 80vh;
   overflow: hidden;
-  background: var(--cy-surface, var(--cy-doc-surface));
-  border: 1px solid var(--cy-border, var(--cy-doc-bd));
-  box-shadow: var(--cy-nav-shadow, 0 16px 40px rgba(20, 20, 42, 0.12));
+  background: var(--cy-doc-surface);
+  border: 1px solid var(--cy-doc-bd);
+  box-shadow: 0 16px 40px rgba(20, 20, 42, 0.12);
 }
 
 /* Labels the dialog for assistive tech; the design shows no visible heading. */
@@ -1404,8 +1405,8 @@
   gap: 12px;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid var(--cy-border, var(--cy-doc-bd));
-  color: var(--cy-muted, var(--cy-doc-tx2));
+  border-bottom: 1px solid var(--cy-doc-bd);
+  color: var(--cy-doc-tx2);
 }
 
 .cy-search-query > svg {
@@ -1422,29 +1423,29 @@
   font-family: var(--font-mono);
   font-size: 1rem;
   line-height: 24px;
-  color: var(--cy-fg, var(--cy-doc-tx));
+  color: var(--cy-doc-tx);
 }
 
 .cy-search-input::placeholder {
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.6);
+  color: rgba(78, 75, 102, 0.6);
 }
 
 .cy-search-esc {
   flex-shrink: 0;
   padding: 3px 8px;
-  border: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border: 1px solid var(--cy-doc-bd);
   border-radius: 0;
   background: none;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 14px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.7);
+  color: rgba(78, 75, 102, 0.7);
   transition: border-color 0.15s ease;
 }
 
 .cy-search-esc:hover {
-  border-color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.65);
+  border-color: rgba(78, 75, 102, 0.65);
 }
 
 /* Section eyebrow above the list */
@@ -1455,7 +1456,7 @@
   line-height: 14px;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.45);
+  color: rgba(78, 75, 102, 0.45);
 }
 
 /* Result list */
@@ -1475,7 +1476,7 @@
   width: 100%;
   padding: 14px 20px;
   border: none;
-  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-top: 1px solid var(--cy-doc-bd);
   border-radius: 0;
   background: transparent;
   text-align: start;
@@ -1483,7 +1484,7 @@
 }
 
 .cy-search-row[data-active="true"] {
-  background: var(--cy-track, var(--cy-doc-bg3));
+  background: var(--cy-doc-bd);
 }
 
 .cy-search-row-main {
@@ -1499,7 +1500,7 @@
   font-weight: 500;
   font-size: 0.9375rem;
   line-height: 20px;
-  color: var(--cy-fg, var(--cy-doc-tx));
+  color: var(--cy-doc-tx);
 }
 
 .cy-search-row-desc {
@@ -1507,7 +1508,7 @@
   font-weight: 400;
   font-size: 0.8125rem;
   line-height: 18px;
-  color: var(--cy-muted, var(--cy-doc-tx2));
+  color: var(--cy-doc-tx2);
 }
 
 .cy-search-row-cat {
@@ -1515,15 +1516,15 @@
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 20px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.5);
+  color: rgba(78, 75, 102, 0.5);
 }
 
 .cy-search-empty {
   padding: 24px 20px;
-  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-top: 1px solid var(--cy-doc-bd);
   font-family: var(--font-mono);
   font-size: 12px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.6);
+  color: rgba(78, 75, 102, 0.6);
 }
 
 /* Keyboard legend pinned under the result list. */
@@ -1532,11 +1533,38 @@
   flex-direction: row;
   gap: 20px;
   padding: 12px 20px;
-  border-top: 1px solid var(--cy-border, var(--cy-doc-bd));
+  border-top: 1px solid var(--cy-doc-bd);
   font-family: var(--font-mono);
   font-size: 11px;
   line-height: 14px;
-  color: rgba(var(--cy-muted-rgb, 78, 75, 102), 0.5);
+  color: rgba(78, 75, 102, 0.5);
+}
+
+/* Dark: the faint greys above are a light-surface device. On the dark surface the
+   category labels take the secondary text colour, the chrome (caption, hints, Esc,
+   empty state, placeholder) the tertiary one, and the active row sinks instead of
+   lifting, as the docs' own rows do. */
+.dark .cy-search-box {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+.dark .cy-search-row[data-active="true"] {
+  background: var(--cy-doc-bg3);
+}
+.dark .cy-search-row-cat {
+  color: var(--cy-doc-tx2);
+}
+.dark .cy-search-section,
+.dark .cy-search-hints,
+.dark .cy-search-empty,
+.dark .cy-search-esc,
+.dark .cy-search-input::placeholder {
+  color: var(--cy-doc-tx3);
+}
+.dark .cy-search-esc {
+  border-color: var(--cy-doc-bd2);
+}
+.dark .cy-search-esc:hover {
+  border-color: var(--cy-doc-bd3);
 }
 
 /* ── Table of contents ───────────────────────────────────────────────────── */
