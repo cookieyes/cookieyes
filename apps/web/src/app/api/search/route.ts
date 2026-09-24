@@ -9,6 +9,9 @@ import { source } from "@/lib/source";
  */
 export const { GET } = createFromSource(source, {
   language: "english",
+  // Only pages that contain every word typed. With the default (any word), a query
+  // like "dark mode" also lists every page that mentions "mode".
+  search: { threshold: 0 },
   buildIndex(page) {
     return {
       title: page.data.title,

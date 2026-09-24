@@ -1,18 +1,16 @@
 ---
 title: Build your own UI
-description: A banner and a preferences dialog in plain JavaScript, rendered from the consent store and wired to the consent manager.
+description: A banner and a preferences dialog in plain JavaScript, drawn from the consent store.
 frameworks: [core]
 ---
 
-## When to use it
+## What it does
 
-Follow this when your site has no React and you want a consent banner that is yours: your markup, your CSS, your framework's rendering. `@cookieyes/core` decides *what* to show and *what happens* when the visitor chooses; this page shows the smallest complete UI on top of that. The pattern is the same whether the rendering below is `innerHTML`, a Vue template or a Web Component.
+`@cookieyes/core` decides what to show and records what the visitor chooses; the markup is yours. This page is the smallest complete banner on top of it: three files, about 60 lines. The pattern is the same whether you render with `innerHTML`, a Vue template or a Web Component.
 
-Read [Using the store directly](/docs/store/using-the-store) first if you have not: everything here is one `subscribe()` and a handful of `consentManager` calls.
+## The three files
 
-## Basic usage
-
-Three files. The runtime, a render function that reads the store, and a wiring module that connects buttons to actions.
+The runtime, a render function that reads the store, and the wiring that connects buttons to actions.
 
 ```ts title="src/consent.ts"
 import { initCookieYes } from "@cookieyes/core";
@@ -27,8 +25,7 @@ export const { consentStore, consentManager } = initCookieYes({
 import type { ConsentStoreState } from "@cookieyes/core";
 import { consentStore } from "./consent";
 
-// Categories a visitor can decide on: the resolved list, minus the required ones,
-// which are always granted and never shown as a choice.
+// The categories a visitor can decide on. Required ones are always on and never shown.
 const optional = consentStore.categories.list.filter((c) => !c.required);
 
 export function render(root: HTMLElement, state: ConsentStoreState): void {
@@ -39,7 +36,7 @@ export function render(root: HTMLElement, state: ConsentStoreState): void {
 
   if (state.activeUI === "dialog") {
     root.innerHTML = `
-      <div role="dialog" aria-labelledby="cy-title" data-cy="dialog">
+      <div role="dialog" aria-labelledby="cy-title">
         <h2 id="cy-title">Cookie preferences</h2>
         ${optional
           .map(
@@ -57,7 +54,7 @@ export function render(root: HTMLElement, state: ConsentStoreState): void {
   }
 
   root.innerHTML = `
-    <div role="dialog" aria-labelledby="cy-title" data-cy="banner">
+    <div role="dialog" aria-labelledby="cy-title">
       <h2 id="cy-title">We use cookies</h2>
       <p>Required cookies are always on. Analytics and marketing need your yes first.</p>
       <button data-action="accept">Accept all</button>
@@ -73,11 +70,11 @@ import { render } from "./render";
 
 const root = document.getElementById("consent") as HTMLElement;
 
-// Re-render on every change, including live toggles inside the dialog.
+// Draw on every change, including switches flipped inside the dialog.
 consentStore.subscribe((state) => render(root, state));
 render(root, consentStore.getState());
 
-// One listener for every button. The store updates, subscribe() re-renders.
+// One listener for every button. The manager updates the store, subscribe() redraws.
 root.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
   switch (target.dataset.action) {
@@ -100,136 +97,36 @@ root.addEventListener("click", (event) => {
   }
 });
 
-// A checkbox flips the live value; nothing is saved until "Save".
+// A checkbox flips the live value; nothing is saved until Save.
 root.addEventListener("change", (event) => {
   const input = event.target as HTMLInputElement;
   if (input.dataset.category) consentManager.updateCategory(input.dataset.category, input.checked);
 });
 ```
 
-Add a `<div id="consent"></div>` to the page and this is a working, compliant banner: it shows to a visitor who has not decided, hides after any decision, reopens as a dialog on Customise, and every button changes consent through the manager, which is what saves the cookie and runs your integrations.
+Add `<div id="consent"></div>` to your page and this is a working banner: it shows until the visitor decides, hides after any decision, reopens as a dialog on Customise, and every button goes through the manager, which saves the cookie and runs your integrations.
 
-## Options
+## Good to know
 
-The store gives your UI everything it needs to render; the manager is the only thing that should change consent.
-
-| Read from `consentStore.getState()` | Use it for |
-| --- | --- |
-| `hasActed` | Show the banner when `false` |
-| `activeUI` | `"dialog"` means show preferences; `null` means show nothing unless `hasActed` is `false` |
-| `consents` | The checkboxes. This is the **live** copy, so a flipped switch shows as flipped before saving |
-| `categories` | What is actually in force. Use it for text like "Analytics: on" |
-| `regulation` | Change copy for CCPA, where categories start granted and the honest control is opt-out |
-
-| Call on `consentManager` | From |
-| --- | --- |
-| `acceptAll()`, `rejectAll()` | The banner's two main buttons |
-| `showPreferences()`, `hidePreferences()` | Customise, Cancel |
-| `updateCategory(id, value)` | A checkbox |
-| `savePreferences()` | Save |
-| `resetConsent()` | A "manage cookies" link in your footer, to bring the banner back |
-
-The category list itself is `consentStore.categories.list`, already resolved from your configuration, with `required` set on the ones the visitor cannot turn off. Their names and descriptions come from `consentStore.getCategoryText(id)` in the active language.
-
-## Behaviour and trade-offs
-
-### Why render from the store, not from your own state
-
-The store is the single source of truth, and other code changes it: an integration marks itself ready, a `resetConsent()` call from your footer link, a second tab saving in the same browser. If your UI kept its own copy of "is the banner open", those would drift. Rendering from `subscribe()` means the UI is always a function of what is really in force.
-
-### Where the banner sits in the page
-
-Put the `#consent` element at the end of `<body>`, after your content, so screen readers meet the page before the banner and keyboard users are not trapped in it on load. The banner is `role="dialog"` but **not** modal: the page behind stays usable, which the regulations want and which the React `CookieBanner` also does.
-
-### Accessibility you still own
-
-The engine cannot see your markup, so this part is entirely yours: a heading the dialog is labelled by (the example uses `aria-labelledby`), buttons that are real `<button>` elements, and 4.5:1 contrast between your text and background. If you announce the banner with a live region, do it once; announcing it and labelling it both makes screen readers say it twice.
-
-### Languages
-
-`consentStore.getLanguageInfo()` gives you the active language and text direction, and `consentStore.setLanguage(tag)` switches it. The catalogues in `@cookieyes/translations` carry the standard strings for `en`, `es`, `fr`, `de` and `it`; pass one through the `i18n` option and read the strings from `consentStore.translations` instead of hard-coding them as the example does.
-
-## Complete example
-
-The same UI with the two details a real site adds: a footer link that reopens preferences, and analytics that loads only after a saved yes.
-
-```ts title="src/main.ts"
-import type { ConsentManager, ConsentStore, ConsentStoreState } from "@cookieyes/core";
-
-// From src/consent.ts and src/render.ts above.
-declare const consentStore: ConsentStore;
-declare const consentManager: ConsentManager;
-declare function render(root: HTMLElement, state: ConsentStoreState): void;
-declare function loadAnalytics(): void;
-
-const root = document.getElementById("consent") as HTMLElement;
-
-consentStore.subscribe((state) => render(root, state));
-render(root, consentStore.getState());
-
-// Saved decisions only, replayed once on attach, so a returning visitor who already
-// said yes gets analytics on this load too, with no banner.
-consentStore.on(
-  "change",
-  ({ categories }) => {
-    if (categories.analytics) loadAnalytics();
-  },
-  { category: "analytics" },
-);
-
-document.querySelector("#footer-cookies")?.addEventListener("click", (event) => {
-  event.preventDefault();
-  consentManager.showPreferences();
-});
-
-root.addEventListener("click", (event) => {
-  const target = event.target as HTMLElement;
-  switch (target.dataset.action) {
-    case "accept":
-      consentManager.acceptAll();
-      break;
-    case "reject":
-      consentManager.rejectAll();
-      break;
-    case "customise":
-      consentManager.showPreferences();
-      break;
-    case "save":
-      consentManager.savePreferences();
-      consentManager.hidePreferences();
-      break;
-    case "close":
-      consentManager.hidePreferences();
-      break;
-  }
-});
-
-root.addEventListener("change", (event) => {
-  const input = event.target as HTMLInputElement;
-  if (input.dataset.category) consentManager.updateCategory(input.dataset.category, input.checked);
-});
-```
+- **Draw from the store, not from your own state.** Other things change consent too: a "manage cookies" link calling `resetConsent()`, a second tab. Rendering inside `subscribe()` keeps the UI right in every case.
+- **Reopen it from anywhere.** A footer link that calls `consentManager.showPreferences()` is enough.
+- **Put `#consent` at the end of `<body>`**, so screen readers meet your content first. The banner is a dialog but not modal: the page behind stays usable.
+- **Accessibility is yours here.** Keep the heading the dialog is labelled by, use real `<button>` elements, and keep 4.5:1 contrast.
+- **Other languages.** `consentStore.getCategoryText(id)` gives a category's name in the active language, and `consentStore.translations` holds the standard strings; pass a catalogue through the `i18n` option.
 
 ## Common mistakes
 
 **The banner never hides after Accept.**
-The render function is not subscribed, or is subscribed to `on("change")` instead of `subscribe()`. `on("change")` fires only on saved changes and does not fire for `showPreferences()`; the UI needs `subscribe()`.
+Render is wired to `on("change")`, which does not run for `showPreferences()`. Draw from `subscribe()`.
 
 **Analytics loads when a checkbox is ticked, before Save.**
-It is wired to `subscribe()`. Side effects belong on `consentStore.on("change", …)`, which fires on saved decisions only.
+It is wired to `subscribe()`. Load things from `consentStore.on("change", …)`.
 
-**The dialog's checkboxes do not reflect what the visitor just clicked.**
-`render()` is reading `state.categories` (saved) instead of `state.consents` (live). Read the live copy in the dialog.
+**The dialog's checkboxes do not follow the clicks.**
+`render()` reads `state.categories` (saved) instead of `state.consents` (live).
 
-**A returning visitor sees the banner again.**
-`initCookieYes()` is being called with a different `categories` list than before, so the saved record no longer matches and is treated as stale. That is deliberate: a new category needs a new decision. Keep the list stable, or expect the banner to return once when it changes.
+## Next steps
 
-## Across the SDK
-
-`@cookieyes/react`'s `CookieBanner` and `CookiePreferences` are this page, in React. They read the same store, call the same manager, and add nothing the engine does not already know. The headless primitives in that package are the middle ground, if you ever bring React in but want your own markup.
-
-## See also
-
-- [Using the store directly](/docs/store/using-the-store): the store's fields, the three subscriptions, and every manager action
-- [Configuration](/docs/getting-started/configuration): categories, regulation, language and every other option
-- [Integrations](/docs/integrations): load GA4, GTM, Meta Pixel and the rest only after consent, with no code of your own
+- [Using the store directly](/docs/store/using-the-store): every field and action
+- [Configuration](/docs/getting-started/configuration): categories, regulation, language
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and the rest only after consent, with no code of your own

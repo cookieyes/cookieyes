@@ -24,7 +24,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "mode",
     group: "setup",
     description:
-      "Which storage/consent-delivery mode to use: cookie-only (client-side only, zero network requests) or self-hosted (also persists every decision to your backend).",
+      'Where the choice is stored: "cookie-only" in a browser cookie only; "self-hosted" also sent to your server.',
     default: null,
     defaultLocation: null,
     ifOmitted:
@@ -34,9 +34,9 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "regulation",
     group: "setup",
     description:
-      'Which privacy law applies: "GDPR" (opt-in) or "CCPA" (opt-out). Leave it out and the banner behaves as under GDPR. A manual value here always wins over region detection.',
-    default: '"DEFAULT"',
-    defaultLocation: "core/runtime.ts:69 (also react/runtime.ts:291)",
+      'Which privacy law applies: "GDPR" (opt-in) or "CCPA" (opt-out). Unset behaves as GDPR. Wins over `region` detection.',
+    default: null,
+    defaultLocation: null,
     ifOmitted:
       'Behaves as GDPR: optional categories start off and the visitor opts in; the stored value is "DEFAULT". If `region` is configured, its detected regulation is used instead.',
   },
@@ -76,7 +76,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "theme",
     group: "appearance",
     description:
-      "Colors, corner radius, and font family for the banner and preferences dialog. See the table below for each field's own default.",
+      "Colours, corner radius and font for every CookieYes surface.",
     default: null,
     defaultLocation: null,
     ifOmitted:
@@ -119,7 +119,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "googleConsentMatch",
     group: "storage",
     description:
-      'How to combine multiple categories that map to the same Google Consent Mode signal: "any" grants the signal if any mapped category is granted; "all" requires every mapped category.',
+      'When several categories map to one Google Consent Mode signal: "any" grants it if any of them is granted, "all" only if all are.',
     default: '"any"',
     defaultLocation: "core/manager.ts:36",
     ifOmitted:
@@ -199,7 +199,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "onConsentReady",
     group: "callbacks",
     description:
-      "Low-level: fires once, after the runtime's initial consent state is known. For ongoing updates, use `consentStore.on(\"save\"|\"change\")` (core) or `useOnConsentChange` (react) instead.",
+      "Fires once, when the initial consent state is known.",
     default: null,
     defaultLocation: null,
     ifOmitted:
@@ -209,7 +209,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "onConsentUpdate",
     group: "callbacks",
     description:
-      "Low-level: fires on every saved consent change, for the lifetime of this config. Cannot be unsubscribed: for that, use `consentStore.on()`/`useOnConsentChange` instead.",
+      "Fires on every saved change, for the life of the page, and cannot be unsubscribed.",
     default: null,
     defaultLocation: null,
     ifOmitted:

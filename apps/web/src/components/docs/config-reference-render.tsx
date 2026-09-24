@@ -9,7 +9,8 @@ import type { MergedOption } from "@/lib/config-reference-types";
  */
 export function toTypeNode(option: MergedOption): TypeNode {
   return {
-    type: option.type,
+    // `| undefined` on every optional field says nothing the Optional badge does not.
+    type: option.type.replace(/\s*\|\s*undefined$/, ""),
     required: option.required,
     default: option.default ?? undefined,
     deprecated: option.deprecatedReplacement !== undefined,

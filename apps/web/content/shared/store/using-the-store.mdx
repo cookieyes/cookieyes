@@ -1,126 +1,83 @@
 ---
 title: Using the store directly
-description: Read consent, change it, and react to it from plain JavaScript, with the runtime that initCookieYes() returns.
+description: Read consent, react to it and change it from plain JavaScript.
 frameworks: [core]
 ---
 
-## When to use it
+## What it does
 
-Read this if there is no React in your page: a plain JavaScript site, or a framework the SDK has no adapter for. `@cookieyes/core` is the consent engine on its own. It stores the visitor's decision, applies the regulation, runs integrations and blocks network requests, and it draws nothing. The UI is yours to build, on the store this page describes. [Build your own UI](/docs/store/build-your-own-ui) walks through that.
-
-## Basic usage
-
-The store is not an importable singleton. It comes off the runtime that `initCookieYes()` returns:
+`initCookieYes()` returns two objects. `consentStore` holds the visitor's consent and tells you when it changes; `consentManager` changes it. Your banner reads from the store and calls the manager. Call `initCookieYes()` once, at module scope, and import the result where you need it.
 
 ```ts title="src/consent.ts"
 import { initCookieYes } from "@cookieyes/core";
 
 declare function loadAnalytics(): void;
-declare function renderMyBanner(state: { hasActed: boolean }): void;
+declare function renderBanner(state: { hasActed: boolean }): void;
 
-const { consentStore, consentManager } = initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
-
-// Every state change, including a checkbox flip before saving.
-// Right for re-rendering your own UI, wrong for loading a script.
-consentStore.subscribe((state) => {
-  renderMyBanner({ hasActed: state.hasActed });
+export const { consentStore, consentManager } = initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
 });
 
-// Saved decisions only, plus one replay on attach.
-// Right for side effects.
-const off = consentStore.on("change", ({ changedCategories }) => {
-  if (changedCategories.includes("analytics")) loadAnalytics();
-});
+// Runs on every change, including a switch flipped before Save: right for drawing your UI.
+consentStore.subscribe((state) => renderBanner({ hasActed: state.hasActed }));
 
-export { consentManager, consentStore, off };
+// Runs on saved decisions only, once on attach with the current state: right for loading things.
+consentStore.on("change", ({ categories }) => {
+  if (categories.analytics) loadAnalytics();
+});
 ```
 
-Call `initCookieYes()` once, at module scope, and export what it returns. A second call replaces the first runtime and logs a warning, so the config belongs in exactly one module.
+## What the store holds
 
-## Options
+`consentStore.getState()` returns everything a banner needs:
 
-`initCookieYes()` takes the same [configuration](/docs/getting-started/configuration) as every CookieYes package. It returns a `ConsentRuntime`:
-
-| Field | What it is |
+| Field | Meaning |
 | --- | --- |
-| `consentStore` | The state, and the three ways to subscribe to it. Read from this |
-| `consentManager` | The actions: accept, reject, save, reset, open and close preferences. Write through this |
-| `integrationsReady` | A promise that settles once every configured integration has loaded, for tests and for code that must wait |
-| `getIntegrations()` | Debug information about each integration, for a support page or a console check |
+| `hasActed` | `true` once the visitor accepted, rejected or saved. Show the banner while `false` |
+| `categories` | Category id → granted, as **saved**. Load things from this |
+| `consents` | The **live** switches, including ones flipped but not yet saved. Drive your dialog's checkboxes from this |
+| `activeUI` | `"banner"`, `"dialog"` or `null`: what should be on screen |
+| `regulation` | `"GDPR"` or `"CCPA"`; `"DEFAULT"` means none was set and behaves as GDPR |
 
-### What the store holds
+The configured categories, in order, are `consentStore.categories.list`; each has `id` and `required`. Their names in the active language come from `consentStore.getCategoryText(id)`.
 
-`consentStore.getState()` returns a snapshot of everything a banner needs to render:
+## Two ways to listen
 
-| Field | Type | Meaning |
+| Call | Runs on | Use for |
 | --- | --- | --- |
-| `hasActed` | `boolean` | Whether this visitor has ever saved a decision. `false` is when a banner should show |
-| `categories` | `Record<string, boolean>` | The **saved** decision per category. This is what integrations and blocking act on |
-| `consents` | `Record<string, boolean>` | The **live** toggles, including a switch the visitor has flipped but not yet saved |
-| `committedConsents` | `Record<string, boolean>` | The saved values, kept separately so a preferences dialog can show live toggles and still know what is in force |
-| `activeUI` | `"banner" \| "dialog" \| null` | Which surface should be open. The store tracks it; drawing it is your job |
-| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | The law in effect for this visitor, which sets the starting state of the categories. `"DEFAULT"` means none was set and behaves as GDPR |
-| `consentId` | `string` | A stable id for the saved record, for your own logs |
+| `consentStore.subscribe(fn)` | Every state change, live switches included | Drawing your UI |
+| `consentStore.on("change", fn, { category? })` | Saved decisions only, plus once when you attach | Loading scripts, telling your backend |
 
-Two helpers on the same object: `has(category)` reads one saved value, and `setConsent(category, value)` flips one live toggle without saving.
+Both return a function that removes the listener. `on("save", fn)` also exists: it runs on every Save, even when nothing changed.
 
-### The three subscriptions
+## The actions
 
-Picking the wrong one is the most common bug here:
-
-| Subscription | Fires on | Use for |
-| --- | --- | --- |
-| `consentStore.subscribe(fn)` | **Every** state change, transient toggles included | Re-rendering your UI |
-| `consentStore.on("change", fn, options?)` | Saved decisions only, with one replay when you attach | Side effects, the one you usually want |
-| `consentStore.on("save", fn)` | Each time the visitor saves, whether or not anything changed | Logging, closing a dialog |
-
-`on()` takes `{ category }` to fire only when that category changes, and returns an unsubscribe function. `subscribe()` returns one too.
-
-### The actions
-
-Everything that changes consent goes through `consentManager`:
-
-| Action | What it does |
+| `consentManager.…` | What it does |
 | --- | --- |
-| `acceptAll()` | Grants every category and saves |
-| `rejectAll()` | Grants only required categories and saves |
-| `acceptSelected(categories)` | Grants exactly these, plus required ones, and saves |
-| `updateCategory(category, value)` | Flips one live toggle. Nothing is saved until `savePreferences()` |
-| `savePreferences()` | Saves the live toggles as the decision |
-| `showPreferences()` / `hidePreferences()` | Sets `activeUI` to `"dialog"` and back |
-| `resetConsent()` | Clears the saved decision, so the banner shows again |
+| `acceptAll()`, `rejectAll()` | Decide everything and save |
+| `acceptSelected(ids)` | Grant exactly these categories and save |
+| `updateCategory(id, value)` | Flip one live switch; nothing is saved |
+| `savePreferences()` | Save the live switches |
+| `showPreferences()`, `hidePreferences()` | Set `activeUI` to `"dialog"` and back |
+| `resetConsent()` | Forget the decision, so the banner shows again |
 
-## Behaviour and trade-offs
+## Good to know
 
-### Committed versus live
-
-The store keeps two copies of the categories on purpose. A visitor opening the preferences dialog and unticking "analytics" has not withdrawn consent yet. Integrations, the network blocker and `consentStore.on("change")` all read the **committed** values, so nothing happens until they press Save. Your dialog should read the **live** values, `consents`, so the switch they just flipped shows as flipped.
-
-### Reacting before the first paint
-
-`initCookieYes()` reads the cookie synchronously. By the time it returns, `getState().hasActed` already says whether this visitor decided before, so a banner rendered from that value on the same tick never flashes. There is no server-rendered first paint to reconcile in a plain JavaScript page, which is the whole reason `@cookieyes/core` has no `initialConsent` option.
-
-### One runtime per page
-
-The runtime is a module-level singleton. Calling `initCookieYes()` again does not throw; it replaces the previous runtime and logs `[cookieyes] initCookieYes() called more than once`. Any `subscribe()` you attached to the old store keeps firing for the old store, which is now disconnected. Put the call in one module and import from it.
+`initCookieYes()` reads the cookie at once, so `getState().hasActed` is correct on the first call and a banner drawn from it does not flash for a returning visitor. Calling `initCookieYes()` a second time replaces the runtime and logs a warning; keep the call in one module.
 
 ## Common mistakes
 
-**Loading a script from `subscribe()`.**
-`subscribe()` fires on every live toggle, so the script loads the moment the switch is flipped, before the visitor saves, and again on every later change. Use `consentStore.on("change", …)` for anything with a side effect.
+**A script loads when a switch is flipped, before Save.**
+It is wired to `subscribe()`. Load things from `on("change", …)`.
 
-**Reading `consents` to decide whether to load something.**
-That is the live copy. A visitor can flip it and then close the dialog without saving. Read `categories`, or use `has(category)`.
+**You read `consents` to decide what to load.**
+That is the live copy. Read `categories`.
 
-**Calling `initCookieYes()` inside a function that runs more than once.**
-Each call replaces the runtime. Call it once at module scope.
+**Nothing works and there is no error.**
+`initCookieYes()` runs in a module nothing imports. Import `src/consent.ts` from your entry file.
 
-## Across the SDK
+## Next steps
 
-`useConsent()`, `useConsentActions()` and every component in `@cookieyes/react` are built on this store and this manager. Nothing they do is unavailable here; they only save you the wiring. If you later add React to the page, the same `initCookieYes()` call registers the runtime the hooks read.
-
-## See also
-
-- [Build your own UI](/docs/store/build-your-own-ui): a banner and a preferences dialog on this store, step by step
-- [Configuration](/docs/getting-started/configuration): every option `initCookieYes()` accepts
-- [Network blocking](/docs/network-blocking): stop requests before consent, without touching the vendor's code
+- [Build your own UI](/docs/store/build-your-own-ui): a banner and a preferences dialog on this store, in three small files
+- [Configuration](/docs/getting-started/configuration): every option of `initCookieYes()`
