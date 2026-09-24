@@ -1,5 +1,6 @@
 // Notebook, not docs: the page components are paired with the layout they render
 // under, and src/app/docs/layout.tsx uses the notebook layout for its top header.
+import { getBreadcrumbItems } from "fumadocs-core/breadcrumb";
 import { findNeighbour } from "fumadocs-core/page-tree";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/notebook/page";
 import { createRelativeLink } from "fumadocs-ui/mdx";
@@ -90,14 +91,25 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   //   index's cards and the sidebar's release list;
   // - a release page puts badges and summary directly under its h1, with no generic
   //   chrome in between (design doc §2.6);
-  // - the index is the one page whose breadcrumb would only repeat its own title;
+  // - the index has no folder above it, so its breadcrumb would only repeat its own
+  //   title (the same rule hides the trail on every such page below);
   // - no changelog page offers "Edit page" or "Report issue": every one of them is
   //   generated, so there is no file on GitHub to edit, and the text they carry comes
   //   from the packages' own CHANGELOG.md rather than from anything a reader could
   //   correct here. The design draws no feedback footer on the changelog either.
   const isChangelogSection = page.slugs[0] === "changelog";
   const isReleasePage = isChangelogSection && page.slugs.length === 2;
-  const isChangelogIndex = isChangelogSection && page.slugs.length === 1;
+  // The trail Fumadocs would draw, with the same options as below. A page with nothing
+  // above it but the tab root (a framework root's Translations, the Integrations overview
+  // and its Google Consent Mode page, the changelog index) gets a one-item trail that only
+  // repeats the h1, so the trail is drawn only when it adds a parent. The Integrations
+  // tab is a root folder the SDK menus do not list, which Fumadocs keeps in `fallback`.
+  const breadcrumbOptions = { includePage: true, includeSeparator: true };
+  const tree = source.pageTree;
+  const trail =
+    getBreadcrumbItems(page.url, tree, breadcrumbOptions).length ||
+    (tree.fallback ? getBreadcrumbItems(page.url, tree.fallback, breadcrumbOptions).length : 0);
+  const showBreadcrumb = trail > 1;
 
   // Design's .pnav-b (docs.html:279-283) carries only a literal "Previous"/"Next"
   // caption (`.nl`) and the neighbouring page's title (`.nt`) — never its description.
@@ -128,9 +140,8 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         // The design shows the full trail including the current page —
         // "Getting Started › Quickstart" — rather than the parent alone.
         breadcrumb={{
-          enabled: !isChangelogIndex,
-          includePage: true,
-          includeSeparator: true,
+          enabled: showBreadcrumb,
+          ...breadcrumbOptions,
           className: "cy-doc-bc",
         }}
         tableOfContent={{

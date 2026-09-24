@@ -1,13 +1,16 @@
 ---
-title: Integrations
-description: Popular third-party integrations with CookieYes SDK.
+title: Overview
+description: Load third-party tools only after consent, with a ready-made integration or your own.
 frameworks: [nextjs, react, core]
 ---
 
-Every integration here is a preset from `@cookieyes/scripts`: a script that stays out of the DOM
-until its category is granted, and that tears itself down (or silences itself) the same way on
-revoke. Start with [Google Consent Mode v2](/docs/integrations/google-consent-mode) if you run any
-Google product; it underlies three of the vendor pages below. Otherwise, pick your vendor.
+An integration loads a third-party tool only after the visitor grants its category, and stops it again when consent is withdrawn. You add it to `initCookieYes()` once; no consent checks in your own code. Every ready-made integration comes from one extra package:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+Pick your tool:
 
 <Cards>
   <Card
@@ -31,7 +34,7 @@ Google product; it underlies three of the vendor pages below. Otherwise, pick yo
       />
     }
     title="Google Analytics 4"
-    description="Gate GA4 behind analytics consent and push to Google Consent Mode v2."
+    description="Load GA4 and keep its Consent Mode signals up to date."
     href="/docs/integrations/ga4"
   />
   <Card
@@ -55,7 +58,7 @@ Google product; it underlies three of the vendor pages below. Otherwise, pick yo
       />
     }
     title="Google Tag Manager"
-    description="Load GTM after consent and forward category state to the dataLayer."
+    description="Load your container and keep its Consent Mode signals up to date."
     href="/docs/integrations/google-tag-manager"
   />
   <Card
@@ -79,7 +82,7 @@ Google product; it underlies three of the vendor pages below. Otherwise, pick yo
       />
     }
     title="Google Ads"
-    description="Gate conversion tracking behind advertisement consent and push to Google Consent Mode v2."
+    description="Load conversion tracking and keep its Consent Mode signals up to date."
     href="/docs/integrations/google-ads"
   />
   <Card
@@ -98,7 +101,7 @@ Google product; it underlies three of the vendor pages below. Otherwise, pick yo
       />
     }
     title="Meta Pixel"
-    description="Gate the Meta Pixel behind advertisement consent."
+    description="Load the pixel only after advertising consent."
     href="/docs/integrations/meta-pixel"
   />
   <Card
@@ -106,13 +109,13 @@ Google product; it underlies three of the vendor pages below. Otherwise, pick yo
       <img src="/figma-logos/microsoft-clarity.svg" width={18} height={18} alt="" />
     }
     title="Microsoft Clarity"
-    description="Hold Clarity's script until analytics consent: it never loads for visitors who decline."
+    description="Load Clarity only after analytics consent."
     href="/docs/integrations/microsoft-clarity"
   />
   <Card
     icon={<img src="/figma-logos/posthog.svg" width={18} height={18} alt="" />}
     title="PostHog"
-    description="Toggle capture with opt_in_capturing() / opt_out_capturing() from onConsentUpdate."
+    description="Turn PostHog capture on and off with consent."
     href="/docs/integrations/posthog"
   />
   <Card
@@ -136,11 +139,11 @@ Google product; it underlies three of the vendor pages below. Otherwise, pick yo
       />
     }
     title="Segment"
-    description="Load Segment after analytics consent and clear its anonymous/user IDs on revoke."
+    description="Load Segment only after analytics consent."
     href="/docs/integrations/segment"
   />
 </Cards>
 
-Don't see your vendor? [Build a custom integration](/docs/integrations/custom-integration) covers
-gating any script with `customScript()`, or writing a full `Integration` for vendor-managed consent
-APIs: using Mixpanel, which ships no preset here, as the worked example.
+Using Google Analytics, Google Ads or Tag Manager? Google reads consent through its own Consent Mode. Add its default snippet first: [Google Consent Mode v2](/docs/integrations/google-consent-mode).
+
+Tool not listed? [Custom integration](/docs/integrations/custom-integration) loads any script after consent in a few lines.

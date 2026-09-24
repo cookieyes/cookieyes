@@ -4,14 +4,15 @@
   "pages": [
     "index",
     "google-consent-mode",
-    "custom-integration",
-    "--- Integrations ---",
+    "--- Ready-made integrations ---",
     "ga4",
     "google-tag-manager",
     "google-ads",
     "meta-pixel",
     "microsoft-clarity",
     "posthog",
-    "segment"
+    "segment",
+    "--- Build your own ---",
+    "custom-integration"
   ]
 }
