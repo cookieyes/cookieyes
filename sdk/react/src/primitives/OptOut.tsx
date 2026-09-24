@@ -281,12 +281,15 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
               />
             </svg>
           </div>
-          <div className="cy-optout-success-text">{t.optOut.successText}</div>
+          <div className="cy-optout-success-text">
+            {t.optOut.successText}
+            {/* Screen readers get the countdown as one fixed sentence, in the same text
+                as the confirmation so both are read together. The visible one below
+                ticks every second, and `role="status"` would re-announce each tick, so
+                it is hidden from them instead. */}
+            <span style={VISUALLY_HIDDEN}>{" " + countdown.join(`${COUNTDOWN_SECONDS}`)}</span>
+          </div>
         </div>
-        {/* Screen readers get the countdown as one fixed sentence, read once with the
-            confirmation. The visible one below ticks every second, and `role="status"`
-            would re-announce each tick, so it is hidden from them instead. */}
-        <p style={VISUALLY_HIDDEN}>{countdown.join(`${COUNTDOWN_SECONDS}`)}</p>
         <div className="cy-optout-success-subtext-wrapper" aria-hidden="true">
           <p className="cy-optout-success-subtext">
             {countdown[0]}
