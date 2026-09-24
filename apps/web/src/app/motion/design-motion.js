@@ -1032,255 +1032,205 @@ class DesignMotion {
     const mount = this._globeMount;
     if (!mount || this._globeStarted) return;
     this._globeStarted = true;
-    let THREE, ThreeGlobe, countries;
-    try {
-      // fire all module imports + the country data fetch in parallel (was 4 serial round-trips)
-      // The design pulls these from esm.sh and jsDelivr at runtime. Here they are real
-      // dependencies, so the globe needs no third-party origin and works under a strict
-      // connect-src. Still dynamic imports: three.js stays out of the initial bundle and
-      // only loads when the hero is near the viewport.
-      const [THREE_, gm, topojson, topo] = await Promise.all([
-        import("three"),
-        import("three-globe"),
-        import("topojson-client"),
-        import("world-atlas/countries-110m.json").then((m) => m.default ?? m),
-      ]);
-      THREE = THREE_;
-      ThreeGlobe = gm.default;
-      countries = topojson.feature(topo, topo.objects.countries).features;
-    } catch (e) {
-      this._globeStarted = false;
-      return;
-    }
+    // Dependency-free globe: baked dots + borders (public/globe-data.json, ~27 KB) drawn on a 2D canvas.
+    // Copied from the design's initGlobe; only the data URL and the dark-mode class are ours.
+    // Geometry, camera and colours mirror the previous three-globe build (archive/CookieYes Landing (three-globe).dc.html).
+    let data;
+    try { data = await fetch("/globe-data.json").then((r) => r.json()); }
+    catch (e) { this._globeStarted = false; return; }
     if (!this._globeMount) return;
-    this._THREE = THREE;
-    const markers = this.globeMarkers();
-    const home = markers[0];
-    const arcs = markers
-      .slice(1)
-      .map((m) => ({ startLat: home.lat, startLng: home.lon, endLat: m.lat, endLng: m.lon }));
-    const acc = this.accentCss();
-    const EU = [
-      "Austria",
-      "Belgium",
-      "Bulgaria",
-      "Croatia",
-      "Cyprus",
-      "Czechia",
-      "Czech Republic",
-      "Denmark",
-      "Estonia",
-      "Finland",
-      "France",
-      "Germany",
-      "Greece",
-      "Hungary",
-      "Ireland",
-      "Italy",
-      "Latvia",
-      "Lithuania",
-      "Luxembourg",
-      "Malta",
-      "Netherlands",
-      "Poland",
-      "Portugal",
-      "Romania",
-      "Slovakia",
-      "Slovenia",
-      "Spain",
-      "Sweden",
-    ];
-    const COMPLIANT = new Set(
-      [].concat(EU, [
-        "United Kingdom",
-        "United States of America",
-        "United States",
-        "Canada",
-        "Brazil",
-      ]),
-    );
-    const nm = (f) =>
-      (f && f.properties && (f.properties.name || f.properties.NAME || f.properties.admin)) || "";
-    this._isCompliant = (f) => COMPLIANT.has(nm(f));
-    const accFill = "rgba(" + (this._accentRgb || "19,111,232") + ",0.2)";
-    // Country outlines. The design's dark value is blue-300 at 0.7, light enough to
-    // read as coastlines on the dark sphere; the light value is unchanged.
-    const outline = document.documentElement.classList.contains("dark")
-      ? "rgba(191,207,233,0.7)"
-      : "rgba(11,46,102,0.45)";
-    const borderPaths = [];
-    countries.forEach((f) => {
-      const g = f.geometry;
-      if (!g) return;
-      const polys =
-        g.type === "Polygon" ? [g.coordinates] : g.type === "MultiPolygon" ? g.coordinates : [];
-      polys.forEach((poly) =>
-        poly.forEach((ring) => {
-          borderPaths.push(ring.map((c) => [c[1], c[0]]));
-        }),
-      );
-    });
+    const D2R = Math.PI / 180;
+    const toXYZ = (lat, lon, out, k) => { const phi = (90 - lat) * D2R, th = (90 - lon) * D2R; out[k] = Math.sin(phi) * Math.cos(th); out[k + 1] = Math.cos(phi); out[k + 2] = Math.sin(phi) * Math.sin(th); };
+    // h3 res-4 lattice, 0.45 hex margin
+    const SP = data.sp, DLAT = SP * Math.sqrt(3) / 2;
+    let nd = 0; data.rows.forEach((r) => { for (let q = 1; q < r.length; q += 2) nd += r[q + 1]; });
+    const dots = new Float32Array(nd * 3); let di = 0;
+    data.rows.forEach((r) => { const i = r[0], lat = i * DLAT, dLon = SP / Math.cos(lat * D2R), off = (i & 1) ? 0.5 : 0; for (let q = 1; q < r.length; q += 2) for (let j = r[q]; j < r[q] + r[q + 1]; j++) { toXYZ(lat, -180 + (j + off) * dLon, dots, di); di += 3; } });
+    const decode = (str) => { const pts = []; let i = 0, x = 0, y = 0; const nx = () => { let r = 0, sh = 0, b; do { b = str.charCodeAt(i++) - 63; r |= (b & 31) << sh; sh += 5; } while (b >= 32); return (r & 1) ? ~(r >> 1) : (r >> 1); }; while (i < str.length) { x += nx(); y += nx(); pts.push([x / 10, y / 10]); } return pts; };
+    const lines = (str) => (str ? str.split(",") : []).map((e) => { const p = decode(e), o = []; for (let n = 0; n < p.length; n++) { if (n) { const x0 = p[n - 1][0], y0 = p[n - 1][1], x1 = p[n][0], y1 = p[n][1]; const st = Math.abs(x1 - x0) > 180 ? 1 : Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) / 2); for (let q = 1; q < st; q++) o.push([y0 + (y1 - y0) * q / st, x0 + (x1 - x0) * q / st]); } o.push([p[n][1], p[n][0]]); } const f = new Float32Array(o.length * 3); o.forEach((q, m) => toXYZ(q[0], q[1], f, m * 3)); return f; });
+    const shared = lines(data.shared), single = lines(data.single);
+    const markers = this.globeMarkers().map((m) => { const u = new Float32Array(3); toXYZ(m.lat, m.lon, u, 0); return Object.assign({ u: u }, m); });
 
-    const Globe = new ThreeGlobe({ animateIn: true })
-      .showGlobe(true)
-      .showAtmosphere(this._isLightSurface())
-      .atmosphereColor("#4A8AF5")
-      .atmosphereAltitude(0.09)
-      .hexPolygonsData(countries.filter((f) => COMPLIANT.has(nm(f))))
-      .hexPolygonResolution(4)
-      .hexPolygonMargin(0.45)
-      .hexPolygonAltitude(0.006)
-      .hexPolygonColor(() => this._hexPolygonColor())
-      .pathsData(borderPaths)
-      .pathPointLat((p) => p[0])
-      .pathPointLng((p) => p[1])
-      .pathPointAlt(() => 0.007)
-      .pathColor(() => outline)
-      .pathStroke(0.8)
-      .pathTransitionDuration(0)
-      .arcsData([])
-      .labelsData(markers)
-      .labelLat("lat")
-      .labelLng("lon")
-      .labelText(() => "")
-      .labelSize(1.65)
-      .labelDotRadius(0.45)
-      .labelColor(() => "rgba(13,71,161,0.95)")
-      .labelResolution(2)
-      .labelAltitude(0.02)
-      .pointsData(markers)
-      .pointLat("lat")
-      .pointLng("lon")
-      .pointColor(() => "rgba(158,197,254,0.98)")
-      .pointAltitude(0.02)
-      .pointRadius(0.55)
-      .ringsData(markers)
-      .ringLat("lat")
-      .ringLng("lon")
-      .ringColor(() => (t) => "rgba(158,197,254," + (0.6 * (1 - t)).toFixed(3) + ")")
-      .ringAltitude(0.021)
-      .ringMaxRadius(3.2)
-      .ringPropagationSpeed(1.1)
-      .ringRepeatPeriod(1500);
-    try {
-      const mat = Globe.globeMaterial();
-      // Not black in dark: the design lifts the sphere to #1A1D21 so the coastlines
-      // and borders stay visible against it.
-      mat.color = new THREE.Color(
-        document.documentElement.classList.contains("dark") ? "#1A1D21" : "#000000",
-      );
-      mat.emissive = new THREE.Color("#000000");
-      mat.emissiveIntensity = 0.4;
-      mat.shininess = 0.2;
-      mat.specular = new THREE.Color("#000000");
-      mat.transparent = false;
-      mat.opacity = 1;
-      mat.colorWrite = true;
-      mat.depthWrite = true;
-    } catch (e) {}
-    Globe.renderOrder = 0;
-    this._Globe = Globe;
+    mount.querySelectorAll("canvas, [data-globe-rim]").forEach((el) => el.remove());
+    (mount.parentElement || mount).querySelectorAll("[data-globe-flag]").forEach((el) => el.remove());
+    this._flagEls = null;
+    const cv = document.createElement("canvas");
+    cv.style.cssText = "display:block";
+    mount.appendChild(cv);
+    const ctx = cv.getContext("2d");
+    const base = document.createElement("canvas"), bctx = base.getContext("2d");
+    const noop = () => shim;
+    const shim = { showAtmosphere: noop, pathColor: noop, hexPolygonColor: noop, arcColor: noop, globeMaterial: () => ({ color: { set() {} } }) };
+    this._Globe = shim;
+    this._three = { renderer: { dispose() {}, domElement: cv } };
 
-    const w = mount.clientWidth || 560,
-      h = mount.clientHeight || 560;
-    const renderer = new THREE.WebGLRenderer({
-      alpha: true,
-      antialias: true,
-      preserveDrawingBuffer: true,
-    });
-    renderer.setPixelRatio(Math.min(3, window.devicePixelRatio || 1));
-    renderer.setSize(w, h);
-    renderer.setClearColor(0x000000, 0);
-    mount.appendChild(renderer.domElement);
-    const scene = new THREE.Scene();
-    scene.add(Globe);
-    scene.add(new THREE.AmbientLight(0xffffff, 3.4));
-    const dir = new THREE.DirectionalLight(0xffffff, 1.4);
-    dir.position.set(1, 1, 1);
-    scene.add(dir);
-    const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 2000);
-    camera.position.set(0, 20, 367);
-    camera.lookAt(0, 0, 0);
-    Globe.rotation.set(0.72, 1.52, -0.3);
-    this._three = { renderer, scene, camera };
+    // camera: PerspectiveCamera(50°) at (0, 20, 367) looking at the origin; globe radius 100, rotation X = 0.72
+    const EZ = 367, EY = 20, dEye = Math.hypot(EY, EZ), ZY = EY / dEye, ZZ = EZ / dEye, TAN = Math.tan(25 * D2R);
+    const cax = Math.cos(0.72), sax = Math.sin(0.72);
+    let W = 0, H = 0, DPR = 1, F = 1;
+    const size = () => {
+      W = mount.clientWidth || 560; H = mount.clientHeight || 560; DPR = Math.min(2, window.devicePixelRatio || 1); F = (H / 2) / TAN;
+      cv.width = base.width = Math.round(W * DPR); cv.height = base.height = Math.round(H * DPR);
+      cv.style.width = W + "px"; cv.style.height = H + "px";
+      this._globeKey = "";
+    };
+    size();
+    let cr = 1, sr = 0, K = 1;
+    // unit vector → screen (CSS px) + facing (cos between surface normal and view ray)
+    const P = { x: 0, y: 0, f: 0 };
+    const proj = (ux, uy, uz, alt) => {
+      const x1 = ux * cr + uz * sr, z1 = -ux * sr + uz * cr;
+      const y2 = uy * cax - z1 * sax, z2 = uy * sax + z1 * cax;
+      const rr = 100 * K * (1 + alt), X = x1 * rr, vy = y2 * rr - EY, vz = z2 * rr - EZ;
+      const depth = -(vy * ZY + vz * ZZ), yc = vy * ZZ - vz * ZY;
+      P.x = W / 2 + X / depth * F; P.y = H / 2 - yc / depth * F;
+      P.f = (y2 * EY + z2 * EZ - rr) / Math.sqrt(X * X + vy * vy + vz * vz);
+      return P;
+    };
+    this._globeProj = (lat, lon, alt) => { const u = new Float32Array(3); toXYZ(lat, lon, u, 0); const p = proj(u[0], u[1], u[2], alt); return { lx: p.x, ly: p.y, facing: p.f }; };
+
+    const drawBase = (dark) => {
+      const c = bctx, rpx = F * Math.tan(Math.asin(Math.min(0.999, 100 * K / dEye))), cx = W / 2, cy = H / 2;
+      c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      c.clearRect(0, 0, W, H);
+      if (K < 0.002) return;
+      if (!dark) {                                                  // atmosphere (light only; the mount's invert filter maps it)
+        const g = c.createRadialGradient(cx, cy, rpx * 0.98, cx, cy, rpx * 1.13);
+        g.addColorStop(0, "rgba(74,138,245,0.18)"); g.addColorStop(0.35, "rgba(74,138,245,0.06)"); g.addColorStop(1, "rgba(74,138,245,0)");
+        c.fillStyle = g; c.beginPath(); c.arc(cx, cy, rpx * 1.13, 0, Math.PI * 2); c.fill();
+      }
+      if (dark) {                                                   // #1A1D21 phong sphere: ambient 3.4 + directional 1.4 from (1,1,1)
+        const hx = cx + rpx * 0.52, hy = cy - rpx * 0.58, g = c.createRadialGradient(hx, hy, 0, hx, hy, rpx * 1.15);
+        g.addColorStop(0, "#22252A"); g.addColorStop(0.72, "#1F2327"); g.addColorStop(1, "#1B1E22");
+        c.fillStyle = g;
+      } else c.fillStyle = "#000000";
+      c.beginPath(); c.arc(cx, cy, rpx, 0, Math.PI * 2); c.fill();
+      // country dots
+      const cell = SP * D2R * rpx * 0.55;
+      c.fillStyle = dark ? "rgba(24,99,220,0.85)" : "rgba(" + (this._accentRgb || "19,111,232") + ",0.55)";
+      c.beginPath();
+      for (let i = 0; i < dots.length; i += 3) {
+        const p = proj(dots[i], dots[i + 1], dots[i + 2], 0.006);
+        if (p.f <= 0) continue;
+        const h = cell * Math.sqrt(p.f) / 2;
+        c.rect(p.x - h, p.y - h, h * 2, h * 2);
+      }
+      c.fill();
+      // borders — shared arcs were drawn once per neighbouring country before, so they carry the doubled alpha
+      const a = dark ? 0.7 : 0.45, rgb = dark ? "191,207,233" : "11,46,102";
+      c.lineWidth = Math.max(0.3, 0.8 * W / (window.innerWidth || 1440));
+      c.lineJoin = "round";
+      const stroke = (set, alpha) => {
+        c.strokeStyle = "rgba(" + rgb + "," + alpha.toFixed(3) + ")";
+        c.beginPath();
+        for (const f of set) {
+          let pen = false;
+          for (let i = 0; i < f.length; i += 3) {
+            const p = proj(f[i], f[i + 1], f[i + 2], 0.007);
+            if (p.f <= 0) { pen = false; continue; }
+            if (pen) c.lineTo(p.x, p.y); else { c.moveTo(p.x, p.y); pen = true; }
+          }
+        }
+        c.stroke();
+      };
+      stroke(single, a);
+      stroke(shared, 1 - (1 - a) * (1 - a));
+    };
+
+    const ringPts = (m, degR, alt, n) => {
+      const u = m.u, th = degR * D2R, ct = Math.cos(th), st = Math.sin(th);
+      let e1x = u[2], e1y = 0, e1z = -u[0]; const l = Math.hypot(e1x, e1z) || 1; e1x /= l; e1z /= l;
+      const e2x = u[1] * e1z - u[2] * e1y, e2y = u[2] * e1x - u[0] * e1z, e2z = u[0] * e1y - u[1] * e1x;
+      const out = [];
+      for (let q = 0; q <= n; q++) { const ph = q / n * Math.PI * 2, cp = Math.cos(ph) * st, sp = Math.sin(ph) * st; const p = proj(u[0] * ct + e1x * cp + e2x * sp, u[1] * ct + e1y * cp + e2y * sp, u[2] * ct + e1z * cp + e2z * sp, alt); out.push([p.x, p.y, p.f]); }
+      return out;
+    };
+    const draw = (ry, nowT) => {
+      const dark = document.documentElement.classList.contains("dark");
+      cr = Math.cos(ry); sr = Math.sin(ry);
+      const key = ry.toFixed(5) + "|" + K.toFixed(4) + "|" + dark + "|" + (this._accentRgb || "") + "|" + W + "x" + H;
+      if (key !== this._globeKey) { this._globeKey = key; drawBase(dark); }
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(base, 0, 0);
+      if (K < 0.002) return;
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+      // rings: new ring every 1.5s, 1.1°/s out to 3.2°, alpha 0.6·(1−t)
+      ctx.lineWidth = 1 / Math.min(3, window.devicePixelRatio || 1);
+      for (const m of markers) {
+        if (proj(m.u[0], m.u[1], m.u[2], 0.02).f <= 0.02) continue;
+        for (let age = nowT % 1500; age < 3200 / 1.1; age += 1500) {
+          const r = 1.1 * age / 1000, t = r / 3.2;
+          const pts = ringPts(m, r, 0.021, 40);
+          ctx.strokeStyle = "rgba(158,197,254," + (0.6 * (1 - t)).toFixed(3) + ")";
+          ctx.beginPath();
+          let pen = false;
+          for (const p of pts) { if (p[2] <= 0) { pen = false; continue; } if (pen) ctx.lineTo(p[0], p[1]); else { ctx.moveTo(p[0], p[1]); pen = true; } }
+          ctx.stroke();
+        }
+        // point: 0.55° cap at altitude 0.02
+        const cap = ringPts(m, 0.55, 0.02, 18);
+        ctx.fillStyle = "rgba(158,197,254,0.98)";
+        ctx.beginPath(); cap.forEach((p, q) => q ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath(); ctx.fill();
+      }
+    };
 
     // circumference rim — 1px hairline ring sized to the sphere's screen silhouette
     const rim = document.createElement("div");
     rim.setAttribute("aria-hidden", "true");
     rim.setAttribute("data-globe-rim", "1");
-    rim.style.cssText =
-      "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:1.4px solid rgba(11,46,102,0.35);border-radius:50%;pointer-events:none;opacity:0;transition:opacity 1.4s ease 1.6s";
+    rim.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:1.4px solid rgba(11,46,102,0.35);border-radius:50%;pointer-events:none;opacity:0;transition:opacity 1.4s ease 1.6s";
     mount.appendChild(rim);
     this._globeRim = rim;
     const sizeRim = (hh) => {
-      const dCam = Math.hypot(20, 367);
-      const rpx =
-        ((hh / 2) * Math.tan(Math.asin(100 / dCam))) / Math.tan(((50 / 2) * Math.PI) / 180);
+      const rpx = (hh / 2) * Math.tan(Math.asin(100 / dEye)) / TAN;
       rim.style.width = rim.style.height = (rpx * 2).toFixed(1) + "px";
     };
-    sizeRim(h);
-    requestAnimationFrame(() => {
-      rim.style.opacity = "1";
-    });
+    sizeRim(H);
+    requestAnimationFrame(() => { rim.style.opacity = "1"; });
 
-    this._sizeGlobe = () => {
-      if (!this._globeMount) return;
-      const ww = this._globeMount.clientWidth || 560,
-        hh = this._globeMount.clientHeight || 560;
-      renderer.setSize(ww, hh);
-      camera.aspect = ww / hh;
-      camera.updateProjectionMatrix();
-      sizeRim(hh);
-    };
+    this._sizeGlobe = () => { if (!this._globeMount) return; size(); sizeRim(H); };
     window.addEventListener("resize", this._sizeGlobe);
 
     const loop = () => {
       this._globeRaf = requestAnimationFrame(loop);
       const mr = mount.getBoundingClientRect();
-      if (mr.bottom < -60 || mr.top > window.innerHeight + 60) return; // skip GPU work while off-screen
+      if (mr.bottom < -60 || mr.top > window.innerHeight + 60) return; // skip work while off-screen
       // two fluid views: [0] Europe (UK + GDPR), [1] the Americas (CCPA + PIPEDA + LGPD); hovering a tag takes over
       const views = this._tourViews || (this._tourViews = [5, -72]);
       const nowT = performance.now();
-      if (this._tourI == null) {
-        this._tourI = 0;
-        this._tourArriveT = 0;
-      }
-      const held = this._tourHold; // region locked by tag hover
+      if (this._tourI == null) { this._tourI = 0; this._tourArriveT = 0; }
+      const held = this._tourHold;
       const targetLon = held != null ? this.regionLon(held) : views[this._tourI];
-      const targetRy = (-targetLon * Math.PI) / 180;
+      const targetRy = -targetLon * Math.PI / 180;
       if (this._globeRy == null) this._globeRy = targetRy;
-      // commit an absolute target once per swing; tour swings take the LONG way around
       const swingKey = held != null ? "h" + held : "v" + this._tourI;
       if (this._swingKey !== swingKey) {
         this._swingKey = swingKey;
-        // always advance in ONE direction — wrap the delta to [0, 2π) so the globe never reverses
-        let d = (((targetRy - this._globeRy) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-        if (d < 0.001) d = 2 * Math.PI; // already there → full turn rather than a dead swing
+        let d = ((targetRy - this._globeRy) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        if (d < 0.001) d = 2 * Math.PI;
         this._swingFrom = this._globeRy;
         this._globeTargetRy = this._globeRy + d;
         this._swingT0 = nowT;
-        this._swingDur = held != null ? 900 : 4500; // both view swings take a fixed 4.5s
+        this._swingDur = held != null ? 900 : 4500;
       }
-      // fixed-duration eased travel (easeInOutSine — gentle tails, motion spread across the full time)
       const p = Math.min(1, (nowT - this._swingT0) / this._swingDur);
       const e = 0.5 - 0.5 * Math.cos(Math.PI * p);
       this._globeRy = this._swingFrom + (this._globeTargetRy - this._swingFrom) * e;
       if (held != null) {
-        this._tourArriveT = 0; // paused while a tag is hovered
+        this._tourArriveT = 0;
       } else if (p >= 1) {
-        if (!this._tourArriveT) this._tourArriveT = nowT; // arrived → begin dwell
-        if (nowT - this._tourArriveT > 2200) {
-          // dwell finished → swing to the other view
-          this._tourArriveT = 0;
-          this._tourI = (this._tourI + 1) % views.length;
-        }
+        if (!this._tourArriveT) this._tourArriveT = nowT;
+        if (nowT - this._tourArriveT > 2200) { this._tourArriveT = 0; this._tourI = (this._tourI + 1) % views.length; }
       }
-      // intro: spin into place on first load (rides on top of the built-in zoom-in)
-      if (!this._globeIntroT0) this._globeIntroT0 = performance.now();
-      const ip = Math.min(1, (performance.now() - this._globeIntroT0) / 2400);
-      const ie = 1 - (1 - ip) ** 3;
-      Globe.rotation.set(0.72, this._globeRy + (1 - ie) * 2.4, 0);
-      renderer.render(scene, camera);
+      // intro: scale-in (600ms quad-out) + build-in spin (1200ms quint-out), plus the 2.4s settle spin
+      if (!this._globeIntroT0) this._globeIntroT0 = nowT;
+      const it = nowT - this._globeIntroT0;
+      const kq = Math.min(1, it / 600); K = 1 - (1 - kq) * (1 - kq);
+      const sq = Math.min(1, it / 1200), spin = Math.PI * 2 * Math.pow(1 - sq, 5);
+      const ip = Math.min(1, it / 2400), ie = 1 - Math.pow(1 - ip, 3);
+      this._globeRyDraw = this._globeRy + (1 - ie) * 2.4 + spin;
+      draw(this._globeRyDraw, nowT);
       this.projectGlobeMarkers();
     };
     loop();
@@ -1376,60 +1326,48 @@ class DesignMotion {
       d.appendChild(f);
       d.appendChild(t);
       d._detail = t;
-      (this._globeMount || document.body).appendChild(d);
+      // Beside the mount, not inside it: the mount is colour-inverted on light pages and
+      // that filter would reach the tags. Out here they keep their true colours in both
+      // modes; projectGlobeMarkers() adds the mount's offset to place them.
+      d.setAttribute("aria-hidden", "true");
+      (this._globeMount ? this._globeMount.parentElement || this._globeMount : document.body).appendChild(d);
       this._flagEls[k] = d;
     }
     return this._flagEls;
   }
 
   projectGlobeMarkers() {
-    const mount = this._globeMount,
-      three = this._three,
-      THREE = this._THREE,
-      Globe = this._Globe;
-    if (!mount || !three || !THREE || !Globe) return;
+    const mount = this._globeMount, pr = this._globeProj;
+    if (!mount || !pr) return;
     const rect = mount.getBoundingClientRect();
-    const cam = three.camera;
     const hit = [];
     for (const m of this.globeMarkers()) {
-      const co = Globe.getCoords(m.lat, m.lon, 0.02);
-      const world = new THREE.Vector3(co.x, co.y, co.z).applyMatrix4(Globe.matrixWorld);
-      const normal = world.clone().normalize();
-      const toCam = cam.position.clone().sub(world).normalize();
-      const facing = normal.dot(toCam);
+      const q = pr(m.lat, m.lon, 0.02);
+      const facing = q.facing;
       const front = facing > 0.02;
-      const ndc = world.clone().project(cam);
-      const lx = (ndc.x * 0.5 + 0.5) * rect.width;
-      const ly = (-ndc.y * 0.5 + 0.5) * rect.height;
-      hit.push({
-        region: m.region,
-        law: m.law,
-        sx: rect.left + lx,
-        sy: rect.top + ly,
-        lx: lx,
-        ly: ly,
-        vis: front,
-        facing: facing,
-      });
+      const lx = q.lx;
+      const ly = q.ly;
+      hit.push({ region: m.region, law: m.law, sx: rect.left + lx, sy: rect.top + ly, lx: lx, ly: ly, vis: front, facing: facing });
     }
     this._globeHit = hit;
     const fl = this.ensureFlagEls();
     for (const h of hit) {
       const el = fl[h.region];
       if (!el) continue;
-      el.style.left = h.lx.toFixed(1) + "px";
-      el.style.top = h.ly.toFixed(1) + "px";
+      el.style.left = (mount.offsetLeft + h.lx).toFixed(1) + "px";
+      el.style.top = (mount.offsetTop + h.ly).toFixed(1) + "px";
       // only the tags belonging to the view the globe currently faces are visible;
       // they fade out as the globe swings away and the other group fades in on arrival
       const views = this._tourViews || [5, -72];
-      const groupLon = h.region === "EU" || h.region === "UK" ? views[0] : views[1];
-      const curLon = (-(this._globeRy || 0) * 180) / Math.PI;
-      const dd = Math.abs(((((curLon - groupLon) % 360) + 540) % 360) - 180); // 0..180 from the group's view center
+      const groupLon = (h.region === "EU" || h.region === "UK") ? views[0] : views[1];
+      const curLon = -(this._globeRy || 0) * 180 / Math.PI;
+      const dd = Math.abs(((curLon - groupLon) % 360 + 540) % 360 - 180); // 0..180 from the group's view center
       const grpOp = dd <= 32 ? 1 : dd >= 68 ? 0 : (68 - dd) / 36;
       const hov = this._tourHold === h.region;
       const op = hov ? 1 : grpOp * (h.vis ? 1 : 0);
       el.style.opacity = op.toFixed(3);
-      el.style.zIndex = h.vis ? "3" : "1";
+      // Same layer as the mount (behind the hero text), painted after it, so above the globe.
+      el.style.zIndex = "-1";
       el.style.pointerEvents = "none";
     }
   }

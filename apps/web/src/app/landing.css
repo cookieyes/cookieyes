@@ -521,20 +521,14 @@ footer.cy-band-light > div[aria-hidden] {
     rgba(222, 225, 240, 0) 100%
   ) !important;
 }
-.cy-page.cy-light [data-globe-mount],
-.cy-band-light [data-globe-mount] {
+/* The globe is drawn dark natively (a black sphere), so on light pages the mount is
+   colour-inverted. In dark mode the drawing is already the right way round, so the rule
+   is scoped to light pages rather than overridden (`.cy-page` carries `cy-light` in both
+   modes). The region tags are not inside the mount (see ensureFlagEls in
+   motion/design-motion.js), so no filter ever touches them: true colours in both modes. */
+html:not(.dark) .cy-page.cy-light [data-globe-mount],
+html:not(.dark) .cy-band-light [data-globe-mount] {
   filter: invert(1) hue-rotate(180deg) brightness(0.96);
-}
-.cy-page.cy-light [data-globe-flag],
-.cy-band-light [data-globe-flag] {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-/* The globe renders dark natively — the material is black — and the two rules above
-   invert it for light surfaces. In dark mode it is already the right way round, so the
-   inversion is switched off rather than a second colour being introduced. */
-html.dark [data-globe-mount],
-html.dark [data-globe-flag] {
-  filter: none !important;
 }
 
 /* The blue conic blobs and the accent wash are sized for a white page. On the dark page
@@ -1577,7 +1571,8 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   font-size: 0.875rem !important;
   line-height: 21px !important;
 }
-.cy-page.cy-sim-mobile [data-globe-mount] {
+.cy-page.cy-sim-mobile [data-globe-mount],
+.cy-page.cy-sim-mobile [data-globe-flag] {
   display: none !important;
 }
 .cy-page.cy-sim-mobile canvas[data-deco="hot"] {
@@ -1699,7 +1694,8 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
     font-size: 0.875rem !important;
     line-height: 21px !important;
   }
-  [data-globe-mount] {
+  [data-globe-mount],
+  [data-globe-flag] {
     display: none !important;
   }
   canvas[data-deco="hot"] {
