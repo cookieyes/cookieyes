@@ -1,10 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 
 /** The design's own hooks on the burger button and the panel's close control. */
 const BURGER_SELECTOR = "[data-burger]";
 const CLOSE_SELECTOR = '[data-screen-label="Mobile menu"] [aria-label="Close menu"]';
+
+const MENU_LINK: CSSProperties = {
+  padding: "var(--cy-space-20) 0",
+  borderTop: "1px solid var(--cy-border)",
+  fontFamily: "Poppins, Inter, sans-serif",
+  fontWeight: "500",
+  fontSize: "1.375rem",
+  lineHeight: "28px",
+  letterSpacing: "-0.4px",
+  color: "var(--cy-fg)",
+  textDecoration: "none",
+};
 
 /**
  * The full-screen navigation panel shown on small viewports.
@@ -203,54 +215,26 @@ export function MobileMenu() {
       </div>{" "}
       <div style={{ marginTop: "var(--cy-space-24)", display: "flex", flexDirection: "column" }}>
         {" "}
-        <a
-          href="/docs"
-          style={{
-            padding: "var(--cy-space-20) 0",
-            borderTop: "1px solid var(--cy-border)",
-            fontFamily: "Poppins, Inter, sans-serif",
-            fontWeight: "500",
-            fontSize: "1.375rem",
-            lineHeight: "28px",
-            letterSpacing: "-0.4px",
-            color: "var(--cy-fg)",
-            textDecoration: "none",
-          }}
-        >
+        <a href="/docs/nextjs" style={MENU_LINK}>
           {"Documentation"}
         </a>{" "}
-        <a
-          href="https://github.com/cookieyes/cookieyes/releases"
-          style={{
-            padding: "var(--cy-space-20) 0",
-            borderTop: "1px solid var(--cy-border)",
-            fontFamily: "Poppins, Inter, sans-serif",
-            fontWeight: "500",
-            fontSize: "1.375rem",
-            lineHeight: "28px",
-            letterSpacing: "-0.4px",
-            color: "var(--cy-fg)",
-            textDecoration: "none",
-          }}
-        >
+        <a href="/playground" style={MENU_LINK}>
+          {"Playground"}
+        </a>{" "}
+        <a href="https://www.cookieyes.com/blog/react-cookie-consent-sdk/" style={MENU_LINK}>
+          {"Blog"}
+        </a>{" "}
+        <a href="/docs/changelog" style={MENU_LINK}>
           {"Changelog"}
         </a>{" "}
         <a
           href="https://github.com/cookieyes/cookieyes"
           style={{
-            padding: "var(--cy-space-20) 0",
-            borderTop: "1px solid var(--cy-border)",
+            ...MENU_LINK,
             display: "flex",
             flexDirection: "row",
             gap: "var(--cy-space-12)",
             alignItems: "baseline",
-            fontFamily: "Poppins, Inter, sans-serif",
-            fontWeight: "500",
-            fontSize: "1.375rem",
-            lineHeight: "28px",
-            letterSpacing: "-0.4px",
-            color: "var(--cy-fg)",
-            textDecoration: "none",
           }}
         >
           {"GitHub"}
@@ -262,7 +246,7 @@ export function MobileMenu() {
               color: "var(--cy-muted)",
             }}
           >
-            {"1.2k ↗"}
+            {"↗"}
           </span>
         </a>{" "}
         <div
