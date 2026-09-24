@@ -1,7 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="CookieYes">
-  <title>CookieYes</title>
-  <rect width="32" height="32" fill="#0C0D10"/>
-  <path d="M8 17.5l5 5L24 9.5" fill="none" stroke="#4A8AF5" stroke-width="4"
-        stroke-linecap="square" stroke-linejoin="miter"/>
-  <rect x="8" y="20.5" width="4.5" height="4.5" fill="#4A8AF5"/>
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_1073_207)">
+<path d="M0 15.36C0 11.2945 0 0 0 0C0 0 10.9412 0 15.36 0H48.64H64V15.36V48.64C64 52.3935 64 64 64 64C64 64 53.3707 64 48.64 64H15.36C11.3776 64 0 64 0 64C0 64 0 53.1418 0 48.64V15.36Z" fill="#FBFBFB"/>
+<path d="M26.7881 24.1575H17.7407L26.0126 39.6669H35.0601L26.7881 24.1575Z" fill="#0056A7"/>
+<path d="M25.8376 39.231L26.0961 39.6666H35.1436L29.1981 28.7751L25.8376 39.231Z" fill="#2E3191"/>
+<path d="M42.3854 11.0876L26.1001 39.6669H35.1475L51.4329 11.0876H42.3854Z" fill="#0056A7"/>
+<path d="M26.1001 43.936H34.889V52.9106H26.1001V43.936Z" fill="#0056A7"/>
+</g>
+<defs>
+<clipPath id="clip0_1073_207">
+<rect width="64" height="64" rx="32" fill="white"/>
+</clipPath>
+</defs>
 </svg>
