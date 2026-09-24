@@ -2,6 +2,7 @@
 
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { ReactNode } from "react";
+import { AgentTools } from "@/components/AgentTools";
 import { SearchDialog } from "@/components/docs/SearchDialog";
 import { SearchIndexProvider } from "@/components/docs/search-index-context";
 import type { SearchIndexEntry } from "@/lib/search-index";
@@ -22,7 +23,10 @@ export function Providers({
 }) {
   return (
     <SearchIndexProvider value={pageIndex}>
-      <RootProvider search={{ SearchDialog }}>{children}</RootProvider>
+      <RootProvider search={{ SearchDialog }}>
+        <AgentTools />
+        {children}
+      </RootProvider>
     </SearchIndexProvider>
   );
 }

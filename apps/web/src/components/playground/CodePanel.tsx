@@ -125,7 +125,7 @@ export function CodePanel({
               {"\n"}
             </pre>
             <label className="cy-pg-visually-hidden" htmlFor={editorId}>
-              Configuration — edits apply to the preview
+              Configuration: edits apply to the preview
             </label>
             <textarea
               id={editorId}

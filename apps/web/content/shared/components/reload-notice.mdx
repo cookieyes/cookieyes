@@ -1,0 +1,52 @@
+---
+title: ReloadNotice
+description: Ask the visitor to reload when a withdrawn tool cannot be stopped otherwise.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Some third-party tools cannot be switched off once they are running. When a visitor withdraws consent for such a tool, this notice appears with a **Reload** and a **Dismiss** button. It never reloads on its own; the visitor decides.
+
+You need it only if you register a tool as "needs a reload" (below). The [integrations](/docs/integrations) stop their tools cleanly and never show it.
+
+## Add it
+
+```tsx check="false"
+<CookieBanner />
+<CookiePreferences />
+<ReloadNotice />
+```
+
+Then mark the tool that cannot be stopped, once, next to `initCookieYes()`:
+
+```ts title="app/consent-manager.tsx"
+import { registerStopHandler } from "@cookieyes/core";
+
+registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+```
+
+## It appears only when a reload is genuinely needed
+
+The notice shows only when a category that was granted is turned off and a tool marked `needsReload` was running under it. A first-time rejection shows nothing: nothing was running. Once dismissed, it stays away until a new withdrawal needs a reload.
+
+## Change what it shows
+
+It has no props. The text comes from the `reloadNotice.message`, `reloadNotice.reloadButton` and `reloadNotice.dismissButton` keys in `i18n`; see [Translations](/docs/translations). For your own markup, read the same state with `useReloadNotice()`, which returns `required` and `dismiss`.
+
+## Restyle it
+
+Target `[data-cy-part="reload-notice"]`, `[data-cy-part="reload-message"]` and `[data-cy-part="reload-dismiss"]` in your CSS.
+
+## Common mistakes
+
+**I rejected a category and the notice did not appear.**
+Expected, unless that category was granted before and a `needsReload` tool was running. Accept first, then reject.
+
+**The notice appears for a tool I did not mark.**
+That tool's own stop function threw an error, so CookieYes fell back to asking for a reload.
+
+## Next steps
+
+- [Integrations](/docs/integrations): tools that stop cleanly and never need this
+- [GatedScript](/docs/components/gated-script): load a script only after consent

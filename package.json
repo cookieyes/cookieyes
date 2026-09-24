@@ -34,6 +34,7 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo run build --filter='./sdk/*' && changeset publish",
+    "changelog:dates": "node tools/changelog/collect-dates.mjs",
     "size": "node tools/size/measure.mjs",
     "size:check": "node tools/size/measure.mjs --check",
     "size:breakdown": "node tools/size/breakdown.mjs",

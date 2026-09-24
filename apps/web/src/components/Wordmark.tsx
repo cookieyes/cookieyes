@@ -3,9 +3,9 @@
  * 154×25 viewBox the landing nav uses).
  *
  * Inline rather than an <img> to public/figma-logos/cookieyes-wordmark.svg because
- * the design recolours the lettering per theme — `path[fill="#404041"]` becomes
- * #ECEDEF in dark — which an external SVG cannot pick up. The lettering is driven
- * by --cy-doc-wordmark; the blue/navy glyph is fixed brand colour in both themes.
+ * the design recolours it per theme — the lettering becomes #ECEDEF in dark and the
+ * "Y" mark turns white — which an external SVG cannot pick up. The lettering is driven
+ * by --cy-doc-wordmark, the mark by --cy-doc-mark and --cy-doc-mark-b.
  *
  * NOTE: src/app/sections/SiteNav.tsx carries the same paths inline for the landing
  * page. That file is generated and Biome-excluded, so it is left alone here; folding
@@ -54,13 +54,16 @@ export function Wordmark({ className }: { className?: string }) {
         d="M146.73 24.9594C142.182 24.9594 139.13 22.4148 138.877 19.0896H144.048C144.149 20.2823 145.233 21.0631 146.687 21.0631C148.032 21.0631 148.755 20.4414 148.755 19.6607C148.755 16.9065 139.448 18.88 139.448 12.5909C139.448 9.67772 141.929 7.29224 146.376 7.29224C150.823 7.29224 153.253 9.73556 153.564 13.1114H148.704C148.553 11.9692 147.67 11.1885 146.174 11.1885C144.93 11.1885 144.264 11.6584 144.264 12.4897C144.264 15.2439 153.513 13.2704 153.622 19.7113C153.672 22.6751 151.04 24.9594 146.745 24.9594H146.73Z"
         fill="var(--cy-doc-wordmark)"
       />
-      <path d="M110.023 7.79285H104.593L109.553 17.0457H114.984L110.023 7.79285Z" fill="#0056A7" />
+      <path
+        d="M110.023 7.79285H104.593L109.553 17.0457H114.984L110.023 7.79285Z"
+        fill="var(--cy-doc-mark)"
+      />
       <path
         d="M109.459 16.7946L109.611 17.0548H115.042L111.477 10.5562L109.459 16.7946Z"
-        fill="#2E3191"
+        fill="var(--cy-doc-mark-b)"
       />
-      <path d="M119.33 0L109.56 17.0455H114.991L124.76 0H119.33Z" fill="#0056A7" />
-      <path d="M109.56 19.5986H114.832V24.9479H109.56V19.5986Z" fill="#0056A7" />
+      <path d="M119.33 0L109.56 17.0455H114.991L124.76 0H119.33Z" fill="var(--cy-doc-mark)" />
+      <path d="M109.56 19.5986H114.832V24.9479H109.56V19.5986Z" fill="var(--cy-doc-mark)" />
     </svg>
   );
 }

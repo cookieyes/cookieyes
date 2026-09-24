@@ -1,0 +1,67 @@
+---
+title: Quick start
+description: A working consent banner in about a minute.
+frameworks: [nextjs, react]
+---
+
+One command in your existing project. The CLI detects your framework, asks a few questions and writes the setup for you, including the stylesheet import that is easy to forget. It runs locally and collects no data.
+
+Prefer to write the files yourself? [Installation](/docs/getting-started/installation) is the same result in three steps.
+
+## 1. Run the CLI
+
+```npm
+npx @cookieyes/cli init
+```
+
+## 2. Answer the questions
+
+1. **Framework**: detected for you, just confirm.
+2. **Backend mode**: choose **Cookie-only**. The choice is stored in the visitor's browser and no server is needed. Pick Self-hosted only if you must keep a record on your own server; it then asks for the URL.
+3. **Privacy regulation**: `GDPR` for most sites, `CCPA` for California-style opt-out.
+4. **Colour scheme**: light, dark, or follow the system.
+5. **Extra languages**: English is always included.
+6. Confirm, and it installs the package.
+
+## 3. Start your app
+
+The banner appears at the bottom of the page. Click **Accept All** and reload: it stays away, and a small round button in the corner reopens the preferences dialog.
+
+## What it wrote
+
+<Framework when="nextjs">
+
+- `components/consent-manager/provider.tsx`: the configuration, the stylesheet import and the components, in one client file.
+- `components/consent-manager/index.tsx`: lets you import `CookieYesRoot` from the folder.
+- `app/layout.tsx` (or `pages/_app.tsx`): `<CookieYesRoot />` added to your existing layout.
+
+</Framework>
+
+<Framework when="react">
+
+- `components/consent-manager/provider.tsx`: the configuration, the stylesheet import and the components, in one file.
+- `components/consent-manager/index.tsx`: lets you import `CookieYesRoot` from the folder.
+- Your entry file: `<CookieYesRoot />` added next to `<App />`.
+
+</Framework>
+
+Files that already exist are left alone. If the CLI cannot find where to add `<CookieYesRoot />`, it prints the lines to paste under "Manual step needed".
+
+To change anything later, edit `provider.tsx`: every option is on [Configuration](/docs/getting-started/configuration).
+
+## Common mistakes
+
+**The banner does not appear.**
+You already chose in this browser. Delete the `cookieyes-consent` cookie and reload.
+
+**The banner is unstyled text.**
+The stylesheet import was removed from `provider.tsx`. Put it back.
+
+**"Manual step needed" was printed.**
+Paste the printed lines into your layout or entry file. Nothing else is missing.
+
+## Next steps
+
+- [Configuration](/docs/getting-started/configuration): every option of `initCookieYes()`
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand

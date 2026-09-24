@@ -1,0 +1,82 @@
+---
+title: Microsoft Clarity
+description: Load Microsoft Clarity only after analytics consent, and switch it to cookie-free mode when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`clarity()` loads Microsoft Clarity after the visitor grants the analytics category and tells Clarity that cookies are allowed. When consent is withdrawn, it tells Clarity that consent is denied: Clarity then deletes its `_clck` and `_clsk` cookies and keeps running without cookies.
+
+## Set it up
+
+In your Clarity project, turn the **Cookies** toggle off under Settings, Setup, Advanced settings. This makes Clarity wait for consent instead of setting cookies on load. Without it, the integration has nothing to gate.
+
+Then install the integrations package and add `clarity()` to the `initCookieYes()` call you already have:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { clarity } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [clarity({ projectId: "abcd123xyz" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { clarity } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [clarity({ projectId: "abcd123xyz" })],
+});
+```
+
+</Framework>
+
+Remove any Clarity snippet you pasted into the page by hand. The integration adds the script itself.
+
+Send custom events with `clarity("event", …)` as usual. Before the visitor consents, `clarity` is not on the page yet, so guard the call:
+
+```ts check="false"
+window.clarity?.("event", "signup");
+```
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `projectId` | required | The id in your Clarity tag URL, `clarity.ms/tag/<id>` |
+| `category` | `"analytics"` | The category the visitor must grant. Session recording is more sensitive than ordinary analytics, so consider a category of its own |
+| `id` | `"clarity"` | Only needed when you run more than one project |
+
+## Good to know
+
+- **Hide sensitive text yourself.** Clarity masks form fields by default, but not ordinary page text. Add `data-clarity-mask="True"` to elements that show names, totals or health details.
+- **Clarity keeps sending after withdrawal.** It goes cookie-free, not silent. That is how Clarity's own consent mode works.
+
+## Common mistakes
+
+**Clarity sets cookies before the visitor accepts.**
+The Cookies toggle in your Clarity project is still on. Turn it off as described above.
+
+**`clarity is not defined` in the console.**
+The call ran before consent. Use `window.clarity?.(…)` as shown above.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration

@@ -1,0 +1,73 @@
+---
+title: useConsentActions
+description: Accept, reject, save or reset consent, and open the dialogs, from your own buttons.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Returns the functions that change consent or open a dialog. Use it to build your own controls: a "Cookie settings" link in the footer, an accept button in a custom banner, a reset button on a settings page. It only writes, so a component that calls it never re-renders when consent changes. To read consent, use [`useConsent()`](/docs/hooks/use-consent).
+
+You do not need it with `CookieBanner` or the [Banner primitives](/docs/headless/banner): their buttons already call these functions.
+
+## Example
+
+The most common use, a link that reopens the preferences dialog:
+
+```tsx title="app/cookie-settings-link.tsx"
+"use client";
+
+import { useConsentActions } from "@cookieyes/react";
+
+export function CookieSettingsLink() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <button type="button" onClick={showPreferences}>
+      Cookie settings
+    </button>
+  );
+}
+```
+
+Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can reach it. The dialog moves focus into itself when it opens and back to your button when it closes.
+
+## The actions
+
+| Action | What it does | Saves? |
+| --- | --- | --- |
+| `acceptAll()` | Grants every category | Yes |
+| `rejectAll()` | Rejects every optional category | Yes |
+| `acceptSelected(ids)` | Grants exactly these categories and rejects the rest | Yes |
+| `updateCategory(id, value)` | Changes one switch in the dialog, nothing more | No |
+| `save()` | Saves the switches as they are | Yes |
+| `reset()` | Forgets the decision; the banner shows again | Yes |
+| `dismissBanner()` | Hides the banner for this page view; it returns on the next load | No |
+| `showPreferences()`, `hidePreferences()` | Open and close the preferences dialog | |
+| `showOptOut()`, `hideOptOut()` | Open and close the CCPA Do Not Sell dialog | |
+
+## Good to know
+
+**`updateCategory` does not save.** It changes the live value, like a switch in the dialog. Call `save()` when the visitor confirms. To grant something in one step, use `acceptSelected([...])` instead.
+
+**`acceptSelected` replaces the whole list.** Categories you leave out are rejected. To add one category to the current choices, read `committedCategories` from `useConsent()`, add the id, and pass the full list.
+
+**Before the runtime is ready** (on the server, or if `initCookieYes()` has not run), every action is a silent no-op. Nothing throws.
+
+## Common mistakes
+
+**Switches change but nothing is saved.**
+You called `updateCategory()` without `save()`.
+
+**Granting one category rejected the others.**
+`acceptSelected()` replaces the whole list. Pass every category you want granted.
+
+**`showPreferences()` does nothing.**
+`CookiePreferences` (or your own `Preferences.Root`) is not rendered. The action only opens it.
+
+**Nothing happens and there is no error.**
+`initCookieYes()` did not run. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
+
+## Next steps
+
+- [useConsent](/docs/hooks/use-consent): read the state these actions change
+- [Banner primitives](/docs/headless/banner): the actions already wired to accessible buttons

@@ -24,7 +24,7 @@ export function CssVariableConsumers({ token }: CssVariableConsumersProps) {
   const entry = data.tokens.find((t) => t.name === token);
   if (!entry) {
     throw new Error(
-      `<CssVariableConsumers token="${token}"> — no such token in the generated CSS variables ` +
+      `<CssVariableConsumers token="${token}">: no such token in the generated CSS variables ` +
         `reference. Check the name, or re-run generate-css-variables-reference.mjs.`,
     );
   }
@@ -32,7 +32,7 @@ export function CssVariableConsumers({ token }: CssVariableConsumersProps) {
     throw new Error(
       `<CssVariableConsumers token="${token}"> has zero consumers in the generated data. If this is ` +
         `expected (a newly-added token with no rule wired up yet), fix the stylesheet before ` +
-        `documenting it here — a token with no consumer shouldn't be advertised as "where it applies."`,
+        `documenting it here; a token with no consumer shouldn't be advertised as "where it applies."`,
     );
   }
 
@@ -42,7 +42,7 @@ export function CssVariableConsumers({ token }: CssVariableConsumersProps) {
         {entry.consumers.map((consumer, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: consumer entries are generated, order-stable, and have no natural unique key
           <li key={i}>
-            <code>{consumer.selector}</code> — <code>{consumer.property}</code>
+            <code>{consumer.selector}</code>: <code>{consumer.property}</code>
             {consumer.media ? (
               <>
                 {" "}
@@ -71,7 +71,7 @@ export function CssVariableConsumers({ token }: CssVariableConsumersProps) {
               , via <code>{entry.aliasOf.transform}</code>
             </>
           ) : (
-            " (untransformed — the exact same value)"
+            " (untransformed, the exact same value)"
           )}
           .
         </p>

@@ -1,0 +1,77 @@
+---
+title: CSP
+description: The SDK works under a strict Content-Security-Policy without unsafe-inline or a nonce.
+frameworks: [nextjs, react]
+---
+
+## What you need
+
+The SDK's stylesheet is a normal file and its theme colours are applied as CSS variables on the elements, not as inline `<style>` blocks. This policy is enough:
+
+```http title="Response header"
+Content-Security-Policy: default-src 'self'; style-src 'self'; script-src 'self';
+```
+
+No `'unsafe-inline'`, no nonce. The banner, both dialogs, the recall button and your `theme` colours all work.
+
+| Directive | Add | When |
+| --- | --- | --- |
+| `style-src` | `'self'` | Always |
+| `script-src` | `'self'` | Always |
+| `script-src` | The vendor's origin, such as `https://www.googletagmanager.com` | For every tool you load with `GatedScript` or an [integration](/docs/integrations) |
+| `connect-src` | Your `apiUrl` origin | `mode: "self-hosted"` |
+| `frame-src` | The embed's origin | Every `GatedFrame` |
+
+Roll a new policy out with `Content-Security-Policy-Report-Only` first, and click through the whole flow, including opening the preferences dialog: it exists in the page only while open, so a policy that passes on load can still block it.
+
+## Gated scripts
+
+A tool loaded after consent is a real `<script src>` and needs its origin in `script-src`, even though nothing loads until the visitor agrees. If the origin is missing, the tag is blocked silently: the console shows the violation, the SDK does not.
+
+<Framework when="nextjs">
+
+## Critical CSS
+
+If you inline `critical.css` with `<CookieYesStyles />`, that one block needs a hash. It is exported ready to paste:
+
+```ts title="app/consent-csp.ts"
+import { CRITICAL_CSS_HASH } from "@cookieyes/nextjs/server";
+
+// Append to style-src: "style-src 'self' 'sha256-…'"
+export const styleSrc = `'self' ${CRITICAL_CSS_HASH}`;
+```
+
+If you already use nonces, pass yours instead: `<CookieYesStyles nonce={nonce} />`.
+
+</Framework>
+
+<Framework when="react">
+
+## Critical CSS
+
+If you inline `critical.css` in your `<head>`, that one block needs its hash in `style-src`, or a nonce. Everything else stays as above.
+
+</Framework>
+
+## For a security review
+
+CookieYes's interface loads as a normal stylesheet file, never as an inline `<style>` block, and theme colours are applied as CSS custom properties directly on the elements. It therefore needs neither `'unsafe-inline'` nor a nonce for `style-src`, and its own code is a normal script bundle under `script-src 'self'`.
+
+## Common mistakes
+
+**A tool never loads after the visitor accepts.**
+Its origin is missing from `script-src`. The console shows the CSP violation.
+
+**Consent never reaches your server.**
+`connect-src` does not include your `apiUrl`. The request fails silently by design; check the Network tab.
+
+**A `GatedFrame` stays on its placeholder after consent.**
+Add the embed's origin to `frame-src`.
+
+**A `[cookieyes] A style was blocked by your Content-Security-Policy` warning appears.**
+The SDK reports `style-src` violations it notices, but it cannot cause them itself. Something else on the page uses inline styles.
+
+## Next steps
+
+- [Critical CSS](/docs/styling/critical-css): the inline block this policy has to allow
+- [GatedScript](/docs/components/gated-script): the scripts that need their origin allowed

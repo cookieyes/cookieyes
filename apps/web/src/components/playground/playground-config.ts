@@ -192,15 +192,28 @@ export const MIN_PREVIEW_SCALE = 0.5;
 
 const CHANNEL = "cy-playground";
 
-export type PreviewMessage = { channel: typeof CHANNEL; type: "config"; config: PlaygroundConfig };
+/**
+ * `config` is the banner's own configuration. `siteScheme` is separate on purpose: it is
+ * the light/dark of the site around the preview, which dresses the stand-in page behind
+ * the banner. The banner follows the config; the page behind it follows the site.
+ */
+export type PreviewMessage = {
+  channel: typeof CHANNEL;
+  type: "config";
+  config: PlaygroundConfig;
+  siteScheme: "light" | "dark";
+};
 
 export type PreviewReply =
   | { channel: typeof CHANNEL; type: "ready" }
   /** One real event from the preview. `allowed` is only ever sent by a script that ran. */
   | { channel: typeof CHANNEL; type: "log"; entry: LogEvent };
 
-export function configMessage(config: PlaygroundConfig): PreviewMessage {
-  return { channel: CHANNEL, type: "config", config };
+export function configMessage(
+  config: PlaygroundConfig,
+  siteScheme: "light" | "dark",
+): PreviewMessage {
+  return { channel: CHANNEL, type: "config", config, siteScheme };
 }
 
 export function readyReply(): PreviewReply {

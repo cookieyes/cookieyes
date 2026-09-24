@@ -1,0 +1,14 @@
+{
+  "title": "Components",
+  "pages": [
+    "cookie-banner",
+    "cookie-preferences",
+    "cookie-opt-out",
+    "recall-button",
+    "gated-script",
+    "gated-frame",
+    "reload-notice"
+  ],
+  "defaultOpen": true,
+  "collapsible": true
+}

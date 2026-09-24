@@ -39,7 +39,9 @@ function categoriesByUrl(tree: PageTree.Root): Map<string, string> {
         continue;
       }
       if (node.type === "folder") {
-        const folderSection = nodeText(node.name) || current;
+        // A framework root ("Next.js", "React", "JavaScript") is where a page lives, not
+        // what it is about; its direct children keep the section they would have had.
+        const folderSection = node.root ? current : nodeText(node.name) || current;
         if (node.index?.url) categories.set(node.index.url, folderSection);
         walk(node.children, folderSection);
         continue;

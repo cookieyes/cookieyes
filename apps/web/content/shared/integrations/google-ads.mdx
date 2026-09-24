@@ -1,0 +1,74 @@
+---
+title: Google Ads
+description: Load Google Ads conversion tracking with one integration and let the SDK keep its Consent Mode signals up to date.
+frameworks: [nextjs, react, core]
+---
+
+`googleAds()` loads Google Ads conversion tracking and registers your conversion id. Consent reaches Google through Google Consent Mode: the SDK tells Google what the visitor allowed, on page load and on every change.
+
+## Set it up
+
+First add the Consent Mode default, once, before any Google tag: [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
+
+Then install the integrations package and add `googleAds()` to the `initCookieYes()` call you already have:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { googleAds } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [googleAds({ conversionId: "AW-XXXXXXXXX" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { googleAds } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [googleAds({ conversionId: "AW-XXXXXXXXX" })],
+});
+```
+
+</Framework>
+
+Report conversions with `gtag("event", "conversion", …)` as usual. It is always safe to call: the Consent Mode default you added defines `gtag` and the `dataLayer` before anything else runs. Running `ga4()` as well is fine: both share one Google library.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `conversionId` | required | Your Google Ads id, `"AW-…"` |
+| `category` | `"advertisement"` | The category the visitor must grant |
+| `consentMode` | `"advanced"` | `"advanced"` loads the tag at once and lets Consent Mode gate it. `"basic"` loads it only after consent and removes it, with the `_gcl_au` cookie, on withdrawal. See [Google Consent Mode v2 → Load the tag before or after consent](/docs/integrations/google-consent-mode#load-the-tag-before-or-after-consent) |
+| `params` | none | Extra `gtag("config", …)` settings for the Ads tag |
+| `restrictedDataProcessing` | automatic | Google's US privacy flag. Left unset, it turns on for every visitor covered by CCPA. `true` or `false` forces it |
+| `id` | `"google-ads"` | Only needed when you run more than one Ads account |
+
+## Common mistakes
+
+**Every conversion is counted twice.**
+Google Ads is also loaded by your Google Tag Manager container. Use `googleTagManager()` or `googleAds()` for an account, not both. The SDK logs a warning when it sees both.
+
+**A returning visitor is treated as denied, although they accepted last time.**
+The Consent Mode default is missing, so the update sent on page load was skipped and the Ads tag stays denied until the visitor changes their choice. Add the default as shown on [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
+
+## Next steps
+
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode): how consent reaches Google
+- [Google Tag Manager](/docs/integrations/google-tag-manager): when Ads lives inside your container

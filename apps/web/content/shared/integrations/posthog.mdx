@@ -1,0 +1,112 @@
+---
+title: PostHog
+description: Load PostHog with consent, or keep a PostHog you already load in sync with the visitor's choice.
+frameworks: [nextjs, react, core]
+---
+
+Two integrations cover PostHog. `posthog()` loads PostHog for you from your project key. `posthogSync()` leaves loading to you and only turns capture on and off with consent.
+
+## Set it up
+
+Install the integrations package:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+Then add one of the two to the `initCookieYes()` call you already have. `onReject` is required. It decides what a "no" means, and PostHog has no safe default for that:
+
+- `"stop"`: nothing loads until consent. On withdrawal, PostHog and its stored data are removed.
+- `"anonymous"`: PostHog counts visits without a cookie while consent is absent or withdrawn, and switches to normal tracking on accept. This sends requests to PostHog before the visitor decides, and needs **Cookieless tracking** turned on in your PostHog project settings.
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { posthog } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [posthog({ apiKey: "phc_XXXXXXXX", onReject: "stop" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { posthog } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [posthog({ apiKey: "phc_XXXXXXXX", onReject: "stop" })],
+});
+```
+
+</Framework>
+
+Remove any PostHog snippet you pasted into the page by hand. The integration adds the script itself.
+
+Capture events with `posthog.capture(…)` as usual. With `"stop"`, `posthog` is not on the page before consent, so call it through `safeCall()`. It does nothing while PostHog is absent and never throws:
+
+```ts
+import { safeCall } from "@cookieyes/scripts";
+
+safeCall("posthog", "capture", "signup", { plan: "pro" });
+```
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `apiKey` | required | Your project key, `"phc_…"` |
+| `onReject` | required | `"stop"` or `"anonymous"`, as above |
+| `region` | `"us"` | `"us"` or `"eu"`: where PostHog Cloud stores your data |
+| `apiHost` | none | The host of a self-hosted or proxied PostHog. Overrides `region` |
+| `category` | `"analytics"` | The category the visitor must grant |
+| `id` | `"posthog"` | Only needed when you run more than one project |
+
+## Already loading PostHog yourself
+
+Keep your own `posthog.init()` and add `posthogSync()` instead. It injects nothing: on withdrawal it calls `posthog.opt_out_capturing()`, on grant `posthog.opt_in_capturing()`. Initialise PostHog before `initCookieYes()` runs, and start it opted out, so nothing is captured before consent:
+
+```ts check="false"
+posthog.init("phc_XXXXXXXX", { opt_out_capturing_by_default: true });
+```
+
+```ts check="false"
+integrations: [posthogSync()],
+```
+
+`posthogSync()` takes only `category` and `id`, with the same defaults as above.
+
+## Common mistakes
+
+**`posthog is not defined` in the console.**
+The call ran before consent. Use `safeCall()` as shown above.
+
+**With `"anonymous"`, no visits are counted before consent.**
+Cookieless tracking is off in your PostHog project. Turn it on under Settings, Web analytics.
+
+<Framework when="nextjs react">
+
+**The banner never shows, or shows again for a visitor who decided.**
+Your code reads consent from `posthog.has_opted_in_capturing()`. Read it from the SDK instead: see [useConsent](/docs/hooks/use-consent).
+
+</Framework>
+<Framework when="core">
+
+**The banner never shows, or shows again for a visitor who decided.**
+Your code reads consent from `posthog.has_opted_in_capturing()`. Read it from the SDK instead: see [Using the store directly](/docs/store/using-the-store).
+
+</Framework>
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration

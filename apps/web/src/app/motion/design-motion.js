@@ -361,6 +361,34 @@ class DesignMotion {
     this["_t_" + flag] = setTimeout(() => this.setState({ [flag]: false }), 1500);
   }
 
+  /**
+   * Is the surface this runs against a light one?
+   *
+   * The ported markup marks light surfaces with `cy-light` / `cy-band-light`, which is a
+   * light-mode device — in dark mode no surface is light, whatever those classes say. So
+   * dark wins over them, and every colour branch below asks this rather than the class.
+   */
+  /**
+   * Fill for the compliant-region hexes.
+   *
+   * The design uses a fixed blue-500 at 0.85 in dark rather than the accent at 0.55 —
+   * the accent is too faint to read against the dark sphere.
+   */
+  _hexPolygonColor() {
+    return document.documentElement.classList.contains("dark")
+      ? "rgba(24,99,220,0.85)"
+      : "rgba(" + (this._accentRgb || "19,111,232") + ",0.55)";
+  }
+
+  _isLightSurface(el) {
+    if (document.documentElement.classList.contains("dark")) return false;
+    if (el) {
+      if (el.closest(".cy-band-dark")) return false;
+      if (el.closest(".cy-band-light")) return true;
+    }
+    return this.root.classList.contains("cy-light");
+  }
+
   applyAccent() {
     const hex = this.props.accentColor ?? "#136FE8";
     const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
@@ -411,17 +439,18 @@ class DesignMotion {
     root.setProperty("--cy-accent", ok(L, C));
     root.setProperty("--cy-accent-dim", ok(L, C, 0.85));
     root.setProperty("--cy-accent-glow", ok(L, C, 0.8));
+    // The globe's wash and outlines. These follow the colour scheme itself rather than
+    // the band a section sits in, and the two dark values are the design's own
+    // (CookieYes Landing.dc.html): a near-black wash and a brighter outline, which is
+    // what makes the coastlines read on the dark sphere.
+    const dark = document.documentElement.classList.contains("dark");
     root.setProperty(
       "--cy-wash-rgb",
-      this.root.classList.contains("cy-light")
-        ? toRgb(0.945, Math.min(C, 0.014))
-        : toRgb(0.97, Math.min(C, 0.03)),
+      dark ? toRgb(0.22, Math.min(C, 0.02)) : toRgb(0.945, Math.min(C, 0.014)),
     );
     root.setProperty(
       "--cy-line-rgb",
-      this.root.classList.contains("cy-light")
-        ? toRgb(0.4, Math.min(C, 0.16))
-        : toRgb(0.66, Math.min(C, 0.14)),
+      dark ? toRgb(0.66, Math.min(C, 0.14)) : toRgb(0.4, Math.min(C, 0.16)),
     );
     this._accentRgb = toRgb(L, C);
     root.setProperty("--cy-accent-rgb", this._accentRgb);
@@ -437,7 +466,23 @@ class DesignMotion {
     }
   }
 
+  /** Repaint when the theme switches; `.dark` on <html> is what next-themes toggles. */
+  watchColorScheme() {
+    let wasDark = document.documentElement.classList.contains("dark");
+    this._schemeObserver = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains("dark");
+      if (isDark === wasDark) return;
+      wasDark = isDark;
+      this.applyColorScheme();
+    });
+    this._schemeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+  }
+
   componentDidMount() {
+    this.watchColorScheme();
     this.applyAccent();
     this.applyLines();
     this._linesIv = setInterval(() => this.applyLines(), 350);
@@ -478,6 +523,7 @@ class DesignMotion {
     this.startThemeCycle();
     this.startAcCycle();
     this.startToggleCycle();
+    this.bindHovers();
     if (!this.cyReduce()) {
       if (this._recIv) clearInterval(this._recIv);
       const seq = ["true", "true", "false", "true", "true"]; // analytics of the top visible row per tbFeed step (rows 5..1)
@@ -724,15 +770,18 @@ class DesignMotion {
       });
       const nums = perfSec.querySelectorAll(".cy-num");
       nums.forEach((n) => {
-        const target = parseFloat(n.getAttribute("data-count"));
+        const raw = n.getAttribute("data-count");
+        const target = parseFloat(raw);
         const suffix = n.getAttribute("data-suffix") || "";
         if (isNaN(target)) return;
+        // Count to as many decimals as the target has, or 19.8 KB lands on 20 KB.
+        const decimals = (raw.split(".")[1] || "").length;
         const dur = 1100,
           t0 = performance.now();
         const step = (now) => {
           const t = Math.min(1, (now - t0) / dur);
           const e = 1 - (1 - t) ** 3;
-          n.textContent = Math.round(target * e) + suffix;
+          n.textContent = (target * e).toFixed(decimals) + suffix;
           if (t < 1) requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
@@ -834,8 +883,70 @@ class DesignMotion {
     }
   }
 
+  /**
+   * Hovering a card drives its demo forward.
+   *
+   * The design binds this through onMouseEnter/onMouseLeave in its markup. Our sections are
+   * ported markup with no handlers, so the same behaviour is attached here instead — the
+   * advance functions, the per-card intervals and the replay rules are the design's own.
+   */
+  bindHovers() {
+    const ADVANCE = { 0: "_geoAdv", 1: "_stampAdv", 2: "_tgAdv", 3: "_themeAdv", 4: "_gateAdv", 5: "_acAdv" };
+    const PERIOD = { 0: 2500, 1: 2800, 2: 2000, 3: 3200, 4: 2600, 5: 2000 };
+    this._hoverBound = [];
+
+    const on = (el, type, fn) => {
+      el.addEventListener(type, fn);
+      this._hoverBound.push([el, type, fn]);
+    };
+
+    for (const card of this.root.querySelectorAll("[data-bento]")) {
+      const i = card.getAttribute("data-bento");
+      on(card, "mouseenter", () => {
+        if (this.cyReduce()) return;
+        const advance = this[ADVANCE[i]];
+        if (!advance) return;
+        if (card._hovIv) clearInterval(card._hovIv);
+        advance();
+        card._hovIv = setInterval(advance, PERIOD[i] || 2500);
+      });
+      on(card, "mouseleave", () => {
+        if (card._hovIv) {
+          clearInterval(card._hovIv);
+          card._hovIv = null;
+        }
+      });
+    }
+
+    // The record cards replay their drawing instead: the one-shot steps are restarted from
+    // the beginning, and the looping ones run only while the pointer is on the card.
+    for (const cell of this.root.querySelectorAll(".cy-ill-card")) {
+      on(cell, "mouseenter", () => {
+        if (this.cyReduce()) return;
+        const once = Array.from(cell.querySelectorAll("[data-anim]"));
+        for (const el of once) el.style.animation = "none";
+        void cell.offsetWidth; // Forces the restart; without it the browser keeps the old run.
+        for (const el of once) el.style.animation = el.getAttribute("data-anim");
+        for (const el of cell.querySelectorAll("[data-loop]")) {
+          el.style.animation = el.getAttribute("data-loop");
+        }
+      });
+      on(cell, "mouseleave", () => {
+        for (const el of cell.querySelectorAll("[data-loop]")) el.style.animation = "none";
+      });
+    }
+  }
+
   componentWillUnmount() {
+    if (this._schemeObserver) this._schemeObserver.disconnect();
     if (this._linesIv) clearInterval(this._linesIv);
+    if (this._hoverBound) {
+      for (const [el, type, fn] of this._hoverBound) el.removeEventListener(type, fn);
+      this._hoverBound = null;
+    }
+    for (const card of this.root.querySelectorAll("[data-bento]")) {
+      if (card._hovIv) clearInterval(card._hovIv);
+    }
     cancelAnimationFrame(this._raf);
     cancelAnimationFrame(this._globeRaf);
     if (this._flagEls) {
@@ -992,7 +1103,11 @@ class DesignMotion {
       (f && f.properties && (f.properties.name || f.properties.NAME || f.properties.admin)) || "";
     this._isCompliant = (f) => COMPLIANT.has(nm(f));
     const accFill = "rgba(" + (this._accentRgb || "19,111,232") + ",0.2)";
-    const outline = "rgba(11,46,102,0.45)";
+    // Country outlines. The design's dark value is blue-300 at 0.7, light enough to
+    // read as coastlines on the dark sphere; the light value is unchanged.
+    const outline = document.documentElement.classList.contains("dark")
+      ? "rgba(191,207,233,0.7)"
+      : "rgba(11,46,102,0.45)";
     const borderPaths = [];
     countries.forEach((f) => {
       const g = f.geometry;
@@ -1008,14 +1123,14 @@ class DesignMotion {
 
     const Globe = new ThreeGlobe({ animateIn: true })
       .showGlobe(true)
-      .showAtmosphere(this.root.classList.contains("cy-light"))
+      .showAtmosphere(this._isLightSurface())
       .atmosphereColor("#4A8AF5")
       .atmosphereAltitude(0.09)
       .hexPolygonsData(countries.filter((f) => COMPLIANT.has(nm(f))))
       .hexPolygonResolution(4)
       .hexPolygonMargin(0.45)
       .hexPolygonAltitude(0.006)
-      .hexPolygonColor(() => "rgba(" + (this._accentRgb || "19,111,232") + ",0.55)")
+      .hexPolygonColor(() => this._hexPolygonColor())
       .pathsData(borderPaths)
       .pathPointLat((p) => p[0])
       .pathPointLng((p) => p[1])
@@ -1049,7 +1164,11 @@ class DesignMotion {
       .ringRepeatPeriod(1500);
     try {
       const mat = Globe.globeMaterial();
-      mat.color = new THREE.Color("#000000");
+      // Not black in dark: the design lifts the sphere to #1A1D21 so the coastlines
+      // and borders stay visible against it.
+      mat.color = new THREE.Color(
+        document.documentElement.classList.contains("dark") ? "#1A1D21" : "#000000",
+      );
       mat.emissive = new THREE.Color("#000000");
       mat.emissiveIntensity = 0.4;
       mat.shininess = 0.2;
@@ -1167,11 +1286,34 @@ class DesignMotion {
     loop();
   }
 
+  /**
+   * Re-colours everything that reads the colour scheme, after the scheme changes.
+   *
+   * The globe is a Three.js scene built once, so its material, atmosphere and layer
+   * colours are set at construction and do not follow a later theme change on their own —
+   * the design's own `applyTheme` re-applies exactly these. `applyAccent()` covers the
+   * CSS custom properties the canvases derive from.
+   */
+  applyColorScheme() {
+    const dark = document.documentElement.classList.contains("dark");
+    if (this._Globe) {
+      try {
+        this._Globe.showAtmosphere(!dark);
+        this._Globe.globeMaterial().color.set(dark ? "#1A1D21" : "#000000");
+        this._Globe.pathColor(() =>
+          dark ? "rgba(191,207,233,0.7)" : "rgba(11,46,102,0.45)",
+        );
+        this.applyGlobeAccent();
+      } catch (e) {}
+    }
+    this.applyAccent();
+  }
+
   applyGlobeAccent() {
     if (!this._Globe) return;
     const acc = this.accentCss();
     this._Globe.arcColor(() => acc);
-    this._Globe.hexPolygonColor(() => "rgba(" + (this._accentRgb || "19,111,232") + ",0.55)");
+    this._Globe.hexPolygonColor(() => this._hexPolygonColor());
   }
 
   ensureFlagEls() {
@@ -2022,12 +2164,8 @@ class DesignMotion {
       }
       const ctx = cv.getContext("2d");
       const isLight = cv.closest("[data-bento]")
-        ? true
-        : cv.closest(".cy-band-dark")
-          ? false
-          : cv.closest(".cy-band-light")
-            ? true
-            : this.root.classList.contains("cy-light");
+        ? !document.documentElement.classList.contains("dark")
+        : this._isLightSurface(cv);
       const dotInk = isLight ? "19,111,232" : "125,190,248";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);

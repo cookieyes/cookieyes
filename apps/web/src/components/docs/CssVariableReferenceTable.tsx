@@ -25,8 +25,7 @@ function toTypeNode(token: TokenEntry): TypeNode {
       <>
         <p>{token.description}</p>
         <p>
-          <strong>theme key:</strong>{" "}
-          {token.configKey ? <code>{token.configKey}</code> : "— (derived)"}
+          <strong>theme key:</strong> {token.configKey ? <code>{token.configKey}</code> : "derived"}
         </p>
         <p>
           <strong>Dark default:</strong> <code>{darkNote}</code>

@@ -1,0 +1,66 @@
+---
+title: Tailwind
+description: Use Tailwind utilities with the banner and dialogs, in the right order.
+frameworks: [nextjs, react]
+---
+
+## Set it up
+
+Import the SDK's stylesheet **after** Tailwind. Tailwind's preflight resets buttons and headings; loaded after the SDK, it would strip the banner's own button styles.
+
+```css title="app/globals.css"
+@import "tailwindcss";
+@import "@cookieyes/react/styles.css";
+```
+
+If you import the stylesheet in `consent-manager.tsx` instead, remove that import and keep this one, so the order is fixed in one place.
+
+## Three ways to use utilities
+
+**On a component.** `className` is added to the component's own classes:
+
+```tsx check="false"
+<CookieBanner className="shadow-2xl ring-1 ring-black/5" />
+```
+
+`RecallButton` is the exception: its `className` replaces the default class. Keep `cy-widget` if you want the default look: `<RecallButton className="cy-widget ring-2" />`.
+
+**On a part, with `@apply`.** Best for anything systematic:
+
+```css title="app/globals.css"
+@import "tailwindcss";
+@import "@cookieyes/react/styles.css";
+
+[data-cy-part="banner"] {
+  @apply max-w-lg rounded-xl p-6 shadow-2xl;
+}
+
+[data-cy-part="accept-all"] {
+  @apply font-semibold;
+}
+```
+
+**On primitives.** Build the banner from [primitives](/docs/headless/banner) and put utilities straight on your elements.
+
+## Good to know
+
+- A utility has the same strength as the SDK's own rule, so it wins only if your CSS comes after `styles.css`. Do not use the `!` modifier or `@layer components` for these rules; both hide the ordering problem instead of fixing it.
+- The components render into `<body>`, so `group-` and `peer-` variants from your tree do not reach them.
+- The SDK does not read Tailwind's `dark` class. Set `colorScheme` to match your default scheme and switch the variables from `html.dark`: see [Colour scheme](/docs/styling/color-scheme).
+- Arbitrary values set the SDK's variables: `<CookieBanner className="[--cy-primary:#7c3aed]" />`. This works only while `primaryColor` is not set in `theme`.
+
+## Common mistakes
+
+**The banner's buttons look like plain text.**
+Tailwind loaded after the SDK's stylesheet. Put the `@cookieyes` stylesheet import last.
+
+**A utility on `<CookieBanner>` does nothing.**
+Your CSS comes before `styles.css`, or the value is set in `theme`.
+
+**`<RecallButton className="...">` lost its style.**
+`className` replaces the default class there. Include `cy-widget`.
+
+## Next steps
+
+- [Custom CSS](/docs/styling/custom-css): the same in plain CSS
+- [Parts](/docs/styling/part-and-state-contract): the names to `@apply` against

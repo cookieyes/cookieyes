@@ -1,0 +1,83 @@
+---
+title: Using the store directly
+description: Read consent, react to it and change it from plain JavaScript.
+frameworks: [core]
+---
+
+## What it does
+
+`initCookieYes()` returns two objects. `consentStore` holds the visitor's consent and tells you when it changes; `consentManager` changes it. Your banner reads from the store and calls the manager. Call `initCookieYes()` once, at module scope, and import the result where you need it.
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+
+declare function loadAnalytics(): void;
+declare function renderBanner(state: { hasActed: boolean }): void;
+
+export const { consentStore, consentManager } = initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+});
+
+// Runs on every change, including a switch flipped before Save: right for drawing your UI.
+consentStore.subscribe((state) => renderBanner({ hasActed: state.hasActed }));
+
+// Runs on saved decisions only, once on attach with the current state: right for loading things.
+consentStore.on("change", ({ categories }) => {
+  if (categories.analytics) loadAnalytics();
+});
+```
+
+## What the store holds
+
+`consentStore.getState()` returns everything a banner needs:
+
+| Field | Meaning |
+| --- | --- |
+| `hasActed` | `true` once the visitor accepted, rejected or saved. Show the banner while `false` |
+| `categories` | Category id → granted, as **saved**. Load things from this |
+| `consents` | The **live** switches, including ones flipped but not yet saved. Drive your dialog's checkboxes from this |
+| `activeUI` | `"banner"`, `"dialog"` or `null`: what should be on screen |
+| `regulation` | `"GDPR"` or `"CCPA"`; `"DEFAULT"` means none was set and behaves as GDPR |
+
+The configured categories, in order, are `consentStore.categories.list`; each has `id` and `required`. Their names in the active language come from `consentStore.getCategoryText(id)`.
+
+## Two ways to listen
+
+| Call | Runs on | Use for |
+| --- | --- | --- |
+| `consentStore.subscribe(fn)` | Every state change, live switches included | Drawing your UI |
+| `consentStore.on("change", fn, { category? })` | Saved decisions only, plus once when you attach | Loading scripts, telling your backend |
+
+Both return a function that removes the listener. `on("save", fn)` also exists: it runs on every Save, even when nothing changed.
+
+## The actions
+
+| `consentManager.…` | What it does |
+| --- | --- |
+| `acceptAll()`, `rejectAll()` | Decide everything and save |
+| `acceptSelected(ids)` | Grant exactly these categories and save |
+| `updateCategory(id, value)` | Flip one live switch; nothing is saved |
+| `savePreferences()` | Save the live switches |
+| `showPreferences()`, `hidePreferences()` | Set `activeUI` to `"dialog"` and back |
+| `resetConsent()` | Forget the decision, so the banner shows again |
+
+## Good to know
+
+`initCookieYes()` reads the cookie at once, so `getState().hasActed` is correct on the first call and a banner drawn from it does not flash for a returning visitor. Calling `initCookieYes()` a second time replaces the runtime and logs a warning; keep the call in one module.
+
+## Common mistakes
+
+**A script loads when a switch is flipped, before Save.**
+It is wired to `subscribe()`. Load things from `on("change", …)`.
+
+**You read `consents` to decide what to load.**
+That is the live copy. Read `categories`.
+
+**Nothing works and there is no error.**
+`initCookieYes()` runs in a module nothing imports. Import `src/consent.ts` from your entry file.
+
+## Next steps
+
+- [Build your own UI](/docs/store/build-your-own-ui): a banner and a preferences dialog on this store, in three small files
+- [Configuration](/docs/getting-started/configuration): every option of `initCookieYes()`

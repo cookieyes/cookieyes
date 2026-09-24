@@ -1,0 +1,78 @@
+---
+title: Google Tag Manager
+description: Load your GTM container after the Consent Mode default and let the SDK keep its signals up to date.
+frameworks: [nextjs, react, core]
+---
+
+`googleTagManager()` loads your container. The tags inside it follow Google Consent Mode: the SDK tells Google what the visitor allowed, on page load and on every change, and each tag fires only when its consent settings allow it.
+
+## Set it up
+
+First add the Consent Mode default, once, before any Google tag: [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
+
+Then install the integrations package and add `googleTagManager()` to the `initCookieYes()` call you already have:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { googleTagManager } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [googleTagManager({ containerId: "GTM-XXXXXXX" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { googleTagManager } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [googleTagManager({ containerId: "GTM-XXXXXXX" })],
+});
+```
+
+</Framework>
+
+Remove any GTM snippet you pasted into the page by hand. The integration adds the container script itself.
+
+## Tags inside the container
+
+The SDK controls the container script, not the tags inside it. Google tags in the container (GA4, Ads) read the Consent Mode signals and follow them by themselves. For any other tag, such as Meta Pixel or a chat widget, set its consent requirements in the tag's settings in GTM, under **Consent Settings**, so it waits for the matching signal.
+
+If GA4 or Google Ads is loaded by your container, do not also add `ga4()` or `googleAds()`. Both would load the same tag and count everything twice. The SDK logs a warning when it sees both.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `containerId` | required | Your container id, `"GTM-…"` |
+| `category` | `"analytics"` | The category the visitor must grant. Only matters with `consentMode: "basic"` |
+| `consentMode` | `"advanced"` | `"advanced"` loads the container at once and lets Consent Mode gate the tags. `"basic"` loads it only after consent and removes it on withdrawal. See [Google Consent Mode v2 → Load the tag before or after consent](/docs/integrations/google-consent-mode#load-the-tag-before-or-after-consent) |
+| `id` | `"gtm"` | Only needed when you run more than one container |
+
+## Common mistakes
+
+**A tag in the container fires before the visitor accepts.**
+The tag has no consent requirement set in GTM. Add one under the tag's Consent Settings.
+
+**A returning visitor is treated as denied, although they accepted last time.**
+The Consent Mode default is missing, so the update sent on page load was skipped and every tag in the container stays denied until the visitor changes their choice. Add the default as shown on [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
+
+## Next steps
+
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode): how consent reaches Google
+- [Google Analytics 4](/docs/integrations/ga4): when GA4 is not inside your container

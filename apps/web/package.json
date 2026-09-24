@@ -5,11 +5,12 @@
   "description": "CookieYes for Developers — the landing page",
   "type": "module",
   "scripts": {
-    "dev": "next dev",
-    "build": "node scripts/generate-bundle-size.mjs && node scripts/generate-config-reference.mjs && node scripts/generate-component-reference.mjs && node scripts/generate-css-variables-reference.mjs && node scripts/check-examples.mjs && next build",
+    "dev": "node scripts/generate-changelog.mjs && node scripts/generate-framework-docs.mjs && next dev",
+    "build": "node scripts/generate-changelog.mjs && node scripts/generate-framework-docs.mjs && node scripts/generate-bundle-size.mjs && node scripts/generate-config-reference.mjs && node scripts/generate-component-reference.mjs && node scripts/generate-css-variables-reference.mjs && node scripts/check-examples.mjs && next build",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "check-examples": "node scripts/check-examples.mjs",
+    "generate:framework-docs": "node scripts/generate-framework-docs.mjs",
     "generate:peer-matrix-readme": "node scripts/generate-peer-matrix-reference.mjs",
     "check:peer-matrix-readme": "node scripts/generate-peer-matrix-reference.mjs --check",
     "clean": "rm -rf .next"

@@ -1,5 +1,6 @@
 import { Geist_Mono, Inter, Poppins } from "next/font/google";
 import "./global.css";
+import { Analytics } from "@/components/Analytics";
 import { getSearchIndex } from "@/lib/search-index";
 import { Providers } from "./Providers";
 
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body>
         <Providers pageIndex={getSearchIndex()}>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );

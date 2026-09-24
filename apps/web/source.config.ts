@@ -1,5 +1,6 @@
 import { remarkNpm } from "fumadocs-core/mdx-plugins";
 import { defineConfig } from "fumadocs-mdx/config";
+import { remarkFrameworkDocs } from "./src/lib/remark-framework-docs";
 
 /**
  * Global MDX options for the docs collection.
@@ -20,7 +21,15 @@ import { defineConfig } from "fumadocs-mdx/config";
  */
 export default defineConfig({
   mdxOptions: {
-    remarkPlugins: (v) => [remarkNpm, ...v],
+    /**
+     * remarkFrameworkDocs runs first among these: `<include>` (applied by fumadocs-mdx
+     * before any user plugin) has already spliced the shared body into its framework
+     * wrapper, and the built-ins have not yet run. That order matters for remarkHeading,
+     * which assigns heading ids and suffixes duplicates: a heading repeated in two
+     * `<Framework>` blocks must be reduced to one before ids are handed out, or the
+     * surviving heading ends up as `#title-1`.
+     */
+    remarkPlugins: (v) => [remarkFrameworkDocs, remarkNpm, ...v],
     /**
      * Shiki themes for code blocks.
      *

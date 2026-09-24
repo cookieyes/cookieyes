@@ -1,0 +1,77 @@
+---
+title: Meta Pixel
+description: Load the Meta Pixel only after advertising consent, and pause it when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`metaPixel()` loads the Meta Pixel after the visitor grants the advertising category. When consent is withdrawn, it tells Meta to stop with Meta's own consent call and clears the `_fbp` and `_fbc` cookies. When consent is granted again, tracking resumes without loading the script a second time.
+
+## Set it up
+
+Install the integrations package and add `metaPixel()` to the `initCookieYes()` call you already have:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { metaPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [metaPixel({ pixelId: "123456789012345" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { metaPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [metaPixel({ pixelId: "123456789012345" })],
+});
+```
+
+</Framework>
+
+Remove any pixel snippet you pasted into the page by hand. The integration adds the script and sends the first `PageView` itself.
+
+Track events with `fbq("track", …)` as usual. Before the visitor consents, `fbq` is not on the page yet, so guard the call:
+
+```ts check="false"
+window.fbq?.("track", "Purchase", { value: 49, currency: "EUR" });
+```
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `pixelId` | required | The numeric id from Meta Events Manager |
+| `category` | `"advertisement"` | The category the visitor must grant |
+| `autoPageView` | `true` | Send the first `PageView` when the pixel loads. Set `false` if you send page views yourself, for example in a single-page app |
+| `limitedDataUse` | automatic | Meta's US privacy flag. Left unset, it turns on for every visitor covered by CCPA. `true` or `false` forces it |
+| `id` | `"meta"` | Only needed when you run more than one pixel |
+
+## Common mistakes
+
+**`fbq is not defined` in the console.**
+The call ran before consent. Use `window.fbq?.(…)` as shown above.
+
+**Every event arrives twice in Events Manager.**
+The pixel is also loaded by a Google Tag Manager container. Load it in one place only: see [Google Tag Manager → Tags inside the container](/docs/integrations/google-tag-manager#tags-inside-the-container).
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration

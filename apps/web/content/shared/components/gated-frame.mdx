@@ -1,0 +1,93 @@
+---
+title: GatedFrame
+description: Show a third-party iframe only after the visitor consents, with a placeholder until then.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Renders a placeholder instead of the iframe until its category is granted. The placeholder says which cookies are needed and has a button that opens the preferences dialog. Once the visitor agrees, the iframe appears in its place, without a reload.
+
+Use it for embeds that set cookies: YouTube, Vimeo, Google Maps, Spotify, social posts, Calendly.
+
+## Add it
+
+```tsx title="app/video-embed.tsx"
+"use client";
+
+import { GatedFrame } from "@cookieyes/react";
+
+export function VideoEmbed() {
+  return (
+    <GatedFrame
+      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+      category="functional"
+      width={560}
+      height={315}
+      title="Product tour"
+    />
+  );
+}
+```
+
+Video and map embeds are usually `functional`; social and ad embeds are usually `advertisement`. The category must exist in your `categories` list.
+
+## Props
+
+<ComponentPropsTable component="GatedFrame" />
+
+Every other `<iframe>` attribute (`width`, `height`, `title`, `allow`, ...) is passed to the iframe once it appears.
+
+## Change the placeholder
+
+Pass your own element as `placeholder`:
+
+```tsx title="app/video-embed.tsx"
+"use client";
+
+import { GatedFrame, useConsentActions } from "@cookieyes/react";
+
+function VideoPlaceholder() {
+  const { showPreferences } = useConsentActions();
+  return (
+    <div className="video-placeholder">
+      <p>This video is hosted by YouTube and needs functional cookies.</p>
+      <button type="button" onClick={showPreferences}>
+        Cookie settings
+      </button>
+    </div>
+  );
+}
+
+export function VideoEmbed() {
+  return (
+    <GatedFrame
+      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+      category="functional"
+      width={560}
+      height={315}
+      title="Product tour"
+      placeholder={<VideoPlaceholder />}
+    />
+  );
+}
+```
+
+To only change the default text, set `gatedFrame.placeholder` and `gatedFrame.action` in `i18n`; see [Translations](/docs/translations). To style the default placeholder, target `.cy-frame-placeholder` in your CSS.
+
+## Good to know
+
+Give the placeholder the same size as the iframe, or the page jumps when it swaps. Once the iframe has appeared, withdrawing consent does not remove it in the current page; it is blocked again on the next page load.
+
+## Common mistakes
+
+**The embed never appears, even after accepting.**
+The `category` is not in your `categories` list, or the visitor granted a different one.
+
+**The placeholder flashes on every load, even after consent.**
+Expected: consent is only known in the browser, so the placeholder renders first. Give it the iframe's size so nothing moves.
+
+## Next steps
+
+- [GatedScript](/docs/components/gated-script): the same idea for scripts
+- [Translations](/docs/translations): the placeholder text in every language

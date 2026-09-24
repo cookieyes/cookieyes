@@ -1,0 +1,81 @@
+---
+title: Segment
+description: Load Segment only after analytics consent, and remove it with its identifiers when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`segment()` loads Segment's `analytics.js` after the visitor grants the analytics category. When consent is withdrawn, the script and Segment's `ajs_anonymous_id` and `ajs_user_id` are removed. When consent is granted again, Segment loads once more and starts a new session.
+
+## Set it up
+
+Install the integrations package and add `segment()` to the `initCookieYes()` call you already have:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { segment } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [segment({ writeKey: "YOUR_WRITE_KEY" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { segment } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [segment({ writeKey: "YOUR_WRITE_KEY" })],
+});
+```
+
+</Framework>
+
+Remove any Segment snippet you pasted into the page by hand. The integration adds the script itself. In your Segment source, turn Segment's own consent management off: this integration is the gate.
+
+Send events through `safeCall()` instead of `analytics.track()` directly. `window.analytics` is absent before consent and after withdrawal, so a direct call would throw. `safeCall()` does nothing in that case and never throws:
+
+```ts
+import { safeCall } from "@cookieyes/scripts";
+
+safeCall("analytics", "track", "Signup", { plan: "pro" });
+safeCall("analytics", "identify", "user_123");
+```
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `writeKey` | required | Your source's write key. It is public by design |
+| `category` | `"analytics"` | The category the visitor must grant |
+| `id` | `"segment"` | Only needed when you run more than one source |
+
+## Common mistakes
+
+**`analytics is not defined` in the console.**
+The call ran before consent or after withdrawal. Use `safeCall()` as shown above.
+
+**Events never show up in Segment.**
+Segment's own consent management is on as well, and the two gates block each other. Turn Segment's off.
+
+**A second page view after the visitor accepts again.**
+Segment starts a fresh session on every load. This is normal and not a double count of your own events.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration

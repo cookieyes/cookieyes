@@ -1,0 +1,91 @@
+---
+title: Banner
+description: Build the consent banner with your own markup.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+`Banner.*` gives you the banner's behaviour in pieces: when it shows, what each button does, the translated text. You supply the elements and the classes. The result behaves exactly like [`CookieBanner`](/docs/components/cookie-banner).
+
+Use it only when `CookieBanner` cannot produce the markup your design needs. For colours, spacing or fonts, restyle `CookieBanner` instead; it is much less work.
+
+## Build a banner
+
+Render this in place of `<CookieBanner />`. `Banner.Root` decides when the banner shows and hides, so keep it as the outer element.
+
+```tsx title="app/consent-banner.tsx"
+"use client";
+
+import { Banner, useRegulation } from "@cookieyes/react";
+
+export function ConsentBanner() {
+  const isCCPA = useRegulation() === "CCPA";
+
+  return (
+    <Banner.Root className="banner">
+      <Banner.Title className="banner-title" />
+      <Banner.Description className="banner-text" />
+      <Banner.Actions className="banner-actions">
+        {isCCPA ? (
+          <Banner.DoNotSell className="btn" />
+        ) : (
+          <>
+            <Banner.AcceptAll className="btn btn-primary" />
+            <Banner.RejectAll className="btn" />
+          </>
+        )}
+        <Banner.OpenPreferences className="btn btn-link" />
+      </Banner.Actions>
+    </Banner.Root>
+  );
+}
+```
+
+Each piece renders with the translated text for the active language. Pass `children` to replace it with your own text.
+
+## The pieces
+
+| Piece | Renders | What it does |
+| --- | --- | --- |
+| `Banner.Root` | `<div>` | Shows the banner until the visitor chooses, then hides it. Keep it as the wrapper |
+| `Banner.Title` | `<h2>` | The banner heading |
+| `Banner.Description` | `<p>` | The banner text; switches to the CCPA wording automatically |
+| `Banner.Actions` | `<div>` | A plain container for the buttons |
+| `Banner.AcceptAll` | `<button>` | Accepts every category |
+| `Banner.RejectAll` | `<button>` | Rejects every optional category |
+| `Banner.OpenPreferences` | `<button>` | Opens the preferences dialog, so render `CookiePreferences` too |
+| `Banner.DoNotSell` | `<button>` | Opens the CCPA opt-out dialog, so render `CookieOptOut` too |
+| `Banner.Close` | `<button>` | Hides the banner for this page view. Saves nothing; the banner returns on the next page load |
+| `Banner.Branding` | `<a>` | The "Powered by" link |
+
+Every piece takes `className`, `style` and the other props of the element it renders. The part names for CSS are the same as on [`CookieBanner`](/docs/components/cookie-banner#restyle-it).
+
+## Use your own button component
+
+Add `asChild` to a button piece and pass one element. The piece puts its behaviour on your element instead of rendering its own `<button>`:
+
+```tsx check="false"
+<Banner.AcceptAll asChild>
+  <MyButton variant="primary">Accept all</MyButton>
+</Banner.AcceptAll>
+```
+
+## Common mistakes
+
+**The banner shows for visitors who already chose.**
+`Banner.Root` is missing, or something else wraps the pieces. It must be the outer element.
+
+**A button renders inside another button.**
+Your component already renders a `<button>`. Add `asChild`.
+
+**Customise does nothing.**
+`CookiePreferences` is not rendered. `Banner.OpenPreferences` only opens it.
+
+**The banner sits behind a sticky header.**
+Raise the `z-index` on your `Banner.Root` class.
+
+## Next steps
+
+- [Preferences](/docs/headless/preferences): build the preferences dialog the same way
+- [OptOut](/docs/headless/opt-out): the CCPA opt-out dialog

@@ -1,0 +1,72 @@
+---
+title: Troubleshooting
+description: Find your symptom, get the fix.
+frameworks: [nextjs, react]
+---
+
+Most problems here are a setup detail, and several show no error at all. Find what you see in the table; each row is one line to check.
+
+## Find your symptom
+
+| What you see | Cause | Fix |
+| --- | --- | --- |
+| The banner never appears | You already chose in this browser, or closed it in this page view | Delete the `cookieyes-consent` cookie and reload, see [Reset and re-test](#reset-and-re-test) |
+| The banner never appears, no error anywhere | `initCookieYes()` did not run, or the file calling it is not imported | See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes) |
+| The banner is unstyled text | The stylesheet import is missing | Keep `import "@cookieyes/react/styles.css"` in your consent manager file |
+| The preferences dialog is unstyled, the banner is fine | Only `critical.css` is loaded | Load `styles.css` too, see [Critical CSS](/docs/styling/critical-css) |
+| Do Not Sell does nothing | `<CookieOptOut />` is not rendered | Render it next to the banner |
+| Customise or your own "Cookie settings" link does nothing | `<CookiePreferences />` is not rendered | Render it next to the banner |
+| A tracker loads when a switch is flipped, before Save | You read the live values | Use `useConsentCategory()` or `committedCategories`, see [useConsent](/docs/hooks/use-consent#saved-values-vs-live-values) |
+| A custom category is missing | Your `categories` list was rejected; the console says why | See [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories) |
+| The banner is in English although you set a language | The language is not in `i18n.messages` | Import the catalogue, see [Translations](/docs/translations) |
+| The recall button is an unstyled circle | `className` replaced its default class | Add `cy-widget` to your class |
+| The banner flashes and vanishes for returning visitors | The server did not know their choice | Pass `initialConsent`, see [Runtime and server helpers](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server) |
+| Your CSS rule does nothing | Your stylesheet loads before the SDK's, or a `theme` value sets the same property inline | Import yours after `styles.css`; see [Custom CSS](/docs/styling/custom-css) |
+| Scoped CSS or CSS Modules never reach the banner | The components render into `<body>` | Use global CSS with `data-cy-part` selectors |
+| Tracking continues after the visitor withdraws consent | A script that already ran cannot be unloaded | Render [`ReloadNotice`](/docs/components/reload-notice) |
+| Every returning visitor is asked again | You changed a category id, or which one is required | Expected. See [CookiePreferences](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) |
+| A checkbox in your own dialog turns on but never off | `onChange={toggle}` passes the event | Use `onChange={(e) => toggle(e.target.checked)}` |
+| Focus jumps to the top of the page when a dialog closes | The dialog was opened through the runtime directly | Open it with `useConsentActions().showPreferences()` |
+| The banner is not where you put it in your code | It moves to the top of `<body>` so keyboard users reach it first | Expected. See [Accessibility](/docs/accessibility) |
+
+## Console messages
+
+**`[cookieyes] No runtime is registered. Call initCookieYes(...) in a 'use client' module before using hooks or components.`**
+Thrown only by `useConsentRuntime()` and `getCookieYes()`, when they run before `initCookieYes()` or during server rendering. Every other hook returns a default instead. See [Runtime and server helpers](/docs/hooks/low-level-hooks).
+
+**`[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`**
+An `OptOut.*` piece sits outside `OptOut.Root`. Move it inside.
+
+**`` [cookieyes] `asChild` expects exactly one React element child. ``**
+You passed text, a fragment or two elements to a piece with `asChild`. Pass exactly one element.
+
+**`[cookieyes] Invalid categories config (...). Falling back to the default five`**
+Your `categories` list broke a rule; the reason is in the brackets. The built-in five are shown until you fix it.
+
+**`` [cookieyes] `regulation` is set manually, so region detection is ignored. ``**
+You set both `regulation` and `region`. Keep one.
+
+**`[cookieyes] no translations for language "..."; staying on "..."`**
+You switched to a language that is not in `i18n.messages` and has no `loadLanguage`. Add the catalogue.
+
+**`[cookieyes] blocked POST https://... (rule "...", category: ...)`**
+Not an error: network blocking stopped a request, as configured. Set `logBlockedRequests: false` to silence it.
+
+## Reset and re-test
+
+**Make the banner come back.** Delete the `cookieyes-consent` cookie in DevTools → Application → Cookies, or run this in the console and reload:
+
+```js title="Console"
+document.cookie = "cookieyes-consent=; max-age=0; path=/";
+```
+
+Or call `useConsentActions().reset()` from a button you show only in development.
+
+**See the banner from any location.** Set `regulation: "GDPR"` while developing instead of relying on `region` detection.
+
+**Trigger the reload notice.** Accept the category, reload so the tool starts, then withdraw it. Rejecting on a first visit never shows it, because nothing was running.
+
+## Next steps
+
+- [Installation](/docs/getting-started/installation): the three-step setup, with its own common mistakes
+- [Configuration](/docs/getting-started/configuration): every option of `initCookieYes()`

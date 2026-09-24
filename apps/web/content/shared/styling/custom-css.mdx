@@ -1,0 +1,85 @@
+---
+title: Custom CSS
+description: Change the width, spacing or any single element with a CSS rule on its part name.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Every element the SDK renders carries a `data-cy-part` attribute: `banner`, `accept-all`, `dialog`, `toggle` and so on. Target it in your own stylesheet to change anything `theme` does not cover: width, spacing, shadows, one button, the toggle.
+
+```css title="app/consent.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+Import it after the SDK's stylesheet, so your rules win:
+
+<Framework when="nextjs">
+
+```tsx title="app/consent-manager.tsx" check="false"
+import "@cookieyes/nextjs/styles.css";
+import "./consent.css";
+```
+
+</Framework>
+
+<Framework when="react">
+
+```tsx title="src/consent-manager.tsx" check="false"
+import "@cookieyes/react/styles.css";
+import "./consent.css";
+```
+
+</Framework>
+
+The full list of part names is on [Parts](/docs/styling/part-and-state-contract).
+
+## The toggle
+
+The switch in the preferences dialog is the one element that needs a specific selector. Its colour is painted by a child, `.cy-toggle-track`, and the SDK's own rule for the checked state is stronger than a single part selector, so repeat the attribute once to outrank it:
+
+```css title="app/consent.css"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: #15803d;
+}
+```
+
+## Good to know
+
+**Global CSS only.** The banner, dialogs and recall button render into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing, and CSS Modules or styled-components classes do not reach them.
+
+**Shared names.** `title`, `close`, `accept-all`, `reject-all` and `branding` exist on more than one surface. To style one, add its parent: `[data-cy-part="banner"] [data-cy-part="title"]`.
+
+**Fonts.** The components set their own font and do not inherit yours. Use `theme.fontFamily`, or set `--cy-font` in CSS.
+
+**Variables versus rules.** A rule on a part (`font-weight`, `max-width`) always works. A `--cy-*` variable set in CSS works only while the same value is not set in `theme`; see [Theme tokens](/docs/styling/theme-tokens#good-to-know).
+
+## Common mistakes
+
+**A rule does nothing.**
+Your stylesheet loads before the SDK's. Import it after `styles.css`, or add the parent part to the selector.
+
+**A scoped selector matches nothing.**
+The components are under `<body>`, outside your app's element. Drop the ancestor.
+
+**The checked toggle kept the default colour.**
+Use the selector from [The toggle](#the-toggle) above.
+
+**A banner rule also changed the dialog heading.**
+`title` is shared. Add `[data-cy-part="banner"]` in front.
+
+## Next steps
+
+- [Parts](/docs/styling/part-and-state-contract): every part name, per component
+- [Tailwind](/docs/styling/tailwind): the same with utility classes
+- [Theme tokens](/docs/styling/theme-tokens): colours, radius and font without CSS

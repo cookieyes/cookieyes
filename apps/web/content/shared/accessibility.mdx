@@ -1,0 +1,90 @@
+---
+title: Accessibility
+description: What the components guarantee for keyboard, focus and screen-reader users, and what is still yours to check.
+frameworks: [nextjs, react]
+---
+
+This page covers keyboard use, focus, screen-reader labels and reduced motion for the ready-made components. It describes specific behaviours, not a blanket "WCAG compliant" claim. Everything here is written so you can hand it to an accessibility reviewer.
+
+## What the components guarantee
+
+| Component | Role and name | Keyboard | Announced |
+| --- | --- | --- | --- |
+| Banner | `role="dialog"`, `aria-modal="true"`, named by its title | Does not take focus when it appears; the first Tab from the page moves into it, and Tab then stays inside until the visitor answers or closes it. Order: Close, Customise, Reject All, Accept All (CCPA: Close, Do Not Sell) | Its title, 700 ms after it appears, so it is not lost behind the page-load announcement |
+| Preferences dialog | `role="dialog"`, `aria-modal="true"` | Focus moves onto the dialog when it opens. Tab wraps inside. Escape closes | Its name on open |
+| Opt-out dialog | `role="dialog"`, `aria-modal="true"` | Same as the preferences dialog | Its name on open. After an opt-out, focus moves to the confirmation, announced as `role="status"` together with the note that the dialog closes in ten seconds |
+| Category switches | `role="switch"` with `aria-checked`, named by the category | In your configured order. A required category is plain text, not a disabled control | |
+| Recall button | Button, named `recallButtonLabel`, marked as opening a dialog | A single stop | |
+| Reload notice | `role="alert"` | Two buttons | Immediately, when it appears |
+
+Two behaviours apply to all of it:
+
+- **Focus returns to the button that opened a dialog**, whether it closed by Save, Cancel or Escape, and even when that button was replaced in the meantime. This works for your own triggers too, as long as you open the dialog with [`useConsentActions()`](/docs/hooks/use-consent-actions).
+- **After the banner is answered or closed, focus moves to the recall button**, so the visitor is never left nowhere. The banner's close button hides it for this page view without saving anything; it comes back on the next page load. Customise, Do Not Sell and the recall button are marked as opening a dialog (`aria-haspopup="dialog"`).
+- **Every label comes from the translation map**, so a German site announces its dialogs in German. See [Translations](/docs/translations).
+
+## Why the banner is first in Tab order
+
+The banner and the recall button render into a container placed as the **first child of `<body>`**, wherever you put `<CookieYesRoot />` in your layout. A keyboard user reaches the banner on the first Tab instead of after your whole navigation. This is also why the banner is not where you put it in the DOM.
+
+## Reduced motion
+
+When the visitor's device asks for reduced motion, every entrance and exit animation is removed: banner, dialogs, recall button, reload notice. Everything still appears and works the same. If you replace the SDK's CSS, keep that rule:
+
+```css title="app/consent.css"
+@media (prefers-reduced-motion: reduce) {
+  [data-cy-part] {
+    animation: none;
+    transition: none;
+  }
+}
+```
+
+## Not covered
+
+Three things stay with you:
+
+- **Colour contrast once you set your own colours.** `theme.primaryColor` is the same in light and dark mode, so a colour that passes on white can fail on the dark background. See [Colour scheme](/docs/styling/color-scheme).
+- **Text size and zoom**, which depend on your page.
+- **Whether rejecting is as easy as accepting.** Regulators check this; it is a design decision in your hands.
+
+## Check it in a minute
+
+Clear the consent cookie so the banner shows, click the address bar so focus starts outside the page, put the mouse aside.
+
+| # | Do this | You should see |
+| --- | --- | --- |
+| 1 | Press Tab once | Focus on the banner's Close button, not on a nav link |
+| 2 | Keep pressing Tab | Customise → Reject All → Accept All → "Powered by" link, then back to Close. Focus never leaves the banner |
+| 3 | Go back to Customise, press Enter | The dialog opens with focus on the dialog itself |
+| 4 | Tab past the last control | Focus wraps to the first control; it never reaches the page behind |
+| 5 | Press Escape | The dialog closes and focus is back on Customise |
+
+Repeat step 5 with Save and with Cancel: all three must return focus to Customise. At every step the focused control must show a visible outline; a CSS reset that removes `:focus-visible` breaks the whole flow without any test noticing.
+
+## If you build your own UI
+
+The behaviour above lives in `Banner.Root`, `Preferences.Root`, `OptOut.Root` and `useConsentActions()`, so building on the [primitives](/docs/headless/banner) keeps it. Building on hooks alone means you provide it yourself:
+
+- The banner and the dialogs hold focus: Tab and Shift+Tab wrap inside.
+- Escape closes a dialog.
+- Focus returns to the opener on close.
+- The dialog container has `tabIndex={-1}` so it can receive focus without being a tab stop.
+- Every control shows a visible focus outline.
+- Reduced motion is honoured.
+
+## Common mistakes
+
+**Focus jumps to the top of the page when a dialog closes.**
+The dialog was opened through the runtime directly. Open it with `useConsentActions().showPreferences()`.
+
+**Tab from the address bar reaches every nav link before the banner.**
+A custom banner without `Banner.Root`, which is what places it first in `<body>`.
+
+**Contrast fails in dark mode only.**
+`theme.primaryColor` does not change between schemes. Set it per scheme in CSS: see [Colour scheme](/docs/styling/color-scheme).
+
+## Next steps
+
+- [Banner primitives](/docs/headless/banner): accessible behaviour with your own markup
+- [Translations](/docs/translations): where every accessible name comes from

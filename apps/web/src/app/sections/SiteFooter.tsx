@@ -90,14 +90,14 @@ export function SiteFooter() {
                 />
                 <path
                   d="M110.023 7.79285H104.593L109.553 17.0457H114.984L110.023 7.79285Z"
-                  fill="#0056A7"
+                  fill="var(--cy-logo-mark)"
                 />
                 <path
                   d="M109.459 16.7946L109.611 17.0548H115.042L111.477 10.5562L109.459 16.7946Z"
-                  fill="#2E3191"
+                  fill="var(--cy-logo-mark-b)"
                 />
-                <path d="M119.33 0L109.56 17.0455H114.991L124.76 0H119.33Z" fill="#0056A7" />
-                <path d="M109.56 19.5986H114.832V24.9479H109.56V19.5986Z" fill="#0056A7" />
+                <path d="M119.33 0L109.56 17.0455H114.991L124.76 0H119.33Z" fill="var(--cy-logo-mark)" />
+                <path d="M109.56 19.5986H114.832V24.9479H109.56V19.5986Z" fill="var(--cy-logo-mark)" />
               </svg>
             </span>{" "}
             <span
@@ -147,7 +147,7 @@ export function SiteFooter() {
                 {"Product"}
               </span>{" "}
               <a
-                href="/docs"
+                href="/docs/nextjs"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0 var(--cy-space-12)",
@@ -163,7 +163,7 @@ export function SiteFooter() {
                 {"Documentation"}
               </a>{" "}
               <a
-                href="/docs/getting-started/installation?pkg=nextjs"
+                href="/docs/nextjs/getting-started/installation"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -179,7 +179,7 @@ export function SiteFooter() {
                 {"Next.js"}
               </a>{" "}
               <a
-                href="/docs/getting-started/installation?pkg=react"
+                href="/docs/react/getting-started/installation"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
@@ -195,7 +195,7 @@ export function SiteFooter() {
                 {"React"}
               </a>{" "}
               <a
-                href="/docs/integrations"
+                href="/docs/nextjs/integrations"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0",
