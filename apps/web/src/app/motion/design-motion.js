@@ -488,7 +488,7 @@ class DesignMotion {
     this._linesIv = setInterval(() => this.applyLines(), 350);
     this._lastGlobeAccent = this._accentRgb;
     this._globeLazy = () => {
-      if (this._globeStarted || !this._globeMount) return;
+      if (this._globeStarted || !this._globeMount || !this._globeMount.clientWidth) return; // hidden below the phone breakpoint
       const gr = this._globeMount.getBoundingClientRect();
       if (gr.bottom > -300 && gr.top < window.innerHeight + 300) this.initGlobe();
     };
@@ -1195,7 +1195,7 @@ class DesignMotion {
     const loop = () => {
       this._globeRaf = requestAnimationFrame(loop);
       const mr = mount.getBoundingClientRect();
-      if (mr.bottom < -60 || mr.top > window.innerHeight + 60) return; // skip work while off-screen
+      if (!mount.clientWidth || mr.bottom < -60 || mr.top > window.innerHeight + 60) return; // skip work while hidden or off-screen
       // two fluid views: [0] Europe (UK + GDPR), [1] the Americas (CCPA + PIPEDA + LGPD); hovering a tag takes over
       const views = this._tourViews || (this._tourViews = [5, -72]);
       const nowT = performance.now();

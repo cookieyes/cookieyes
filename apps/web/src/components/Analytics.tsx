@@ -8,17 +8,14 @@ export function Analytics() {
   if (process.env.NODE_ENV !== "production" || process.env.DISABLE_TRACKING === "1") return null;
   return (
     <>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
-        strategy="afterInteractive"
-      />
-      <Script id="ga4" strategy="afterInteractive">
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} strategy="lazyOnload" />
+      <Script id="ga4" strategy="lazyOnload">
         {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', '${GA4_ID}');`}
       </Script>
-      <Script id="clarity-tag" strategy="afterInteractive">
+      <Script id="clarity-tag" strategy="lazyOnload">
         {`(function(c,l,a,r,i,t,y){
   c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
   t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;

@@ -22,6 +22,8 @@ export function ConsentBanner() {
   if (process.env.NODE_ENV !== "production" || process.env.DISABLE_TRACKING === "1") return null;
   return (
     <>
+      <link rel="preconnect" href="https://cdn-cookieyes.com" />
+      <link rel="preconnect" href="https://directory.cookieyes.com" />
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: the Consent Mode default is a fixed inline snippet, not user input. */}
       <script dangerouslySetInnerHTML={{ __html: CONSENT_DEFAULT }} />
       <script id="cookieyes" type="text/javascript" src={BANNER_SRC} />
