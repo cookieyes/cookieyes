@@ -2,7 +2,7 @@
   "name": "@cookieyes/web",
   "version": "0.0.0",
   "private": true,
-  "description": "CookieYes for Developers \u2014 the landing page",
+  "description": "CookieYes for Developers — the landing page",
   "type": "module",
   "scripts": {
     "dev": "node scripts/generate-changelog.mjs && node scripts/generate-framework-docs.mjs && next dev",
