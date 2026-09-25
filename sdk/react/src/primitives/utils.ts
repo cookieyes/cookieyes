@@ -1,6 +1,33 @@
 "use client";
 
-import { type RefObject, type SyntheticEvent, useEffect, useState } from "react";
+import {
+  type CSSProperties,
+  type Ref,
+  type RefObject,
+  type SyntheticEvent,
+  useEffect,
+  useState,
+} from "react";
+
+/** Hidden on screen, still read by screen readers. Inline, so it works without our stylesheet. */
+export const VISUALLY_HIDDEN: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  overflow: "hidden",
+  clip: "rect(0,0,0,0)",
+  whiteSpace: "nowrap",
+};
+
+/** Point every ref at the same node. */
+export function composeRefs<T>(...refs: Array<Ref<T> | undefined>): (node: T | null) => void {
+  return (node) => {
+    for (const ref of refs) {
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as { current: T | null }).current = node;
+    }
+  };
+}
 
 export function chain<E extends SyntheticEvent>(
   userHandler: ((e: E) => void) | undefined,
@@ -138,10 +165,14 @@ export function useFocusTrap(enabled: boolean, containerRef: RefObject<HTMLEleme
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
       if (!first || !last) return;
-      if (e.shiftKey && document.activeElement === first) {
+      const active = document.activeElement;
+      // Focus on the page behind (the banner never takes focus on its own) or on
+      // the container itself (a dialog right after it opens): pull it inside.
+      const outside = active === container || !container.contains(active);
+      if (e.shiftKey && (active === first || outside)) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && (active === last || outside)) {
         e.preventDefault();
         first.focus();
       }

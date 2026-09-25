@@ -8,17 +8,20 @@ import type { MDXComponents } from "mdx/types";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import type { ComponentProps } from "react";
+import { MAIN_CONTENT_ID } from "@/app/SkipLink";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
 import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
 import { getMDXComponents } from "@/components/mdx";
 import {
   DEFAULT_FRAMEWORK,
+  FRAMEWORK_LABEL,
   type Framework,
   frameworkOf,
   resolveDocsHref,
   sharedPath,
 } from "@/lib/framework-docs";
+import { pageMetadata } from "@/lib/site";
 import { source } from "@/lib/source";
 
 /** Where the MDX for a page is served as raw Markdown. See app/api/md. */
@@ -176,7 +179,9 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
       >
         {/* Header: .bc (breadcrumb prop, above) → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
           matching docs.html's own runtime assembly (initPageMeta(), docs.html:2119-2168). */}
-        <div className="cy-doc-ptitle">
+        {/* The skip link's target. Fumadocs' own <main> is display: contents, which cannot
+            be scrolled to, so the page title stands in for it. */}
+        <div className="cy-doc-ptitle" id={MAIN_CONTENT_ID}>
           {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}
@@ -221,8 +226,12 @@ export async function generateMetadata(props: PageProps<"/docs/[[...slug]]">): P
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  return {
-    title: page.data.title,
+  // The same page exists under each framework, so its title names the one it is for:
+  // "Installation · Next.js". The changelog belongs to no framework and keeps its own.
+  const framework = frameworkOf(page.slugs);
+  return pageMetadata({
+    title: framework ? `${page.data.title} · ${FRAMEWORK_LABEL[framework]}` : page.data.title,
     description: page.data.description,
-  };
+    path: page.url,
+  });
 }

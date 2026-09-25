@@ -4,7 +4,8 @@ import { useRuntimeSelector } from "./useRuntimeSelector.js";
 
 export function useBannerVisibility(): boolean {
   return useRuntimeSelector(
-    (snap) => !snap.hasActed && !snap.isPreferencesOpen && !snap.isOptOutOpen,
+    (snap) =>
+      !snap.hasActed && !snap.isBannerDismissed && !snap.isPreferencesOpen && !snap.isOptOutOpen,
     false,
   );
 }

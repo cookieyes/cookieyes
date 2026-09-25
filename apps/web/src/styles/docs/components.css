@@ -334,6 +334,22 @@
   overflow-x: auto;
 }
 
+/* Markdown tables. The wrapper takes over the table's margin so the spacing around
+   it stays exactly as before, and scrolls sideways where the column is narrow. */
+.cy-doc-table-wrap {
+  margin: 16px 0;
+}
+
+.cy-doc-table-wrap > .cy-doc-table {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .cy-doc-table-wrap {
+    overflow-x: auto;
+  }
+}
+
 .cy-doc-cmp {
   width: 100%;
   border-collapse: collapse;
@@ -636,18 +652,21 @@
    SidebarControls.tsx documents for its framework logos: "a brand mark that flips
    with the colour scheme stops being the brand mark".
 
+   The links are matched on the end of their address, because every integration page
+   is published under each framework root (/docs/nextjs/integrations/ga4 and so on).
+
    No icon↔label gap is declared here: #nd-sidebar a[href] already sets gap: 11px
    sitewide, which applies to these rows for the first time now that they have a
    first flex child. That is 3px over the gap/tight (8px) role — flagged in design
    doc §2.6 rather than patched, since the rule is shared by every sidebar row. */
 
-#nd-sidebar a[href="/docs/integrations/ga4"]::before,
-#nd-sidebar a[href="/docs/integrations/google-tag-manager"]::before,
-#nd-sidebar a[href="/docs/integrations/google-ads"]::before,
-#nd-sidebar a[href="/docs/integrations/meta-pixel"]::before,
-#nd-sidebar a[href="/docs/integrations/microsoft-clarity"]::before,
-#nd-sidebar a[href="/docs/integrations/posthog"]::before,
-#nd-sidebar a[href="/docs/integrations/segment"]::before {
+#nd-sidebar a[href$="/integrations/ga4"]::before,
+#nd-sidebar a[href$="/integrations/google-tag-manager"]::before,
+#nd-sidebar a[href$="/integrations/google-ads"]::before,
+#nd-sidebar a[href$="/integrations/meta-pixel"]::before,
+#nd-sidebar a[href$="/integrations/microsoft-clarity"]::before,
+#nd-sidebar a[href$="/integrations/posthog"]::before,
+#nd-sidebar a[href$="/integrations/segment"]::before {
   content: "";
   display: inline-block;
   width: 18px;
@@ -655,19 +674,19 @@
   flex-shrink: 0;
 }
 
-#nd-sidebar a[href="/docs/integrations/ga4"]::before {
+#nd-sidebar a[href$="/integrations/ga4"]::before {
   background-color: #e37400;
   -webkit-mask: url(/figma-logos/ga4.svg) center / contain no-repeat;
   mask: url(/figma-logos/ga4.svg) center / contain no-repeat;
 }
 
-#nd-sidebar a[href="/docs/integrations/google-tag-manager"]::before {
+#nd-sidebar a[href$="/integrations/google-tag-manager"]::before {
   background-color: #246fdb;
   -webkit-mask: url(/figma-logos/google-tag-manager.svg) center / contain no-repeat;
   mask: url(/figma-logos/google-tag-manager.svg) center / contain no-repeat;
 }
 
-#nd-sidebar a[href="/docs/integrations/microsoft-clarity"]::before {
+#nd-sidebar a[href$="/integrations/microsoft-clarity"]::before {
   content: url(/figma-logos/microsoft-clarity.svg);
 }
 
@@ -675,13 +694,13 @@
    Reuses currentColor exactly as index.mdx's Card icons already do for the same
    vendors, so the icon tracks the link's own ink (--cy-doc-tx, or
    --cy-doc-nav-fg when active) rather than a colour invented here. */
-#nd-sidebar a[href="/docs/integrations/google-ads"]::before {
+#nd-sidebar a[href$="/integrations/google-ads"]::before {
   background-color: currentColor;
   -webkit-mask: url(/figma-logos/google-ads.svg) center / contain no-repeat;
   mask: url(/figma-logos/google-ads.svg) center / contain no-repeat;
 }
 
-#nd-sidebar a[href="/docs/integrations/segment"]::before {
+#nd-sidebar a[href$="/integrations/segment"]::before {
   background-color: currentColor;
   -webkit-mask: url(/figma-logos/segment.svg) center / contain no-repeat;
   mask: url(/figma-logos/segment.svg) center / contain no-repeat;
@@ -690,7 +709,7 @@
 /* meta-infinity.png is not a flat silhouette — a mask would show a blank shape.
    Reuses index.mdx's existing Card-icon crop verbatim; the percentages are
    relative to the box, so they hold at 18px just as at 20px. */
-#nd-sidebar a[href="/docs/integrations/meta-pixel"]::before {
+#nd-sidebar a[href$="/integrations/meta-pixel"]::before {
   background-image: url(/figma-logos/meta-infinity.png);
   background-position: 50% 53%;
   background-size: 148%;
@@ -700,6 +719,6 @@
 /* Multi-colour mark — a mask would flatten it to one fill. content: url(...) makes
    the pseudo-element a replaced element (the ::before equivalent of index.mdx's
    plain <img src="/figma-logos/posthog.svg">), sized by the width/height above. */
-#nd-sidebar a[href="/docs/integrations/posthog"]::before {
+#nd-sidebar a[href$="/integrations/posthog"]::before {
   content: url(/figma-logos/posthog.svg);
 }

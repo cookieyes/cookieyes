@@ -20,10 +20,11 @@ const LIGHT_MOCK = {
   "--cy-ok": "#00754e",
 } as CSSProperties;
 
-// Counted with `git rev-list --count HEAD` and `git shortlog -sn`. CI checks out shallow,
-// so these cannot be generated at build time — refresh them when they drift.
-const COMMIT_COUNT = "242";
-const CONTRIBUTOR_COUNT = "5";
+// Counted with `git rev-list --count origin/main`, rounded down so it stays true as commits
+// land, and GitHub's own contributor count. CI checks out shallow, so these cannot be
+// generated at build time — refresh them when they drift.
+const COMMIT_COUNT = "270+";
+const CONTRIBUTOR_COUNT = "4";
 
 export function OwnTheRecord() {
   return (

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PlaygroundSandbox } from "@/components/playground/PlaygroundSandbox";
+import { pageMetadata } from "@/lib/site";
 // The nav, footer and install section are markup ported from the design; their layout lives
 // here. Without it they render as unstyled text with the logo on top of the wordmark.
 import "../landing.css";
@@ -7,15 +8,17 @@ import sdkManifest from "../../../../../sdk/react/package.json";
 import { InstallCommandCopy } from "../InstallCommandCopy";
 import { MobileMenu } from "../MobileMenu";
 import { SearchTriggers } from "../SearchTriggers";
+import { MAIN_CONTENT_ID } from "../SkipLink";
 import { SiteFooter } from "../sections/SiteFooter";
 import { SiteNav } from "../sections/SiteNav";
 import { StartWithInstall } from "../sections/StartWithInstall";
 
-export const metadata: Metadata = {
-  title: "Playground | CookieYes for Developers",
+export const metadata: Metadata = pageMetadata({
+  title: "Playground",
   description:
     "Change the banner's colours, wording and categories, watch it update live, and copy the setup code. No install, no account.",
-};
+  path: "/playground",
+});
 
 /**
  * The same shell as the landing page: nav, footer, and the install call to action, so the
@@ -33,7 +36,7 @@ export default function PlaygroundPage() {
       <InstallCommandCopy />
       <SiteNav />
 
-      <main className="cy-pg-main">
+      <main id={MAIN_CONTENT_ID} className="cy-pg-main">
         <nav className="cy-pg-crumbs" aria-label="Breadcrumb">
           <a href="/">home</a>
           <span aria-hidden="true">/</span>

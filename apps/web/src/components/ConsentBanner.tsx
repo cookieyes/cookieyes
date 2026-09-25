@@ -1,10 +1,6 @@
-/**
- * The CookieYes banner for this site: the hosted script marketing provided, preceded by
- * the Google Consent Mode default it expects. Both are plain synchronous tags in <head>,
- * exactly as the embed code is written, so they run before any tag in the body (GA4 and
- * Clarity in Analytics.tsx load after the page is interactive). Production builds only,
- * like the tags it governs.
- */
+import { TRACKING_ENABLED } from "@/lib/site";
+
+// CookieYes banner and its Consent Mode default, synchronous in <head>, production only (see TRACKING_ENABLED).
 const CONSENT_DEFAULT = `window.dataLayer = window.dataLayer || [];
 function gtag() {
   dataLayer.push(arguments);
@@ -19,15 +15,17 @@ gtag("consent", "default", {
   security_storage: "granted",
   wait_for_update: 2000,
 });
-gtag("set", "ads_data_redaction", true);
-gtag("set", "url_passthrough", true);`;
+gtag("set", "ads_data_redaction", false);
+gtag("set", "url_passthrough", false);`;
 
 const BANNER_SRC = "https://cdn-cookieyes.com/client_data/e5ee5d26e0341217ffb7eccd/script.js";
 
 export function ConsentBanner() {
-  if (process.env.NODE_ENV !== "production") return null;
+  if (!TRACKING_ENABLED) return null;
   return (
     <>
+      <link rel="preconnect" href="https://cdn-cookieyes.com" />
+      <link rel="preconnect" href="https://directory.cookieyes.com" />
       {/* biome-ignore lint/security/noDangerouslySetInnerHtml: the Consent Mode default is a fixed inline snippet, not user input. */}
       <script dangerouslySetInnerHTML={{ __html: CONSENT_DEFAULT }} />
       <script id="cookieyes" type="text/javascript" src={BANNER_SRC} />

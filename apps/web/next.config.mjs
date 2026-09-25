@@ -1,5 +1,75 @@
 import { createMDX } from "fumadocs-mdx/next";
 
+/**
+ * The Content-Security-Policy: every origin a page may load from. It is enforced, and the
+ * browser also posts each thing it blocks to /api/csp-report, which logs it — search the
+ * runtime logs for "csp-violation" to see what was stopped, and add an origin here if a
+ * service the site relies on starts loading from somewhere new.
+ *
+ * Verified before enforcing it, with this exact policy applied to the production site: the
+ * banner, its preference centre, saving and changing consent, GA4, Clarity, search, the docs
+ * and the playground's config editor all ran with no violations.
+ *
+ * The third-party origins are the CookieYes banner (cdn, log and directory), GA4 and Google
+ * Tag Manager, and Microsoft Clarity (which also beacons to c.bing.com); cdn.jsdelivr.net
+ * serves the integration logos. Inline scripts stay allowed: Next.js and the Consent Mode
+ * default are inline, and per-request nonces would stop pages being served from the cache.
+ *
+ * The playground also needs 'unsafe-eval': its config reader evaluates the edited config in
+ * a sandboxed srcdoc iframe, and a srcdoc document inherits this page's policy.
+ */
+function contentSecurityPolicy({ allowEval = false } = {}) {
+  const directives = {
+    "default-src": ["'self'"],
+    "script-src": [
+      "'self'",
+      "'unsafe-inline'",
+      ...(allowEval ? ["'unsafe-eval'"] : []),
+      "https://cdn-cookieyes.com",
+      "https://www.googletagmanager.com",
+      "https://*.clarity.ms",
+      "https://c.bing.com",
+    ],
+    "style-src": ["'self'", "'unsafe-inline'", "https://cdn-cookieyes.com"],
+    "img-src": [
+      "'self'",
+      "data:",
+      "blob:",
+      "https://cdn-cookieyes.com",
+      "https://cdn.jsdelivr.net",
+      "https://*.google-analytics.com",
+      "https://*.googletagmanager.com",
+      "https://*.clarity.ms",
+      "https://c.bing.com",
+    ],
+    "font-src": ["'self'", "data:"],
+    "connect-src": [
+      "'self'",
+      "https://cdn-cookieyes.com",
+      "https://log.cookieyes.com",
+      "https://directory.cookieyes.com",
+      "https://*.google-analytics.com",
+      "https://*.analytics.google.com",
+      "https://*.googletagmanager.com",
+      "https://*.clarity.ms",
+      "https://c.bing.com",
+    ],
+    "frame-src": ["'self'"],
+    "frame-ancestors": ["'self'"],
+    "worker-src": ["'self'", "blob:"],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    // report-uri alone: every current browser supports it and posts each report at once.
+    // Adding the newer report-to would make Chrome ignore report-uri and batch reports
+    // through the Reporting API instead.
+    "report-uri": ["/api/csp-report"],
+  };
+  return Object.entries(directives)
+    .map(([name, values]) => `${name} ${values.join(" ")}`)
+    .join("; ");
+}
+
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
@@ -19,6 +89,37 @@ const config = {
   // the site never competes with the real one in search results.
   async headers() {
     return [
+      // Baseline hardening for every response. Framing is limited to this origin (the
+      // playground embeds its own preview page); the Content-Security-Policy below says the
+      // same with frame-ancestors, for production builds.
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+        ],
+      },
+      // Production only: the dev server's hot reload relies on eval, which this blocks.
+      ...(process.env.NODE_ENV === "production"
+        ? [
+            {
+              source: "/:path((?!playground(?:/|$)).*)",
+              headers: [{ key: "Content-Security-Policy", value: contentSecurityPolicy() }],
+            },
+            {
+              source: "/playground/:path*",
+              headers: [
+                {
+                  key: "Content-Security-Policy",
+                  value: contentSecurityPolicy({ allowEval: true }),
+                },
+              ],
+            },
+          ]
+        : []),
       {
         source: "/:path*",
         missing: [{ type: "host", value: "developers\\.cookieyes\\.com" }],
@@ -110,7 +211,10 @@ const config = {
         permanent: false,
       }),
     );
-    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite];
+    // Browsers and crawlers that never read the page's <link rel="icon"> still ask for
+    // /favicon.ico; the site's only icon is the SVG.
+    const favicon = { source: "/favicon.ico", destination: "/icon.svg", permanent: true };
+    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite, favicon];
   },
 
   /**

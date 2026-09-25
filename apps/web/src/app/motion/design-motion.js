@@ -488,7 +488,7 @@ class DesignMotion {
     this._linesIv = setInterval(() => this.applyLines(), 350);
     this._lastGlobeAccent = this._accentRgb;
     this._globeLazy = () => {
-      if (this._globeStarted || !this._globeMount) return;
+      if (this._globeStarted || !this._globeMount || !this._globeMount.clientWidth) return; // hidden below the phone breakpoint
       const gr = this._globeMount.getBoundingClientRect();
       if (gr.bottom > -300 && gr.top < window.innerHeight + 300) this.initGlobe();
     };
@@ -949,6 +949,7 @@ class DesignMotion {
     }
     cancelAnimationFrame(this._raf);
     cancelAnimationFrame(this._globeRaf);
+    clearTimeout(this._globeIdle);
     if (this._flagEls) {
       for (const k in this._flagEls) {
         try {
@@ -1193,9 +1194,22 @@ class DesignMotion {
     window.addEventListener("resize", this._sizeGlobe);
 
     const loop = () => {
+      // Reduced motion: a still globe facing the first view (or the hovered region), no
+      // intro spin, tour or rings. Rechecked twice a second, so a theme switch, a resize or
+      // a hovered tag still shows up without running a frame loop.
+      if (this.cyReduce()) {
+        this._globeIdle = setTimeout(loop, 500);
+        if (!mount.clientWidth) return;
+        const held = this._tourHold;
+        K = 1;
+        this._globeRy = this._globeRyDraw = -(held != null ? this.regionLon(held) : 5) * D2R;
+        draw(this._globeRyDraw, 0);
+        this.projectGlobeMarkers();
+        return;
+      }
       this._globeRaf = requestAnimationFrame(loop);
       const mr = mount.getBoundingClientRect();
-      if (mr.bottom < -60 || mr.top > window.innerHeight + 60) return; // skip work while off-screen
+      if (!mount.clientWidth || mr.bottom < -60 || mr.top > window.innerHeight + 60) return; // skip work while hidden or off-screen
       // two fluid views: [0] Europe (UK + GDPR), [1] the Americas (CCPA + PIPEDA + LGPD); hovering a tag takes over
       const views = this._tourViews || (this._tourViews = [5, -72]);
       const nowT = performance.now();

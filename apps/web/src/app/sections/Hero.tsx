@@ -303,6 +303,7 @@ export function Hero() {
               marginTop: "var(--cy-space-20)",
               display: "flex",
               flexDirection: "row",
+              flexWrap: "wrap", // the Copy button drops below the command on narrow phones
               alignItems: "center",
               gap: "var(--cy-space-8)",
             }}
@@ -322,7 +323,7 @@ export function Hero() {
                 fontSize: "0.875rem",
                 lineHeight: "20px",
                 color: "var(--cy-fg)",
-                whiteSpace: "nowrap",
+                whiteSpace: "pre", // keeps the space after "npx", which a flex item would trim
                 overflow: "hidden",
               }}
             >
@@ -343,7 +344,7 @@ export function Hero() {
                 alignItems: "center",
                 gap: "var(--cy-space-8)",
                 cursor: "pointer",
-                color: "rgba(var(--cy-muted-rgb),0.65)",
+                color: "var(--cy-muted)",
                 transition: "background 0.15s, color 0.15s",
               }}
             >
@@ -435,7 +436,7 @@ export function Hero() {
           <a
             /* The framework is in the URL, so this always opens the Next.js docs whatever
                the reader picked last time. */
-            href="/docs/nextjs"
+            href="/docs/nextjs/getting-started/installation"
             className="scp1"
             style={{
               marginTop: "var(--cy-space-16)",
@@ -448,7 +449,7 @@ export function Hero() {
               fontWeight: "400",
               fontSize: "0.875rem",
               lineHeight: "20px",
-              color: "rgba(var(--cy-muted-rgb),0.65)",
+              color: "var(--cy-muted)",
               textDecorationLine: "underline",
               textDecorationThickness: "initial",
               textDecorationStyle: "initial",

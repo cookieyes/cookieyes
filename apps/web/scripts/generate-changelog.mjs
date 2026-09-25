@@ -51,6 +51,18 @@ const releaseTitles = existsSync(titlesFile) ? JSON.parse(readFileSync(titlesFil
  * [abc1234]" and the `- @cookieyes/core@0.7.0` lines under it say only that a
  * sibling moved, which the Install list already shows.
  */
+/**
+ * Points links at a docs page's source on GitHub to the page itself. The package
+ * changelogs link to the MDX file because they are also read on GitHub and npm, but that
+ * path moves whenever the docs are reorganised, and the site has the page anyway.
+ */
+function siteLinks(body) {
+  return body.replace(
+    /https:\/\/github\.com\/cookieyes\/cookieyes\/blob\/main\/apps\/web\/content\/(?:docs|shared)\/([\w/-]+?)(?:\/index)?\.mdx/g,
+    "/docs/$1",
+  );
+}
+
 function parseChangelog(markdown) {
   const versions = new Map();
   const versionBlocks = markdown.split(/^## (?=\S)/m).slice(1);
@@ -71,7 +83,7 @@ function parseChangelog(markdown) {
         // Changesets prefixes each entry with its changeset id, which is how the
         // same change is recognised across the packages it touched.
         const match = /^([0-9a-f]{7,40}): ([\s\S]*)$/.exec(text);
-        if (match?.[2]) entries.push({ bump, id: match[1], body: match[2] });
+        if (match?.[2]) entries.push({ bump, id: match[1], body: siteLinks(match[2]) });
         current = null;
       };
 

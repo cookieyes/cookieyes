@@ -46,19 +46,37 @@ export function InstallCommandCopy() {
       }, COPIED_LABEL_DURATION_MS);
     }
 
-    function handleClick(event: Event): void {
-      const clickedElement = event.target as HTMLElement | null;
-      const copyButton = clickedElement?.closest<HTMLElement>(COPY_BUTTON_SELECTOR);
-      if (!copyButton) return;
-
+    function copyFrom(copyButton: HTMLElement): void {
       const command = readCommand(copyButton);
       if (!command) return;
 
       void navigator.clipboard?.writeText(command).then(() => confirmOnButton(copyButton));
     }
 
+    function handleClick(event: Event): void {
+      const clickedElement = event.target as HTMLElement | null;
+      const copyButton = clickedElement?.closest<HTMLElement>(COPY_BUTTON_SELECTOR);
+      if (copyButton) copyFrom(copyButton);
+    }
+
+    // The buttons are divs with role="button": Enter and Space must press them the way they
+    // press a real button, and Space must not scroll the page instead.
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const copyButton = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+        COPY_BUTTON_SELECTOR,
+      );
+      if (!copyButton) return;
+      event.preventDefault();
+      copyFrom(copyButton);
+    }
+
     pageRoot.addEventListener("click", handleClick);
-    return () => pageRoot.removeEventListener("click", handleClick);
+    pageRoot.addEventListener("keydown", handleKeyDown as EventListener);
+    return () => {
+      pageRoot.removeEventListener("click", handleClick);
+      pageRoot.removeEventListener("keydown", handleKeyDown as EventListener);
+    };
   }, []);
 
   return null;

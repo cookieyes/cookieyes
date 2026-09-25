@@ -88,7 +88,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
 
     // Markdown tables carry no class of their own; give them one.
     table: (props: ComponentProps<"table">) => (
-      <table {...props} className={["cy-doc-table", props.className].filter(Boolean).join(" ")} />
+      <div className="cy-doc-table-wrap">
+        <table {...props} className={["cy-doc-table", props.className].filter(Boolean).join(" ")} />
+      </div>
     ),
 
     // Standalone (non-tabbed) code blocks — mirrors defaultMdxComponents' own `pre` mapping,
@@ -137,16 +139,17 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     // CodeBlockTabs) marks every pre nested inside as "in a tab group" — see DocsPre above.
     CodeBlockTabs: withClass(CodeBlockTabsWithCopyContext, "cy-doc-cb cy-doc-cb-tabs"),
     // The design's copy control sits IN the tab bar, pushed right (docs.html:539/551's `.cp`,
-    // `style="margin-left:auto"`), not in a separate header row or its own per-pane position —
-    // appended here as an extra child alongside whatever triggers remarkNpm generated.
+    // `style="margin-left:auto"`), not in a separate header row or its own per-pane position.
+    // The bar is a wrapper holding the tab list and the button side by side: a tablist may
+    // only contain tabs, so the button cannot be one of its children.
     CodeBlockTabsList: (props: ComponentProps<typeof CodeBlockTabsList>) => (
-      <CodeBlockTabsList
-        {...props}
-        className={["cy-doc-ct", props.className].filter(Boolean).join(" ")}
-      >
-        {props.children}
+      <div className="cy-doc-ct">
+        <CodeBlockTabsList
+          {...props}
+          className={["cy-doc-ct-list", props.className].filter(Boolean).join(" ")}
+        />
         <CodeTabsCopyButton />
-      </CodeBlockTabsList>
+      </div>
     ),
     CodeBlockTabsTrigger: withClass(CodeBlockTabsTrigger, "cy-doc-ct-b"),
 

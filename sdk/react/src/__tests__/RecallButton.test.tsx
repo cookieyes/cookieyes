@@ -30,4 +30,25 @@ describe("RecallButton", () => {
     fireEvent.click(button);
     expect(rt.getSnapshot().isPreferencesOpen).toBe(true);
   });
+
+  it("appears after the banner is dismissed without a decision (GDPR)", () => {
+    const rt = mountOffline("GDPR");
+    render(<RecallButton />);
+
+    act(() => {
+      rt.manager.dismissBanner();
+    });
+
+    expect(screen.getByLabelText("Consent Preferences")).toBeTruthy();
+  });
+
+  it.each(["GDPR", "CCPA"] as const)("%s: marks itself as opening a dialog", (regulation) => {
+    const rt = mountOffline(regulation);
+    render(<RecallButton />);
+    act(() => {
+      rt.manager.acceptAll();
+    });
+    const button = screen.getByLabelText("Consent Preferences");
+    expect(button.getAttribute("aria-haspopup")).toBe("dialog");
+  });
 });

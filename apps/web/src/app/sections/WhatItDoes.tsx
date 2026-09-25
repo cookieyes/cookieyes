@@ -410,7 +410,7 @@ export function WhatItDoes() {
                   }}
                 >
                   {
-                    "Localized without the bundle bloat. Load the locale you need and override any banner copy per language."
+                    "Localised without the bundle bloat. Load the locale you need and override any banner copy per language."
                   }
                 </span>{" "}
               </div>{" "}

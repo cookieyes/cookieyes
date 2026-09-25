@@ -36,7 +36,10 @@
   /* text — title → body → muted */
   --cy-doc-tx: #14142a;
   --cy-doc-tx2: #4e4b66;
-  --cy-doc-tx3: #8f92af;
+  /* The design's #8f92af measures 2.89:1 on the page tint, under AA's 4.5:1; one step
+     darker passes on every docs surface (4.51:1 on the lightest tint) and stays lighter
+     than tx2. The borders keep #8f92af (bd3). */
+  --cy-doc-tx3: #6b6f8c;
   /* .toc-title's own colour (docs.html:115) — a one-off, NOT equal to --cy-doc-tx3 above.
      Dark mode has no dedicated value of its own; docs.html:117 falls back to --tx3 there,
      so the dark declaration below simply aliases it. */
@@ -49,7 +52,7 @@
   --cy-doc-gr: #00754e;
   --cy-doc-gr-bg: rgba(0, 117, 78, 0.08);
   --cy-doc-gr-bd: rgba(0, 117, 78, 0.3);
-  --cy-doc-am: #a6742a;
+  --cy-doc-am: #8f6322; /* the design's #a6742a is 3.7:1 on its own amber tint */
   --cy-doc-am-bg: rgba(232, 154, 31, 0.12);
   --cy-doc-am-bd: rgba(232, 154, 31, 0.38);
   --cy-doc-re: #b9172b;
@@ -107,12 +110,9 @@
   /* The design's literal --sf2 (#313336), the package-switcher's own "raised
      surface" colour — see the header comment's rationale for why this token, not a
      re-guessed value, stands in for the design's missing dedicated "card" token.
-     CONSTRAINT: --cy-doc-tx3 (#82868b) on this surface is ~3.46:1, below AA (4.5:1)
-     for body text. Verified no rule in theme.css/components.css pairs
-     background: var(--cy-doc-surface) with color: var(--cy-doc-tx3) — every
-     surface-backed rule that sets its own text colour uses --cy-doc-tx2 or
-     --cy-doc-tx instead. Keep it that way: use tx2 (6.35:1) or brighter for any
-     text colour set directly on a --cy-doc-surface background. */
+     --cy-doc-tx3 was raised to #9a9ea3 so muted text passes AA (4.7:1) on this
+     surface too; tx2 (6.35:1) or brighter is still preferred for anything longer
+     than a label. */
   --cy-doc-surface: #313336;
   --cy-doc-chrome: #15171a;
   --cy-doc-bg2: #313336;
@@ -124,7 +124,9 @@
 
   --cy-doc-tx: #f1f3f5;
   --cy-doc-tx2: #b4b8bd;
-  --cy-doc-tx3: #82868b;
+  /* The design's #82868b measures 3.46:1 on the raised surface; this passes there
+     (4.7:1) and stays dimmer than tx2. */
+  --cy-doc-tx3: #9a9ea3;
   --cy-doc-toc-title-fg: var(--cy-doc-tx3);
 
   --cy-doc-ac: #6c9bea;
@@ -357,6 +359,22 @@
 #nd-page .prose h2:not([class*="cy-doc-"]),
 #nd-page .prose h3:not([class*="cy-doc-"]) {
   scroll-margin-top: 80px;
+}
+
+/* Below 900px the "On this page" bar sticks under the header, and below 640px the header
+   grows a second row, so a jumped-to heading needs to land below both. */
+@media (max-width: 900px) {
+  #nd-page .prose h2:not([class*="cy-doc-"]),
+  #nd-page .prose h3:not([class*="cy-doc-"]) {
+    scroll-margin-top: 7.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  #nd-page .prose h2:not([class*="cy-doc-"]),
+  #nd-page .prose h3:not([class*="cy-doc-"]) {
+    scroll-margin-top: 10rem;
+  }
 }
 
 /* ── Header chrome ───────────────────────────────────────────────────────── */
@@ -628,19 +646,6 @@
 
   .cy-doc-hd-compact {
     display: flex;
-  }
-}
-
-@media (max-width: 640px) {
-  .cy-doc-hd-nav {
-    gap: 14px;
-    font-size: 14px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .cy-doc-hd-nav::-webkit-scrollbar {
-    display: none;
   }
 }
 
@@ -2445,10 +2450,19 @@
 }
 
 .cy-doc-ct {
+  display: flex;
   padding: 0 10px;
-  gap: 2px;
   background: var(--cy-doc-bg2);
   border-bottom: 1px solid var(--cy-doc-code-bd);
+}
+
+/* The tablist inside the bar (the Copy button sits beside it, not in it). It keeps
+   Fumadocs' own flex row and sideways scroll; the bar above carries the padding. */
+.cy-doc-ct-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  gap: 2px;
 }
 
 /* .ct-b (docs.html:204): borderless text, no box of its own — `border-top/-left/
@@ -2516,6 +2530,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  min-height: 24px; /* WCAG 2.2's minimum target size; the design's padding gave 23px */
   padding: 4px 8px;
   border: 1px solid var(--cy-doc-bd);
   border-radius: var(--cy-doc-radius-sm);
@@ -2606,6 +2621,7 @@
    track. */
 @media (max-width: 900px) {
   #nd-page {
+    width: 100%;
     max-width: 800px;
     padding: 24px 20px 60px;
     margin: 0 auto;
@@ -2897,4 +2913,58 @@
   height: 1px;
   overflow: hidden;
   pointer-events: none;
+}
+
+/* Phones: the section nav moves to its own row under the logo, the GitHub and theme
+   buttons are dropped (the sidebar drawer carries both), and the page actions sit
+   under the title. */
+@media (max-width: 640px) {
+  :root {
+    --fd-nav-height: 108px;
+  }
+
+  .cy-doc-hd {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    row-gap: 0;
+    padding: 0 20px;
+  }
+
+  .cy-doc-hd-logo,
+  .cy-doc-hd-right {
+    height: 64px;
+    align-items: center;
+  }
+
+  .cy-doc-hd-nav {
+    order: 1;
+    flex: 0 0 100%;
+    height: 44px;
+    gap: 20px;
+    font-size: 14px;
+  }
+
+  .cy-doc-hd-right > .cy-doc-hd-icon,
+  .cy-doc-hd-theme {
+    display: none;
+  }
+
+  .cy-doc-ptitle {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .cy-doc-pm-menu {
+    right: auto;
+    left: 0;
+    max-width: calc(100vw - 40px);
+  }
+
+  /* Tables with three or more columns keep their natural width and scroll sideways. */
+  .cy-doc-table:has(th:nth-child(3)) {
+    width: max-content;
+    min-width: 100%;
+    max-width: 760px;
+  }
 }
