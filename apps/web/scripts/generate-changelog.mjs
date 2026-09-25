@@ -107,13 +107,14 @@ function parseChangelog(markdown) {
 /** Collect every dated release, keyed by date. */
 const releases = new Map();
 const undated = [];
+const upcoming = [];
 
 for (const dir of readdirSync(sdkDir)) {
   const manifestPath = join(sdkDir, dir, "package.json");
   const changelogPath = join(sdkDir, dir, "CHANGELOG.md");
   if (!existsSync(manifestPath) || !existsSync(changelogPath)) continue;
 
-  const { name } = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const { name, version: currentVersion } = JSON.parse(readFileSync(manifestPath, "utf8"));
   // A package with no tag at all has never been released through the workflow, so
   // it has nothing to appear in the changelog for — @cookieyes/test is one.
   const everReleased = Object.keys(releaseDates).some((tag) => tag.startsWith(`${name}@`));
@@ -122,7 +123,12 @@ for (const dir of readdirSync(sdkDir)) {
   for (const [version, entries] of parseChangelog(readFileSync(changelogPath, "utf8"))) {
     const date = releaseDates[`${name}@${version}`];
     if (!date) {
-      undated.push(`${name}@${version}`);
+      // The version package.json is at, with no tag yet, is the next release: the
+      // "Version Packages" PR bumps both before anything is published, and the date only
+      // exists once the release workflow tags it. It is left out until then. An undated
+      // version that is not the current one really was released without a date.
+      if (version === currentVersion) upcoming.push(`${name}@${version}`);
+      else undated.push(`${name}@${version}`);
       continue;
     }
     if (!releases.has(date)) releases.set(date, { date, packages: new Map(), changes: new Map() });
@@ -152,6 +158,12 @@ function rank(bump) {
   return bump === "major" ? 3 : bump === "minor" ? 2 : 1;
 }
 
+if (upcoming.length > 0) {
+  process.stdout.write(
+    `[generate-changelog] not yet released, left out until dated: ${upcoming.join(", ")}\n` +
+      "  After the release, run `pnpm changelog:dates` and commit tools/changelog/release-dates.json.\n",
+  );
+}
 if (undated.length > 0) {
   fail(
     `these released versions have no date:\n  ${[...new Set(undated)].join("\n  ")}\n` +
