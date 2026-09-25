@@ -68,3 +68,6 @@ export const TRACKING_ENABLED =
   process.env.NODE_ENV === "production" &&
   process.env.VERCEL_ENV !== "preview" &&
   process.env.DISABLE_TRACKING !== "1";
+
+/** The page the playground loads in its iframe, which shows the SDK's own demo banner. */
+export const PLAYGROUND_PREVIEW_PATH = "/playground/preview";
