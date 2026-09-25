@@ -5,10 +5,10 @@
   "2026-09-10": "Banner CSS in the first response",
   "2026-09-08": "A smaller initial download",
   "2026-09-03": "README corrections",
-  "2026-09-01": "Translatable labels, per-part styling and new script presets",
+  "2026-09-01": "Translatable labels, part styling and script presets",
   "2026-08-17": "Geo-detection, script integrations and critical CSS",
-  "2026-08-05": "Consent events, live language switching and easier restyling",
+  "2026-08-05": "Consent events, live language switching, restyling",
   "2026-07-27": "CLI dependency update",
-  "2026-07-20": "Configurable categories, Google Consent Mode v2 and strict-CSP support",
+  "2026-07-20": "Custom categories, Consent Mode v2 and strict CSP",
   "2026-06-25": "Server-rendered banner and smaller bundles"
 }

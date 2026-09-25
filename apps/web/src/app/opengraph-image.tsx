@@ -41,7 +41,7 @@ export default async function OpenGraphImage() {
           Consent that ships in your bundle
         </div>
         <div style={{ fontSize: 32, color: "#b4b8c7" }}>
-          Open-source consent for React and Next.js
+          Open-source cookie consent SDK for React and Next.js
         </div>
       </div>
       <div

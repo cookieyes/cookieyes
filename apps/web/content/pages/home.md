@@ -4,7 +4,7 @@
 
 ## Consent that ships in your bundle
 
-Open-source consent for React and Next.js. Manage consent in code, control when third-party tools load, and keep everything in your frontend.
+Open-source cookie consent SDK for React and Next.js. Manage consent in code, control when third-party tools load, and keep everything in your frontend.
 
 - Next.js: https://developers.cookieyes.com/docs/nextjs/getting-started/installation
 - React: https://developers.cookieyes.com/docs/react/getting-started/installation

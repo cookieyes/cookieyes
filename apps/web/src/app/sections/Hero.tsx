@@ -191,7 +191,7 @@ export function Hero() {
           }}
         >
           {
-            "Open-source consent for React and Next.js. Manage consent in code, control when third-party tools load, and keep everything in your frontend."
+            "Open-source cookie consent SDK for React and Next.js. Manage consent in code, control when third-party tools load, and keep everything in your frontend."
           }
         </p>{" "}
         <div

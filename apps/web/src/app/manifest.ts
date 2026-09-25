@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: SITE_NAME,
     short_name: "CookieYes Dev",
-    description: "Open-source consent for React and Next.js.",
+    description: "Open-source cookie consent SDK for React and Next.js.",
     start_url: "/",
     display: "browser",
     background_color: "#ffffff",
