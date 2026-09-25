@@ -24,7 +24,6 @@ import { renderAction } from "./Slot.js";
 import {
   chain,
   composeRefs,
-  OPT_OUT_DIALOG_ID,
   useAutoFocusDialog,
   useEscapeKey,
   useFocusTrap,
@@ -115,7 +114,6 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
     <OptOutContext.Provider value={{ optOut, setOptOut, saved, setSaved, secondsLeft, titleId }}>
       <div
         ref={composeRefs(containerRef, ref)}
-        id={OPT_OUT_DIALOG_ID}
         role="dialog"
         aria-modal="true"
         // Named by the heading the visitor can see, so the spoken and printed names match.

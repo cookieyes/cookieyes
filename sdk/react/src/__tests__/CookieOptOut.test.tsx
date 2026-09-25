@@ -17,13 +17,6 @@ describe("CookieOptOut", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("carries the id the opening buttons point at with aria-controls", () => {
-    const rt = mountOffline("CCPA");
-    rt.showOptOut();
-    render(<CookieOptOut />);
-    expect(screen.getByRole("dialog").id).toBe("cookieyes-optout");
-  });
-
   it("renders the opt-out dialog with a toggle once opened", () => {
     const rt = mountOffline("CCPA");
     rt.showOptOut();

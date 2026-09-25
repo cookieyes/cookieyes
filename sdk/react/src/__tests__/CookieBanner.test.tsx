@@ -105,7 +105,6 @@ describe("CookieBanner — dialog buttons and focus hand-off", () => {
     render(<CookieBanner />);
     const customise = screen.getByText("Customise");
     expect(customise.getAttribute("aria-haspopup")).toBe("dialog");
-    expect(customise.getAttribute("aria-controls")).toBe("cookieyes-preferences");
     cleanup();
     teardown();
 
@@ -113,7 +112,6 @@ describe("CookieBanner — dialog buttons and focus hand-off", () => {
     render(<CookieBanner />);
     const doNotSell = screen.getByText("Do Not Sell or Share My Personal Information");
     expect(doNotSell.getAttribute("aria-haspopup")).toBe("dialog");
-    expect(doNotSell.getAttribute("aria-controls")).toBe("cookieyes-optout");
   });
 
   it.each(["Accept All", "Reject All", "Close"])(

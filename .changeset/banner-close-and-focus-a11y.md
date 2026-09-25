@@ -15,7 +15,7 @@ Make the banner modal, give it a close button that only closes, and fix focus an
 
 **Focus is no longer lost when the banner closes.** After Accept All, Reject All or the close button, focus moves to the recall button. The same happens when the opt-out dialog closes itself after its countdown.
 
-**Buttons that open a dialog say so.** Customise, Do Not Sell and `<RecallButton />` carry `aria-haspopup="dialog"` and `aria-controls` pointing at the dialog they open. The dialogs now have fixed ids: `cookieyes-preferences` and `cookieyes-optout`. An `id` you pass to `Preferences.Root` or `OptOut.Root` still wins, but the buttons keep pointing at the default id.
+**Buttons that open a dialog say so.** Customise, Do Not Sell and `<RecallButton />` carry `aria-haspopup="dialog"`. There is no `aria-controls`: a dialog is only rendered while it is open, and its opening button is hidden then, so the reference could never point at an element on the page.
 
 **The opt-out confirmation is read out.** After Save, focus moves onto the confirmation, so screen readers read it. The ticking countdown stays hidden from them so it is not re-announced every second; instead they hear one fixed sentence that the dialog closes automatically in 10 seconds.
 

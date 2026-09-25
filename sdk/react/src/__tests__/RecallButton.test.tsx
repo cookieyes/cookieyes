@@ -42,10 +42,7 @@ describe("RecallButton", () => {
     expect(screen.getByLabelText("Consent Preferences")).toBeTruthy();
   });
 
-  it.each([
-    ["GDPR", "cookieyes-preferences"],
-    ["CCPA", "cookieyes-optout"],
-  ] as const)("%s: marks itself as opening the %s dialog", (regulation, dialogId) => {
+  it.each(["GDPR", "CCPA"] as const)("%s: marks itself as opening a dialog", (regulation) => {
     const rt = mountOffline(regulation);
     render(<RecallButton />);
     act(() => {
@@ -53,6 +50,5 @@ describe("RecallButton", () => {
     });
     const button = screen.getByLabelText("Consent Preferences");
     expect(button.getAttribute("aria-haspopup")).toBe("dialog");
-    expect(button.getAttribute("aria-controls")).toBe(dialogId);
   });
 });
