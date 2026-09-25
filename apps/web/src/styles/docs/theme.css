@@ -359,6 +359,22 @@
   scroll-margin-top: 80px;
 }
 
+/* Below 900px the "On this page" bar sticks under the header, and below 640px the header
+   grows a second row, so a jumped-to heading needs to land below both. */
+@media (max-width: 900px) {
+  #nd-page .prose h2:not([class*="cy-doc-"]),
+  #nd-page .prose h3:not([class*="cy-doc-"]) {
+    scroll-margin-top: 7.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  #nd-page .prose h2:not([class*="cy-doc-"]),
+  #nd-page .prose h3:not([class*="cy-doc-"]) {
+    scroll-margin-top: 10rem;
+  }
+}
+
 /* ── Header chrome ───────────────────────────────────────────────────────── */
 
 /* Transcribed from the design's .hd / .hd-in / .hd-nav / .hd-r rules. The order of

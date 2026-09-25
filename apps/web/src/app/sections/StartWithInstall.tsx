@@ -1187,7 +1187,7 @@ export function StartWithInstall() {
                   fontSize: "0.875rem",
                   lineHeight: "20px",
                   color: "var(--cy-fg)",
-                  whiteSpace: "nowrap",
+                  whiteSpace: "pre", // keeps the space after "npx", which a flex item would trim
                   overflow: "hidden",
                 }}
               >
@@ -1300,7 +1300,7 @@ export function StartWithInstall() {
               </div>{" "}
             </div>{" "}
             <a
-              href="/docs/nextjs"
+              href="/docs/nextjs/getting-started/installation"
               className="scp1"
               style={{
                 marginTop: "var(--cy-space-16)",

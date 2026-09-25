@@ -1,8 +1,10 @@
+import type { Metadata } from "next";
 import { Geist_Mono, Inter, Poppins } from "next/font/google";
 import "./global.css";
 import { Analytics } from "@/components/Analytics";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { getSearchIndex } from "@/lib/search-index";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { Providers } from "./Providers";
 
 /**
@@ -34,6 +36,18 @@ const poppins = Poppins({
   variable: "--font-poppins",
   display: "swap",
 });
+
+/**
+ * Defaults every page inherits: absolute URLs resolve against the public origin, a page's
+ * own title is suffixed with the site name, and links shared on Slack, X or LinkedIn get a
+ * card with the shared image in app/opengraph-image.tsx. Each page sets its own canonical.
+ */
+export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
+  openGraph: { siteName: SITE_NAME, type: "website", locale: "en_US" },
+  twitter: { card: "summary_large_image" },
+};
 
 /**
  * Root layout. Exposes both font families as CSS variables, which the design system's

@@ -373,7 +373,7 @@ export function BuiltToLast() {
                     color: "var(--cy-muted)",
                   }}
                 >
-                  {"released this week"}
+                  {"latest release"}
                 </span>
               </span>{" "}
             </div>{" "}

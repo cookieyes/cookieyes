@@ -43,6 +43,7 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const labelId = useId();
 
   const byUrl = useMemo(() => {
@@ -102,6 +103,23 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         close();
         return;
       }
+      // Modal: Tab and Shift+Tab cycle through the dialog's own controls, never the page
+      // behind it.
+      if (event.key === "Tab") {
+        const focusable = boxRef.current?.querySelectorAll<HTMLElement>("input, button");
+        const first = focusable?.[0];
+        const last = focusable?.[focusable.length - 1];
+        if (!first || !last) return;
+        const inside = boxRef.current?.contains(document.activeElement);
+        if (event.shiftKey && (document.activeElement === first || !inside)) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !inside)) {
+          event.preventDefault();
+          first.focus();
+        }
+        return;
+      }
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
         setActive((current) => {
@@ -132,8 +150,15 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
   // Focus the query field when the modal opens. Done here rather than with
   // autoFocus so it fires on open rather than on mount, and never steals focus
   // during hydration.
+  // Closing hands focus back to whatever opened the dialog — the Search button, or the
+  // element that had focus when ⌘K was pressed — instead of dropping it on <body>.
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (!open) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    inputRef.current?.focus();
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
   }, [open]);
 
   // Restore body scroll handling: the overlay covers the page while open.
@@ -160,7 +185,13 @@ export function SearchDialog({ open, onOpenChange }: SearchDialogProps) {
         if (event.target === event.currentTarget) close();
       }}
     >
-      <div className="cy-search-box" role="dialog" aria-modal="true" aria-labelledby={labelId}>
+      <div
+        ref={boxRef}
+        className="cy-search-box"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelId}
+      >
         <h2 className="cy-search-a11y-title" id={labelId}>
           Search docs
         </h2>

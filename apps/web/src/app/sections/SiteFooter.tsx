@@ -150,7 +150,7 @@ export function SiteFooter() {
                 {"Product"}
               </span>{" "}
               <a
-                href="/docs/nextjs"
+                href="/docs/nextjs/getting-started/installation"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0 var(--cy-space-12)",

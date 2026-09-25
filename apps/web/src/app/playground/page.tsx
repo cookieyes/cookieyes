@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PlaygroundSandbox } from "@/components/playground/PlaygroundSandbox";
+import { pageMetadata } from "@/lib/site";
 // The nav, footer and install section are markup ported from the design; their layout lives
 // here. Without it they render as unstyled text with the logo on top of the wordmark.
 import "../landing.css";
@@ -11,11 +12,12 @@ import { SiteFooter } from "../sections/SiteFooter";
 import { SiteNav } from "../sections/SiteNav";
 import { StartWithInstall } from "../sections/StartWithInstall";
 
-export const metadata: Metadata = {
-  title: "Playground | CookieYes for Developers",
+export const metadata: Metadata = pageMetadata({
+  title: "Playground",
   description:
     "Change the banner's colours, wording and categories, watch it update live, and copy the setup code. No install, no account.",
-};
+  path: "/playground",
+});
 
 /**
  * The same shell as the landing page: nav, footer, and the install call to action, so the

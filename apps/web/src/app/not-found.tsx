@@ -9,7 +9,7 @@ import { SiteFooter } from "./sections/SiteFooter";
 import { SiteNav } from "./sections/SiteNav";
 
 export const metadata: Metadata = {
-  title: "Page not found · CookieYes for Developers",
+  title: { absolute: "Page not found · CookieYes for Developers" },
   description: "The link may be old, or the page may have moved.",
   // No `robots` here: Next already emits `noindex` for this file, and declaring it again
   // only puts a second, conflicting meta tag on the page.
@@ -159,7 +159,7 @@ export default function NotFound() {
               {"Take me home"}
             </a>
             <a
-              href="/docs"
+              href="/docs/nextjs/getting-started/installation"
               className="scp7 scp6"
               style={{
                 height: "52px",

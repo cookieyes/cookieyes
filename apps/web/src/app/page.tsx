@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./landing.css";
+import { pageMetadata } from "@/lib/site";
 import { InstallCommandCopy } from "./InstallCommandCopy";
 import { MobileMenu } from "./MobileMenu";
 import { LandingMotion } from "./motion/LandingMotion";
@@ -16,11 +17,13 @@ import { StartWithInstall } from "./sections/StartWithInstall";
 import { WhatItDoes } from "./sections/WhatItDoes";
 import { WorksWithYourStack } from "./sections/WorksWithYourStack";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "CookieYes for Developers: Consent that ships in your bundle",
+  absoluteTitle: true,
   description:
     "Open-source consent for React and Next.js. Manage consent in code, control when third-party tools load, and keep everything in your frontend.",
-};
+  path: "/",
+});
 
 /**
  * The landing page: the design's sections in the design's order, plus the two headless

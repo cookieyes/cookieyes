@@ -246,7 +246,7 @@ export function SiteNav() {
           >
             {" "}
             <a
-              href="/docs/nextjs"
+              href="/docs/nextjs/getting-started/installation"
               data-navlink="1"
               style={{
                 display: "flex",

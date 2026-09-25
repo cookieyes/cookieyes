@@ -14,11 +14,13 @@ import { TocFooter } from "@/components/docs/TocFooter";
 import { getMDXComponents } from "@/components/mdx";
 import {
   DEFAULT_FRAMEWORK,
+  FRAMEWORK_LABEL,
   type Framework,
   frameworkOf,
   resolveDocsHref,
   sharedPath,
 } from "@/lib/framework-docs";
+import { pageMetadata } from "@/lib/site";
 import { source } from "@/lib/source";
 
 /** Where the MDX for a page is served as raw Markdown. See app/api/md. */
@@ -221,8 +223,12 @@ export async function generateMetadata(props: PageProps<"/docs/[[...slug]]">): P
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  return {
-    title: page.data.title,
+  // The same page exists under each framework, so its title names the one it is for:
+  // "Installation · Next.js". The changelog belongs to no framework and keeps its own.
+  const framework = frameworkOf(page.slugs);
+  return pageMetadata({
+    title: framework ? `${page.data.title} · ${FRAMEWORK_LABEL[framework]}` : page.data.title,
     description: page.data.description,
-  };
+    path: page.url,
+  });
 }

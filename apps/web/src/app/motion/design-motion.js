@@ -949,6 +949,7 @@ class DesignMotion {
     }
     cancelAnimationFrame(this._raf);
     cancelAnimationFrame(this._globeRaf);
+    clearTimeout(this._globeIdle);
     if (this._flagEls) {
       for (const k in this._flagEls) {
         try {
@@ -1193,6 +1194,19 @@ class DesignMotion {
     window.addEventListener("resize", this._sizeGlobe);
 
     const loop = () => {
+      // Reduced motion: a still globe facing the first view (or the hovered region), no
+      // intro spin, tour or rings. Rechecked twice a second, so a theme switch, a resize or
+      // a hovered tag still shows up without running a frame loop.
+      if (this.cyReduce()) {
+        this._globeIdle = setTimeout(loop, 500);
+        if (!mount.clientWidth) return;
+        const held = this._tourHold;
+        K = 1;
+        this._globeRy = this._globeRyDraw = -(held != null ? this.regionLon(held) : 5) * D2R;
+        draw(this._globeRyDraw, 0);
+        this.projectGlobeMarkers();
+        return;
+      }
       this._globeRaf = requestAnimationFrame(loop);
       const mr = mount.getBoundingClientRect();
       if (!mount.clientWidth || mr.bottom < -60 || mr.top > window.innerHeight + 60) return; // skip work while hidden or off-screen

@@ -19,6 +19,21 @@ const config = {
   // the site never competes with the real one in search results.
   async headers() {
     return [
+      // Baseline hardening for every response. Framing is limited to this origin (the
+      // playground embeds its own preview page). No full Content-Security-Policy yet: the
+      // CookieYes banner, GA4 and Clarity load from several origins and need a Report-Only
+      // pass before one can be enforced.
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+        ],
+      },
       {
         source: "/:path*",
         missing: [{ type: "host", value: "developers\\.cookieyes\\.com" }],

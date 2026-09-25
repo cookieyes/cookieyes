@@ -1,4 +1,6 @@
-// CookieYes banner and its Consent Mode default, synchronous in <head>, production only.
+import { TRACKING_ENABLED } from "@/lib/site";
+
+// CookieYes banner and its Consent Mode default, synchronous in <head>, production only (see TRACKING_ENABLED).
 const CONSENT_DEFAULT = `window.dataLayer = window.dataLayer || [];
 function gtag() {
   dataLayer.push(arguments);
@@ -19,7 +21,7 @@ gtag("set", "url_passthrough", false);`;
 const BANNER_SRC = "https://cdn-cookieyes.com/client_data/e5ee5d26e0341217ffb7eccd/script.js";
 
 export function ConsentBanner() {
-  if (process.env.NODE_ENV !== "production" || process.env.DISABLE_TRACKING === "1") return null;
+  if (!TRACKING_ENABLED) return null;
   return (
     <>
       <link rel="preconnect" href="https://cdn-cookieyes.com" />

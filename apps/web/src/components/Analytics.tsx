@@ -1,11 +1,12 @@
 import Script from "next/script";
+import { TRACKING_ENABLED } from "@/lib/site";
 
-// GA4 and Microsoft Clarity, production only.
+// GA4 and Microsoft Clarity, production only (see TRACKING_ENABLED).
 const GA4_ID = "G-TV1HLPHV6F";
 const CLARITY_ID = "ymayzj60r0";
 
 export function Analytics() {
-  if (process.env.NODE_ENV !== "production" || process.env.DISABLE_TRACKING === "1") return null;
+  if (!TRACKING_ENABLED) return null;
   return (
     <>
       <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} strategy="lazyOnload" />
