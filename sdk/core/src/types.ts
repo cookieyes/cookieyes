@@ -254,6 +254,13 @@ export type ConsentManager = ConsentSnapshot & {
   showPreferences: () => void;
   hidePreferences: () => void;
   isPreferencesOpen: boolean;
+  /** True after {@link ConsentManager.dismissBanner}, until the next page load or reset. */
+  isBannerDismissed: boolean;
+  /**
+   * Hide the banner without a decision: no consent is saved and nothing is
+   * granted or denied. The banner comes back on the next page load.
+   */
+  dismissBanner: () => void;
   subscribe: (listener: (state: ConsentSnapshot) => void) => () => void;
   registerScript: (entry: ScriptEntry) => void;
   /** Current reload-notice state (see {@link ReloadNoticeState}). */

@@ -12,7 +12,7 @@ import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { chain, useBodyPortalRoot } from "../primitives/utils.js";
+import { chain, composeRefs, useBodyPortalRoot } from "../primitives/utils.js";
 import { CY_PART } from "../styles/parts.js";
 
 export type RecallButtonProps = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
@@ -35,19 +35,17 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
 
   if (bannerVisible) return null;
   if (preferencesOpen || optOutOpen) return null;
-  if (!snapshot.hasActed && regulation !== "CCPA") return null;
+  // A dismissed banner still needs a way back to the choice.
+  if (!snapshot.hasActed && !snapshot.isBannerDismissed && regulation !== "CCPA") return null;
 
   const onActivate = regulation === "CCPA" ? showOptOut : showPreferences;
 
   const button = (
     <button
-      ref={(node) => {
-        containerRef.current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) ref.current = node;
-      }}
+      ref={composeRefs(containerRef, ref)}
       type="button"
       aria-label={t.recallButtonLabel}
+      aria-haspopup="dialog"
       className={className ?? "cy-widget"}
       data-cy-part={CY_PART.recall.root}
       data-pos="bottom-left"

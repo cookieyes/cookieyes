@@ -29,6 +29,28 @@ export function CookieIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+/** The "X" on a close button: two lines corner to corner in a `size`-pixel square. */
+export function CrossIcon({ size, strokeWidth = 1.5 }: { size: number; strokeWidth?: number }) {
+  const end = size - 1;
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <path
+        d={`M1 1L${end} ${end}M${end} 1L1 ${end}`}
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function CloseIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg

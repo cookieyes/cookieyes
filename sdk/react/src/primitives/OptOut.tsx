@@ -11,7 +11,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { CookieYesLogo } from "../components/icons.js";
+import { BrandingLink } from "../components/BrandingLink.js";
+import { CrossIcon } from "../components/icons.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
@@ -19,8 +20,15 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
-import { Slot } from "./Slot.js";
-import { chain, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
+import { renderAction } from "./Slot.js";
+import {
+  chain,
+  composeRefs,
+  useAutoFocusDialog,
+  useEscapeKey,
+  useFocusTrap,
+  VISUALLY_HIDDEN,
+} from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -86,16 +94,16 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
 
   useEffect(() => {
     if (!saved) return;
-    setSecondsLeft(COUNTDOWN_SECONDS);
+    let left = COUNTDOWN_SECONDS;
+    setSecondsLeft(left);
+    // Closed from the timer, not inside a state update, so the revisit button is
+    // already on the page when focus is handed back to it.
     const interval = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(interval);
-          hideOptOut();
-          return 0;
-        }
-        return s - 1;
-      });
+      setSecondsLeft(--left);
+      if (!left) {
+        clearInterval(interval);
+        hideOptOut();
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [saved, hideOptOut]);
@@ -105,11 +113,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   return (
     <OptOutContext.Provider value={{ optOut, setOptOut, saved, setSaved, secondsLeft, titleId }}>
       <div
-        ref={(node) => {
-          containerRef.current = node;
-          if (typeof ref === "function") ref(node);
-          else if (ref) ref.current = node;
-        }}
+        ref={composeRefs(containerRef, ref)}
         role="dialog"
         aria-modal="true"
         // Named by the heading the visitor can see, so the spoken and printed names match.
@@ -161,34 +165,7 @@ const Close = forwardRef<HTMLButtonElement, ActionProps>(function OptOutClose(
     onClick: chain(onClick, hideOptOut),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? (
-        <svg
-          width="10"
-          height="10"
-          viewBox="0 0 10 10"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M1 1L9 9M9 1L1 9"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, <CrossIcon size={10} />);
 });
 
 const Checkbox = forwardRef<HTMLInputElement, InputProps>(function OptOutCheckbox(
@@ -230,18 +207,7 @@ const Cancel = forwardRef<HTMLButtonElement, ActionProps>(function OptOutCancel(
   const { hideOptOut } = useConsentActions();
   const t = useTranslations();
   const behavior = { onClick: chain(onClick, hideOptOut), ...rest };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.optOut.cancel}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.optOut.cancel);
 });
 
 const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
@@ -249,30 +215,24 @@ const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
   ref,
 ) {
   const { optOut, setSaved } = useOptOutContext();
-  const { acceptAll, rejectAll } = useConsentActions();
+  const { acceptAll, rejectAll, hideOptOut } = useConsentActions();
   const t = useTranslations();
 
   const behavior = {
     "data-cy-part": CY_PART.optOut.confirm,
+    // The success message confirms an opt-out only; saving without one just closes.
     onClick: chain(onClick, () => {
-      if (optOut) rejectAll();
-      else acceptAll();
-      setSaved(true);
+      if (optOut) {
+        rejectAll();
+        setSaved(true);
+      } else {
+        acceptAll();
+        hideOptOut();
+      }
     }),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.savePreferences}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.savePreferences);
 });
 
 const Buttons = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
@@ -290,10 +250,16 @@ const Buttons = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(
 const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(props, ref) {
   const { saved, secondsLeft } = useOptOutContext();
   const t = useTranslations();
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  // The focused Save button is gone once saved. Move focus here, so the confirmation
+  // is read and keyboard users keep their place inside the dialog.
+  useEffect(() => {
+    if (saved) innerRef.current?.focus();
+  }, [saved]);
   if (!saved) return null;
   const countdown = t.optOut.successCountdown.split("{seconds}");
   return (
-    <div ref={ref} role="status" tabIndex={-1} {...props}>
+    <div ref={composeRefs(innerRef, ref)} role="status" tabIndex={-1} {...props}>
       <div className="cy-optout-success-inner">
         <div className="cy-optout-success-row">
           <div className="cy-optout-success-icon" aria-hidden="true">
@@ -313,11 +279,15 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
               />
             </svg>
           </div>
-          <div className="cy-optout-success-text">{t.optOut.successText}</div>
+          <div className="cy-optout-success-text">
+            {t.optOut.successText}
+            {/* Screen readers get the countdown as one fixed sentence, in the same text
+                as the confirmation so both are read together. The visible one below
+                ticks every second, and `role="status"` would re-announce each tick, so
+                it is hidden from them instead. */}
+            <span style={VISUALLY_HIDDEN}>{" " + countdown.join(`${COUNTDOWN_SECONDS}`)}</span>
+          </div>
         </div>
-        {/* Visible, but outside the announced content: `role="status"` re-announces on
-            every change, and this ticks once a second. The confirmation above is what
-            gets announced, once. */}
         <div className="cy-optout-success-subtext-wrapper" aria-hidden="true">
           <p className="cy-optout-success-subtext">
             {countdown[0]}
@@ -330,28 +300,8 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
   );
 });
 
-const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function OptOutBranding(
-  { children, ...props },
-  ref,
-) {
-  const t = useTranslations();
-  return (
-    <a
-      ref={ref}
-      href="https://www.cookieyes.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      // Neither the visible text nor the logo says the link opens a new tab.
-      aria-label={`${t.poweredBy} (${t.opensInNewTab})`}
-      {...props}
-    >
-      {children ?? (
-        <>
-          Powered by <CookieYesLogo />
-        </>
-      )}
-    </a>
-  );
+const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function OptOutBranding(props, ref) {
+  return <BrandingLink ref={ref} {...props} />;
 });
 
 export const OptOut = {
