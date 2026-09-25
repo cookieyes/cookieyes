@@ -296,6 +296,23 @@ export function SiteNav() {
             >
               {"Blog"}
             </a>{" "}
+            <a
+              href="https://github.com/orgs/cookieyes/projects/3"
+              data-navlink="1"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                fontFamily: 'Inter, -apple-system, "Segoe UI", sans-serif',
+                fontWeight: "500",
+                fontSize: "0.875rem",
+                lineHeight: "16px",
+                color: "var(--cy-fg)",
+                textDecoration: "none",
+                transition: "color 0.15s",
+              }}
+            >
+              {"Roadmap"}
+            </a>{" "}
           </div>{" "}
           <div
             style={{

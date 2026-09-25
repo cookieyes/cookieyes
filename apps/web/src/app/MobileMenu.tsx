@@ -269,6 +269,9 @@ export function MobileMenu() {
         <a href="https://www.cookieyes.com/blog/react-cookie-consent-sdk/" style={MENU_LINK}>
           {"Blog"}
         </a>{" "}
+        <a href="https://github.com/orgs/cookieyes/projects/3" style={MENU_LINK}>
+          {"Roadmap"}
+        </a>{" "}
         <a href="/docs/changelog" style={MENU_LINK}>
           {"Changelog"}
         </a>{" "}

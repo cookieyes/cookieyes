@@ -1,4 +1,6 @@
-# Disables the option to open a blank/freeform issue, forcing use of the templates above.
+# Every *.yml form in this folder shows in the chooser: Bug Report, Feature Request,
+# and the two open-lane templates (Add a vendor integration, Add a locale).
+# Disables the option to open a blank/freeform issue, forcing use of those templates.
 blank_issues_enabled: false
 
 contact_links:

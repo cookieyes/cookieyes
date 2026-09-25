@@ -1,0 +1,106 @@
+name: Roadmap board
+
+# The roadmap:* label is the only control for the public Roadmap board — nobody
+# adds or moves items by hand. Adding roadmap:now|next|later puts the issue on
+# the board in the matching Status column; switching labels moves it; removing
+# the last roadmap:* label takes it off. Shipped is not a label: the board's own
+# built-in "Item closed" workflow moves closed issues there.
+#
+# GITHUB_TOKEN cannot write to an organization Project, so this needs the
+# ROADMAP_PROJECT_TOKEN secret: a PAT with the `project` and `repo` scopes (or a
+# fine-grained token with org Projects read/write and repo Issues read).
+
+on:
+  issues:
+    types: [labeled, unlabeled]
+
+permissions:
+  issues: write
+
+# Serialize per issue so a quick now → next swap lands in order.
+concurrency:
+  group: roadmap-board-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+env:
+  PROJECT_OWNER: cookieyes
+  PROJECT_NUMBER: 3
+
+jobs:
+  place:
+    if: github.event.action == 'labeled' && startsWith(github.event.label.name, 'roadmap:')
+    runs-on: ubuntu-latest
+    steps:
+      # An issue carries exactly one roadmap:* label — the newest one wins.
+      - name: Drop other roadmap labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEW_LABEL: ${{ github.event.label.name }}
+          LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+        run: |
+          for label in $(echo "$LABELS" | jq -r '.[] | select(startswith("roadmap:"))'); do
+            if [ "$label" != "$NEW_LABEL" ]; then
+              gh issue edit "${{ github.event.issue.number }}" -R "$GITHUB_REPOSITORY" --remove-label "$label"
+            fi
+          done
+
+      - name: Add to board
+        id: add
+        uses: actions/add-to-project@v2.0.0
+        with:
+          project-url: https://github.com/orgs/${{ env.PROJECT_OWNER }}/projects/${{ env.PROJECT_NUMBER }}
+          github-token: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
+          labeled: roadmap:now, roadmap:next, roadmap:later
+          label-operator: OR
+
+      # A label change on a closed issue must not pull it out of Shipped.
+      - name: Set Status column
+        if: github.event.issue.state == 'open'
+        env:
+          GH_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
+          ITEM_ID: ${{ steps.add.outputs.itemId }}
+          NEW_LABEL: ${{ github.event.label.name }}
+        run: |
+          case "$NEW_LABEL" in
+            roadmap:now)   column="Now" ;;
+            roadmap:next)  column="Next" ;;
+            roadmap:later) column="Later" ;;
+            *) echo "Unknown roadmap label $NEW_LABEL"; exit 1 ;;
+          esac
+          project_id=$(gh project view "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --format json --jq .id)
+          fields=$(gh project field-list "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --format json)
+          field_id=$(echo "$fields" | jq -r '.fields[] | select(.name == "Status") | .id')
+          option_id=$(echo "$fields" | jq -r --arg c "$column" '.fields[] | select(.name == "Status") | .options[] | select(.name == $c) | .id')
+          gh project item-edit --project-id "$project_id" --id "$ITEM_ID" \
+            --field-id "$field_id" --single-select-option-id "$option_id"
+
+  remove:
+    if: github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'roadmap:')
+    runs-on: ubuntu-latest
+    steps:
+      # Only leave the board when no roadmap:* label remains — a swap removes the
+      # old label too, and that must not take the issue off.
+      - name: Remove from board
+        env:
+          GH_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
+          LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+          ISSUE_ID: ${{ github.event.issue.node_id }}
+        run: |
+          if echo "$LABELS" | jq -e 'any(.[]; startswith("roadmap:"))' > /dev/null; then
+            echo "Issue still has a roadmap label; leaving it on the board."
+            exit 0
+          fi
+          item_id=$(gh api graphql -f id="$ISSUE_ID" -f query='
+            query($id: ID!) {
+              node(id: $id) {
+                ... on Issue {
+                  projectItems(first: 20) { nodes { id project { number owner { ... on Organization { login } } } } }
+                }
+              }
+            }' --jq ".data.node.projectItems.nodes[]
+              | select(.project.number == $PROJECT_NUMBER and .project.owner.login == \"$PROJECT_OWNER\") | .id")
+          if [ -z "$item_id" ]; then
+            echo "Issue is not on the board."
+            exit 0
+          fi
+          gh project item-delete "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --id "$item_id"

@@ -1,0 +1,70 @@
+name: 🧩 Add a vendor integration
+description: Propose (or take on) a new consent-gated vendor for @cookieyes/scripts
+title: "[vendor] "
+labels: ["help-wanted", "lane:vendors"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Vendors are an **open lane** — outside contributors are welcome to build these.
+        One issue per vendor. A maintainer adds a `roadmap:*` label to place it on the [Roadmap](https://github.com/orgs/cookieyes/projects/3).
+
+  - type: input
+    id: vendor
+    attributes:
+      label: Vendor name
+      description: The product being integrated, and a link to its official install docs.
+      placeholder: "e.g. Hotjar — https://help.hotjar.com/hc/en-us/articles/115009336727"
+    validations:
+      required: true
+
+  - type: input
+    id: file-path
+    attributes:
+      label: Target file
+      description: Where the new integration will live. Use a lowercase, hyphenated vendor id.
+      value: "sdk/scripts/src/<vendor-id>.ts"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Consent category
+      description: Which category must be granted before this vendor loads?
+      options:
+        - analytics
+        - advertisement
+        - functional
+        - performance
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything unusual — a consent API the vendor exposes, cookies it sets, region-specific endpoints.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: acceptance
+    attributes:
+      label: Acceptance checklist
+      description: The PR that closes this issue must satisfy every item.
+      options:
+        - label: "Integration added at `sdk/scripts/src/<vendor-id>.ts`, following the shape of an existing one (e.g. `clarity.ts`)"
+        - label: "Config type and factory exported from `sdk/scripts/src/index.ts`"
+        - label: "Nothing loads, and no cookie is set, until the declared category is granted"
+        - label: "Revoking consent stops the vendor (or clears its cookies) where the vendor allows it"
+        - label: "Tests at `sdk/scripts/src/__tests__/<vendor-id>.test.ts`; coverage stays above the 80% gate"
+        - label: "Docs page added under `apps/web/content/docs/{react,nextjs}/integrations/` and listed in `meta.json`"
+        - label: "Changeset added (`pnpm changeset`) for `@cookieyes/scripts`"
+        - label: "`pnpm lint`, `pnpm typecheck` and `pnpm test` pass"
+
+  - type: textarea
+    id: claim
+    attributes:
+      label: How to claim
+      value: To take this issue, comment "claiming".
