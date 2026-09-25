@@ -1,5 +1,69 @@
 import { createMDX } from "fumadocs-mdx/next";
 
+/**
+ * The Content-Security-Policy under trial. It runs report-only: the browser blocks nothing
+ * and posts what it would have blocked to /api/csp-report, which logs it. Once the logs show
+ * only noise, the same list can be sent as an enforced `Content-Security-Policy`.
+ *
+ * The third-party origins are the CookieYes banner (cdn, log and directory), GA4 and Google
+ * Tag Manager, and Microsoft Clarity (which also beacons to c.bing.com); cdn.jsdelivr.net
+ * serves the integration logos. Inline scripts stay allowed: Next.js and the Consent Mode
+ * default are inline, and per-request nonces would stop pages being served from the cache.
+ *
+ * The playground also needs 'unsafe-eval': its config reader evaluates the edited config in
+ * a sandboxed srcdoc iframe, and a srcdoc document inherits this page's policy.
+ */
+function contentSecurityPolicy({ allowEval = false } = {}) {
+  const directives = {
+    "default-src": ["'self'"],
+    "script-src": [
+      "'self'",
+      "'unsafe-inline'",
+      ...(allowEval ? ["'unsafe-eval'"] : []),
+      "https://cdn-cookieyes.com",
+      "https://www.googletagmanager.com",
+      "https://*.clarity.ms",
+      "https://c.bing.com",
+    ],
+    "style-src": ["'self'", "'unsafe-inline'", "https://cdn-cookieyes.com"],
+    "img-src": [
+      "'self'",
+      "data:",
+      "blob:",
+      "https://cdn-cookieyes.com",
+      "https://cdn.jsdelivr.net",
+      "https://*.google-analytics.com",
+      "https://*.googletagmanager.com",
+      "https://*.clarity.ms",
+      "https://c.bing.com",
+    ],
+    "font-src": ["'self'", "data:"],
+    "connect-src": [
+      "'self'",
+      "https://cdn-cookieyes.com",
+      "https://log.cookieyes.com",
+      "https://directory.cookieyes.com",
+      "https://*.google-analytics.com",
+      "https://*.analytics.google.com",
+      "https://*.googletagmanager.com",
+      "https://*.clarity.ms",
+      "https://c.bing.com",
+    ],
+    "frame-src": ["'self'"],
+    "worker-src": ["'self'", "blob:"],
+    "object-src": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    // report-uri alone: every current browser supports it and posts each report at once.
+    // Adding the newer report-to would make Chrome ignore report-uri and batch reports
+    // through the Reporting API instead.
+    "report-uri": ["/api/csp-report"],
+  };
+  return Object.entries(directives)
+    .map(([name, values]) => `${name} ${values.join(" ")}`)
+    .join("; ");
+}
+
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
@@ -34,6 +98,27 @@ const config = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
+      // Production only: the dev server's hot reload relies on eval and would fill the
+      // reports with noise.
+      ...(process.env.NODE_ENV === "production"
+        ? [
+            {
+              source: "/:path((?!playground(?:/|$)).*)",
+              headers: [
+                { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy() },
+              ],
+            },
+            {
+              source: "/playground/:path*",
+              headers: [
+                {
+                  key: "Content-Security-Policy-Report-Only",
+                  value: contentSecurityPolicy({ allowEval: true }),
+                },
+              ],
+            },
+          ]
+        : []),
       {
         source: "/:path*",
         missing: [{ type: "host", value: "developers\\.cookieyes\\.com" }],
