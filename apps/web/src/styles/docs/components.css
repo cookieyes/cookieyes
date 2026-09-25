@@ -617,12 +617,15 @@
 }
 
 /* Release-page section headings — prototype `.rl-sec h3` (16px display face).
-   These are now real MDX `###` headings so they appear in "On this page". */
-#nd-page:has(.cy-doc-rl-badges) .prose h3 {
+   Real MDX `##` headings, so they appear in "On this page" and the page outline goes
+   h1 → h2 rather than skipping a level; drawn at the prototype's h3 size. The `:not()`
+   matches theme.css's generic h2 rule so this one wins on specificity. */
+#nd-page:has(.cy-doc-rl-badges) .prose h2:not([class*="cy-doc-"]) {
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 500;
   line-height: 24px;
+  letter-spacing: normal;
   color: var(--cy-doc-tx);
   margin: 26px 0 8px;
 }

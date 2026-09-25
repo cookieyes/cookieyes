@@ -12,6 +12,7 @@ import { MAIN_CONTENT_ID } from "@/app/SkipLink";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
 import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
+import { JsonLd } from "@/components/JsonLd";
 import { getMDXComponents } from "@/components/mdx";
 import {
   DEFAULT_FRAMEWORK,
@@ -21,7 +22,7 @@ import {
   resolveDocsHref,
   sharedPath,
 } from "@/lib/framework-docs";
-import { pageMetadata } from "@/lib/site";
+import { pageMetadata, SITE_URL } from "@/lib/site";
 import { source } from "@/lib/source";
 
 /** Where the MDX for a page is served as raw Markdown. See app/api/md. */
@@ -63,6 +64,45 @@ function frameworkLinkComponents(
   return {
     a: (props: ComponentProps<"a">) => relative({ ...props, href: resolve(props.href) }),
     Card: (props: ComponentProps<"a">) => <Card {...props} href={resolve(props.href)} />,
+  };
+}
+
+/**
+ * The page's place in the docs, as schema.org breadcrumbs: Home, the framework, each
+ * section above the page that is a page itself, then the page. Built from the same trail
+ * the visible breadcrumb uses; a section without its own URL is left out, since every
+ * item but the last must link somewhere.
+ */
+function breadcrumbData(
+  page: NonNullable<ReturnType<typeof source.getPage>>,
+  framework: Framework | null,
+): Record<string, unknown> {
+  const crumbs: { name: string; url: string }[] = [{ name: "Home", url: "/" }];
+  if (framework) {
+    crumbs.push({
+      name: FRAMEWORK_LABEL[framework],
+      url: `/docs/${framework}/getting-started/installation`,
+    });
+  } else if (page.slugs[0] === "changelog" && page.slugs.length > 1) {
+    crumbs.push({ name: "Changelog", url: "/docs/changelog" });
+  }
+  const trail = getBreadcrumbItems(page.url, source.pageTree, { includePage: false });
+  for (const item of trail) {
+    if (typeof item.name === "string" && item.url && !crumbs.some((c) => c.url === item.url)) {
+      crumbs.push({ name: item.name, url: item.url });
+    }
+  }
+  if (!crumbs.some((c) => c.url === page.url))
+    crumbs.push({ name: page.data.title, url: page.url });
+
+  return {
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((crumb, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: crumb.name,
+      item: `${SITE_URL}${crumb.url === "/" ? "" : crumb.url}`,
+    })),
   };
 }
 
@@ -137,6 +177,7 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           TOC (skipped), so without this 1px anchor the new page opened at the old scroll
           position. */}
       <div className="cy-doc-scroll-anchor" aria-hidden="true" />
+      <JsonLd data={breadcrumbData(page, framework)} />
       <DocsPage
         toc={page.data.toc}
         full={page.data.full}
@@ -226,12 +267,20 @@ export async function generateMetadata(props: PageProps<"/docs/[[...slug]]">): P
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  // The same page exists under each framework, so its title names the one it is for:
-  // "Installation · Next.js". The changelog belongs to no framework and keeps its own.
+  // The same page exists under each framework, so its title and description name the one
+  // it is for: "Installation · Next.js", "Next.js: Install the packages…". Otherwise the
+  // React and Next.js copies of every page share both, and search engines treat them as
+  // duplicates. The changelog belongs to no framework and keeps its own.
   const framework = frameworkOf(page.slugs);
+  const label = framework ? FRAMEWORK_LABEL[framework] : null;
+  const description = page.data.description;
+  // A release page's frontmatter title carries "react 0.3.0: <headline>", often past 60
+  // characters on its own, so it goes out without the site-name suffix.
+  const isRelease = page.slugs[0] === "changelog" && page.slugs.length === 2;
   return pageMetadata({
-    title: framework ? `${page.data.title} · ${FRAMEWORK_LABEL[framework]}` : page.data.title,
-    description: page.data.description,
+    title: label ? `${page.data.title} · ${label}` : page.data.title,
+    absoluteTitle: isRelease,
+    description: label && description ? `${label}: ${description}` : description,
     path: page.url,
   });
 }

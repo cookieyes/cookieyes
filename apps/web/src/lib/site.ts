@@ -23,8 +23,9 @@ export const SITE_NAME = "CookieYes for Developers";
  * canonical URL and the matching Open Graph and Twitter text.
  *
  * Next merges `openGraph` and `twitter` shallowly, so a page that sets either replaces the
- * layout's object whole; this rebuilds both in full. The shared card image is file-based
- * (app/opengraph-image.tsx) and is added to every page on top of this.
+ * layout's object whole, file-based card image included; this rebuilds both in full and
+ * names the shared image (app/opengraph-image.tsx) itself, or only the homepage would
+ * carry one.
  */
 export function pageMetadata({
   title,
@@ -39,6 +40,7 @@ export function pageMetadata({
   absoluteTitle?: boolean;
 }): Metadata {
   const fullTitle = absoluteTitle ? title : `${title} | ${SITE_NAME}`;
+  const image = { url: "/opengraph-image", width: 1200, height: 630, alt: SITE_NAME };
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
@@ -50,8 +52,9 @@ export function pageMetadata({
       siteName: SITE_NAME,
       type: "website",
       locale: "en_US",
+      images: [image],
     },
-    twitter: { card: "summary_large_image", title: fullTitle, description },
+    twitter: { card: "summary_large_image", title: fullTitle, description, images: [image] },
   };
 }
 

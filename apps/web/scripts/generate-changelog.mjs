@@ -266,14 +266,14 @@ function releasePage(release) {
     "",
     "<ReleaseRule />",
     "",
-    "### Install",
+    "## Install",
     "",
     `<ReleaseInstall packages={${JSON.stringify(orderedPackages(release))}} />`,
     "",
   ];
 
   for (const group of changesByBump(release)) {
-    lines.push(`### ${group.label} changes`, "");
+    lines.push(`## ${group.label} changes`, "");
     for (const change of group.items) {
       lines.push(change.body.trim(), "");
       lines.push(
@@ -286,7 +286,7 @@ function releasePage(release) {
     }
   }
 
-  lines.push("### Source", "", `<ReleaseSource version=${jsx(name)} />`, "");
+  lines.push("## Source", "", `<ReleaseSource version=${jsx(name)} />`, "");
   return lines.join("\n");
 }
 

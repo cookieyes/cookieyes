@@ -1,7 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { notFound } from "next/navigation";
-import { composeMarkdown, frameworkOf, sharedPath } from "@/lib/framework-docs";
+import {
+  composeMarkdown,
+  type Framework,
+  frameworkOf,
+  resolveDocsHref,
+  sharedPath,
+} from "@/lib/framework-docs";
 import { source } from "@/lib/source";
 
 /**
@@ -38,6 +44,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     const frontmatter = /^---\r?\n[\s\S]*?\r?\n---\r?\n/.exec(wrapper)?.[0] ?? "";
     content = `${frontmatter}\n${composeMarkdown(body, framework)}`;
   }
+  content = frameworkLinks(content, framework);
 
   return new Response(content, {
     headers: {
@@ -45,6 +52,22 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
       "Cache-Control": "public, max-age=0, must-revalidate",
     },
   });
+}
+
+/**
+ * The shared bodies link framework-less (`/docs/hooks/use-consent`). The HTML page sends
+ * each link to the reader's own framework (see frameworkLinkComponents in the docs page);
+ * this does the same for the Markdown, both in Markdown links and in the `href` of a
+ * component like <Card>. Without it, a React page's Markdown led an agent into the
+ * Next.js docs, and a JavaScript-only page such as the store guide into a 404.
+ */
+function frameworkLinks(markdown: string, framework: Framework | null): string {
+  const exists = (fw: Framework, rest: string) =>
+    source.getPage([fw, ...rest.split("/")]) !== undefined;
+  const resolve = (href: string) => resolveDocsHref(href, framework, exists);
+  return markdown
+    .replace(/\]\((\/docs[^)\s]*)\)/g, (_m, href: string) => `](${resolve(href)})`)
+    .replace(/href="(\/docs[^"]*)"/g, (_m, href: string) => `href="${resolve(href)}"`);
 }
 
 export function generateStaticParams() {

@@ -21,6 +21,18 @@ function inFramework(url: string, pathname: string): string {
   return url.replace(/^\/docs/, `/docs/${framework}`);
 }
 
+/**
+ * Where a section link actually goes. A framework root ("SDKs" → `/docs/react`) has no
+ * page of its own and redirects to its installation page, so the link points there
+ * directly instead of through the redirect. The root stays the section's identity for
+ * working out which tab is active.
+ */
+function linkTarget(url: string): string {
+  return /^\/docs\/[^/]+$/.test(url) && frameworkOf(url)
+    ? `${url}/getting-started/installation`
+    : url;
+}
+
 /** Fumadocs' own classes on the header element. Kept verbatim: they carry the grid
  *  placement, sticky offset and stacking the layout depends on. Only what sits
  *  *inside* is reordered. */
@@ -121,7 +133,7 @@ export function DocsHeader() {
             return (
               <Link
                 key={item.url}
-                href={item.url}
+                href={linkTarget(item.url)}
                 className="cy-doc-hd-nav-a"
                 data-active={active}
                 aria-current={active ? "page" : undefined}

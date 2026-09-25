@@ -160,10 +160,11 @@ const config = {
       "troubleshooting",
     ];
     // A framework root has no page of its own: the first thing to read is how to install.
+    // Permanent (308), so search engines treat the root as the installation page.
     const roots = ["nextjs", "react", "core"].map((fw) => ({
       source: `/docs/${fw}`,
       destination: `/docs/${fw}/getting-started/installation`,
-      permanent: false,
+      permanent: true,
     }));
     // The primitives overview was folded into the Banner page.
     const moved = ["nextjs", "react"].flatMap((fw) => [
@@ -214,7 +215,14 @@ const config = {
     // Browsers and crawlers that never read the page's <link rel="icon"> still ask for
     // /favicon.ico; the site's only icon is the SVG.
     const favicon = { source: "/favicon.ico", destination: "/icon.svg", permanent: true };
-    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite, favicon];
+    // Bare /docs, one permanent hop to the default framework's installation page. After
+    // byQuery, so a `?pkg=` link still reaches the framework it asked for.
+    const docsRoot = {
+      source: "/docs",
+      destination: "/docs/nextjs/getting-started/installation",
+      permanent: true,
+    };
+    return [...roots, ...moved, ...byQuery, docsRoot, ...byPath, ...parentSite, favicon];
   },
 
   /**
