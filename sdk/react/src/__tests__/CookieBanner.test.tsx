@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { RecallButton } from "../controls/RecallButton.js";
 import { CookieBanner } from "../presets/CookieBanner.js";
 import { clearCookie, mountOffline, teardown } from "./test-utils.js";
 
@@ -44,6 +45,91 @@ describe("CookieBanner — GDPR", () => {
     fireEvent.click(screen.getByText("Customise"));
     expect(rt.getSnapshot().isPreferencesOpen).toBe(true);
   });
+});
+
+describe("CookieBanner — focus trap", () => {
+  function tab(shiftKey = false) {
+    fireEvent.keyDown(document, { key: "Tab", shiftKey });
+  }
+
+  it("is a modal dialog", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    expect(screen.getByRole("dialog").getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("does not take focus on its own when it appears", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it("pulls the first Tab from the page into the banner", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    tab();
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Close");
+  });
+
+  it("wraps Tab from the last control back to the first, and Shift+Tab the other way", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    const dialog = screen.getByRole("dialog");
+    const last = dialog.querySelector<HTMLElement>("a[href]");
+    last?.focus();
+    tab();
+    expect(document.activeElement?.getAttribute("aria-label")).toBe("Close");
+    tab(true);
+    expect(document.activeElement).toBe(last);
+  });
+});
+
+describe("CookieBanner — close button", () => {
+  it.each(["GDPR", "CCPA"] as const)("%s: only closes, saves no consent", (regulation) => {
+    const rt = mountOffline(regulation);
+    const before = rt.getSnapshot().committedCategories;
+    render(<CookieBanner />);
+    // CCPA writes an undecided default cookie on load; the click must not change it.
+    const cookieBefore = document.cookie;
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(rt.getSnapshot().hasActed).toBe(false);
+    expect(rt.getSnapshot().committedCategories).toEqual(before);
+    expect(document.cookie).toBe(cookieBefore);
+  });
+});
+
+describe("CookieBanner — dialog buttons and focus hand-off", () => {
+  it("marks Customise and Do Not Sell as opening their dialog", () => {
+    mountOffline("GDPR");
+    render(<CookieBanner />);
+    const customise = screen.getByText("Customise");
+    expect(customise.getAttribute("aria-haspopup")).toBe("dialog");
+    cleanup();
+    teardown();
+
+    mountOffline("CCPA");
+    render(<CookieBanner />);
+    const doNotSell = screen.getByText("Do Not Sell or Share My Personal Information");
+    expect(doNotSell.getAttribute("aria-haspopup")).toBe("dialog");
+  });
+
+  it.each(["Accept All", "Reject All", "Close"])(
+    "moves focus to the revisit button after %s",
+    (name) => {
+      mountOffline("GDPR");
+      render(
+        <>
+          <CookieBanner />
+          <RecallButton />
+        </>,
+      );
+      const button = screen.getByRole("button", { name });
+      button.focus();
+      fireEvent.click(button);
+      expect(document.activeElement?.getAttribute("aria-label")).toBe("Consent Preferences");
+    },
+  );
 });
 
 describe("CookieBanner — DOM placement", () => {

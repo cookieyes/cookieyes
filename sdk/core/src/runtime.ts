@@ -128,7 +128,7 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
 
   function activeUI(): ActiveUI {
     if (manager.isPreferencesOpen) return "dialog";
-    if (!manager.hasActed) return "banner";
+    if (!manager.hasActed && !manager.isBannerDismissed) return "banner";
     return null;
   }
 

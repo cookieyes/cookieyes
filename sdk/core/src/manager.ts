@@ -39,6 +39,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
   let state: ConsentSnapshot;
   let isPreferencesOpen = false;
+  // Banner closed without a decision. In memory only: nothing is saved, so the
+  // banner comes back on the next page load.
+  let bannerDismissed = false;
   let lastPersistedCategories: Record<string, boolean>;
   // Consent actually in effect — changes only on a real decision (accept /
   // reject / save / reset / load), never on a dialog toggle. Gating reads this;
@@ -282,6 +285,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     get isPreferencesOpen() {
       return isPreferencesOpen;
     },
+    get isBannerDismissed() {
+      return bannerDismissed;
+    },
 
     acceptAll() {
       state = { ...state, categories: buildCategories(() => true) };
@@ -325,6 +331,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       committedCategories = { ...state.categories };
       lastPersistedCategories = { ...state.categories };
       isPreferencesOpen = false;
+      bannerDismissed = false;
       // Realign clean-stop flags with the reset state; clear any reload notice
       // (a reset re-prompts, so a stale "reload to apply" message is wrong).
       applyStopHandlers(committedCategories);
@@ -341,6 +348,12 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
     hidePreferences() {
       isPreferencesOpen = false;
+      notify();
+    },
+
+    dismissBanner() {
+      if (bannerDismissed) return;
+      bannerDismissed = true;
       notify();
     },
 

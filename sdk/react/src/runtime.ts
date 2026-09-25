@@ -104,6 +104,8 @@ export type CookieYesSnapshot = ConsentSnapshot & {
   committedCategories: Record<string, boolean>;
   isPreferencesOpen: boolean;
   isOptOutOpen: boolean;
+  /** Banner closed without a decision (see `ConsentManager.dismissBanner`). */
+  isBannerDismissed: boolean;
   reloadNotice: ReloadNoticeState;
 };
 
@@ -312,6 +314,7 @@ const SSR_SNAPSHOT: CookieYesSnapshot = Object.freeze({
   regulation: "DEFAULT" as Regulation,
   isPreferencesOpen: false,
   isOptOutOpen: false,
+  isBannerDismissed: false,
   reloadNotice: Object.freeze({ required: false, reasons: [] }) as ReloadNoticeState,
 }) as CookieYesSnapshot;
 
@@ -399,6 +402,7 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
       taxonomyHash: manager.taxonomyHash,
       isPreferencesOpen: manager.isPreferencesOpen,
       isOptOutOpen,
+      isBannerDismissed: manager.isBannerDismissed,
       reloadNotice: manager.reloadNotice,
     };
   }

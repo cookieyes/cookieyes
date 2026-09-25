@@ -8,7 +8,8 @@ import {
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
-import { CookieYesLogo } from "../components/icons.js";
+import { BrandingLink } from "../components/BrandingLink.js";
+import { CrossIcon } from "../components/icons.js";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useRegulation } from "../hooks/useRegulation.js";
@@ -16,8 +17,8 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CY_PART } from "../styles/parts.js";
-import { Slot } from "./Slot.js";
-import { chain, useBodyPortalRoot } from "./utils.js";
+import { renderAction } from "./Slot.js";
+import { chain, composeRefs, useBodyPortalRoot } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -60,6 +61,12 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   const wasVisible = useRef(false);
   const isReparent = visible && wasVisible.current;
   useEffect(() => {
+    // Closed by a decision or the X: the focused button went with it, so hand focus
+    // to the revisit button. No-op when a dialog opened instead: the revisit button
+    // is not rendered then, and the dialog moves focus itself.
+    if (wasVisible.current && !visible && document.activeElement === document.body) {
+      document.querySelector<HTMLElement>(".cy-widget")?.focus();
+    }
     wasVisible.current = visible;
   }, [visible]);
 
@@ -71,11 +78,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   // Callers can still pass `role` and other attributes via props.
   const content = (
     <div
-      ref={(node) => {
-        containerRef.current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) ref.current = node;
-      }}
+      ref={composeRefs(containerRef, ref)}
       data-cy-part={CY_PART.banner.root}
       // Suppresses the entry animation on the card below — see `wasVisible`.
       {...(isReparent ? { "data-cy-entered": "" } : {})}
@@ -129,18 +132,7 @@ const AcceptAll = forwardRef<HTMLButtonElement, ActionProps>(function BannerAcce
     onClick: chain(onClick, acceptAll),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.acceptAll}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.acceptAll);
 });
 
 const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function BannerRejectAll(
@@ -154,18 +146,7 @@ const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function BannerReje
     onClick: chain(onClick, rejectAll),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.rejectAll}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.rejectAll);
 });
 
 const OpenPreferences = forwardRef<HTMLButtonElement, ActionProps>(function BannerOpenPreferences(
@@ -176,63 +157,27 @@ const OpenPreferences = forwardRef<HTMLButtonElement, ActionProps>(function Bann
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.banner.customise,
+    "aria-haspopup": "dialog" as const,
     onClick: chain(onClick, showPreferences),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.managePreferences}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.managePreferences);
 });
 
 const Close = forwardRef<HTMLButtonElement, ActionProps>(function BannerClose(
   { children, onClick, "aria-label": ariaLabel, asChild, ...rest },
   ref,
 ) {
-  const { acceptAll } = useConsentActions();
+  const { dismissBanner } = useConsentActions();
   const t = useTranslations();
   const behavior = {
     "aria-label": ariaLabel ?? t.bannerCloseLabel,
     "data-cy-part": CY_PART.banner.close,
-    onClick: chain(onClick, acceptAll),
+    // Only closes: no consent is saved, granted or denied.
+    onClick: chain(onClick, dismissBanner),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? (
-        <svg
-          width="9"
-          height="9"
-          viewBox="0 0 9 9"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          aria-hidden="true"
-        >
-          <path
-            d="M1 1L8 8M8 1L1 8"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      )}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, <CrossIcon size={9} />);
 });
 
 const DoNotSell = forwardRef<HTMLButtonElement, ActionProps>(function BannerDoNotSell(
@@ -243,46 +188,15 @@ const DoNotSell = forwardRef<HTMLButtonElement, ActionProps>(function BannerDoNo
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.banner.doNotSell,
+    "aria-haspopup": "dialog" as const,
     onClick: chain(onClick, showOptOut),
     ...rest,
   };
-  if (asChild) {
-    return (
-      <Slot ref={ref} {...behavior}>
-        {children}
-      </Slot>
-    );
-  }
-  return (
-    <button ref={ref} type="button" {...behavior}>
-      {children ?? t.doNotSell}
-    </button>
-  );
+  return renderAction(asChild, ref, behavior, children, t.doNotSell);
 });
 
-const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function BannerBranding(
-  { children, ...props },
-  ref,
-) {
-  const t = useTranslations();
-  return (
-    <a
-      ref={ref}
-      href="https://www.cookieyes.com"
-      target="_blank"
-      rel="noopener noreferrer"
-      // Neither the visible text nor the logo says the link opens a new tab.
-      aria-label={`${t.poweredBy} (${t.opensInNewTab})`}
-      data-cy-part={CY_PART.banner.branding}
-      {...props}
-    >
-      {children ?? (
-        <>
-          Powered by <CookieYesLogo />
-        </>
-      )}
-    </a>
-  );
+const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function BannerBranding(props, ref) {
+  return <BrandingLink ref={ref} data-cy-part={CY_PART.banner.branding} {...props} />;
 });
 
 export const Banner = {

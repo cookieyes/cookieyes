@@ -96,6 +96,24 @@ describe("useFocusTrap", () => {
     expect(document.activeElement).toBe(last);
   });
 
+  it("pulls focus from outside the container to the first control on Tab", () => {
+    const { first } = setup();
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab" }));
+    });
+    expect(document.activeElement).toBe(first);
+  });
+
+  it("pulls focus from the container itself to the last control on Shift+Tab", () => {
+    const { container, last } = setup();
+    container.tabIndex = -1;
+    container.focus();
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true }));
+    });
+    expect(document.activeElement).toBe(last);
+  });
+
   it("ignores non-Tab keys", () => {
     const { first } = setup();
     first.focus();
