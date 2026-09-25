@@ -1,5 +1,6 @@
 {
   "$comment": "One line per release, keyed by its date, summarising what that release was about. Everything else on the changelog is generated from the package CHANGELOG.md files; this is the one part a person writes, because a release with nine separate changes has no headline that can be derived honestly. Optional: a release with no line here is labelled by its package version alone.",
+  "2026-09-25": "A modal banner and a close button that only closes",
   "2026-09-18": "Accessibility fixes across the banner and dialogs",
   "2026-09-10": "Banner CSS in the first response",
   "2026-09-08": "A smaller initial download",
