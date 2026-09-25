@@ -1,0 +1,103 @@
+name: Release stale claims
+
+# A contributor claims a help-wanted issue by commenting "claiming" and a
+# maintainer assigns them. If 14 days pass with no pull request linked to the
+# issue, the claim lapses: the assignee is removed and the issue is reopened for
+# anyone to claim. Issues without help-wanted are never touched.
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const STALE_DAYS = 14;
+            const cutoff = Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000;
+            const { owner, repo } = context.repo;
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              labels: "help-wanted",
+              assignee: "*",
+              per_page: 100,
+            });
+
+            for (const issue of issues) {
+              if (issue.pull_request) continue;
+
+              const { repository } = await github.graphql(
+                `query($owner: String!, $repo: String!, $number: Int!) {
+                  repository(owner: $owner, name: $repo) {
+                    issue(number: $number) {
+                      closedByPullRequestsReferences(first: 10, includeClosedPrs: true) {
+                        nodes { state }
+                      }
+                      timelineItems(last: 100, itemTypes: [ASSIGNED_EVENT, CROSS_REFERENCED_EVENT]) {
+                        nodes {
+                          __typename
+                          ... on AssignedEvent {
+                            createdAt
+                            assignee { ... on User { login } ... on Bot { login } }
+                          }
+                          ... on CrossReferencedEvent {
+                            source { ... on PullRequest { state } }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`,
+                { owner, repo, number: issue.number },
+              );
+              const data = repository.issue;
+
+              // A PR "links" if it is in the issue's Development panel, or it
+              // references the issue and is still open or already merged.
+              const livePr = (pr) => pr && (pr.state === "OPEN" || pr.state === "MERGED");
+              const hasLinkedPr =
+                data.closedByPullRequestsReferences.nodes.some(livePr) ||
+                data.timelineItems.nodes.some(
+                  (n) => n.__typename === "CrossReferencedEvent" && livePr(n.source),
+                );
+              if (hasLinkedPr) continue;
+
+              // When was each current assignee (most recently) assigned?
+              const assignedAt = {};
+              for (const n of data.timelineItems.nodes) {
+                if (n.__typename !== "AssignedEvent" || !n.assignee?.login) continue;
+                assignedAt[n.assignee.login] = new Date(n.createdAt).getTime();
+              }
+              const stale = issue.assignees
+                .map((a) => a.login)
+                .filter((login) => assignedAt[login] !== undefined && assignedAt[login] <= cutoff);
+              if (stale.length === 0) continue;
+
+              await github.rest.issues.removeAssignees({
+                owner,
+                repo,
+                issue_number: issue.number,
+                assignees: stale,
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body:
+                  `This issue was assigned for ${STALE_DAYS} days with no linked pull request, ` +
+                  `so the claim has been released (${stale.map((l) => `@${l}`).join(", ")}). ` +
+                  `It is open again for anyone to claim — to take it, comment "claiming".`,
+              });
+              core.info(`Released #${issue.number} from ${stale.join(", ")}`);
+            }

@@ -11,6 +11,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/@cookieyes/core?label=%40cookieyes%2Fcore)](https://www.npmjs.com/package/@cookieyes/core)
 
+[Roadmap](https://github.com/orgs/cookieyes/projects/3) · [Contributing](./CONTRIBUTING.md)
+
 Open-source cookie consent SDK for developers. Build consent banners and manage GDPR, CCPA, and privacy compliance.
 
 ## Packages

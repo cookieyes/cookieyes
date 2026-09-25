@@ -22,7 +22,8 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#commands">Commands</a> ·
   <a href="#what-to-expect">Expected output</a> ·
-  <a href="#troubleshooting">Troubleshooting</a>
+  <a href="#troubleshooting">Troubleshooting</a> ·
+  <a href="https://github.com/orgs/cookieyes/projects/3">Roadmap</a>
 </p>
 
 ---

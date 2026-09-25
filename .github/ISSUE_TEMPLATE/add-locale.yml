@@ -1,0 +1,60 @@
+name: 🌐 Add a locale
+description: Propose (or take on) a new translation for @cookieyes/translations
+title: "[locale] "
+labels: ["help-wanted", "lane:i18n"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Translations are an **open lane** — outside contributors are welcome to build these.
+        One issue per locale. A maintainer adds a `roadmap:*` label to place it on the [Roadmap](https://github.com/orgs/cookieyes/projects/3).
+
+  - type: input
+    id: locale
+    attributes:
+      label: Locale
+      description: Language name and its BCP 47 code.
+      placeholder: "e.g. Dutch — nl"
+    validations:
+      required: true
+
+  - type: input
+    id: file-path
+    attributes:
+      label: Target file
+      description: Where the new locale table will live, named by its BCP 47 code.
+      value: "sdk/translations/src/<code>.ts"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: fluency
+    attributes:
+      label: Your fluency
+      description: Translations should come from a native or professional-level speaker.
+      options:
+        - Native speaker
+        - Professional / fluent
+        - Not me — requesting it for someone else to take
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: acceptance
+    attributes:
+      label: Acceptance checklist
+      description: The PR that closes this issue must satisfy every item.
+      options:
+        - label: "Locale table added at `sdk/translations/src/<code>.ts`, typed as `TranslationMap`"
+        - label: "Every key in `en.ts` is translated — no English left behind, no extra keys"
+        - label: "Sub-path export `./<code>` added to `sdk/translations/package.json` and entry added to `sdk/translations/rollup.config.mjs`"
+        - label: "Locale registered in `sdk/translations/src/__tests__/locales.test.ts` and the suite passes"
+        - label: "Translation reviewed by a second native or fluent speaker"
+        - label: "Changeset added (`pnpm changeset`) for `@cookieyes/translations`"
+        - label: "`pnpm lint`, `pnpm typecheck` and `pnpm test` pass"
+
+  - type: textarea
+    id: claim
+    attributes:
+      label: How to claim
+      value: To take this issue, comment "claiming".

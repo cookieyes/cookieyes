@@ -22,7 +22,8 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#usage">API</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx">Docs</a>
+  <a href="https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx">Docs</a> ·
+  <a href="https://github.com/orgs/cookieyes/projects/3">Roadmap</a>
 </p>
 
 ---
