@@ -20,7 +20,7 @@ The whole point of frontend-native: it barely touches the page. Time to banner a
 Feature-complete consent, with the control surface a serious project needs.
 
 - **Region-aware consent.** Pass the visitor's region and CookieYes applies the right consent experience automatically.
-- **Localized without the bundle bloat.** Load the locale you need and override any banner copy per language.
+- **Localised without the bundle bloat.** Load the locale you need and override any banner copy per language.
 - **Full CSS control.** Customise styles, colours, spacing, and components without being locked into the default design.
 - **Built for TypeScript.** Typed APIs and exports help developers catch mistakes earlier and work faster in their editor.
 - **Load third-party tools only after consent.** Control when GA4, GTM, Meta Pixel and other integrations can run.
