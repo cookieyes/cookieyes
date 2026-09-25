@@ -6,6 +6,7 @@ import { ConsentBanner } from "@/components/ConsentBanner";
 import { getSearchIndex } from "@/lib/search-index";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { Providers } from "./Providers";
+import { SkipLink } from "./SkipLink";
 
 /**
  * Inter carries body and UI text, Poppins the display headings — the two families the
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ConsentBanner />
       </head>
       <body>
+        <SkipLink />
         <Providers pageIndex={getSearchIndex()}>{children}</Providers>
         <Analytics />
       </body>

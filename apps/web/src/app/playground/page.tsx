@@ -8,6 +8,7 @@ import sdkManifest from "../../../../../sdk/react/package.json";
 import { InstallCommandCopy } from "../InstallCommandCopy";
 import { MobileMenu } from "../MobileMenu";
 import { SearchTriggers } from "../SearchTriggers";
+import { MAIN_CONTENT_ID } from "../SkipLink";
 import { SiteFooter } from "../sections/SiteFooter";
 import { SiteNav } from "../sections/SiteNav";
 import { StartWithInstall } from "../sections/StartWithInstall";
@@ -35,7 +36,7 @@ export default function PlaygroundPage() {
       <InstallCommandCopy />
       <SiteNav />
 
-      <main className="cy-pg-main">
+      <main id={MAIN_CONTENT_ID} className="cy-pg-main">
         <nav className="cy-pg-crumbs" aria-label="Breadcrumb">
           <a href="/">home</a>
           <span aria-hidden="true">/</span>

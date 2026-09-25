@@ -768,7 +768,7 @@ textarea.cy-pg-input {
   padding: 16px 12px 16px 16px;
   text-align: right;
   white-space: pre;
-  color: #575653;
+  color: #85857f; /* the design's #575653 is 2.45:1 on the code panel */
   user-select: none;
 }
 

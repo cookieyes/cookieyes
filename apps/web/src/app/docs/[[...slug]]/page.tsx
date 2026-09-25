@@ -8,6 +8,7 @@ import type { MDXComponents } from "mdx/types";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import type { ComponentProps } from "react";
+import { MAIN_CONTENT_ID } from "@/app/SkipLink";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
 import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
@@ -178,7 +179,9 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
       >
         {/* Header: .bc (breadcrumb prop, above) → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
           matching docs.html's own runtime assembly (initPageMeta(), docs.html:2119-2168). */}
-        <div className="cy-doc-ptitle">
+        {/* The skip link's target. Fumadocs' own <main> is display: contents, which cannot
+            be scrolled to, so the page title stands in for it. */}
+        <div className="cy-doc-ptitle" id={MAIN_CONTENT_ID}>
           {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}

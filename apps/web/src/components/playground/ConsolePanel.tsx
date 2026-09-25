@@ -46,7 +46,7 @@ export function ConsolePanel({
 
       {/* A log a screen reader reads line by line as it grows would talk over the visitor
           using the banner, so it is a plain region they can go and read instead. */}
-      <ol className="cy-pg-console-rows" role="log" ref={rows}>
+      <ol className="cy-pg-console-rows" aria-live="polite" ref={rows}>
         {entries.map((entry) => (
           <li key={entry.seq} data-seq={entry.seq} data-level={entry.level}>
             <span className="cy-pg-log-time">{entry.time}</span>

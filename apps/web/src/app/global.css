@@ -46,3 +46,28 @@ html {
     clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
   }
 }
+
+/* "Skip to content" (app/SkipLink.tsx): off-screen until it takes focus, then pinned to the
+   top-left corner above every header. */
+.cy-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #14142a;
+  color: #ffffff;
+  font-family: var(--font-inter), sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.cy-skip-link:focus-visible {
+  transform: none;
+  outline: 2px solid #5f9cff;
+  outline-offset: 2px;
+}

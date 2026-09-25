@@ -4,6 +4,7 @@ import { usePathname } from "fumadocs-core/framework";
 import Link from "fumadocs-core/link";
 import { useNotebookLayout } from "fumadocs-ui/layouts/notebook";
 import { LinkItem, type LinkItemType, type MainItemType } from "fumadocs-ui/layouts/shared";
+import { useEffect } from "react";
 import { DEFAULT_FRAMEWORK, frameworkOf } from "@/lib/framework-docs";
 import { ThemeToggle } from "../ThemeToggle";
 
@@ -80,8 +81,21 @@ export function DocsHeader() {
     isNavTransparent,
     props: { nav },
   } = useNotebookLayout();
-  const { open } = slots.sidebar?.useSidebar?.() ?? {};
+  const { open, setOpen } = slots.sidebar?.useSidebar?.() ?? {};
   const pathname = usePathname();
+
+  // Escape closes the mobile drawer, and focus goes back to the button that opened it.
+  // Fumadocs' drawer closes on a backdrop tap or a link only.
+  useEffect(() => {
+    if (!open || !setOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      document.querySelector<HTMLElement>('[aria-controls="nd-sidebar-mobile"]')?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [open, setOpen]);
 
   const sectionLinks = navItems
     .filter(isSectionLink)

@@ -125,7 +125,10 @@ const config = {
         permanent: false,
       }),
     );
-    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite];
+    // Browsers and crawlers that never read the page's <link rel="icon"> still ask for
+    // /favicon.ico; the site's only icon is the SVG.
+    const favicon = { source: "/favicon.ico", destination: "/icon.svg", permanent: true };
+    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite, favicon];
   },
 
   /**

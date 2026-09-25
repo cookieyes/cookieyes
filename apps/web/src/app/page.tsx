@@ -5,6 +5,7 @@ import { InstallCommandCopy } from "./InstallCommandCopy";
 import { MobileMenu } from "./MobileMenu";
 import { LandingMotion } from "./motion/LandingMotion";
 import { SearchTriggers } from "./SearchTriggers";
+import { MAIN_CONTENT_ID } from "./SkipLink";
 import { BuiltToLast } from "./sections/BuiltToLast";
 import { GridFrame } from "./sections/GridFrame";
 import { Hero } from "./sections/Hero";
@@ -42,7 +43,7 @@ export default function LandingPage() {
       <GridFrame />
       <SiteNav />
       <MobileMenu />
-      <main>
+      <main id={MAIN_CONTENT_ID}>
         <Hero />
         <Playground />
         <Performance />
