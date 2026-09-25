@@ -1,0 +1,68 @@
+---
+title: Critical CSS
+description: Paint the banner on the first frame by inlining its rules in the HTML.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+The normal stylesheet import puts the stylesheet on the critical path: the browser waits for it before painting anything. On a slow connection that delay is longer than everything else the SDK does. `critical.css` is the small part of the stylesheet that paints the banner; put it inline in `<head>` and load the full stylesheet without blocking, and the banner is styled on the first frame.
+
+This is an optimisation. If your first-paint numbers are fine, skip it.
+
+| File | Contents | Size |
+| --- | --- | --- |
+| `styles.css` | Everything: banner, dialogs, toggles, recall button, reload notice | about 3.7 KB gzipped |
+| `critical.css` | Only what the banner needs to paint | about 1.6 KB gzipped |
+
+Always load `styles.css` too. `critical.css` alone leaves the preferences dialog unstyled.
+
+## Set it up
+
+<Framework when="nextjs">
+
+Two lines. `<CookieYesStyles />` inlines `critical.css` and loads the full stylesheet without blocking; the route serves that stylesheet.
+
+```tsx title="app/layout.tsx"
+import { CookieYesStyles } from "@cookieyes/nextjs/server";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <CookieYesStyles />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+```ts title="app/cookieyes/styles.css/route.ts"
+export { GET } from "@cookieyes/nextjs/styles-route";
+```
+
+Then remove `import "@cookieyes/nextjs/styles.css"` from `consent-manager.tsx`; otherwise the stylesheet is back on the critical path.
+
+</Framework>
+
+<Framework when="react">
+
+Copy the contents of `@cookieyes/react/critical.css` into a `<style>` in your HTML `<head>`, and load `styles.css` without blocking, for example with `<link rel="preload" as="style" onload="this.rel='stylesheet'">`. Then remove `import "@cookieyes/react/styles.css"` from `consent-manager.tsx`; otherwise the stylesheet is back on the critical path.
+
+</Framework>
+
+If you send a `Content-Security-Policy`, the inline block needs its hash in `style-src`. See [CSP](/docs/styling/csp).
+
+## Common mistakes
+
+**The preferences dialog is unstyled, the banner is fine.**
+Only `critical.css` is loaded. Load `styles.css` too.
+
+**Nothing got faster.**
+The full stylesheet is still imported in `consent-manager.tsx`. Remove that import.
+
+## Next steps
+
+- [CSP](/docs/styling/csp): the `style-src` hash for the inline block
+- [Installation](/docs/getting-started/installation): the normal stylesheet import this replaces

@@ -1,5 +1,7 @@
 import { Geist_Mono, Inter, Poppins } from "next/font/google";
 import "./global.css";
+import { Analytics } from "@/components/Analytics";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { getSearchIndex } from "@/lib/search-index";
 import { Providers } from "./Providers";
 
@@ -49,8 +51,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${poppins.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <ConsentBanner />
+      </head>
       <body>
         <Providers pageIndex={getSearchIndex()}>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );

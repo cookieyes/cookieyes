@@ -1,0 +1,16 @@
+{
+  "title": "SDKs",
+  "pages": [
+    "getting-started",
+    "store",
+    "components",
+    "headless",
+    "hooks",
+    "styling",
+    "translations",
+    "accessibility",
+    "network-blocking",
+    "migration",
+    "troubleshooting"
+  ]
+}

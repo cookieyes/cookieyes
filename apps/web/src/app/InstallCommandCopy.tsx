@@ -28,9 +28,16 @@ export function InstallCommandCopy() {
       return commandRow?.querySelector("code, pre, span")?.textContent?.trim();
     }
 
-    /** Swaps the button's label to "Copied", then restores it. */
+    /**
+     * Swaps the button's label to "Copied", then restores it.
+     *
+     * `.sc-interp` is the visible label. The button also holds a hidden copy of the word
+     * "Copied", which reserves the wider of the two widths so the button does not resize
+     * mid-interaction — so anything that matches the wrapper instead reads both, and the
+     * button comes back as "CopiedCopy".
+     */
     function confirmOnButton(copyButton: HTMLElement): void {
-      const labelElement = copyButton.querySelector("span:last-of-type");
+      const labelElement = copyButton.querySelector(".sc-interp");
       if (!labelElement) return;
       const originalLabel = labelElement.textContent;
       labelElement.textContent = "Copied";

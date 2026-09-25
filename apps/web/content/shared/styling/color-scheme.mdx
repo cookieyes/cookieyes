@@ -1,0 +1,79 @@
+---
+title: Colour scheme
+description: Light, dark, or follow the visitor's device.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+`colorScheme` in `initCookieYes()` chooses the light or the dark set of colours for every CookieYes surface.
+
+| Value | Behaviour |
+| --- | --- |
+| `"system"` | Default. Follows the device setting, and updates live when the visitor changes it |
+| `"light"` | Always light |
+| `"dark"` | Always dark |
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  colorScheme: "light",
+});
+```
+
+A light-only site should set `"light"`: with the default, a visitor whose device is in dark mode gets a dark banner on your light page.
+
+## What changes in dark mode
+
+Five colours switch: the surface (`--cy-bg`), text (`--cy-text`), secondary text (`--cy-muted`), borders (`--cy-border`) and the recall button (`--cy-widget-bg`). Anything you set yourself in `theme` stays as you set it in both schemes.
+
+The brand colour does not switch. A `primaryColor` that reads well on white can fail on the dark surface, so give it a dark value in CSS:
+
+```css title="app/consent.css"
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    --cy-primary: #4d8ef7;
+  }
+}
+```
+
+## Your site has its own dark-mode switch
+
+If your site toggles dark mode with a class on `<html>` (Tailwind's class strategy, `next-themes`, your own toggle), the SDK does not see it: it reads only `colorScheme` and, under `"system"`, the device setting. Set `colorScheme` to your default scheme, and switch the variables from that class:
+
+```css title="app/consent.css"
+html.dark [data-cy-part="banner"],
+html.dark [data-cy-part="dialog"],
+html.dark [data-cy-part="optout"] {
+  --cy-bg: #161b27;
+  --cy-text: #f3f4f6;
+  --cy-muted: #9ca3af;
+  --cy-border: #2d3748;
+}
+```
+
+This works only when the same colours are not set in `theme`; see [Theme tokens → Config or CSS, not both](/docs/styling/theme-tokens#good-to-know).
+
+## Common mistakes
+
+**A light-only site shows a dark banner to some visitors.**
+`colorScheme` defaults to `"system"`. Set `"light"`.
+
+**The site is dark but the banner is light.**
+Your dark mode is a class the SDK cannot see. Switch the variables from that class, as above.
+
+**The brand colour is unreadable in dark mode.**
+Only the five surface colours switch. Give `--cy-primary` a dark value in CSS.
+
+**Text disappeared after setting `backgroundColor`.**
+You set the background for both schemes but left the dark text colour. Set `textColor` too, or leave both to the defaults.
+
+## Next steps
+
+- [Theme tokens](/docs/styling/theme-tokens): the colours themselves
+- [CSS variables reference](/docs/styling/css-variables): every variable's light and dark default

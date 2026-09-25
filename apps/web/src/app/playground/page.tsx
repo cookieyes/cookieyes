@@ -12,7 +12,7 @@ import { SiteNav } from "../sections/SiteNav";
 import { StartWithInstall } from "../sections/StartWithInstall";
 
 export const metadata: Metadata = {
-  title: "Playground — CookieYes for Developers",
+  title: "Playground | CookieYes for Developers",
   description:
     "Change the banner's colours, wording and categories, watch it update live, and copy the setup code. No install, no account.",
 };

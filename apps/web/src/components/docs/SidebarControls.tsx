@@ -1,24 +1,32 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  DEFAULT_FRAMEWORK,
+  FRAMEWORK_LABEL,
+  FRAMEWORKS,
+  type Framework,
+  frameworkOf,
+} from "@/lib/framework-docs";
 
 /**
- * Storage key the package switcher writes the reader's chosen package to.
- *
- * Originally this was meant to drive Fumadocs' `<Tabs groupId persist>`, but fumadocs-ui 16
- * no longer implements `groupId`/`persist` at all — `TabsProps` declares neither prop, and
- * neither `tabs.js` nor `codeblock.js` contains the string (verified against 16.15.1). So
- * this key currently feeds nothing but the switcher's own memory across navigations, plus
- * the `?pkg=` deep links from the landing page.
- *
- * If per-package content blocks are wanted later, they will need a switcher-aware component
- * of our own reading this key — the library will not wire it up for us.
+ * Remembers the framework a reader last chose, so `/docs` links from the landing page and
+ * the header can send them back to it. The URL is what decides what a page shows; this is
+ * only a default for links that do not name one.
  */
-const PACKAGE_GROUP_ID = "cy-package";
+export const FRAMEWORK_STORAGE_KEY = "cy-package";
+
+export function rememberFramework(framework: Framework): void {
+  try {
+    localStorage.setItem(FRAMEWORK_STORAGE_KEY, framework);
+  } catch {
+    // Private mode or blocked storage — the URL still carries the choice.
+  }
+}
 
 interface PackageOption {
-  /** Value written to storage; also the `?pkg=` deep-link value. */
-  id: string;
+  id: Framework;
   /** Full package name, shown in the trigger and the list. */
   name: string;
   /** Framework logo, a 24x24 viewBox rendered inside .cy-doc-pi. */
@@ -29,107 +37,95 @@ interface PackageOption {
 
 /**
  * The three frameworks a reader picks between, per the design's .pdrop
- * (docs.html:400-406).
+ * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/core`.
  *
  * `@cookieyes/cli` and `@cookieyes/translations` are deliberately absent: they are
- * not frameworks, so choosing one here answered nothing. Both keep their docs pages,
- * their nav entries and their `PackageBadge` colour keys — only the switcher is
- * framework-only.
+ * not frameworks, so choosing one here answered nothing.
  */
-const PACKAGES: PackageOption[] = [
-  { id: "nextjs", name: "@cookieyes/nextjs", logo: <NextjsLogo />, hint: "Next.js" },
-  { id: "react", name: "@cookieyes/react", logo: <ReactLogo />, hint: "React" },
-  { id: "core", name: "@cookieyes/core", logo: <JavaScriptLogo />, hint: "JavaScript" },
-];
+const PACKAGES: Record<Framework, PackageOption> = {
+  nextjs: {
+    id: "nextjs",
+    name: "@cookieyes/nextjs",
+    logo: <NextjsLogo />,
+    hint: FRAMEWORK_LABEL.nextjs,
+  },
+  react: {
+    id: "react",
+    name: "@cookieyes/react",
+    logo: <ReactLogo />,
+    hint: FRAMEWORK_LABEL.react,
+  },
+  core: {
+    id: "core",
+    name: "@cookieyes/core",
+    logo: <JavaScriptLogo />,
+    hint: FRAMEWORK_LABEL.core,
+  },
+};
+
+interface SidebarControlsProps {
+  /**
+   * Which pages exist under each framework, as `section/page` paths, computed on the
+   * server from the docs source. Lets the switcher take the reader to the same page under
+   * the framework they chose when it exists there, and to that framework's start page when
+   * it does not — a JavaScript reader leaving a React hooks page, for instance.
+   */
+  available: Record<Framework, string[]>;
+}
 
 /**
- * Package switcher and version select, mounted as the sidebar banner. Together they
- * reproduce the design's .psw and .vsel controls above the nav tree.
+ * Framework switcher, mounted as the sidebar banner — the design's .psw control above the
+ * nav tree. Choosing a framework navigates: the docs are published once per framework,
+ * so the switch is a change of URL, and the sidebar, the examples and the header all
+ * follow from it. Nothing on the page is swapped in place.
+ *
+ * Absent across the changelog, where the sidebar is a list of releases rather than the
+ * docs tree and no page varies by framework — the design hides its whole `#sbDocs` block,
+ * switcher included, for that section.
  */
-export function SidebarControls({ versions }: { versions: string[] }) {
+export function SidebarControls({ available }: SidebarControlsProps) {
+  const pathname = usePathname();
+  if (pathname.startsWith("/docs/changelog")) return null;
+
   return (
     <div className="cy-doc-sb-controls">
-      <PackageSwitcher />
-      <VersionSelect versions={versions} />
+      <PackageSwitcher available={available} />
       <div className="cy-doc-sb-rule" aria-hidden="true" />
     </div>
   );
 }
 
-/**
- * The design's .psw dropdown, headed by the .psw-h label (docs.html:397).
- *
- * What it does today: remembers the reader's package across navigations and accepts a
- * `?pkg=` deep link. Nothing else on screen reacts to it yet — per-framework content
- * blocks would need the switcher-aware component described above. Kept a real control
- * rather than a decorative one so that pass stays additive.
- */
-function PackageSwitcher() {
-  const [selected, setSelected] = useState<PackageOption>(() => {
-    const fallback = PACKAGES[0];
-    if (!fallback) throw new Error("PACKAGES must not be empty");
-    return fallback;
-  });
+/** The design's .psw dropdown, headed by the .psw-h label (docs.html:397). */
+function PackageSwitcher({ available }: SidebarControlsProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const current = frameworkOf(pathname) ?? DEFAULT_FRAMEWORK;
+  const selected = PACKAGES[current];
+
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
   const labelId = useId();
   const nameId = useId();
 
-  // Resolved after mount, for two reasons: the stored value is per-browser, so
-  // reading it during render would make the server and first client render
-  // disagree; and `?pkg=` is read from location rather than useSearchParams, which
-  // would opt the whole docs route out of static prerendering unless the sidebar
-  // were wrapped in a Suspense boundary.
-  //
-  // `?pkg=` lets a link choose the package — the landing page's Next.js and React
-  // calls to action arrive that way, so the reader lands already set to the
-  // framework they picked. It beats the stored preference, which is the point of
-  // following such a link.
+  // Whatever framework the URL names is the reader's current choice; keep the stored
+  // default in step so a later `/docs` link lands them here again.
   useEffect(() => {
-    let requested: string | null = null;
-    try {
-      requested = new URLSearchParams(window.location.search).get("pkg");
-    } catch {
-      // Malformed query string — fall through to the stored preference.
-    }
+    rememberFramework(current);
+  }, [current]);
 
-    let stored: string | null = null;
-    try {
-      stored = sessionStorage.getItem(PACKAGE_GROUP_ID) ?? localStorage.getItem(PACKAGE_GROUP_ID);
-    } catch {
-      // Private mode or blocked storage — fall back to the default package.
-    }
+  const choose = useCallback(
+    (framework: Framework) => {
+      setOpen(false);
+      if (framework === current) return;
+      rememberFramework(framework);
 
-    // A value stored before the switcher went framework-only (`cli`, `translations`)
-    // no longer matches, and this guard leaves the default selected — which is why
-    // dropping those two options needs no migration pass.
-    const match = PACKAGES.find((pkg) => pkg.id === (requested ?? stored));
-    if (!match) return;
-    setSelected(match);
-
-    // Persist a linked-to package so it survives the next navigation, the same as
-    // one chosen from the dropdown.
-    if (requested === match.id) {
-      try {
-        sessionStorage.setItem(PACKAGE_GROUP_ID, match.id);
-        localStorage.setItem(PACKAGE_GROUP_ID, match.id);
-      } catch {
-        // Storage unavailable; the choice still applies for this render.
-      }
-    }
-  }, []);
-
-  const choose = useCallback((pkg: PackageOption) => {
-    setSelected(pkg);
-    setOpen(false);
-    try {
-      sessionStorage.setItem(PACKAGE_GROUP_ID, pkg.id);
-      localStorage.setItem(PACKAGE_GROUP_ID, pkg.id);
-    } catch {
-      // Storage unavailable; the choice still applies for this render.
-    }
-  }, []);
+      const rest = pathname.replace(/^\/docs\/[^/]+\/?/, "");
+      const exists = rest === "" || available[framework].includes(rest);
+      router.push(exists ? `/docs/${framework}${rest ? `/${rest}` : ""}` : `/docs/${framework}`);
+    },
+    [available, current, pathname, router],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -183,53 +179,28 @@ function PackageSwitcher() {
         data-open={open}
         hidden={!open}
       >
-        {PACKAGES.map((pkg) => (
-          <button
-            type="button"
-            key={pkg.id}
-            role="option"
-            aria-selected={pkg.id === selected.id}
-            className="cy-doc-pdi"
-            data-selected={pkg.id === selected.id}
-            onClick={() => choose(pkg)}
-          >
-            {/* The logo is decorative — `hint` already names the framework in text. */}
-            <span className="cy-doc-pi" aria-hidden="true">
-              {pkg.logo}
-            </span>
-            {pkg.name}
-            <small>{pkg.hint}</small>
-          </button>
-        ))}
+        {FRAMEWORKS.map((id) => {
+          const pkg = PACKAGES[id];
+          return (
+            <button
+              type="button"
+              key={pkg.id}
+              role="option"
+              aria-selected={pkg.id === selected.id}
+              className="cy-doc-pdi"
+              data-selected={pkg.id === selected.id}
+              onClick={() => choose(pkg.id)}
+            >
+              {/* The logo is decorative — `hint` already names the framework in text. */}
+              <span className="cy-doc-pi" aria-hidden="true">
+                {pkg.logo}
+              </span>
+              {pkg.name}
+              <small>{pkg.hint}</small>
+            </button>
+          );
+        })}
       </div>
-    </div>
-  );
-}
-
-/**
- * The design's .vsel row.
- *
- * Only the versions that actually have content are offered. The design mocks
- * v1.4–v1.1, but Fumadocs has no built-in versioning and no older content exists,
- * so listing them would be four options that silently do nothing. Once versioned
- * content lands, pass the full list in.
- */
-function VersionSelect({ versions }: { versions: string[] }) {
-  const id = useId();
-  const single = versions.length <= 1;
-
-  return (
-    <div className="cy-doc-vsel">
-      <label className="cy-doc-vsel-label" htmlFor={id}>
-        Version
-      </label>
-      <select id={id} className="cy-doc-vsel-select" defaultValue={versions[0]} disabled={single}>
-        {versions.map((version, index) => (
-          <option key={version} value={version}>
-            {index === 0 ? `${version} (latest)` : version}
-          </option>
-        ))}
-      </select>
     </div>
   );
 }

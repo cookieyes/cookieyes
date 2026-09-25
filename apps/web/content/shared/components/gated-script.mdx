@@ -1,0 +1,59 @@
+---
+title: GatedScript
+description: Load a third-party script only after the visitor consents.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Registers a script and loads it only once its category is granted. Until then, nothing is downloaded and nothing runs. It renders nothing itself.
+
+Use it for any tag you can reference in code: analytics, ad pixels, chat widgets. If CookieYes has an [integration](/docs/integrations) for your tool (Google Analytics, Google Tag Manager, Meta Pixel, PostHog, Segment, Microsoft Clarity), use that instead: it also handles what happens when consent is withdrawn.
+
+## Add it
+
+Anywhere inside your client tree, for example next to the banner:
+
+```tsx check="false"
+<GatedScript
+  id="my-chat-widget"
+  src="https://widget.example.com/loader.js"
+  category="functional"
+/>
+```
+
+## Props
+
+<ComponentPropsTable component="GatedScript" />
+
+`id` is also the `id` of the `<script>` tag that gets injected, so keep it unique on the page.
+
+## Which category
+
+Pick the category that describes what the tool does with visitor data, and make sure it exists in your `categories` list:
+
+| Tool | Category |
+| --- | --- |
+| Analytics, heatmaps, session recording | `analytics` |
+| Ad and retargeting pixels | `advertisement` |
+| Chat widgets and other visitor preferences | `functional` |
+
+## Good to know
+
+Once a script has loaded, withdrawing consent does not unload it in the current page: it has already run. It is not loaded again on the next page load.
+
+## Common mistakes
+
+**The script never loads, even after accepting.**
+The `category` is not in your `categories` list, so it can never be granted.
+
+**The script loads before consent.**
+Something else loads it too: a plain `<script>` tag, your framework's script component, or an import. Remove that.
+
+**Two scripts, only one loads.**
+They share an `id`. Give each one its own.
+
+## Next steps
+
+- [Integrations](/docs/integrations): ready-made presets for the common tools
+- [GatedFrame](/docs/components/gated-frame): the same idea for iframes such as YouTube or Google Maps

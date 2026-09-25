@@ -2,28 +2,31 @@ import type { TypeNode } from "fumadocs-ui/components/type-table";
 import type { MergedOption } from "@/lib/config-reference-types";
 
 /**
- * Turns one generated `MergedOption` into a `TypeTable` `TypeNode`. `description`
- * is typed `ReactNode`, so composing the sidecar's if-omitted prose in as a
- * second paragraph is a supported use, not a hack — see design §2.2. Shared by
- * `ConfigOptionsTable` and `ConfigNestedTable`.
+ * Turns one generated `MergedOption` into a `TypeTable` `TypeNode`. Only the description
+ * is shown: the Default column already says what an omitted option does, and the
+ * sidecar's longer `ifOmitted` prose stays available for the checks without lengthening
+ * the table. Shared by `ConfigOptionsTable` and `ConfigNestedTable`.
  */
 export function toTypeNode(option: MergedOption): TypeNode {
   return {
-    type: option.type,
+    // `| undefined` on every optional field says nothing the Optional badge does not.
+    type: option.type.replace(/\s*\|\s*undefined$/, ""),
     required: option.required,
     default: option.default ?? undefined,
     deprecated: option.deprecatedReplacement !== undefined,
-    description: (
-      <>
-        <p>{option.description}</p>
-        <p>
-          <strong>If omitted:</strong> {option.ifOmitted}
-        </p>
-      </>
-    ),
+    description: option.description,
   };
 }
 
+/**
+ * Deprecated options (`overrides`, `backendURL`, `builtInIntegrations`) stay in the generated
+ * data so the fail-closed checks keep covering them, but the docs are written for new
+ * setups and never show them.
+ */
 export function toTypeMap(options: MergedOption[]): Record<string, TypeNode> {
-  return Object.fromEntries(options.map((option) => [option.path, toTypeNode(option)]));
+  return Object.fromEntries(
+    options
+      .filter((option) => option.deprecatedReplacement === undefined)
+      .map((option) => [option.path, toTypeNode(option)]),
+  );
 }

@@ -1,0 +1,111 @@
+---
+title: Network blocking
+description: Block a third-party tool's requests until its category is granted, when you cannot gate the tool itself.
+frameworks: [nextjs, react, core]
+---
+
+## What it does
+
+`networkBlocker` stops `fetch`, `XMLHttpRequest` and `sendBeacon` requests to the domains you list until the visitor grants the matching category. It is a last resort for code you do not control: a tag hard-coded in a template you cannot edit, a request fired from inside another vendor's script, a beacon sent when the page unloads.
+
+<Framework when="nextjs react">
+
+If you can reference the tag in your own code, use [`GatedScript`](/docs/components/gated-script) or an [integration](/docs/integrations) instead: they load nothing until consent, so there is nothing to block.
+
+</Framework>
+
+<Framework when="core">
+
+If you can reference the tag in your own code, use [`customScript()`](/docs/integrations/custom-integration) or an [integration](/docs/integrations) instead: they load nothing until consent, so there is nothing to block.
+
+</Framework>
+
+It cannot stop a `<script src="...">` tag. Browsers load those on a path the blocker does not see.
+
+## Set it up
+
+Two steps: register the blocker once, then list your rules. The blocker is a separate import so that sites that do not use it do not download it. Hotjar below is only an example; put your own vendor's domain in the rule.
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { CookieBanner, initCookieYes, registerNetworkBlocker } from "@cookieyes/react";
+
+registerNetworkBlocker();
+
+initCookieYes({
+  mode: "cookie-only",
+  networkBlocker: {
+    rules: [{ id: "hotjar", domain: "static.hotjar.com", category: "analytics" }],
+  },
+});
+
+export function CookieYesRoot() {
+  return <CookieBanner />;
+}
+```
+
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
+
+registerNetworkBlocker();
+
+export const { consentStore, consentManager } = initCookieYes({
+  mode: "cookie-only",
+  networkBlocker: {
+    rules: [{ id: "hotjar", domain: "static.hotjar.com", category: "analytics" }],
+  },
+});
+```
+
+</Framework>
+
+Every request to `static.hotjar.com`, or a subdomain of it, is blocked until `analytics` is granted. Without `registerNetworkBlocker()` the rules do nothing; the console shows an error naming the missing import.
+
+## Rules
+
+| Field | Meaning |
+| --- | --- |
+| `id` | A name for the rule, shown in the console when it blocks something |
+| `domain` | The host to block, including its subdomains |
+| `category` | The category that unblocks it |
+| `pathIncludes` | Optional. Block only when the URL path or query contains this text |
+| `methods` | Optional. Block only these HTTP methods, for example `["POST"]`. All methods by default |
+
+Blocked requests are logged to the console. Set `logBlockedRequests: false` to silence them, or pass `onRequestBlocked({ rule, url, method })` to react to them yourself.
+
+## Starter rules for common vendors
+
+Two example rules for tools that have no [integration](/docs/integrations) of their own. Tools that have one (Google Analytics, Google Tag Manager, Meta Pixel, PostHog, Segment, Microsoft Clarity) normally need no rule: the integration loads them only after consent. Write a rule for one of them only when its snippet is hard-coded in a page you cannot edit.
+
+| Vendor | Rule |
+| --- | --- |
+| Hotjar | `{ id: "hotjar", domain: "static.hotjar.com", category: "analytics" }` |
+| TikTok Pixel | `{ id: "tiktok-pixel", domain: "analytics.tiktok.com", category: "advertisement" }` |
+
+## Good to know
+
+A blocked `fetch` fails like a network error; a blocked `XMLHttpRequest` is aborted; a blocked `sendBeacon` reports success but sends nothing. Granting consent unblocks requests made from then on; a request that was already blocked is not retried.
+
+## Common mistakes
+
+**Rules are configured but nothing is blocked.**
+`registerNetworkBlocker()` was never called. Check the console for the error.
+
+**A `<script src="...">` tag still loads.**
+The blocker cannot stop script tags. Gate the script itself instead, as described at the top.
+
+**A request is blocked that should not be.**
+`domain` also matches subdomains, and `pathIncludes` also matches the query string. Narrow the rule with `pathIncludes` or `methods`.
+
+## Next steps
+
+- [Configuration → networkBlocker](/docs/getting-started/configuration#networkblocker): the option reference
+- [Integrations](/docs/integrations): tools that stop cleanly without any blocking

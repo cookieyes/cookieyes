@@ -8,6 +8,112 @@ const config = {
   agentRules: false,
 
   /**
+   * The docs moved under a framework root: `/docs/<section>/…` is now
+   * `/docs/{nextjs,react,core}/<section>/…`. These keep every old link working — the ones
+   * in READMEs, issues and bookmarks — by sending them to the default framework, or to the
+   * one a `?pkg=` link asked for. Sections that exist under one framework only still land
+   * on the default; the page then offers the framework that has it.
+   */
+  // Only developers.cookieyes.com may be indexed. Every other host that serves this
+  // build (review deployments, previews, localhost) answers with noindex, so a copy of
+  // the site never competes with the real one in search results.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        missing: [{ type: "host", value: "developers\\.cookieyes\\.com" }],
+        headers: [{ key: "X-Robots-Tag", value: "noindex" }],
+      },
+      // RFC 8288 Link headers for agents: every page has a Markdown form at its own URL,
+      // and the docs are the service documentation for the packages.
+      {
+        source: "/",
+        headers: [
+          {
+            key: "Link",
+            value: '</>; rel="alternate"; type="text/markdown", </docs/nextjs>; rel="service-doc"',
+          },
+        ],
+      },
+      {
+        source: "/docs/:path*",
+        headers: [{ key: "Link", value: '</docs/:path*>; rel="alternate"; type="text/markdown"' }],
+      },
+    ];
+  },
+
+  async redirects() {
+    const sections = [
+      "getting-started",
+      "components",
+      "headless",
+      "hooks",
+      "styling",
+      "integrations",
+      "translations",
+      "accessibility",
+      "reopening-preferences",
+      "network-blocking",
+      "rendering-and-selector-contract",
+      "migration",
+      "troubleshooting",
+    ];
+    // A framework root has no page of its own: the first thing to read is how to install.
+    const roots = ["nextjs", "react", "core"].map((fw) => ({
+      source: `/docs/${fw}`,
+      destination: `/docs/${fw}/getting-started/installation`,
+      permanent: false,
+    }));
+    // The primitives overview was folded into the Banner page.
+    const moved = ["nextjs", "react"].flatMap((fw) => [
+      {
+        source: `/docs/${fw}/headless/overview`,
+        destination: `/docs/${fw}/headless/banner`,
+        permanent: true,
+      },
+      {
+        source: `/docs/${fw}/reopening-preferences`,
+        destination: `/docs/${fw}/hooks/use-consent-actions`,
+        permanent: true,
+      },
+      {
+        source: `/docs/${fw}/rendering-and-selector-contract`,
+        destination: `/docs/${fw}/styling/part-and-state-contract`,
+        permanent: true,
+      },
+    ]);
+    const byQuery = ["react", "core"].flatMap((pkg) => [
+      {
+        source: "/docs",
+        has: [{ type: "query", key: "pkg", value: pkg }],
+        destination: `/docs/${pkg}/getting-started/installation`,
+        permanent: false,
+      },
+      ...sections.map((section) => ({
+        source: `/docs/${section}/:path*`,
+        has: [{ type: "query", key: "pkg", value: pkg }],
+        destination: `/docs/${pkg}/${section}/:path*`,
+        permanent: false,
+      })),
+    ]);
+    const byPath = sections.map((section) => ({
+      source: `/docs/${section}/:path*`,
+      destination: `/docs/nextjs/${section}/:path*`,
+      permanent: true,
+    }));
+    // Agent discovery documents that describe the CookieYes platform, not this site.
+    // They are published by www.cookieyes.com; point there instead of keeping a copy.
+    const parentSite = ["/.well-known/mcp/server-card.json", "/.well-known/api-catalog"].map(
+      (path) => ({
+        source: path,
+        destination: `https://www.cookieyes.com${path}`,
+        permanent: false,
+      }),
+    );
+    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite];
+  },
+
+  /**
    * A miss on a file — an image, a font, a stylesheet — answers in plain text instead of
    * rendering the whole 404 page into something that only wanted bytes.
    *

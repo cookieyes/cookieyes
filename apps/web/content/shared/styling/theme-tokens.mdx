@@ -1,0 +1,77 @@
+---
+title: Theme tokens
+description: Set the brand colour, corner radius and font once; every CookieYes surface follows.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+`theme` in `initCookieYes()` sets the colours, radius and font of the banner, both dialogs, the recall button and the reload notice. Each key writes one CSS variable (`--cy-*`) that the stylesheet uses everywhere.
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+
+initCookieYes({
+  mode: "cookie-only",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+    fontFamily: "'Inter', sans-serif",
+  },
+});
+```
+
+Try the values live in the [Playground](/playground).
+
+## The keys
+
+| Key | Sets | Default |
+| --- | --- | --- |
+| `primaryColor` | `--cy-primary`: primary buttons, links, the checked toggle | `#1863dc` |
+| `backgroundColor` | `--cy-bg`: the banner and dialog surface | `#ffffff`, dark `#161b27` |
+| `textColor` | `--cy-text` | `#212121`, dark `#f3f4f6` |
+| `mutedTextColor` | `--cy-muted`: secondary text | `#6b7280`, dark `#9ca3af` |
+| `borderColor` | `--cy-border`: hairlines and dividers | `#f4f4f4`, dark `#2d3748` |
+| `widgetBackgroundColor` | `--cy-widget-bg`: the recall button | `#0056a7`, dark `#1f6fd1` |
+| `borderRadius` | `--cy-radius`: banner and dialog corners | `6px` |
+| `fontFamily` | `--cy-font`: every text | the system font stack |
+| `focusColor` | `--cy-focus`: the keyboard focus outline | same as the primary colour |
+
+Three more variables have no key because they are computed for you: `--cy-primary-hover`, a darker primary, and `--cy-on-primary` and `--cy-on-widget-bg`, near-white or near-black text chosen for contrast on the primary and widget colours. That calculation understands hex colours only, so keep `primaryColor` and `widgetBackgroundColor` as hex.
+
+Every variable with its light and dark default is on the [CSS variables reference](/docs/styling/css-variables).
+
+## Good to know
+
+**Config or CSS, not both.** As soon as you set one `theme` key, every `--cy-*` variable is written onto the components, and a CSS override of a variable no longer applies. Either set your colours through `theme`, or set none there and use CSS variables for all of them. See [Custom CSS](/docs/styling/custom-css) for the CSS route.
+
+**Dark mode.** Five colours have a dark default, used only when you have not set them. The brand colour is the same in both schemes. See [Colour scheme](/docs/styling/color-scheme).
+
+**`fontFamily` accepts a CSS variable**, such as `"var(--font-inter), sans-serif"`, as long as the variable is defined on `:root` or `html`; the components sit directly under `<body>`, so a variable set deeper in your tree does not reach them.
+
+**First paint.** The stylesheet's defaults show until the theme is applied after the page loads, which a visitor may see as a brief flash from the default blue. To avoid it, set the same colour in your own CSS as well:
+
+```css title="app/consent.css"
+:root {
+  --cy-primary: #1863dc;
+}
+```
+
+## Common mistakes
+
+**A `--cy-*` rule in your CSS does nothing.**
+You set `theme`, which wins. Remove the matching key, or set the value through `theme` instead.
+
+**Button text became hard to read after changing `primaryColor`.**
+The value is not a hex colour, so the text colour could not be computed. Use hex.
+
+**The font did not change.**
+The CSS variable you passed is not defined on `:root` or `html`.
+
+## Next steps
+
+- [Colour scheme](/docs/styling/color-scheme): light, dark, or follow the device
+- [Custom CSS](/docs/styling/custom-css): everything the keys do not cover
+- [CSS variables reference](/docs/styling/css-variables): every variable and its defaults

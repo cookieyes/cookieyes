@@ -1,5 +1,7 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "Hero".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+import sdkManifest from "../../../../../sdk/react/package.json";
+
 export function Hero() {
   return (
     <section
@@ -11,7 +13,7 @@ export function Hero() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        background: "rgb(248, 249, 250)",
+        background: "light-dark(rgb(248, 249, 250), #15171a)",
       }}
     >
       {" "}
@@ -98,7 +100,7 @@ export function Hero() {
             padding: "6px 10px 6px 14px",
             borderRadius: "10px",
             border: "1px solid rgb(93, 210, 216)",
-            background: "rgb(189, 244, 246)",
+            background: "light-dark(rgb(189, 244, 246), #0a3c44)",
             textDecoration: "none",
             transition: "background 0.15s, border-color 0.15s",
           }}
@@ -112,7 +114,7 @@ export function Hero() {
               lineHeight: "12px",
               letterSpacing: "1px",
               textTransform: "uppercase",
-              color: "rgb(14, 70, 72)",
+              color: "light-dark(rgb(14, 70, 72), #94dce9)",
             }}
           >
             {"New"}
@@ -123,17 +125,20 @@ export function Hero() {
               fontWeight: "500",
               fontSize: "12px",
               lineHeight: "16px",
-              color: "rgb(14, 70, 72)",
+              color: "light-dark(rgb(14, 70, 72), #94dce9)",
             }}
           >
-            {"cookieyes v1.1 with 17 consent-gated integrations"}
+            {/* Read from the package rather than typed here: the design's placeholder claimed a
+              version and an integration count that were both wrong, and any number written by
+              hand goes stale on the next release. */}
+            {`@cookieyes/react ${sdkManifest.version} is out`}
           </span>{" "}
           <svg
             width="12"
             height="12"
             viewBox="0 0 16 16"
             fill="none"
-            style={{ flexShrink: "0", color: "rgb(14, 70, 72)" }}
+            style={{ flexShrink: "0", color: "light-dark(rgb(14, 70, 72), #94dce9)" }}
           >
             <path
               d="M6 4l4 4-4 4"
@@ -203,7 +208,7 @@ export function Hero() {
           <div style={{ display: "flex", flexFlow: "wrap", gap: "var(--cy-space-12)" }}>
             {" "}
             <a
-              href="/docs/getting-started/installation?pkg=nextjs"
+              href="/docs/nextjs/getting-started/installation"
               className="scp5 scp6"
               style={{
                 height: "52px",
@@ -216,9 +221,9 @@ export function Hero() {
                 alignItems: "center",
                 gap: "var(--cy-space-8)",
                 textDecoration: "none",
-                color: "rgb(255, 255, 255)",
+                color: "var(--cy-on-accent)",
                 boxShadow:
-                  "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(20, 20, 42, 0.18) 0px 1px 2px",
+                  "rgba(255, 255, 255, 0.28) 0px 1px 0px inset, rgba(var(--cy-shadow-rgb), 0.18) 0px 1px 2px",
                 transition: "background 0.2s, transform 0.12s",
               }}
             >
@@ -247,7 +252,7 @@ export function Hero() {
               </span>
             </a>{" "}
             <a
-              href="/docs/getting-started/installation?pkg=react"
+              href="/docs/react/getting-started/installation"
               className="scp7 scp6"
               style={{
                 height: "52px",
@@ -428,7 +433,9 @@ export function Hero() {
             </div>{" "}
           </div>{" "}
           <a
-            href="/docs"
+            /* The framework is in the URL, so this always opens the Next.js docs whatever
+               the reader picked last time. */
+            href="/docs/nextjs"
             className="scp1"
             style={{
               marginTop: "var(--cy-space-16)",

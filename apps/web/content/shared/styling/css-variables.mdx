@@ -1,0 +1,32 @@
+---
+title: CSS variables reference
+description: Every --cy-* variable with its light and dark default, generated from the SDK's stylesheet.
+frameworks: [nextjs, react]
+---
+
+Every variable the SDK reads starts with `--cy-`. This is the complete list, generated from the stylesheet itself. Nine of them have a `theme` key; see [Theme tokens](/docs/styling/theme-tokens) for how to set them.
+
+<CssVariableReferenceTable />
+
+## Copy the defaults
+
+Paste either block into your own `:root` as a starting point. Setting the variables in CSS works only while the same values are not set in `theme`.
+
+<TokenDefaultsBlock scheme="light" />
+
+<TokenDefaultsBlock scheme="dark" />
+
+## Not controlled by a variable
+
+A few colours are fixed in the stylesheet. Use the selector in the table to change one.
+
+<HardcodedColorsTable />
+
+## Machine-readable
+
+The same data is published as a [W3C Design Tokens](https://design-tokens.github.io/community-group/format/) file at [`/design-tokens/cookieyes.tokens.json`](/design-tokens/cookieyes.tokens.json), for design tools and code generators.
+
+## Next steps
+
+- [Theme tokens](/docs/styling/theme-tokens): set these through `initCookieYes()`
+- [Custom CSS](/docs/styling/custom-css): set them, or anything else, in CSS

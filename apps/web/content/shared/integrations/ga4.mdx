@@ -1,0 +1,73 @@
+---
+title: Google Analytics 4
+description: Load GA4 with one integration and let the SDK keep its Consent Mode signals up to date.
+frameworks: [nextjs, react, core]
+---
+
+`ga4()` loads Google Analytics 4 and registers your measurement id. Consent reaches GA4 through Google Consent Mode: the SDK tells Google what the visitor allowed, on page load and on every change.
+
+## Set it up
+
+First add the Consent Mode default, once, before any Google tag: [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
+
+Then install the integrations package and add `ga4()` to the `initCookieYes()` call you already have:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { ga4 } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ga4({ measurementId: "G-XXXXXXX" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { ga4 } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ga4({ measurementId: "G-XXXXXXX" })],
+});
+```
+
+</Framework>
+
+Send events with `gtag("event", …)` as usual. It is always safe to call: the Consent Mode default you added defines `gtag` and the `dataLayer` before anything else runs.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `measurementId` | required | Your GA4 id, `"G-…"` |
+| `category` | `"analytics"` | The category the visitor must grant |
+| `consentMode` | `"advanced"` | `"advanced"` loads the tag at once and lets Consent Mode gate it. `"basic"` loads it only after consent and removes it, with the `_ga` cookies, on withdrawal. See [Google Consent Mode v2 → Load the tag before or after consent](/docs/integrations/google-consent-mode#load-the-tag-before-or-after-consent) |
+| `params` | none | Extra `gtag("config", …)` settings, such as `{ send_page_view: false }` when you track page views yourself, or `{ debug_mode: true }` for DebugView |
+| `id` | `"ga4"` | Only needed when you run more than one GA4 property |
+
+## Common mistakes
+
+**Every event is counted twice.**
+GA4 is also loaded by your Google Tag Manager container. Use `googleTagManager()` or `ga4()` for a property, not both. The SDK logs a warning when it sees both.
+
+**A returning visitor is treated as denied, although they accepted last time.**
+The Consent Mode default is missing, so the update sent on page load was skipped and GA4 stays denied until the visitor changes their choice. Add the default as shown on [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
+
+## Next steps
+
+- [Google Consent Mode v2](/docs/integrations/google-consent-mode): how consent reaches Google
+- [Google Tag Manager](/docs/integrations/google-tag-manager): when GA4 lives inside your container

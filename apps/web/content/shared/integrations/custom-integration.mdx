@@ -1,0 +1,149 @@
+---
+title: Custom integration
+description: Load any script only after consent, with customScript() or a small integration object of your own.
+frameworks: [nextjs, react, core]
+---
+
+Two ways to gate a tool that has no ready-made integration. `customScript()` covers most cases: give it a script URL and a category. Write an integration object of your own when the tool needs more, for example a call to its own consent API instead of removing the script.
+
+## Load a script after consent
+
+Install the integrations package and add `customScript()` to the `initCookieYes()` call you already have:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { customScript } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [
+    customScript({
+      id: "chat-widget",
+      src: "https://cdn.example.com/widget.js",
+      category: "functional",
+    }),
+  ],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { customScript } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [
+    customScript({
+      id: "chat-widget",
+      src: "https://cdn.example.com/widget.js",
+      category: "functional",
+    }),
+  ],
+});
+```
+
+</Framework>
+
+The script is added to the page when the visitor grants the category, and removed again when consent is withdrawn.
+
+### Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `id` | required | A unique name for this script |
+| `src` | required | The script URL |
+| `category` | required | The category the visitor must grant. Pass an array to require several |
+| `match` | `"all"` | With several categories: `"all"` needs every one granted, `"any"` needs one |
+| `onRevoke` | `"remove"` | `"remove"` takes the script off the page on withdrawal. `"keep"` leaves it; only for a script that handles consent itself |
+| `attrs` | none | Extra attributes for the `<script>` tag, such as a `nonce` for a strict CSP |
+| `stub` | none | Queue calls made before the script loads: `{ global: "myTag", methods: ["track"] }` |
+
+## Write your own integration
+
+An integration is a plain object. `setup` runs when the category is granted. What it returns depends on `onRevoke`:
+
+- `"remove"`: return a cleanup function. It runs on withdrawal, and `setup` runs again on the next grant.
+- `"silence"`: return `{ silence, resume }`. The tool stays loaded and is told to pause and continue.
+- `"keep"`: return nothing. The tool handles consent itself.
+
+```ts title="src/my-vendor.ts"
+import type { Integration } from "@cookieyes/core";
+
+export const myVendor: Integration = {
+  id: "my-vendor",
+  category: "analytics",
+  version: 1, // the integration format version
+  load: "afterConsent",
+  onRevoke: "remove",
+  setup: () => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.example.com/vendor.js";
+    document.head.appendChild(script);
+    return () => script.remove();
+  },
+};
+```
+
+Add it to `integrations` like any other. `setup` receives a context with `granted()`, `onConsentChange(fn)` and the visitor's `region`, for a tool that has to react to changes itself.
+
+Keep `load: "afterConsent"` unless the tool stays silent until it is told otherwise, as Google tags do under Consent Mode. `load: "immediately"` runs `setup` before the visitor has decided.
+
+## Check it works
+
+Open your site in a private window and watch the Network tab and the cookies:
+
+1. Before a decision: nothing loads.
+2. Accept: the script loads.
+3. Withdraw consent in the preferences dialog: `"remove"` takes the script off the page, `"silence"` pauses it.
+
+<Framework when="nextjs react">
+
+To see every integration with its current status, run this in the console:
+
+```ts check="false"
+import { getCookieYes } from "@cookieyes/react";
+
+console.table(getCookieYes().getIntegrations());
+```
+
+</Framework>
+<Framework when="core">
+
+`initCookieYes()` returns the runtime. Keep a reference to it, and `getIntegrations()` lists every integration with its current status:
+
+```ts check="false"
+export const runtime = initCookieYes({ mode: "cookie-only", regulation: "GDPR" });
+
+console.table(runtime.getIntegrations());
+```
+
+</Framework>
+
+## Common mistakes
+
+**The script never loads, even after accept.**
+Its `category` is not in your categories list, so it can never be granted. The SDK logs a warning naming it. Check the spelling against [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories).
+
+**The tool's global is undefined when you call it.**
+The call ran before consent. Use the `stub` option to queue calls, or guard the call with `safeCall()` from `@cookieyes/scripts`.
+
+**The script runs before the visitor has decided.**
+The integration has `load: "immediately"`. Use `"afterConsent"`.
+
+## Next steps
+
+- [Overview](/docs/integrations): the ready-made integrations
+- [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories): define the categories your scripts wait for

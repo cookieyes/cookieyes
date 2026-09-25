@@ -64,7 +64,7 @@ const outDir = join(webRoot, ".generated");
 const outFile = join(outDir, "css-variables-reference.json");
 const publicOutDir = join(webRoot, "public", "design-tokens");
 const publicOutFile = join(publicOutDir, "cookieyes.tokens.json");
-const sidecarPath = join(webRoot, "content", "docs", "styling", "css-variables.sidecar.ts");
+const sidecarPath = join(webRoot, "content", "shared", "styling", "css-variables.sidecar.ts");
 
 const EXPECTED_TOKEN_COUNT = 12;
 const EXPECTED_HARDCODED_COUNT = 14;
@@ -246,7 +246,7 @@ function buildW3cTokensDocument(tokenEntries) {
       cy[key] = {
         $type: "color",
         $value: `{cy.${token.aliasOf.toToken.replace(/^--cy-/, "")}}`,
-        $description: `${token.description} The real value is a runtime color-mix() transform of the referenced token, not a static colour — see $extensions.cookieyes.transform.`,
+        $description: `${token.description} The real value is a runtime color-mix() transform of the referenced token, not a static colour; see $extensions.cookieyes.transform.`,
         $extensions: {
           cookieyes: { transform: token.aliasOf.transform, computed: true },
         },
@@ -256,7 +256,7 @@ function buildW3cTokensDocument(tokenEntries) {
       cy[key] = {
         $type: "color",
         $value: token.defaultLight,
-        $description: `${token.description} This file cannot reflect a customer's own colour choice — it recomputes at runtime via WCAG contrast against ${token.derivedFrom}.`,
+        $description: `${token.description} This file cannot reflect a customer's own colour choice; it recomputes at runtime via WCAG contrast against ${token.derivedFrom}.`,
         $extensions: {
           cookieyes: {
             computed: true,
@@ -268,7 +268,7 @@ function buildW3cTokensDocument(tokenEntries) {
       cy[key] = { $type: "color", $value: token.defaultLight, $description: token.description };
     }
   }
-  return { $description: "CookieYes SDK design tokens — generated, do not edit by hand.", cy };
+  return { $description: "CookieYes SDK design tokens. Generated, do not edit by hand.", cy };
 }
 
 async function main() {

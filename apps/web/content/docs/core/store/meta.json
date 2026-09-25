@@ -1,0 +1,9 @@
+{
+  "title": "The consent store",
+  "pages": [
+    "using-the-store",
+    "build-your-own-ui"
+  ],
+  "defaultOpen": true,
+  "collapsible": false
+}

@@ -41,6 +41,10 @@ next-env.d.ts
 # Generated config reference JSON, regenerated every build (apps/web)
 .generated/
 
+# Changelog pages, regenerated every build from the package CHANGELOG.md files
+# by apps/web/scripts/generate-changelog.mjs
+apps/web/content/docs/changelog/
+
 # Peer-dependency matrix scratch output — per-combo results before
 # aggregate-results.mjs merges them into the committed matrix-results.json
 # (matrix/matrix.config.mjs, matrix/matrix-results.json)

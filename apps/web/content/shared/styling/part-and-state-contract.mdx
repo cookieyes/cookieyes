@@ -1,0 +1,79 @@
+---
+title: Parts
+description: Every data-cy-part name the SDK renders, for CSS and for tests.
+frameworks: [nextjs, react]
+---
+
+## What it is
+
+Every element the SDK renders carries `data-cy-part="<name>"`. The names are the stable way to reach an element from CSS or from a test; the HTML structure around them may change, the names do not.
+
+```css title="app/consent.css"
+[data-cy-part="banner"] [data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+```ts title="tests/consent.spec.ts" check="false"
+await page.locator('[data-cy-part="accept-all"]').click();
+```
+
+Five names appear on more than one surface: `title`, `close`, `accept-all`, `reject-all` and `branding`. When you mean one surface, put its root in front, as in the CSS above.
+
+## Banner
+
+| Part | Element |
+| --- | --- |
+| `banner` | The banner card |
+| `title` | Heading |
+| `description` | Text |
+| `actions` | Button row |
+| `accept-all`, `reject-all` | The two decision buttons |
+| `customise` | Opens the preferences dialog |
+| `do-not-sell` | CCPA only |
+| `close` | Close button |
+| `branding` | "Powered by" link |
+
+## Preferences dialog
+
+| Part | Element |
+| --- | --- |
+| `overlay` | Backdrop |
+| `dialog` | The dialog |
+| `title`, `intro` | Heading and text |
+| `close` | Close button |
+| `category` | One category row |
+| `category-label`, `category-description` | Its name and text |
+| `toggle` | The switch, with `data-cy-state="on"` or `"off"` |
+| `accept-all`, `reject-all`, `save` | The three buttons |
+| `branding` | "Powered by" link |
+
+## Opt-out dialog
+
+| Part | Element |
+| --- | --- |
+| `optout` | The dialog |
+| `title`, `message` | Heading and text |
+| `confirm` | Save button |
+| `close` | Close button |
+
+## Recall button and reload notice
+
+| Part | Element |
+| --- | --- |
+| `recall` | The floating button |
+| `reload-notice` | The notice |
+| `reload-message` | Its text |
+| `reload-dismiss` | Its Dismiss button |
+
+## Good to know
+
+- `data-cy-state` exists on the switch only, set by `CookiePreferences`. If you build the dialog from primitives, set it yourself from the `checked` value.
+- The part names are exported as constants, `CY_PART` and `CY_STATE`, so a test can write `CY_PART.banner.acceptAll` instead of a string.
+- Two more selectors are stable: `#cookieyes-portal-root`, the container the banner and recall button render into, and `[data-cky-banner]`, the visible banner card. The dialogs exist in the page only while open.
+- The `cy-*` class names are stable too, but prefer parts. `.cy-frame-placeholder` is the exception: the `GatedFrame` placeholder has no part.
+
+## Next steps
+
+- [Custom CSS](/docs/styling/custom-css): rules on these parts, including the toggle
+- [Tailwind](/docs/styling/tailwind): `@apply` on these parts

@@ -1,0 +1,77 @@
+---
+title: useConsent
+description: Read the visitor's consent state in a component.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Returns the visitor's current consent as a plain object and re-renders your component whenever it changes. Use it to show state: a settings page, a "your choices" panel, a status line. To change consent, use [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+## Example
+
+```tsx title="app/consent-status.tsx"
+"use client";
+
+import { useConsent } from "@cookieyes/react";
+
+export function ConsentStatus() {
+  const { hasActed, committedCategories } = useConsent();
+
+  if (!hasActed) return <p>No choice made yet.</p>;
+
+  return (
+    <ul>
+      {Object.entries(committedCategories).map(([id, granted]) => (
+        <li key={id}>
+          {id}: {granted ? "allowed" : "blocked"}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## What it returns
+
+| Field | Meaning |
+| --- | --- |
+| `hasActed` | `true` once the visitor has accepted, rejected or saved. Rejecting everything counts |
+| `committedCategories` | The **saved** values: category id → granted, as last saved. Read this one |
+| `categories` | The **live** values: the same map, but it changes while the visitor flips switches in the dialog, before Save |
+| `regulation` | `"GDPR"` or `"CCPA"`. `"DEFAULT"` means none was set and behaves as GDPR |
+| `isPreferencesOpen`, `isOptOutOpen` | Whether a dialog is open right now |
+| `isBannerDismissed` | `true` after the visitor closed the banner without choosing, until the next page load |
+| `consentId`, `lastRenewed` | The record id and the time of the last decision |
+
+## Saved values vs live values
+
+Two fields look alike:
+
+- **Saved values: `committedCategories`.** They change only when the visitor accepts, rejects, saves or resets.
+- **Live values: `categories`.** They change on every switch the visitor flips in the dialog, before Save.
+
+Load anything from the saved values, `committedCategories`: scripts, embeds, trackers. Or use [`useConsentCategory(id)`](/docs/hooks/focused-hooks), which reads the saved value for one category and re-renders less. Use the live values, `categories`, only to drive the checkboxes of your own dialog.
+
+## Good to know
+
+It re-renders on every consent change, including a dialog opening or closing. Call it in the component that shows the state, not at the top of your app.
+
+Before the runtime is ready, on the server and on the very first paint, it returns a fresh-visitor snapshot instead of throwing: `hasActed: false`, only required categories granted.
+
+## Common mistakes
+
+**A tracker loads the moment someone flips a switch.**
+You read `categories`. Read `committedCategories`, or use `useConsentCategory()`.
+
+**Everything is default and there is no error.**
+`initCookieYes()` did not run before this component rendered. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
+
+**`hasActed` is `true` but every category is `false`.**
+The visitor rejected everything. Correct.
+
+## Next steps
+
+- [useConsentActions](/docs/hooks/use-consent-actions): change consent
+- [Focused hooks](/docs/hooks/focused-hooks): `useConsentCategory()` and other one-question hooks
+- [useOnConsentChange](/docs/hooks/use-on-consent-change): run code when consent changes

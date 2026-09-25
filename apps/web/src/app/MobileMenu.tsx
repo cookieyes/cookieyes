@@ -36,7 +36,21 @@ export function MobileMenu() {
     }
 
     function handleKeyDown(event: KeyboardEvent): void {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        return;
+      }
+      // The open and close controls are divs with role="button": Enter and Space must
+      // activate them the way a real button would.
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest(BURGER_SELECTOR)) {
+        event.preventDefault();
+        setIsOpen((wasOpen) => !wasOpen);
+      } else if (target?.closest(CLOSE_SELECTOR)) {
+        event.preventDefault();
+        setIsOpen(false);
+      }
     }
 
     pageRoot.addEventListener("click", handleClick);
@@ -166,6 +180,8 @@ export function MobileMenu() {
           </svg>
         </span>{" "}
         <div
+          role="button"
+          tabIndex={0}
           aria-label="Close menu"
           style={{
             width: "34px",

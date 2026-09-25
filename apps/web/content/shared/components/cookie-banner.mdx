@@ -1,0 +1,68 @@
+---
+title: CookieBanner
+description: The consent banner a visitor sees on their first visit.
+frameworks: [nextjs, react]
+---
+
+## What it does
+
+Shows on the first visit and stays until the visitor chooses. Under GDPR it offers **Accept All**, **Reject All** and **Customise**; under CCPA it offers **Do Not Sell**. After a choice it disappears and does not come back in that browser. Its close button hides it for this page view without saving anything; it returns on the next page load, and the recall button appears meanwhile. It shows and hides itself; you only render it.
+
+You already render it if you followed [Installation](/docs/getting-started/installation). Try it in the [Playground](/playground).
+
+```tsx check="false"
+<CookieBanner />
+```
+
+## Change what it shows
+
+Nothing on the banner is set through props. Everything comes from `initCookieYes()`, so the banner, the dialogs and the recall button always match.
+
+| To change | Set |
+| --- | --- |
+| The wording, in any language | `i18n`, see [Translations](/docs/translations) |
+| Colours, corner radius, font | `theme`, see [Theme tokens](/docs/styling/theme-tokens) |
+| Which buttons appear | `regulation`: `"GDPR"` shows Accept / Reject / Customise, `"CCPA"` shows Do Not Sell |
+| The categories behind Customise | `categories`, see [Configuration](/docs/getting-started/configuration) |
+
+## Restyle it
+
+It accepts `className` and `style` like any element; they are added to the banner's own styling, not replacing it. For one part of the banner, use its `data-cy-part` in your CSS:
+
+```css title="app/consent.css"
+[data-cy-part="banner"] {
+  max-width: 32rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+The parts are `banner`, `title`, `description`, `actions`, `accept-all`, `reject-all`, `customise`, `do-not-sell`, `close` and `branding`. For your own markup, not only your own styles, use the [Banner primitives](/docs/headless/banner).
+
+## Under CCPA
+
+Do Not Sell opens the opt-out dialog, so render it next to the banner:
+
+```tsx check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+## Common mistakes
+
+**The banner never appears.**
+You already chose in this browser. Delete the `cookieyes-consent` cookie and reload.
+
+**The banner is unstyled text.**
+The stylesheet import is missing. See [Installation](/docs/getting-started/installation).
+
+**Do Not Sell does nothing.**
+`<CookieOptOut />` is not rendered.
+
+## Next steps
+
+- [CookiePreferences](/docs/components/cookie-preferences): the dialog Customise opens
+- [RecallButton](/docs/components/recall-button): lets a visitor change their choice later
+- [Banner primitives](/docs/headless/banner): the same behaviour with your own markup

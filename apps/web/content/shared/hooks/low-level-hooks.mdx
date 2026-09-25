@@ -1,0 +1,98 @@
+---
+title: Runtime and server helpers
+description: Direct access to the runtime from plain code, and reading a returning visitor's consent on the server.
+frameworks: [nextjs, react]
+---
+
+## What this page covers
+
+Two things the regular hooks do not do: reaching the runtime from code that is not a component, and reading a visitor's saved consent on the server so the banner is right on the first paint. Most apps need neither. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+## Module-level registry
+
+`initCookieYes()` registers one runtime for the page. `getCookieYes()` returns it from any code, and `useConsentRuntime()` returns the same object inside a component.
+
+```ts title="app/consent-log.ts"
+import { getCookieYes } from "@cookieyes/react";
+
+export function logCurrentConsent() {
+  const snapshot = getCookieYes().getSnapshot();
+  console.log(snapshot.committedCategories);
+}
+```
+
+The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every action) and `getIntegrations()` for a debug panel.
+
+**Both throw** if no runtime is registered yet, with `[cookieyes] No runtime is registered`. Every other hook returns a safe default instead. So call them only from code that runs in the browser after `initCookieYes()`, never during server rendering.
+
+`resetCookieYes()` clears the registry. Use it between tests.
+
+## Read a returning visitor's consent on the server
+
+By default the server does not know what a visitor chose, so it renders the banner for everyone and the browser removes it after loading, which a returning visitor sees as a flash. To avoid it, read the saved decision from the request cookie and pass it to `CookieYesProvider`.
+
+<Framework when="nextjs">
+
+```tsx title="app/layout.tsx"
+import { CookieYesProvider } from "@cookieyes/nextjs";
+import { getServerConsent } from "@cookieyes/nextjs/server";
+
+// Your consent manager from Installation.
+declare function CookieYesRoot(): React.ReactElement;
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const initialConsent = await getServerConsent({ regulation: "GDPR" });
+
+  return (
+    <html lang="en">
+      <body>
+        <CookieYesProvider regulation="GDPR" initialConsent={initialConsent}>
+          <CookieYesRoot />
+          {children}
+        </CookieYesProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+`getServerConsent()` reads the cookie for you and returns the saved decision, or `null` for a visitor who has not chosen yet. Reading cookies makes the route dynamic, as any `cookies()` call does.
+
+</Framework>
+
+<Framework when="react">
+
+If your React framework renders on the server (Remix, TanStack Start, a custom server), read the request's `Cookie` header in your loader with `readServerConsent()` and pass the result to `CookieYesProvider`:
+
+```ts title="src/server/consent.ts"
+import { readServerConsent } from "@cookieyes/core";
+
+export function getInitialConsent(request: Request) {
+  // null means the visitor has not chosen yet: the banner shows as usual.
+  return readServerConsent(request.headers.get("cookie") ?? "", { regulation: "GDPR" });
+}
+```
+
+A client-only app (Vite, Create React App) has no server render, so it needs none of this.
+
+</Framework>
+
+Pass the result to the provider only. Never write a visitor's consent into `initCookieYes()` or onto the runtime: the server runs one process for every visitor at once, and per-visitor values there would leak between them.
+
+To choose the regulation per visitor on the server, `regionFromHeaders(headers)` from `@cookieyes/core` reads the visitor's region, such as `"DE"` or `"US-CA"`, from the hosting provider's headers. Map it to `"GDPR"` or `"CCPA"` and pass that as the provider's `regulation`. See the `region` option on [Configuration](/docs/getting-started/configuration#region).
+
+## Common mistakes
+
+**`[cookieyes] No runtime is registered` during server rendering.**
+`useConsentRuntime()` or `getCookieYes()` ran on the server. Use `useConsent()` there, or move the call into a browser-only code path.
+
+**The banner flashes on every load for a returning visitor.**
+No `initialConsent` reached `CookieYesProvider`. Read it on the server as shown above.
+
+**One visitor's consent appears for another in production.**
+A per-visitor value was written into `initCookieYes()` or onto the runtime on the server. Per-visitor values go on `CookieYesProvider` only.
+
+## Next steps
+
+- [Part and state contract](/docs/styling/part-and-state-contract): the selectors that are stable for CSS and tests
+- [useConsent](/docs/hooks/use-consent): read consent in a component

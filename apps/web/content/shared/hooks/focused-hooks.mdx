@@ -1,0 +1,78 @@
+---
+title: Focused hooks
+description: "Ten small hooks that each answer one question: is this category granted, which law applies, is the banner showing, and more."
+frameworks: [nextjs, react]
+---
+
+## What they are
+
+[`useConsent()`](/docs/hooks/use-consent) gives you everything and re-renders on every change. The hooks on this page each answer one question and re-render only when that answer changes. None of them throws: before the runtime is ready they return a safe default.
+
+| You want to know | Hook | Returns |
+| --- | --- | --- |
+| Is one category granted? | `useConsentCategory("analytics")` | `boolean`, the saved value |
+| Which privacy law applies? | `useRegulation()` | `"GDPR"` or `"CCPA"` |
+| Why that law? | `useRegion()` | `{ region, regulation, source, confidence }` |
+| Which categories are configured? | `useCategories()` | `{ list, ids, requiredIds, isDefault }` |
+| Is the banner on screen? | `useBannerVisibility()` | `boolean` |
+| Is a dialog open? | `usePreferencesOpen()`, `useOptOutOpen()` | `boolean` |
+| What is the text in the active language? | `useTranslations()` | the translation map |
+| Which language is active, and how do I switch it? | `useLanguage()` | `{ language, direction, languages, setLanguage }` |
+| Does a change need a page reload? | `useReloadNotice()` | `{ required, reasons, dismiss }` |
+
+## Show something only with consent
+
+```tsx title="app/analytics-widget.tsx"
+"use client";
+
+import { useConsentCategory } from "@cookieyes/react";
+
+export function AnalyticsWidget() {
+  const allowed = useConsentCategory("analytics");
+  if (!allowed) return <p>Enable analytics cookies to see your dashboard.</p>;
+  return <iframe title="Dashboard" src="https://analytics.example.com/embed" />;
+}
+```
+
+`useConsentCategory` reads the **saved** value, so a switch flipped in the dialog but not saved changes nothing here. For an `<iframe>` with a ready-made placeholder, [`GatedFrame`](/docs/components/gated-frame) does this for you.
+
+## Which law applies, and why
+
+`useRegulation()` returns the law in effect: `"GDPR"` or `"CCPA"`, or `"DEFAULT"` when `regulation` was never set, which behaves as GDPR.
+
+`useRegion()` tells you how that was decided, which is the tool when a visitor sees an unexpected banner. `source` is `"manual"` when you set `regulation` yourself, `"detected"` when `region.detect` matched your `region.map`, and `"strictest"` when detection found nothing and `region.strictest` applied. `confidence` is `"low"` when the region was guessed.
+
+## Build your own category list
+
+`useCategories()` returns your configured categories in order (`list`), their ids, the ids that are always on (`requiredIds`), and `isDefault`, which is `true` when the built-in five are in effect. Render from `list` rather than writing the five names by hand, so custom categories appear automatically. The list is fixed when the runtime starts, so this hook never re-renders.
+
+## The banner and the dialogs
+
+`useBannerVisibility()` is `true` while the banner is on screen: the visitor has not chosen, has not closed it, and no dialog is open. Use it to move your own floating elements out of the way. It is not "has the visitor decided": for that, read `useConsent().hasActed`.
+
+`usePreferencesOpen()` and `useOptOutOpen()` report the two dialogs.
+
+## Language and text
+
+`useTranslations()` returns the text for the active language, the same strings the components show, and re-renders when the language changes. `useLanguage()` returns the active `language`, its `direction` for right-to-left layouts, the loaded `languages`, and `setLanguage(tag)`. [Translations](/docs/translations) has a picker built on it.
+
+## A custom reload notice
+
+`useReloadNotice()` returns `required`, the tool ids in `reasons`, and `dismiss()`. Most sites should render [`ReloadNotice`](/docs/components/reload-notice) instead; use the hook only for your own markup.
+
+## Common mistakes
+
+**"Ask for consent" shows while the visitor is inside the dialog.**
+You used `useBannerVisibility()` for "has not decided yet". Use `useConsent().hasActed`.
+
+**A custom category is missing from your list.**
+You wrote the five built-in names by hand. Render from `useCategories().list`.
+
+**`useRegulation()` returns `"DEFAULT"`.**
+`regulation` is not set and `region` detection is off. Set one of them in `initCookieYes()`.
+
+## Next steps
+
+- [useConsent](/docs/hooks/use-consent): the whole state in one hook
+- [Translations](/docs/translations): languages and text
+- [Configuration](/docs/getting-started/configuration#region): the `region` option behind `useRegion()`

@@ -1,0 +1,130 @@
+---
+title: Google Consent Mode v2
+description: "Tell Google tags what the visitor allowed: add one default snippet, and the SDK sends every update."
+frameworks: [nextjs, react, core]
+---
+
+Google Analytics 4, Google Ads and Google Tag Manager read consent through Google Consent Mode. It has two halves: a default that says "denied" before any Google tag runs, and an update each time the visitor decides. The SDK sends the updates on its own, on page load and on every change. You add the default.
+
+Skip this page if you use no Google product.
+
+## Add the default
+
+<Framework when="nextjs">
+
+Add `<GoogleConsentMode />` to the root layout from [Installation](/docs/getting-started/installation), as the first thing in `<body>`. It prints one inline script, so it runs before anything else on the page. Everything else stays as it is: `<CookieYesRoot />` still renders the banner and dialogs.
+
+```tsx title="app/layout.tsx" check="false"
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
+import { CookieYesRoot } from "./consent-manager";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <GoogleConsentMode />
+        <CookieYesRoot />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+</Framework>
+<Framework when="react">
+
+Call `bootstrapGoogleConsentMode()` before `initCookieYes()`, in the same file. Everything else in that file stays as it is:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+```tsx title="src/consent-manager.tsx"
+import { initCookieYes } from "@cookieyes/react";
+import { bootstrapGoogleConsentMode } from "@cookieyes/scripts";
+
+bootstrapGoogleConsentMode();
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+});
+```
+
+</Framework>
+<Framework when="core">
+
+Call `bootstrapGoogleConsentMode()` before `initCookieYes()`, in the same file. Everything else in that file stays as it is:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { bootstrapGoogleConsentMode } from "@cookieyes/scripts";
+
+bootstrapGoogleConsentMode();
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+});
+```
+
+</Framework>
+<Framework when="react core">
+
+If your HTML is rendered on a server, you can print `googleConsentModeSnippet()` into `<head>` as an inline script instead.
+
+</Framework>
+
+Then add the Google tool itself: [Google Analytics 4](/docs/integrations/ga4), [Google Tag Manager](/docs/integrations/google-tag-manager) or [Google Ads](/docs/integrations/google-ads).
+
+If the default is missing, the Google integration sets one itself when it loads and logs this warning. The SDK's first update, sent on page load, has already been skipped by then, so a returning visitor who accepted on an earlier visit is treated as denied until they change their choice again:
+
+```text
+[cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.
+```
+
+## Which category controls which signal
+
+| Category | Google signals it grants |
+| --- | --- |
+| `necessary` | none |
+| `functional` | `functionality_storage`, `personalization_storage` |
+| `analytics` | `analytics_storage` |
+| `performance` | none |
+| `advertisement` | `ad_storage`, `ad_user_data`, `ad_personalization` |
+
+`security_storage` is always granted. A signal with no category stays denied. If you define your own categories, give each one a `gcm` list of the signals it grants: see [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories).
+
+## Load the tag before or after consent
+
+Every Google integration takes a `consentMode` option:
+
+- **`"advanced"`** (default): the tag loads at once. While consent is denied, Google receives only cookieless pings, as Consent Mode allows. The tag stays loaded when consent is withdrawn.
+- **`"basic"`**: the tag loads only after its category is granted, and is removed when consent is withdrawn. Nothing reaches Google before a yes.
+
+```ts check="false"
+ga4({ measurementId: "G-XXXXXXX", consentMode: "basic" })
+```
+
+On withdrawal, `"basic"` clears that product's own cookies, and removes the shared Google library once no other Google product on the page is still active.
+
+## Common mistakes
+
+**A returning visitor is treated as denied, although they accepted last time.**
+The default snippet is missing, so the update sent on page load was skipped. Look for the warning above, then add the default as shown.
+
+**GA4 events are counted twice.**
+Both `googleTagManager()` and `ga4()` load the same property. Use one of them for each product. The SDK logs a warning when it sees both.
+
+**With `"basic"`, the tag never loads.**
+Its category is not granted yet. That is the point of `"basic"`.
+
+## Next steps
+
+- [Google Analytics 4](/docs/integrations/ga4), [Google Tag Manager](/docs/integrations/google-tag-manager), [Google Ads](/docs/integrations/google-ads): add the tool
+- [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories): map your own categories to Google signals

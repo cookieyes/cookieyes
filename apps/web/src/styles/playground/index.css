@@ -722,6 +722,28 @@ textarea.cy-pg-input {
   align-items: flex-start;
   background: #15171a;
   overflow: auto;
+  /* The editor is the one panel that scrolls, and the platform scrollbar takes 10px
+     out of a fixed-width code column. A thin bar gives those pixels back to the code. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.cy-pg-editor::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.cy-pg-editor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cy-pg-editor::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.cy-pg-editor::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 .cy-pg-editor,
