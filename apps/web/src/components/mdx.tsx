@@ -88,7 +88,9 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
 
     // Markdown tables carry no class of their own; give them one.
     table: (props: ComponentProps<"table">) => (
-      <table {...props} className={["cy-doc-table", props.className].filter(Boolean).join(" ")} />
+      <div className="cy-doc-table-wrap">
+        <table {...props} className={["cy-doc-table", props.className].filter(Boolean).join(" ")} />
+      </div>
     ),
 
     // Standalone (non-tabbed) code blocks — mirrors defaultMdxComponents' own `pre` mapping,

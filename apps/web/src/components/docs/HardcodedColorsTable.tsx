@@ -21,39 +21,41 @@ export function HardcodedColorsTable() {
   }
 
   return (
-    <table className="cy-doc-table">
-      <thead>
-        <tr>
-          <th>Element</th>
-          <th>Declaration</th>
-          <th>Override selector</th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.hardcoded.map((entry) => (
-          <tr key={`${entry.selector}|${entry.property}|${entry.value}`}>
-            <td>
-              {entry.plainLanguageName}
-              {entry.followUpCandidate ? (
-                <>
-                  {" "}
-                  <em>(no dedicated token yet; see below)</em>
-                </>
-              ) : null}
-            </td>
-            <td>
-              <code>
-                {entry.selector} {"{"} {entry.property}: {entry.value}; {"}"}
-              </code>
-            </td>
-            <td>
-              <code>{entry.overrideSelector}</code>
-              <br />
-              {entry.overrideNote}
-            </td>
+    <div className="cy-doc-table-wrap">
+      <table className="cy-doc-table">
+        <thead>
+          <tr>
+            <th>Element</th>
+            <th>Declaration</th>
+            <th>Override selector</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {data.hardcoded.map((entry) => (
+            <tr key={`${entry.selector}|${entry.property}|${entry.value}`}>
+              <td>
+                {entry.plainLanguageName}
+                {entry.followUpCandidate ? (
+                  <>
+                    {" "}
+                    <em>(no dedicated token yet; see below)</em>
+                  </>
+                ) : null}
+              </td>
+              <td>
+                <code>
+                  {entry.selector} {"{"} {entry.property}: {entry.value}; {"}"}
+                </code>
+              </td>
+              <td>
+                <code>{entry.overrideSelector}</code>
+                <br />
+                {entry.overrideNote}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

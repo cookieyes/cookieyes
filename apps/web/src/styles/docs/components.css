@@ -334,6 +334,22 @@
   overflow-x: auto;
 }
 
+/* Markdown tables. The wrapper takes over the table's margin so the spacing around
+   it stays exactly as before, and scrolls sideways where the column is narrow. */
+.cy-doc-table-wrap {
+  margin: 16px 0;
+}
+
+.cy-doc-table-wrap > .cy-doc-table {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .cy-doc-table-wrap {
+    overflow-x: auto;
+  }
+}
+
 .cy-doc-cmp {
   width: 100%;
   border-collapse: collapse;
