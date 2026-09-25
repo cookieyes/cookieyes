@@ -1,9 +1,14 @@
 import { createMDX } from "fumadocs-mdx/next";
 
 /**
- * The Content-Security-Policy under trial. It runs report-only: the browser blocks nothing
- * and posts what it would have blocked to /api/csp-report, which logs it. Once the logs show
- * only noise, the same list can be sent as an enforced `Content-Security-Policy`.
+ * The Content-Security-Policy: every origin a page may load from. It is enforced, and the
+ * browser also posts each thing it blocks to /api/csp-report, which logs it — search the
+ * runtime logs for "csp-violation" to see what was stopped, and add an origin here if a
+ * service the site relies on starts loading from somewhere new.
+ *
+ * Verified before enforcing it, with this exact policy applied to the production site: the
+ * banner, its preference centre, saving and changing consent, GA4, Clarity, search, the docs
+ * and the playground's config editor all ran with no violations.
  *
  * The third-party origins are the CookieYes banner (cdn, log and directory), GA4 and Google
  * Tag Manager, and Microsoft Clarity (which also beacons to c.bing.com); cdn.jsdelivr.net
@@ -50,6 +55,7 @@ function contentSecurityPolicy({ allowEval = false } = {}) {
       "https://c.bing.com",
     ],
     "frame-src": ["'self'"],
+    "frame-ancestors": ["'self'"],
     "worker-src": ["'self'", "blob:"],
     "object-src": ["'none'"],
     "base-uri": ["'self'"],
@@ -84,35 +90,30 @@ const config = {
   async headers() {
     return [
       // Baseline hardening for every response. Framing is limited to this origin (the
-      // playground embeds its own preview page). No full Content-Security-Policy yet: the
-      // CookieYes banner, GA4 and Clarity load from several origins and need a Report-Only
-      // pass before one can be enforced.
+      // playground embeds its own preview page); the Content-Security-Policy below says the
+      // same with frame-ancestors, for production builds.
       {
         source: "/:path*",
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
-      // Production only: the dev server's hot reload relies on eval and would fill the
-      // reports with noise.
+      // Production only: the dev server's hot reload relies on eval, which this blocks.
       ...(process.env.NODE_ENV === "production"
         ? [
             {
               source: "/:path((?!playground(?:/|$)).*)",
-              headers: [
-                { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy() },
-              ],
+              headers: [{ key: "Content-Security-Policy", value: contentSecurityPolicy() }],
             },
             {
               source: "/playground/:path*",
               headers: [
                 {
-                  key: "Content-Security-Policy-Report-Only",
+                  key: "Content-Security-Policy",
                   value: contentSecurityPolicy({ allowEval: true }),
                 },
               ],
