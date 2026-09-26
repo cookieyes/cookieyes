@@ -51,7 +51,8 @@ because a mistake there has legal consequences for the sites using the SDK.
    will assign you. Open a PR when you're ready. If you can't finish, say so on the issue so
    someone else can pick it up.
 
-**`good-first-issue`** goes only on issues that are in an open lane, need under ~50 lines,
+**`good first issue`** (spelled with spaces — the exact label GitHub search and contributor
+sites look for) goes only on issues that are in an open lane, need under ~50 lines,
 involve no architectural decision, and have an obvious place to start.
 
 ## Adding a vendor or a language
