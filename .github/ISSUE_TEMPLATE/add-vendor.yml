@@ -1,5 +1,5 @@
-name: 🧩 Add a vendor integration
-description: Propose (or take on) a new consent-gated vendor for @cookieyes/scripts
+name: 🧩 Request a vendor integration
+description: Ask for a new consent-gated vendor in @cookieyes/scripts
 title: "[vendor] "
 labels: ["help-wanted", "lane:vendors"]
 body:
@@ -7,7 +7,11 @@ body:
     attributes:
       value: |
         Vendors are an **open lane** — outside contributors are welcome to build these.
-        One issue per vendor. A maintainer adds a `roadmap:*` label to place it on the [Roadmap](https://github.com/orgs/cookieyes/projects/3).
+
+        **Want to build it yourself? You don't need an issue.** Copy an existing integration
+        (e.g. `sdk/scripts/src/clarity.ts`), adapt it, and open a pull request — CI and a
+        maintainer review it. See [Adding a vendor](https://github.com/cookieyes/cookieyes/blob/main/CONTRIBUTING.md#adding-a-vendor-or-a-language).
+        Use this form to *ask* for a vendor you'd like someone to add. One issue per vendor. A maintainer adds a `roadmap:*` label to place it on the [Roadmap](https://github.com/orgs/cookieyes/projects/3).
 
   - type: input
     id: vendor
@@ -64,7 +68,7 @@ body:
         - label: "`pnpm lint`, `pnpm typecheck` and `pnpm test` pass"
 
   - type: textarea
-    id: claim
+    id: contribute
     attributes:
-      label: How to claim
-      value: To take this issue, comment "claiming".
+      label: Want to build this?
+      value: No need to claim it — copy an existing integration, meet the checklist above, and open a pull request that says "Closes #" followed by this issue's number.

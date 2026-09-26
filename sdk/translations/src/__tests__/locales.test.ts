@@ -1,12 +1,34 @@
+/// <reference types="node" />
+import { readdirSync, readFileSync } from "node:fs";
 import type { TranslationMap } from "@cookieyes/core";
 import { describe, expect, it } from "vitest";
-import { de } from "../de.js";
 import { en } from "../en.js";
-import { es } from "../es.js";
-import { fr } from "../fr.js";
-import { it as itIT } from "../it.js";
 
-const LOCALES: Record<string, TranslationMap> = { en, de, es, fr, it: itIT };
+// Every src/<code>.ts other than index.ts is a locale, discovered rather than
+// listed, so a contributor's new file is checked without registering it here.
+const CODES = readdirSync(new URL("../", import.meta.url))
+  .filter((file) => file.endsWith(".ts") && file !== "index.ts")
+  .map((file) => file.slice(0, -".ts".length))
+  .sort();
+
+// A locale file exports a const named after its code, hyphens dropped:
+// es.ts → `es`, pt-BR.ts → `ptBR`.
+const exportName = (code: string): string => code.replace(/-/g, "");
+
+// `.ts`, not the usual `.js`: Vite turns this template into a glob over real files.
+const MODULES: Record<string, Record<string, unknown>> = {};
+for (const code of CODES) {
+  MODULES[code] = (await import(`../${code}.ts`)) as Record<string, unknown>;
+}
+const LOCALES: Record<string, TranslationMap> = {};
+for (const code of CODES) {
+  const table = MODULES[code]?.[exportName(code)];
+  if (table) LOCALES[code] = table as TranslationMap;
+}
+
+const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")) as {
+  exports: Record<string, unknown>;
+};
 
 const CATEGORIES = [
   "necessary",
@@ -72,7 +94,32 @@ describe.each(Object.entries(LOCALES))("locale: %s", (name, table) => {
 });
 
 describe("catalog", () => {
-  it("ships en, de, es, fr, it", () => {
-    expect(Object.keys(LOCALES).sort()).toEqual(["de", "en", "es", "fr", "it"]);
+  it("includes the English reference", () => {
+    expect(CODES).toContain("en");
+  });
+
+  it.each(CODES)("%s exports its table under the expected name", (code) => {
+    expect(
+      MODULES[code]?.[exportName(code)],
+      `src/${code}.ts must export \`const ${exportName(code)}: TranslationMap\``,
+    ).toBeTypeOf("object");
+  });
+
+  it.each(CODES)("%s is published as its own sub-path", (code) => {
+    expect(
+      pkg.exports[`./${code}`],
+      `add "./${code}" to "exports" in sdk/translations/package.json`,
+    ).toEqual({
+      types: `./dist/${code}.d.ts`,
+      import: `./dist/${code}.js`,
+      require: `./dist/${code}.cjs`,
+    });
+  });
+
+  it("publishes no sub-path without a locale file behind it", () => {
+    const subpaths = Object.keys(pkg.exports)
+      .filter((key) => key !== ".")
+      .map((key) => key.slice("./".length));
+    expect(subpaths.sort()).toEqual(CODES);
   });
 });

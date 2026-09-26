@@ -6,6 +6,13 @@ name: Roadmap board
 # the last roadmap:* label takes it off. Shipped is not a label: the board's own
 # built-in "Item closed" workflow moves closed issues there.
 #
+# roadmap:declined means "reviewed, not doing it": the issue comes off the board
+# and is closed as not planned, and the maintainer is asked for a one-sentence
+# reason if they haven't already given one.
+#
+# A roadmap issue carries exactly one lane:* label. If it has none or several,
+# the workflow says so in a comment, and removes that comment once it's fixed.
+#
 # GITHUB_TOKEN cannot write to an organization Project, so this needs the
 # ROADMAP_PROJECT_TOKEN secret: a PAT with the `project` and `repo` scopes (or a
 # fine-grained token with org Projects read/write and repo Issues read).
@@ -28,10 +35,14 @@ env:
 
 jobs:
   place:
-    if: github.event.action == 'labeled' && startsWith(github.event.label.name, 'roadmap:')
+    if: >-
+      github.event.action == 'labeled' &&
+      startsWith(github.event.label.name, 'roadmap:') &&
+      github.event.label.name != 'roadmap:declined'
     runs-on: ubuntu-latest
     steps:
-      # An issue carries exactly one roadmap:* label — the newest one wins.
+      # An issue carries exactly one roadmap:* label — the newest one wins. This
+      # also lifts roadmap:declined if a declined issue is put back on the board.
       - name: Drop other roadmap labels
         env:
           GH_TOKEN: ${{ github.token }}
@@ -75,18 +86,23 @@ jobs:
             --field-id "$field_id" --single-select-option-id "$option_id"
 
   remove:
-    if: github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'roadmap:')
+    if: >-
+      startsWith(github.event.label.name, 'roadmap:') &&
+      (github.event.action == 'unlabeled' || github.event.label.name == 'roadmap:declined')
     runs-on: ubuntu-latest
     steps:
-      # Only leave the board when no roadmap:* label remains — a swap removes the
-      # old label too, and that must not take the issue off.
+      # Unlabeling only takes the issue off when no placement label remains — a
+      # swap removes the old label too, and that must not take the issue off.
+      # Declining always takes it off.
       - name: Remove from board
         env:
           GH_TOKEN: ${{ secrets.ROADMAP_PROJECT_TOKEN }}
+          ACTION: ${{ github.event.action }}
           LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
           ISSUE_ID: ${{ github.event.issue.node_id }}
         run: |
-          if echo "$LABELS" | jq -e 'any(.[]; startswith("roadmap:"))' > /dev/null; then
+          if [ "$ACTION" = "unlabeled" ] && echo "$LABELS" \
+            | jq -e 'any(.[]; . == "roadmap:now" or . == "roadmap:next" or . == "roadmap:later")' > /dev/null; then
             echo "Issue still has a roadmap label; leaving it on the board."
             exit 0
           fi
@@ -104,3 +120,86 @@ jobs:
             exit 0
           fi
           gh project item-delete "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --id "$item_id"
+
+  # Runs after `remove`, so the issue is already off the board when it closes —
+  # otherwise the board's "Item closed" workflow would file it under Shipped.
+  decline:
+    needs: remove
+    if: github.event.action == 'labeled' && github.event.label.name == 'roadmap:declined'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Drop placement labels, explain, close as not planned
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ github.event.issue.number }}
+          ACTOR: ${{ github.actor }}
+          LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+        run: |
+          for label in $(echo "$LABELS" | jq -r '.[] | select(. == "roadmap:now" or . == "roadmap:next" or . == "roadmap:later")'); do
+            gh issue edit "$NUMBER" -R "$GITHUB_REPOSITORY" --remove-label "$label"
+          done
+
+          # Every decline gets a one-sentence reason. If whoever declined it has
+          # commented in the last hour, that comment is taken as the reason.
+          since=$(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)
+          reasons=$(gh api "repos/$GITHUB_REPOSITORY/issues/$NUMBER/comments?since=$since" \
+            --jq "[.[] | select(.user.login == \"$ACTOR\")] | length")
+          body="Thanks for raising this. We've reviewed it and decided not to take it on, so it's off the roadmap and closed as not planned."
+          if [ "$reasons" = "0" ]; then
+            body="$body
+
+          @$ACTOR — please add a one-sentence reason so whoever opened this knows why."
+          fi
+          gh issue close "$NUMBER" -R "$GITHUB_REPOSITORY" --reason "not planned" --comment "$body"
+
+  lanes:
+    if: >-
+      github.event.label.name != 'roadmap:declined' &&
+      (startsWith(github.event.label.name, 'roadmap:') || startsWith(github.event.label.name, 'lane:'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v9
+        with:
+          script: |
+            const MARKER = "<!-- roadmap-lane-check -->";
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.issue.number;
+
+            // Read labels fresh: labels added in one edit arrive as separate
+            // events, and the event payload may predate the others.
+            const { data: issue } = await github.rest.issues.get({ owner, repo, issue_number });
+            const names = issue.labels.map((l) => (typeof l === "string" ? l : l.name));
+            const onRoadmap = names.some((n) => ["roadmap:now", "roadmap:next", "roadmap:later"].includes(n));
+            const lanes = names.filter((n) => n.startsWith("lane:"));
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (c) => c.user?.type === "Bot" && c.body?.includes(MARKER),
+            );
+
+            const problem = !onRoadmap || issue.state !== "open"
+              ? null
+              : lanes.length === 0
+                ? "has no `lane:*` label"
+                : lanes.length > 1
+                  ? `has ${lanes.length} lane labels (${lanes.map((l) => `\`${l}\``).join(", ")})`
+                  : null;
+
+            if (!problem) {
+              if (existing) await github.rest.issues.deleteComment({ owner, repo, comment_id: existing.id });
+              return;
+            }
+            const body =
+              `${MARKER}\nThis roadmap issue ${problem}. Every roadmap issue needs exactly one — ` +
+              "`lane:core`, `lane:vendors`, `lane:i18n`, `lane:adapters` or `lane:docs`. " +
+              "This comment disappears once that's fixed.";
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
