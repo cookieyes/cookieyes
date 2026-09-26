@@ -24,11 +24,6 @@ on:
 permissions:
   issues: write
 
-# Serialize per issue so a quick now → next swap lands in order.
-concurrency:
-  group: roadmap-board-${{ github.event.issue.number }}
-  cancel-in-progress: false
-
 env:
   PROJECT_OWNER: cookieyes
   PROJECT_NUMBER: 3
@@ -39,6 +34,12 @@ jobs:
       github.event.action == 'labeled' &&
       startsWith(github.event.label.name, 'roadmap:') &&
       github.event.label.name != 'roadmap:declined'
+    # Queue per issue, at job level: a workflow-level group would let the other
+    # label events from the same edit (lane:*, help-wanted) replace this run
+    # while it waits. Only jobs that actually run join the queue.
+    concurrency:
+      group: roadmap-board-${{ github.event.issue.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       # An issue carries exactly one roadmap:* label — the newest one wins. This
@@ -89,6 +90,12 @@ jobs:
     if: >-
       startsWith(github.event.label.name, 'roadmap:') &&
       (github.event.action == 'unlabeled' || github.event.label.name == 'roadmap:declined')
+    # Queue per issue, at job level: a workflow-level group would let the other
+    # label events from the same edit (lane:*, help-wanted) replace this run
+    # while it waits. Only jobs that actually run join the queue.
+    concurrency:
+      group: roadmap-board-${{ github.event.issue.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       # Unlabeling only takes the issue off when no placement label remains — a
@@ -126,6 +133,12 @@ jobs:
   decline:
     needs: remove
     if: github.event.action == 'labeled' && github.event.label.name == 'roadmap:declined'
+    # Queue per issue, at job level: a workflow-level group would let the other
+    # label events from the same edit (lane:*, help-wanted) replace this run
+    # while it waits. Only jobs that actually run join the queue.
+    concurrency:
+      group: roadmap-board-${{ github.event.issue.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - name: Drop placement labels, explain, close as not planned
@@ -156,6 +169,10 @@ jobs:
     if: >-
       github.event.label.name != 'roadmap:declined' &&
       (startsWith(github.event.label.name, 'roadmap:') || startsWith(github.event.label.name, 'lane:'))
+    # Its own queue, so two label events can't both post the lane comment.
+    concurrency:
+      group: roadmap-lanes-${{ github.event.issue.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v9
