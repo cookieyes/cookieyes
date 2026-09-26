@@ -4,10 +4,12 @@ name: Release stale claims
 # maintainer assigns them. If 14 days pass with no pull request linked to the
 # issue, the claim lapses: the assignee is removed and the issue is reopened for
 # anyone to claim. Issues without help-wanted are never touched.
+#
+# Manual-only for now (Actions → Release stale claims → Run workflow). At current
+# contributor volume a stale claim is rare enough to spot by hand; add back a
+# daily `schedule` (e.g. cron "17 3 * * *") once chasing them becomes a chore.
 
 on:
-  schedule:
-    - cron: "17 3 * * *"
   workflow_dispatch:
 
 permissions:

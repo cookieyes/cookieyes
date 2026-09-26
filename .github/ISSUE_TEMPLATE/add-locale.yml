@@ -1,5 +1,5 @@
-name: 🌐 Add a locale
-description: Propose (or take on) a new translation for @cookieyes/translations
+name: 🌐 Request a locale
+description: Ask for a new translation in @cookieyes/translations
 title: "[locale] "
 labels: ["help-wanted", "lane:i18n"]
 body:
@@ -7,7 +7,11 @@ body:
     attributes:
       value: |
         Translations are an **open lane** — outside contributors are welcome to build these.
-        One issue per locale. A maintainer adds a `roadmap:*` label to place it on the [Roadmap](https://github.com/orgs/cookieyes/projects/3).
+
+        **Want to translate it yourself? You don't need an issue.** Copy
+        `sdk/translations/src/en.ts` to `<code>.ts`, translate it, and open a pull request — CI
+        checks every key is there. See [Adding a language](https://github.com/cookieyes/cookieyes/blob/main/CONTRIBUTING.md#adding-a-vendor-or-a-language).
+        Use this form to *ask* for a language you'd like someone to add. One issue per locale. A maintainer adds a `roadmap:*` label to place it on the [Roadmap](https://github.com/orgs/cookieyes/projects/3).
 
   - type: input
     id: locale
@@ -35,7 +39,7 @@ body:
       options:
         - Native speaker
         - Professional / fluent
-        - Not me — requesting it for someone else to take
+        - Not me — requesting it for someone else to build
     validations:
       required: true
 
@@ -47,14 +51,13 @@ body:
       options:
         - label: "Locale table added at `sdk/translations/src/<code>.ts`, typed as `TranslationMap`"
         - label: "Every key in `en.ts` is translated — no English left behind, no extra keys"
-        - label: "Sub-path export `./<code>` added to `sdk/translations/package.json` and entry added to `sdk/translations/rollup.config.mjs`"
-        - label: "Locale registered in `sdk/translations/src/__tests__/locales.test.ts` and the suite passes"
+        - label: "Sub-path export `./<code>` added to `sdk/translations/package.json` (the build and tests pick up the new file on their own, and CI says if the export is missing)"
         - label: "Translation reviewed by a second native or fluent speaker"
         - label: "Changeset added (`pnpm changeset`) for `@cookieyes/translations`"
         - label: "`pnpm lint`, `pnpm typecheck` and `pnpm test` pass"
 
   - type: textarea
-    id: claim
+    id: contribute
     attributes:
-      label: How to claim
-      value: To take this issue, comment "claiming".
+      label: Want to build this?
+      value: No need to claim it — copy `en.ts`, meet the checklist above, and open a pull request that says "Closes #" followed by this issue's number.
