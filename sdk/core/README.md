@@ -135,6 +135,26 @@ initCookieYes({
 });
 ```
 
+Each decision is one record, so it can serve as proof of consent:
+
+```jsonc
+{
+  "recordId": "9lBc…mzw.mul2v4rq.9wicmt", // same decision, same id: drop repeats on your server
+  "consentId": "9lBc…mzw",                // the visitor; stable until resetConsent()
+  "categories": { "necessary": true, "analytics": false /* … */ },
+  "regulation": "GDPR",
+  "domain": "example.com",
+  "decidedAt": "2026-09-28T10:01:21.638Z", // when the visitor decided, not when it was sent
+  "taxonomyHash": "2fbx48",                // the category set the decision was made against
+  "action": "accept_all",                  // accept_all | reject_all | accept_selected | save
+  "source": "banner"                       // banner | preferences | optout | api
+}
+```
+
+A decision made from your own code is recorded as `"api"`. If you build your own banner,
+pass where it is: `consentStore.getState().saveConsents("all", "banner")` or
+`consentManager.acceptAll("banner")`.
+
 ### Deprecated: `mode: "offline"`
 
 `"offline"` was renamed to `"cookie-only"` — same behavior, clearer name. It

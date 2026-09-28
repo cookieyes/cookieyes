@@ -17,10 +17,12 @@ import {
 } from "./stop-handlers.js";
 import { buildConsentPayload, pushConsent } from "./sync.js";
 import type {
+  ConsentAction,
   ConsentCategory,
   ConsentConfig,
   ConsentManager,
   ConsentSnapshot,
+  ConsentSource,
   ReloadNoticeState,
   ScriptEntry,
 } from "./types.js";
@@ -178,7 +180,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
    * So: commit the decision and tell the UI first, then run each side effect in
    * isolation, so no single failure can strand the banner or block the others.
    */
-  function persist(): void {
+  function persist(action: ConsentAction, source: ConsentSource | undefined): void {
     state = {
       ...state,
       hasActed: true,
@@ -207,16 +209,19 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
     // Best-effort: swallow both sync throws and async rejections so a
     // broken/missing backend never breaks the consent UX.
+    // `typeof` guard: an action wired straight to a click handler receives the event here.
+    const payload = buildConsentPayload(state, config.region, {
+      action,
+      source: typeof source === "string" ? source : "api",
+    });
     if (config.backend) {
       try {
-        Promise.resolve(config.backend.persist(buildConsentPayload(state, config.region))).catch(
-          () => undefined,
-        );
+        Promise.resolve(config.backend.persist(payload)).catch(() => undefined);
       } catch {
         // sync throw from .persist itself
       }
     } else if (config.apiUrl) {
-      void pushConsent(config.apiUrl, config.apiKey, state, config.region);
+      void pushConsent(config.apiUrl, config.apiKey, payload);
     }
 
     // Apply script gating from the committed consent. Isolated: a DOM failure
@@ -289,22 +294,22 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       return bannerDismissed;
     },
 
-    acceptAll() {
+    acceptAll(source) {
       state = { ...state, categories: buildCategories(() => true) };
       isPreferencesOpen = false;
-      persist();
+      persist("accept_all", source);
     },
 
-    rejectAll() {
+    rejectAll(source) {
       state = { ...state, categories: buildCategories(() => false) };
       isPreferencesOpen = false;
-      persist();
+      persist("reject_all", source);
     },
 
-    acceptSelected(categories: ConsentCategory[]) {
+    acceptSelected(categories: ConsentCategory[], source) {
       state = { ...state, categories: buildCategories((id) => categories.includes(id)) };
       isPreferencesOpen = false;
-      persist();
+      persist("accept_selected", source);
     },
 
     updateCategory(category: ConsentCategory, value: boolean) {
@@ -319,9 +324,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       notify();
     },
 
-    savePreferences() {
+    savePreferences(source) {
       isPreferencesOpen = false;
-      persist();
+      persist("save", source);
     },
 
     resetConsent() {

@@ -211,7 +211,7 @@ const AcceptAll = forwardRef<HTMLButtonElement, ActionProps>(function Preference
   { children, onClick, asChild, ...rest },
   ref,
 ) {
-  const { acceptAll } = useConsentActions();
+  const { acceptAll } = useConsentActions("preferences");
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.dialog.acceptAll,
@@ -225,7 +225,7 @@ const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function Preference
   { children, onClick, asChild, ...rest },
   ref,
 ) {
-  const { rejectAll } = useConsentActions();
+  const { rejectAll } = useConsentActions("preferences");
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.dialog.rejectAll,
@@ -239,7 +239,7 @@ const Save = forwardRef<HTMLButtonElement, ActionProps>(function PreferencesSave
   { children, onClick, asChild, ...rest },
   ref,
 ) {
-  const { save } = useConsentActions();
+  const { save } = useConsentActions("preferences");
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.dialog.save,

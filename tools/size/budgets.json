@@ -36,7 +36,13 @@
       "was deferred, and that is the honest reading of the change: a second chunk costs",
       "its own module wrapper, so `total` rises while `initial` falls 0.66 KB. The rise",
       "is the price of the deferral, not unnoticed creep, which is why it is recorded",
-      "here in the same change rather than absorbed by headroom."
+      "here in the same change rather than absorbed by headroom.",
+      "",
+      "The React layer's budgets were raised by 0.2 KB (205 bytes) when each consent",
+      "record gained its proof-of-consent fields: recordId, decidedAt, taxonomyHash,",
+      "action and source. About 130 bytes of that is the record itself in core, which",
+      "every React fixture includes; the rest is the React buttons passing their source.",
+      "Core's own budget still had room and is unchanged."
     ],
     "core": {
       "$comment": "@cookieyes/core via getOrCreateConsentRuntime(). Measured 7121 / 8782.",
@@ -44,23 +50,23 @@
       "total": 9166
     },
     "banner": {
-      "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 14060 / 16749.",
-      "initial": 14444,
-      "total": 17133
+      "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 14598 / 17292.",
+      "initial": 14649,
+      "total": 17338
     },
     "interface": {
-      "$comment": "@cookieyes/react mounting banner + preferences + recall. Measured 14604 / 17296.",
-      "initial": 14988,
-      "total": 17680
+      "$comment": "@cookieyes/react mounting banner + preferences + recall. Measured 15096 / 17789.",
+      "initial": 15193,
+      "total": 17885
     },
     "nextjs": {
       "$comment": [
         "@cookieyes/nextjs mounting banner + preferences, mirroring the leaderboard's",
-        "fair-cookieyes app. Measured 14609 / 17296 — within 5 bytes of the plain-React",
+        "fair-cookieyes app. Measured 15099 / 17791 — within 5 bytes of the plain-React",
         "fixture, which is the check that @cookieyes/scripts stays out of the client bundle."
       ],
-      "initial": 14993,
-      "total": 17680
+      "initial": 15198,
+      "total": 17885
     }
   },
   "targets": {

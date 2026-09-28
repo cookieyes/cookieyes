@@ -245,11 +245,12 @@ export type ConsentManager = ConsentSnapshot & {
    * is the live value that drives the dialog checkboxes.)
    */
   committedCategories: Record<string, boolean>;
-  acceptAll: () => void;
-  rejectAll: () => void;
-  acceptSelected: (categories: ConsentCategory[]) => void;
+  /** `source` says where the decision was made, for the consent record. Defaults to `"api"`. */
+  acceptAll: (source?: ConsentSource) => void;
+  rejectAll: (source?: ConsentSource) => void;
+  acceptSelected: (categories: ConsentCategory[], source?: ConsentSource) => void;
   updateCategory: (category: ConsentCategory, value: boolean) => void;
-  savePreferences: () => void;
+  savePreferences: (source?: ConsentSource) => void;
   resetConsent: () => void;
   showPreferences: () => void;
   hidePreferences: () => void;
@@ -270,17 +271,40 @@ export type ConsentManager = ConsentSnapshot & {
 };
 
 /**
+ * Where a consent decision was made: the SDK's banner, its preferences or opt-out
+ * dialog, or your own code (`"api"`, the default for direct calls).
+ */
+export type ConsentSource = "banner" | "preferences" | "optout" | "api";
+
+/** What the visitor did. `"save"` saves the toggles as set in the preferences dialog. */
+export type ConsentAction = "accept_all" | "reject_all" | "accept_selected" | "save";
+
+/**
  * Shape of the JSON body POSTed to the customer's `apiUrl`
  * on every consent decision (Accept All / Reject All / Save Preferences).
  *
  * Customers building a TypeScript backend can import this type to get
  * full type safety on their request handler.
+ *
+ * `recordId`, `decidedAt`, `taxonomyHash`, `source` and `action` are always sent;
+ * they are optional here only because records saved by older SDK versions lack them.
  */
 export type ConsentPayload = {
+  /**
+   * Same decision, same id: a server can drop a record it already has (for example
+   * one sent again after a failed attempt). Two different decisions never share one.
+   */
+  recordId?: string | undefined;
   consentId: string;
   categories: Record<string, boolean>;
   regulation: Regulation;
   domain: string;
+  /** When the visitor decided (ISO 8601, UTC), not when the record was sent. */
+  decidedAt?: string | undefined;
+  /** Signature of the category taxonomy the decision was made against. */
+  taxonomyHash?: string | undefined;
+  source?: ConsentSource | undefined;
+  action?: ConsentAction | undefined;
   /** Detected region when geo-detection is on (e.g. "US-CA"); omitted otherwise. */
   region?: string | undefined;
 };
@@ -465,7 +489,11 @@ export type ConsentStoreState = ConsentSnapshot & {
   committedConsents: Record<string, boolean>;
   /** True when `category` is committed-granted (a saved decision), not just toggled. */
   has: (category: ConsentCategory) => boolean;
-  saveConsents: (target: "all" | "necessary" | ConsentCategory[]) => Promise<void>;
+  /** `source` says where the decision was made, for the consent record. Defaults to `"api"`. */
+  saveConsents: (
+    target: "all" | "necessary" | ConsentCategory[],
+    source?: ConsentSource,
+  ) => Promise<void>;
   setConsent: (category: ConsentCategory, value: boolean) => void;
   /** Low-level: fires only on *saved* preference changes, not transient UI toggles — see `ConsentStore.subscribe` for the recommended, general-purpose subscription. */
   subscribeToConsentChanges: (listener: (payload: ConsentChangePayload) => void) => () => void;

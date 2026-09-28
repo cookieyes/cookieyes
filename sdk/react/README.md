@@ -277,6 +277,10 @@ const {
 } = useConsentActions();
 ```
 
+In self-hosted mode each decision is sent as a consent record. Tell it where your UI
+is with `useConsentActions("banner")` (or `"preferences"`, `"optout"`); without it,
+decisions are recorded as `"api"`. The SDK's own components already do this.
+
 **Other hooks** (each reads something `useConsent()` doesn't cover, so these
 aren't alternatives to it):
 
