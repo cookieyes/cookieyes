@@ -345,7 +345,8 @@ HTML (first-byte paint) and on every load, before client JavaScript hydrates the
 interactive parts. It uses fixed positioning, so showing it never shifts page
 layout (no CLS), and it issues **no network request on load** (cookie-only mode
 makes zero requests; self-hosted mode only POSTs to your backend when the user
-accepts, rejects, or saves).
+accepts, rejects, or saves, or on a later load to resend a record your backend has
+not confirmed yet).
 
 The following selectors are a **stable, public contract** — automated tooling and
 your own integrations may rely on them, and they will not change without a

@@ -125,15 +125,20 @@ initCookieYes({
   mode: "self-hosted",
   backend: {
     async persist(payload) {
-      await fetch("https://your-backend.example.com/v1/consent", {
+      const res = await fetch("https://your-backend.example.com/v1/consent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      // Throw when the record was not stored, so the SDK keeps it and tries again.
+      if (!res.ok) throw new Error(`Consent record not stored: HTTP ${res.status}`);
     },
   },
 });
 ```
+
+With `apiUrl`, a `2xx` response confirms the record. With a `backend`, resolving confirms it
+and throwing (or rejecting) tells the SDK it was not stored.
 
 Each decision is one record, so it can serve as proof of consent:
 
@@ -154,6 +159,39 @@ Each decision is one record, so it can serve as proof of consent:
 A decision made from your own code is recorded as `"api"`. If you build your own banner,
 pass where it is: `consentStore.getState().saveConsents("all", "banner")` or
 `consentManager.acceptAll("banner")`.
+
+#### When your server is down
+
+A record your server has not confirmed is not lost. The SDK saves each record in the
+visitor's `localStorage` (key `cookieyes-consent-records`) before sending it, and removes
+it only once your server confirms it. It sends a kept record again:
+
+- on the next page load,
+- as soon as the browser is back online,
+- on a timer while the page stays open: about 10 seconds, then 1 minute, then every 5
+  minutes, each with a random spread so visitors don't all retry at once.
+
+This also covers a visitor who closes the tab while a record is still being sent.
+
+| Limit | Value |
+| --- | --- |
+| Records kept per browser | 50 (the oldest is dropped first) |
+| Oldest record kept | 7 days |
+
+If storage is full or blocked, the record is still sent once, just not kept for a retry.
+`cookie-only` mode sends and keeps nothing.
+
+#### Storing records on your server
+
+A record can reach your server more than once: for example, when your server stored it
+but its reply never reached the browser. Store each record once by its `recordId`, and
+ignore one you already have. A retried record is sent unchanged, so its `decidedAt` is
+still the moment of the decision.
+
+Your server is where proof of consent lives. The copy in the browser is only kept until
+your server confirms it. How long to keep records is your decision: typically for as long
+as you rely on the consent, and at least 24 months for opt-out requests under the CCPA.
+Check the period that applies to you with your legal team.
 
 ### Deprecated: `mode: "offline"`
 
