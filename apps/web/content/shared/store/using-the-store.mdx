@@ -62,6 +62,8 @@ Both return a function that removes the listener. `on("save", fn)` also exists: 
 | `showPreferences()`, `hidePreferences()` | Set `activeUI` to `"dialog"` and back |
 | `resetConsent()` | Forget the decision, so the banner shows again |
 
+In `mode: "self-hosted"` each decision is sent to your server as a consent record. `acceptAll`, `rejectAll`, `acceptSelected` and `savePreferences` take an optional last argument saying where the decision was made, `"banner"`, `"preferences"` or `"optout"`, for example `consentManager.acceptAll("banner")`. Without it, the record says `"api"`.
+
 ## Good to know
 
 `initCookieYes()` reads the cookie at once, so `getState().hasActed` is correct on the first call and a banner drawn from it does not flash for a returning visitor. Calling `initCookieYes()` a second time replaces the runtime and logs a warning; keep the call in one module.

@@ -79,16 +79,16 @@ root.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
   switch (target.dataset.action) {
     case "accept":
-      consentManager.acceptAll();
+      consentManager.acceptAll("banner");
       break;
     case "reject":
-      consentManager.rejectAll();
+      consentManager.rejectAll("banner");
       break;
     case "customise":
       consentManager.showPreferences();
       break;
     case "save":
-      consentManager.savePreferences();
+      consentManager.savePreferences("preferences");
       consentManager.hidePreferences();
       break;
     case "close":
@@ -110,8 +110,9 @@ Add `<div id="consent"></div>` to your page and this is a working banner: it sho
 
 - **Draw from the store, not from your own state.** Other things change consent too: a "manage cookies" link calling `resetConsent()`, a second tab. Rendering inside `subscribe()` keeps the UI right in every case.
 - **Reopen it from anywhere.** A footer link that calls `consentManager.showPreferences()` is enough.
-- **Put `#consent` at the end of `<body>`**, so screen readers meet your content first. The banner is a dialog but not modal: the page behind stays usable.
+- **Make it behave like the SDK's banner.** It is a `role="dialog"` with `aria-modal="true"`, does not take focus when it appears, keeps Tab inside until the visitor answers, and afterwards moves focus to a control that reopens the choice, so focus is never lost.
 - **Accessibility is yours here.** Keep the heading the dialog is labelled by, use real `<button>` elements, and keep 4.5:1 contrast.
+- **Say where each decision was made.** In `mode: "self-hosted"` each decision is sent as a consent record. The `"banner"` and `"preferences"` arguments in the example set its `source`; without them it says `"api"`.
 - **Other languages.** `consentStore.getCategoryText(id)` gives a category's name in the active language, and `consentStore.translations` holds the standard strings; pass a catalogue through the `i18n` option.
 
 ## Common mistakes

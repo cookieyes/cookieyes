@@ -63,7 +63,7 @@ CookieYes's interface loads as a normal stylesheet file, never as an inline `<st
 Its origin is missing from `script-src`. The console shows the CSP violation.
 
 **Consent never reaches your server.**
-`connect-src` does not include your `apiUrl`. The request fails silently by design; check the Network tab.
+`connect-src` does not include your `apiUrl`. The request fails without affecting the banner, and a development build logs a console warning; check the Network tab. The record is kept in the browser and sent again once `connect-src` allows it.
 
 **A `GatedFrame` stays on its placeholder after consent.**
 Add the embed's origin to `frame-src`.

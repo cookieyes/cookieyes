@@ -128,7 +128,8 @@ export const configSidecarEntries: SidecarEntry[] = [
   {
     path: "apiUrl",
     group: "storage",
-    description: "Endpoint the ConsentPayload is POSTed to, under `mode: \"self-hosted\"`.",
+    description:
+      "Endpoint each consent record (ConsentPayload) is POSTed to, under `mode: \"self-hosted\"`. A 2xx response confirms it; otherwise it is kept in the browser and sent again.",
     default: null,
     defaultLocation: null,
     ifOmitted:
@@ -146,7 +147,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     path: "backend",
     group: "storage",
     description:
-      "Custom persistence adapter (`persist(payload)`): full control over transport, headers, batching, retries, or a non-HTTP destination.",
+      "Custom persistence adapter (`persist(payload)`): full control over transport, headers, batching, or a non-HTTP destination. Resolve once the record is stored; throw or reject otherwise, and the SDK keeps it and sends it again.",
     default: null,
     defaultLocation: null,
     ifOmitted:
