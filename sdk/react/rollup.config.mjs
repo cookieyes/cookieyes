@@ -3,4 +3,4 @@ import { createLibConfig } from "../../rollup.shared.mjs";
 
 const pkg = createRequire(import.meta.url)("./package.json");
 
-export default createLibConfig({ pkg, useClient: true });
+export default createLibConfig({ pkg, useClient: true, preserveModules: true });
