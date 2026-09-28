@@ -64,6 +64,8 @@ describe("buildConsentPayload", () => {
       buildConsentPayload({ ...snapshot, lastRenewed: 1700000002000 }).recordId,
       // Another visitor making the same choice at the same moment.
       buildConsentPayload({ ...snapshot, consentId: "xyz789" }).recordId,
+      // The same choice at the same moment, made by a different action.
+      buildConsentPayload(snapshot, undefined, { action: "save", source: "preferences" }).recordId,
     ];
     expect(new Set(ids).size).toBe(ids.length);
   });

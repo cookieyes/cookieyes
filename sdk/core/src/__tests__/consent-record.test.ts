@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createConsentManager } from "../manager.js";
 import type { ConsentPayload } from "../types.js";
 
 beforeEach(() => {
   document.cookie = "cookieyes-consent=; max-age=0; path=/";
+  localStorage.clear();
 });
 
 function managerWithRecorder() {
@@ -16,12 +17,13 @@ function managerWithRecorder() {
 }
 
 describe("consent record", () => {
-  it("records what the visitor did and where", () => {
+  it("records what the visitor did and where", async () => {
     const { manager, records } = managerWithRecorder();
     manager.acceptAll("banner");
     manager.rejectAll("preferences");
     manager.acceptSelected(["analytics"], "optout");
     manager.savePreferences("preferences");
+    await vi.waitFor(() => expect(records).toHaveLength(4));
     expect(records.map(({ action, source }) => ({ action, source }))).toEqual([
       { action: "accept_all", source: "banner" },
       { action: "reject_all", source: "preferences" },
@@ -51,10 +53,11 @@ describe("consent record", () => {
     expect(records[0]?.taxonomyHash).toBe(manager.taxonomyHash);
   });
 
-  it("gives each decision its own recordId", () => {
+  it("gives each decision its own recordId", async () => {
     const { manager, records } = managerWithRecorder();
     manager.rejectAll("banner");
     manager.acceptAll("preferences");
+    await vi.waitFor(() => expect(records).toHaveLength(2));
     const ids = records.map((r) => r.recordId);
     expect(ids.every(Boolean)).toBe(true);
     expect(new Set(ids).size).toBe(ids.length);

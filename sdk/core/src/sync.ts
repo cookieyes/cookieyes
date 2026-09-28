@@ -25,7 +25,9 @@ export function buildConsentPayload(
     // Built only from the record's own fields, so the same decision always gets the
     // same id. The random consentId plus the decision time keeps different ones apart.
     // Category order is the taxonomy's, so the same choice always stringifies the same.
-    recordId: `${snapshot.consentId}.${decidedMs.toString(36)}.${hashString(domain + JSON.stringify(snapshot.categories))}`,
+    recordId: `${snapshot.consentId}.${decidedMs.toString(36)}.${hashString(
+      domain + JSON.stringify(snapshot.categories) + decision?.action + decision?.source,
+    )}`,
     consentId: snapshot.consentId,
     categories: snapshot.categories,
     regulation: snapshot.regulation,

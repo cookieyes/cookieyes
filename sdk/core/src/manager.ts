@@ -8,6 +8,7 @@ import {
   writeConsentCookie,
 } from "./cookie.js";
 import { broadcastGoogleConsent, warnOverlappingGcm } from "./google-consent-mode.js";
+import { createRecordQueue } from "./record-queue.js";
 import { applyScripts, registerScript } from "./scripts.js";
 import {
   applyStopHandlers,
@@ -15,7 +16,7 @@ import {
   registerStopHandler,
   resolveBuiltInIntegration,
 } from "./stop-handlers.js";
-import { buildConsentPayload, sendConsentRecord } from "./sync.js";
+import { buildConsentPayload } from "./sync.js";
 import type {
   ConsentAction,
   ConsentCategory,
@@ -29,6 +30,8 @@ import type {
 
 export function createConsentManager(config: ConsentConfig): ConsentManager {
   const listeners = new Set<(state: ConsentSnapshot) => void>();
+  // Only when there is somewhere to send records (self-hosted mode).
+  const records = config.backend || config.apiUrl ? createRecordQueue(config) : undefined;
 
   // Resolve the category taxonomy (built-in five, or the customer's, or a
   // validated fallback to the five). Everything below is driven by this.
@@ -212,8 +215,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       action,
       source: typeof source === "string" ? source : "api",
     });
-    // Never rejects, so a broken or missing server can't break the consent UX.
-    if (config.backend || config.apiUrl) void sendConsentRecord(config, payload);
+    // Kept until the server confirms it; never throws, so a broken or missing
+    // server can't break the consent UX.
+    records?.send(payload);
 
     // Apply script gating from the committed consent. Isolated: a DOM failure
     // here must not stop the integrations below from being told about the change.
@@ -250,7 +254,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
     // Legacy opt-in hard reload (off by default). The stop-handlers above are
     // the safe path; this remains only for customers who explicitly want it.
-    // sendConsentRecord uses keepalive: true so it survives the navigation.
+    // Records are sent with keepalive: true, and kept until confirmed.
     if (didRevoke && config.reloadOnRevoke && typeof window !== "undefined") {
       window.location.reload();
     }
@@ -407,6 +411,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   } catch {
     // Google tags keep whatever default the page set; the banner still works.
   }
+
+  // Records an earlier page kept because the server hadn't confirmed them.
+  void records?.flush();
 
   return manager;
 }
