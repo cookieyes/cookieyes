@@ -21,3 +21,5 @@ Nothing changes for existing code. The new fields are optional on the `ConsentPa
 - Core: `consentStore.getState().saveConsents("all", "banner")` or `consentManager.acceptAll("banner")`. An action wired straight to a click handler is recorded as `"api"`.
 
 `ConsentSource` and `ConsentAction` are exported as types.
+
+**A record that fails to send is now noticed.** An HTTP error such as a 500 used to count as sent, because only a network error made the send fail. Now an HTTP error, a network error, or a `backend` adapter that throws or rejects is treated as a failure, and shows a console warning in development builds. The banner behaves exactly as before.

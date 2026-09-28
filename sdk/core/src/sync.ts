@@ -1,5 +1,14 @@
 import { hashString } from "./categories.js";
-import type { ConsentAction, ConsentPayload, ConsentSnapshot, ConsentSource } from "./types.js";
+import type {
+  ConsentAction,
+  ConsentConfig,
+  ConsentPayload,
+  ConsentSnapshot,
+  ConsentSource,
+} from "./types.js";
+
+// Module-scoped, for the dev-only guard below; see deprecations.ts for why.
+declare const process: { env: { NODE_ENV?: string } };
 
 /** What the visitor did, and where. Recorded with the decision, so it can be proven later. */
 export type ConsentDecision = { action: ConsentAction; source: ConsentSource };
@@ -29,24 +38,44 @@ export function buildConsentPayload(
   return payload;
 }
 
-export async function pushConsent(
-  apiUrl: string,
-  apiKey: string | undefined,
-  payload: ConsentPayload,
-): Promise<void> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+/** Where records go: your endpoint, or your own adapter. */
+export type ConsentRecordTarget = Pick<ConsentConfig, "apiUrl" | "apiKey" | "backend">;
 
+/**
+ * Send one record. Resolves `true` only once it is confirmed: a 2xx response, or your
+ * adapter resolving. Never rejects, so a broken server can't break the banner.
+ */
+export async function sendConsentRecord(
+  target: ConsentRecordTarget,
+  payload: ConsentPayload,
+): Promise<boolean> {
+  let failure: string | undefined;
   try {
-    await fetch(apiUrl, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-      keepalive: true,
-    });
-  } catch {
-    // Backend sync is best-effort — never fail the consent flow
+    if (target.backend) {
+      await target.backend.persist(payload);
+    } else if (target.apiUrl) {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (target.apiKey) headers.Authorization = `Bearer ${target.apiKey}`;
+      const response = await fetch(target.apiUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+        keepalive: true,
+      });
+      // fetch only rejects on a network error; a 500 still resolves.
+      if (!response.ok) failure = `HTTP ${response.status}`;
+    }
+  } catch (error) {
+    failure = error instanceof Error ? error.message : String(error);
   }
+  if (failure === undefined) return true;
+  warnRecordNotSent(failure);
+  return false;
+}
+
+function warnRecordNotSent(reason: string): void {
+  if (process.env.NODE_ENV === "production") return;
+  if (typeof console === "undefined") return;
+  // eslint-disable-next-line no-console
+  console.warn(`[cookieyes] A consent record did not reach your server (${reason}).`);
 }

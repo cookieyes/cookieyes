@@ -15,7 +15,7 @@ import {
   registerStopHandler,
   resolveBuiltInIntegration,
 } from "./stop-handlers.js";
-import { buildConsentPayload, pushConsent } from "./sync.js";
+import { buildConsentPayload, sendConsentRecord } from "./sync.js";
 import type {
   ConsentAction,
   ConsentCategory,
@@ -207,22 +207,13 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     notify();
     config.onConsentUpdate?.(state);
 
-    // Best-effort: swallow both sync throws and async rejections so a
-    // broken/missing backend never breaks the consent UX.
     // `typeof` guard: an action wired straight to a click handler receives the event here.
     const payload = buildConsentPayload(state, config.region, {
       action,
       source: typeof source === "string" ? source : "api",
     });
-    if (config.backend) {
-      try {
-        Promise.resolve(config.backend.persist(payload)).catch(() => undefined);
-      } catch {
-        // sync throw from .persist itself
-      }
-    } else if (config.apiUrl) {
-      void pushConsent(config.apiUrl, config.apiKey, payload);
-    }
+    // Never rejects, so a broken or missing server can't break the consent UX.
+    if (config.backend || config.apiUrl) void sendConsentRecord(config, payload);
 
     // Apply script gating from the committed consent. Isolated: a DOM failure
     // here must not stop the integrations below from being told about the change.
@@ -259,7 +250,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
     // Legacy opt-in hard reload (off by default). The stop-handlers above are
     // the safe path; this remains only for customers who explicitly want it.
-    // pushConsent uses keepalive: true so it survives the navigation.
+    // sendConsentRecord uses keepalive: true so it survives the navigation.
     if (didRevoke && config.reloadOnRevoke && typeof window !== "undefined") {
       window.location.reload();
     }
