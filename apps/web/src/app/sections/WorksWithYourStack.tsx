@@ -611,7 +611,7 @@ export function WorksWithYourStack() {
                   flexShrink: "0",
                   display: "block",
                   background:
-                    'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
+                    'url("/figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
                 }}
               />
               <span
@@ -729,7 +729,7 @@ export function WorksWithYourStack() {
                   height: "20px",
                   flexShrink: "0",
                   display: "block",
-                  background: 'url("figma-logos/meta-infinity.png") 50% 53% / 148% no-repeat',
+                  background: 'url("/figma-logos/meta-infinity.png") 50% 53% / 148% no-repeat',
                   filter: "grayscale(1)",
                 }}
               />
@@ -790,7 +790,7 @@ export function WorksWithYourStack() {
                   flexShrink: "0",
                   display: "block",
                   backgroundColor: "rgb(66, 133, 244)",
-                  mask: 'url("figma-logos/google-ads.svg") center center / contain no-repeat',
+                  mask: 'url("/figma-logos/google-ads.svg") center center / contain no-repeat',
                   filter: "grayscale(1)",
                 }}
               />

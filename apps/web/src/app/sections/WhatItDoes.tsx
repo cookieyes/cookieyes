@@ -1899,7 +1899,7 @@ export function WhatItDoes() {
                         flexShrink: "0",
                         display: "block",
                         background:
-                          'url("figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
+                          'url("/figma-logos/microsoft-clarity.svg") center center / contain no-repeat',
                       }}
                     />
                     <span
@@ -1940,7 +1940,7 @@ export function WhatItDoes() {
                         flexShrink: "0",
                         display: "block",
                         backgroundColor: "rgb(82, 189, 148)",
-                        mask: 'url("figma-logos/segment.svg") center center / contain no-repeat',
+                        mask: 'url("/figma-logos/segment.svg") center center / contain no-repeat',
                       }}
                     />
                     <span
