@@ -5,12 +5,14 @@ import { useEffect } from "react";
 /**
  * WebMCP (webmachinelearning.github.io/webmcp): tools an AI agent driving the browser can
  * call on this site. Two are enough for a docs site: search the docs, and read any page as
- * Markdown. Browsers without `navigator.modelContext` ignore this component.
+ * Markdown. Browsers without WebMCP ignore this component.
  */
 type Tool = {
   name: string;
   description: string;
   inputSchema: Record<string, unknown>;
+  /** Both tools only read, and return this site's own content. */
+  annotations: { readOnlyHint: boolean };
   execute: (input: Record<string, unknown>) => Promise<unknown>;
 };
 
@@ -18,6 +20,16 @@ type ModelContext = {
   provideContext?: (context: { tools: Tool[] }) => unknown;
   registerTool?: (tool: Tool) => unknown;
 };
+
+/**
+ * Where the browser exposes WebMCP. Chrome's implementation puts it on `document`; the
+ * explainer's earlier drafts used `navigator`, which is kept as the fallback.
+ */
+function modelContext(): ModelContext | null {
+  const doc = document as Document & { modelContext?: ModelContext };
+  const nav = navigator as Navigator & { modelContext?: ModelContext };
+  return doc.modelContext ?? nav.modelContext ?? null;
+}
 
 const tools: Tool[] = [
   {
@@ -32,6 +44,7 @@ const tools: Tool[] = [
       },
       required: ["query"],
     },
+    annotations: { readOnlyHint: true },
     execute: async ({ query, framework }) => {
       const url = new URL("/api/search", window.location.origin);
       url.searchParams.set("query", String(query));
@@ -51,6 +64,7 @@ const tools: Tool[] = [
       },
       required: ["path"],
     },
+    annotations: { readOnlyHint: true },
     execute: async ({ path }) => {
       const url = new URL(String(path), window.location.origin);
       if (url.origin !== window.location.origin)
@@ -62,18 +76,62 @@ const tools: Tool[] = [
   },
 ];
 
-// Registered once per page load. Strict Mode runs effects twice in development, and the
-// provider stays mounted across client navigations, so a flag is enough.
-let registered = false;
+/** The context the tools went to, so a client navigation does not register them twice. */
+let registeredWith: ModelContext | null = null;
+
+/**
+ * Registers each tool with `registerTool`, the current API; `provideContext`, from earlier
+ * drafts, only when that is all the browser has. A tool the browser rejects is logged and
+ * skipped rather than stopping the others.
+ */
+async function register(context: ModelContext): Promise<void> {
+  if (context === registeredWith) return;
+  registeredWith = context;
+  if (typeof context.registerTool === "function") {
+    const add = context.registerTool.bind(context);
+    const results = await Promise.all(
+      tools.map(async (tool) => {
+        try {
+          await add(tool);
+          return true;
+        } catch (error) {
+          console.error(`[webmcp] could not register "${tool.name}":`, error);
+          return false;
+        }
+      }),
+    );
+    if (!results.some(Boolean)) registeredWith = null;
+  } else if (typeof context.provideContext === "function") {
+    context.provideContext({ tools });
+  }
+}
+
+/** How long to keep looking for WebMCP after the page loads, in milliseconds. */
+const WAIT_FOR_CONTEXT_MS = 60_000;
 
 export function AgentTools() {
+  // The browser or an agent extension can expose WebMCP after the page has started, so
+  // look again for a while: every 100ms at first, then less often, for up to a minute.
   useEffect(() => {
-    const context = (navigator as Navigator & { modelContext?: ModelContext }).modelContext;
-    if (!context || registered) return;
-    registered = true;
-    if (typeof context.provideContext === "function") context.provideContext({ tools });
-    else if (typeof context.registerTool === "function")
-      for (const tool of tools) context.registerTool(tool);
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const startedAt = Date.now();
+    const look = () => {
+      if (stopped) return;
+      const context = modelContext();
+      if (context) {
+        void register(context);
+        return;
+      }
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= WAIT_FOR_CONTEXT_MS) return;
+      timer = setTimeout(look, elapsed < 3_000 ? 100 : elapsed < 10_000 ? 500 : 2_000);
+    };
+    look();
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
   }, []);
   return null;
 }
