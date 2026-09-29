@@ -38,7 +38,7 @@ export const configSidecarEntries: SidecarEntry[] = [
     default: null,
     defaultLocation: null,
     ifOmitted:
-      'Behaves as GDPR: optional categories start off and the visitor opts in; the stored value is "DEFAULT". If `region` is configured, its detected regulation is used instead.',
+      'Behaves as GDPR: optional categories start off and the visitor opts in. If `region` is configured, its detected regulation is used instead.',
   },
   {
     path: "region",

@@ -78,7 +78,7 @@ import { initCookieYes } from "@cookieyes/core";
 
 const { consentManager, consentStore } = initCookieYes({
   mode: "cookie-only",   // "cookie-only" | "self-hosted"
-  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR",    // "GDPR" | "CCPA"
   colorScheme: "system", // "light" | "dark" | "system"
 });
 ```
@@ -222,7 +222,7 @@ Migrating off the deprecated `overrides.regulation` / `backendURL` keys? See the
 | Option | Type | Notes |
 |--------|------|-------|
 | `mode` | `"cookie-only" \| "self-hosted"` | **Required.** See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
-| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | Force the applicable regulation. (The deprecated `overrides.regulation` alias still works.) |
+| `regulation` | `"GDPR" \| "CCPA"` | Force the applicable regulation. (The deprecated `overrides.regulation` alias still works.) |
 | `apiUrl` | `string` | Self-hosted: endpoint the payload is POSTed to. (The deprecated `backendURL` alias still works.) |
 | `backend` | `ConsentBackend` | Self-hosted: custom `persist(payload)` adapter. |
 | `apiKey` | `string` | Optional auth key. |
@@ -248,7 +248,7 @@ methods (`acceptAll()`, `rejectAll()`, `acceptSelected(cats)`, `updateCategory(c
 `registerScript(entry)`).
 
 > The applicable regulation comes from your top-level `regulation` config (the deprecated
-> `overrides.regulation` alias still works) and defaults to `"DEFAULT"`. The core engine does not
+> `overrides.regulation` alias still works) and behaves as GDPR when unset. The core engine does not
 > perform IP-based geo-detection.
 
 ## Reacting to consent changes

@@ -26,7 +26,7 @@ export type SidecarEntry = {
   path: string;
   group: ConfigGroupId;
   description: string;
-  /** Display string, e.g. `"DEFAULT"`, `"true"`, `"system stack"`. `null` = no default. */
+  /** Display string, e.g. `"true"`, `"system stack"`. `null` = no default. */
   default: string | null;
   /** `"core/runtime.ts:69"` — file:line where the default is applied. Required whenever `default` is non-null. */
   defaultLocation: string | null;

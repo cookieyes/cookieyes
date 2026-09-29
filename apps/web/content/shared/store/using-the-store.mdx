@@ -38,7 +38,7 @@ consentStore.on("change", ({ categories }) => {
 | `categories` | Category id → granted, as **saved**. Load things from this |
 | `consents` | The **live** switches, including ones flipped but not yet saved. Drive your dialog's checkboxes from this |
 | `activeUI` | `"banner"`, `"dialog"` or `null`: what should be on screen |
-| `regulation` | `"GDPR"` or `"CCPA"`; `"DEFAULT"` means none was set and behaves as GDPR |
+| `regulation` | `"GDPR"` or `"CCPA"` |
 
 The configured categories, in order, are `consentStore.categories.list`; each has `id` and `required`. Their names in the active language come from `consentStore.getCategoryText(id)`.
 

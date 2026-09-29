@@ -39,7 +39,7 @@ export function ConsentStatus() {
 | `hasActed` | `true` once the visitor has accepted, rejected or saved. Rejecting everything counts |
 | `committedCategories` | The **saved** values: category id → granted, as last saved. Read this one |
 | `categories` | The **live** values: the same map, but it changes while the visitor flips switches in the dialog, before Save |
-| `regulation` | `"GDPR"` or `"CCPA"`. `"DEFAULT"` means none was set and behaves as GDPR |
+| `regulation` | `"GDPR"` or `"CCPA"` |
 | `isPreferencesOpen`, `isOptOutOpen` | Whether a dialog is open right now |
 | `isBannerDismissed` | `true` after the visitor closed the banner without choosing, until the next page load |
 | `consentId`, `lastRenewed` | The record id and the time of the last decision |

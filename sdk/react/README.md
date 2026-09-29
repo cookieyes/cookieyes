@@ -98,7 +98,7 @@ import "@cookieyes/react/styles.css";
 
 initCookieYes({
   mode: "cookie-only",   // "cookie-only" = no backend needed | "self-hosted"
-  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR",    // "GDPR" | "CCPA"
   colorScheme: "system", // "light" | "dark" | "system"
 });
 
@@ -193,7 +193,7 @@ full option reference (modes, `theme`, `i18n`, self-hosted persistence, callback
 | Option | Type | Notes |
 |--------|------|-------|
 | `mode` | `"cookie-only" \| "self-hosted"` | **Required.** `cookie-only` = zero network, consent stored in a cookie. `self-hosted` = sync to your backend. See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
-| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | Which regulation applies. Drives the banner variant. |
+| `regulation` | `"GDPR" \| "CCPA"` | Which regulation applies. Drives the banner variant. |
 | `colorScheme` | `"light" \| "dark" \| "system"` | Theme mode. |
 | `theme` | `ThemeConfig` | Color / radius / font tokens (see [Theming](#theming)). |
 | `i18n` | `I18nConfig` | Locale translation maps (see [`@cookieyes/translations`](https://github.com/cookieyes/cookieyes/tree/main/sdk/translations)). |
@@ -244,7 +244,7 @@ const {
   hasActed,            // boolean — whether a real decision has been made
   categories,          // Record<string, boolean> — LIVE values, include unsaved dialog toggles
   committedCategories, // Record<string, boolean> — consent IN EFFECT. Gate on this
-  regulation,          // "GDPR" | "CCPA" | "DEFAULT"
+  regulation,          // "GDPR" | "CCPA"
   lastRenewed,         // number | undefined — timestamp of the last decision
   taxonomyHash,        // string | undefined — signature of the taxonomy consent was recorded under
   isPreferencesOpen,   // boolean
@@ -285,7 +285,7 @@ decisions are recorded as `"api"`. The SDK's own components already do this.
 aren't alternatives to it):
 
 ```tsx
-const regulation = useRegulation();          // "GDPR" | "CCPA" | "DEFAULT"
+const regulation = useRegulation();          // "GDPR" | "CCPA"
 const t = useTranslations();                 // active TranslationMap
 const bannerVisible = useBannerVisibility();  // boolean
 const prefsOpen = usePreferencesOpen();       // boolean
@@ -674,7 +674,7 @@ an existing integration, the builder configures the same runtime:
 | Method | Purpose |
 |--------|---------|
 | `.mode("cookie-only" \| "self-hosted")` | **Required.** Cookie-only vs. synced to your backend. See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
-| `.regulation("GDPR" \| "CCPA" \| "DEFAULT")` | Which regulation applies. |
+| `.regulation("GDPR" \| "CCPA")` | Which regulation applies. |
 | `.colorScheme("light" \| "dark" \| "system")` | Theme mode. |
 | `.theme(themeConfig)` | Color / radius / font tokens. |
 | `.i18n({ messages })` | Provide locale translation maps. |

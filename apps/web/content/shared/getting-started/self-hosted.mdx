@@ -11,7 +11,7 @@ In `mode: "self-hosted"`, every decision a visitor makes is also sent to your se
 ```ts check="false"
 initCookieYes({
   mode: "self-hosted",
-  apiUrl: "https://example.com/api/consent",
+  apiUrl: "https://example.com/api/consent", // your server's endpoint
 });
 ```
 
@@ -19,7 +19,11 @@ Each decision is sent as one `POST` with a JSON body. If you set `apiKey`, it go
 
 ## Receive it
 
-Any server works. Store the record, then reply with a `2xx` status:
+Any server works. Store the record, then reply with a `2xx` status.
+
+<Framework when="nextjs">
+
+For example, a route handler at `/api/consent`, the path in `apiUrl` above:
 
 ```ts title="app/api/consent/route.ts"
 // A stand-in for your database.
@@ -33,9 +37,31 @@ export async function POST(request: Request) {
 }
 ```
 
+</Framework>
+
+<Framework when="react core">
+
+For example, a handler for `POST /api/consent`, the path in `apiUrl` above, written with the standard `Request` and `Response` most servers use:
+
+```ts title="server/consent.ts"
+// A stand-in for your database.
+const records = new Map<string, unknown>();
+
+export async function handleConsent(request: Request) {
+  const record = await request.json();
+  // A record can arrive twice, with the same recordId. Keep the first.
+  if (!records.has(record.recordId)) records.set(record.recordId, record);
+  return new Response(null, { status: 204 });
+}
+```
+
+</Framework>
+
 ## The request body
 
-```json
+An example of what your server receives:
+
+```json title="Example request body"
 {
   "recordId": "9lBcA17N3AVZ.mul2v4rq.9wicmt",
   "consentId": "9lBcA17N3AVZ",
@@ -60,7 +86,7 @@ export async function POST(request: Request) {
 | `recordId` | This decision's id. The same decision always has the same id, so store each one once |
 | `consentId` | The visitor. It stays the same until their consent is reset |
 | `categories` | Each category, and whether it is granted |
-| `regulation` | `GDPR`, `CCPA` or `DEFAULT` |
+| `regulation` | `GDPR` or `CCPA` |
 | `domain` | The site the decision was made on |
 | `region` | The visitor's detected region, like `US-CA`. Sent only with region detection |
 | `decidedAt` | When the visitor decided, in UTC. Not when the record was sent |
