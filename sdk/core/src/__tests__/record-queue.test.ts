@@ -197,6 +197,15 @@ describe("record queue", () => {
     expect(manager.hasActed).toBe(true);
   });
 
+  it("removes records past the age limit from storage on page start", async () => {
+    const { backend } = fakeServer();
+    const stale = record({ decidedAt: new Date(Date.now() - MAX_KEPT_AGE_MS - 1000).toISOString() });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([stale]));
+    createConsentManager({ regulation: "GDPR", backend }); // a page load, no decision
+    await settle();
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
   it("treats unreadable storage as empty", async () => {
     const { server, backend } = fakeServer();
     localStorage.setItem(STORAGE_KEY, "{not json");

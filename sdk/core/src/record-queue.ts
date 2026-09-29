@@ -12,7 +12,7 @@ import type { ConsentPayload } from "./types.js";
 
 const STORAGE_KEY = "cookieyes-consent-records";
 /** Limits on what is kept. Documented; keep the docs in step. */
-export const MAX_KEPT_RECORDS = 50;
+export const MAX_KEPT_RECORDS = 10;
 export const MAX_KEPT_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 /** Wait before each retry while the page stays open; the last one repeats. */
 export const RETRY_DELAYS_MS = [10_000, 60_000, 300_000];
@@ -73,9 +73,13 @@ export function createRecordQueue(target: ConsentRecordTarget): RecordQueue {
 
   async function flush(): Promise<void> {
     let failed = false;
+    // Write the list back as read, so records past the limits leave storage now,
+    // not only at the next change.
+    const kept = load();
+    save(kept);
     // Every record gets its try, so one the server refuses can't hold up the rest.
     await Promise.all(
-      load().map(async (record) => {
+      kept.map(async (record) => {
         if (sending.has(record.recordId)) return;
         sending.add(record.recordId);
         if (await sendConsentRecord(target, record)) save(without(load(), record.recordId));

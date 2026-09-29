@@ -175,7 +175,7 @@ This also covers a visitor who closes the tab while a record is still being sent
 
 | Limit | Value |
 | --- | --- |
-| Records kept per browser | 50 (the oldest is dropped first) |
+| Records kept per browser | 10 (the oldest is dropped first) |
 | Oldest record kept | 7 days |
 
 If storage is full or blocked, the record is still sent once, just not kept for a retry.

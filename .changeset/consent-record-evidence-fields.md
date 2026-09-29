@@ -26,7 +26,7 @@ Nothing changes for existing code. The new fields are optional on the `ConsentPa
 
 **A record that fails to send is kept and sent again.** Each record is saved in `localStorage` (key `cookieyes-consent-records`) before it is sent, and removed only once your server confirms it. A kept record is sent again on the next page load, as soon as the browser is back online, and on a timer while the page stays open (about 10 seconds, then 1 minute, then every 5 minutes, each with a random spread). This also covers a visitor closing the tab while a record is still being sent.
 
-- At most 50 records are kept, and a record older than 7 days is dropped.
+- At most 10 records are kept, and a record older than 7 days is removed on the next page load.
 - A retried record keeps its `recordId`, so your server can store it once. Drop a record whose `recordId` you already have.
 - If storage is full or blocked, the record is still sent once, as before, just not kept for a retry.
 - Only self-hosted mode keeps records; `cookie-only` stores nothing new.
