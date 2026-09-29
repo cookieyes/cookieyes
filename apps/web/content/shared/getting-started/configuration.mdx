@@ -111,7 +111,7 @@ Ids must be unique and contain no `,` or `:`, and one category must be `required
 
 `cookie-only` keeps the visitor's choice in a browser cookie and makes no network requests. Start here.
 
-`self-hosted` also sends each choice to your server with one `POST` to `apiUrl`, so you can keep a record. `apiKey` goes in a `Bearer` header but is visible to anyone in the browser, so never treat it as a secret. For your own transport, pass a `backend` with a `persist(payload)` function instead of `apiUrl`.
+`self-hosted` also sends each choice to your server as a consent record, so you can keep proof of it. See [Self-hosted mode](/docs/getting-started/self-hosted) for what your server receives and how to store it.
 
 ## Common mistakes
 

@@ -147,10 +147,10 @@ export function getOrCreateConsentRuntime(config: CookieYesConfig): ConsentRunti
       taxonomyHash: manager.taxonomyHash,
       activeUI: activeUI(),
       has: (category) => manager.committedCategories[category] === true,
-      saveConsents: async (target) => {
-        if (target === "all") manager.acceptAll();
-        else if (target === "necessary") manager.rejectAll();
-        else manager.acceptSelected(target);
+      saveConsents: async (target, source) => {
+        if (target === "all") manager.acceptAll(source);
+        else if (target === "necessary") manager.rejectAll(source);
+        else manager.acceptSelected(target, source);
       },
       setConsent: (category, value) => manager.updateCategory(category, value),
       subscribeToConsentChanges: (listener) => {

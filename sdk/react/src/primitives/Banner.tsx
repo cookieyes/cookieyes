@@ -125,7 +125,7 @@ const AcceptAll = forwardRef<HTMLButtonElement, ActionProps>(function BannerAcce
   { children, onClick, asChild, ...rest },
   ref,
 ) {
-  const { acceptAll } = useConsentActions();
+  const { acceptAll } = useConsentActions("banner");
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.banner.acceptAll,
@@ -139,7 +139,7 @@ const RejectAll = forwardRef<HTMLButtonElement, ActionProps>(function BannerReje
   { children, onClick, asChild, ...rest },
   ref,
 ) {
-  const { rejectAll } = useConsentActions();
+  const { rejectAll } = useConsentActions("banner");
   const t = useTranslations();
   const behavior = {
     "data-cy-part": CY_PART.banner.rejectAll,

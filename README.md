@@ -88,7 +88,7 @@ import {
 
 initCookieYes({
   mode: "cookie-only",    // "cookie-only" | "self-hosted"
-  regulation: "GDPR",     // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR",     // "GDPR" | "CCPA"
   colorScheme: "system",  // "light" | "dark" | "system"
 });
 

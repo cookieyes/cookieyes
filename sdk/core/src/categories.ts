@@ -64,7 +64,7 @@ export type ResolvedCategories = {
 };
 
 /** Small, stable non-crypto hash → short base36 string, for the cookie stamp. */
-function hashString(input: string): string {
+export function hashString(input: string): string {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {
     h ^= input.charCodeAt(i);

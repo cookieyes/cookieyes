@@ -36,28 +36,36 @@
       "was deferred, and that is the honest reading of the change: a second chunk costs",
       "its own module wrapper, so `total` rises while `initial` falls 0.66 KB. The rise",
       "is the price of the deferral, not unnoticed creep, which is why it is recorded",
-      "here in the same change rather than absorbed by headroom."
+      "here in the same change rather than absorbed by headroom.",
+      "",
+      "Core's budgets were raised by 0.3 KB (307 bytes) for the consent-record retry",
+      "queue: a record is kept in localStorage until the server confirms it, and",
+      "retried on the next page start, when the browser is back online, and on a",
+      "backoff timer. It is core code, so every fixture carries it; the React budgets",
+      "absorbed it without a raise after the React build became one file per module."
     ],
     "core": {
-      "$comment": "@cookieyes/core via getOrCreateConsentRuntime(). Measured 7121 / 8782.",
-      "initial": 7505,
-      "total": 9166
+      "$comment": "@cookieyes/core via getOrCreateConsentRuntime(). Measured 7747 / 9407.",
+      "initial": 7812,
+      "total": 9473
     },
     "banner": {
-      "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 14060 / 16749.",
+      "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 11837 / 14527.",
       "initial": 14444,
       "total": 17133
     },
     "interface": {
-      "$comment": "@cookieyes/react mounting banner + preferences + recall. Measured 14604 / 17296.",
+      "$comment": "@cookieyes/react mounting banner + preferences + recall. Measured 14417 / 17106.",
       "initial": 14988,
       "total": 17680
     },
     "nextjs": {
       "$comment": [
         "@cookieyes/nextjs mounting banner + preferences, mirroring the leaderboard's",
-        "fair-cookieyes app. Measured 14609 / 17296 — within 5 bytes of the plain-React",
-        "fixture, which is the check that @cookieyes/scripts stays out of the client bundle."
+        "fair-cookieyes app. Measured 13464 / 16155. It mounts no <RecallButton />, so",
+        "since the React build became one file per module it sits about 950 bytes under",
+        "the interface fixture; that gap is the recall button. The check that",
+        "@cookieyes/scripts stays out of the client bundle is that nothing else differs."
       ],
       "initial": 14993,
       "total": 17680

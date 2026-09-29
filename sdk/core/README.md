@@ -78,7 +78,7 @@ import { initCookieYes } from "@cookieyes/core";
 
 const { consentManager, consentStore } = initCookieYes({
   mode: "cookie-only",   // "cookie-only" | "self-hosted"
-  regulation: "GDPR",    // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR",    // "GDPR" | "CCPA"
   colorScheme: "system", // "light" | "dark" | "system"
 });
 ```
@@ -125,15 +125,73 @@ initCookieYes({
   mode: "self-hosted",
   backend: {
     async persist(payload) {
-      await fetch("https://your-backend.example.com/v1/consent", {
+      const res = await fetch("https://your-backend.example.com/v1/consent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+      // Throw when the record was not stored, so the SDK keeps it and tries again.
+      if (!res.ok) throw new Error(`Consent record not stored: HTTP ${res.status}`);
     },
   },
 });
 ```
+
+With `apiUrl`, a `2xx` response confirms the record. With a `backend`, resolving confirms it
+and throwing (or rejecting) tells the SDK it was not stored.
+
+Each decision is one record, so it can serve as proof of consent:
+
+```jsonc
+{
+  "recordId": "9lBc…mzw.mul2v4rq.9wicmt", // same decision, same id: drop repeats on your server
+  "consentId": "9lBc…mzw",                // the visitor; stable until resetConsent()
+  "categories": { "necessary": true, "analytics": false /* … */ },
+  "regulation": "GDPR",
+  "domain": "example.com",
+  "decidedAt": "2026-09-28T10:01:21.638Z", // when the visitor decided, not when it was sent
+  "taxonomyHash": "2fbx48",                // the category set the decision was made against
+  "action": "accept_all",                  // accept_all | reject_all | accept_selected | save
+  "source": "banner"                       // banner | preferences | optout | api
+}
+```
+
+A decision made from your own code is recorded as `"api"`. If you build your own banner,
+pass where it is: `consentStore.getState().saveConsents("all", "banner")` or
+`consentManager.acceptAll("banner")`.
+
+#### When your server is down
+
+A record your server has not confirmed is not lost. The SDK saves each record in the
+visitor's `localStorage` (key `cookieyes-consent-records`) before sending it, and removes
+it only once your server confirms it. It sends a kept record again:
+
+- on the next page load,
+- as soon as the browser is back online,
+- on a timer while the page stays open: about 10 seconds, then 1 minute, then every 5
+  minutes, each with a random spread so visitors don't all retry at once.
+
+This also covers a visitor who closes the tab while a record is still being sent.
+
+| Limit | Value |
+| --- | --- |
+| Records kept per browser | 10 (the oldest is dropped first) |
+| Oldest record kept | 7 days |
+
+If storage is full or blocked, the record is still sent once, just not kept for a retry.
+`cookie-only` mode sends and keeps nothing.
+
+#### Storing records on your server
+
+A record can reach your server more than once: for example, when your server stored it
+but its reply never reached the browser. Store each record once by its `recordId`, and
+ignore one you already have. A retried record is sent unchanged, so its `decidedAt` is
+still the moment of the decision.
+
+Your server is where proof of consent lives. The copy in the browser is only kept until
+your server confirms it. How long to keep records is your decision: typically for as long
+as you rely on the consent, and at least 24 months for opt-out requests under the CCPA.
+Check the period that applies to you with your legal team.
 
 ### Deprecated: `mode: "offline"`
 
@@ -164,7 +222,7 @@ Migrating off the deprecated `overrides.regulation` / `backendURL` keys? See the
 | Option | Type | Notes |
 |--------|------|-------|
 | `mode` | `"cookie-only" \| "self-hosted"` | **Required.** See [Deprecated](#deprecated-mode-offline) for the retired `"offline"` name. |
-| `regulation` | `"GDPR" \| "CCPA" \| "DEFAULT"` | Force the applicable regulation. (The deprecated `overrides.regulation` alias still works.) |
+| `regulation` | `"GDPR" \| "CCPA"` | Force the applicable regulation. (The deprecated `overrides.regulation` alias still works.) |
 | `apiUrl` | `string` | Self-hosted: endpoint the payload is POSTed to. (The deprecated `backendURL` alias still works.) |
 | `backend` | `ConsentBackend` | Self-hosted: custom `persist(payload)` adapter. |
 | `apiKey` | `string` | Optional auth key. |
@@ -190,7 +248,7 @@ methods (`acceptAll()`, `rejectAll()`, `acceptSelected(cats)`, `updateCategory(c
 `registerScript(entry)`).
 
 > The applicable regulation comes from your top-level `regulation` config (the deprecated
-> `overrides.regulation` alias still works) and defaults to `"DEFAULT"`. The core engine does not
+> `overrides.regulation` alias still works) and behaves as GDPR when unset. The core engine does not
 > perform IP-based geo-detection.
 
 ## Reacting to consent changes

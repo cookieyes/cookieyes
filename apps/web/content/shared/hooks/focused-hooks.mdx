@@ -38,7 +38,7 @@ export function AnalyticsWidget() {
 
 ## Which law applies, and why
 
-`useRegulation()` returns the law in effect: `"GDPR"` or `"CCPA"`, or `"DEFAULT"` when `regulation` was never set, which behaves as GDPR.
+`useRegulation()` returns the law in effect: `"GDPR"` or `"CCPA"`.
 
 `useRegion()` tells you how that was decided, which is the tool when a visitor sees an unexpected banner. `source` is `"manual"` when you set `regulation` yourself, `"detected"` when `region.detect` matched your `region.map`, and `"strictest"` when detection found nothing and `region.strictest` applied. `confidence` is `"low"` when the region was guessed.
 
@@ -67,9 +67,6 @@ You used `useBannerVisibility()` for "has not decided yet". Use `useConsent().ha
 
 **A custom category is missing from your list.**
 You wrote the five built-in names by hand. Render from `useCategories().list`.
-
-**`useRegulation()` returns `"DEFAULT"`.**
-`regulation` is not set and `region` detection is off. Set one of them in `initCookieYes()`.
 
 ## Next steps
 
