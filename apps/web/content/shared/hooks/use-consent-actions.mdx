@@ -51,7 +51,7 @@ Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can 
 
 **`acceptSelected` replaces the whole list.** Categories you leave out are rejected. To add one category to the current choices, read `committedCategories` from `useConsent()`, add the id, and pass the full list.
 
-**Tell the consent record where your controls are.** In `mode: "self-hosted"` every decision is sent as a record with a `source`. Pass it once, `useConsentActions("banner")` (or `"preferences"`, `"optout"`), and every action from that hook records it. Without it, decisions are recorded as `"api"`. The actions still take no arguments, so `onClick={acceptAll}` works as before.
+**Tell the consent record where your controls are.** In `mode: "self-hosted"` every decision is sent as a [consent record](/docs/getting-started/self-hosted) with a `source`. Pass it once, `useConsentActions("banner")` (or `"preferences"`, `"optout"`), and every action from that hook records it. Without it, decisions are recorded as `"api"`. The actions still take no arguments, so `onClick={acceptAll}` works as before.
 
 **Before the runtime is ready** (on the server, or if `initCookieYes()` has not run), every action is a silent no-op. Nothing throws.
 

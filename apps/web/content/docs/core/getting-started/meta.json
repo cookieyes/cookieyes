@@ -2,7 +2,8 @@
   "title": "Getting Started",
   "pages": [
     "installation",
-    "configuration"
+    "configuration",
+    "self-hosted"
   ],
   "defaultOpen": true,
   "collapsible": false

@@ -26,6 +26,7 @@ const ENABLED_FILES = [
   "getting-started/installation.mdx",
   "getting-started/quick-start.mdx",
   "getting-started/configuration.mdx",
+  "getting-started/self-hosted.mdx",
   "getting-started/which-api.mdx",
   "store/using-the-store.mdx",
   "store/build-your-own-ui.mdx",

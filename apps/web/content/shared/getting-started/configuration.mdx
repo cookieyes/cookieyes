@@ -111,44 +111,12 @@ Ids must be unique and contain no `,` or `:`, and one category must be `required
 
 `cookie-only` keeps the visitor's choice in a browser cookie and makes no network requests. Start here.
 
-`self-hosted` also sends each choice to your server as a consent record, with a `POST` to `apiUrl`, so you can keep proof of it. `apiKey` goes in a `Bearer` header but is visible to anyone in the browser, so never treat it as a secret. For your own transport, pass a `backend` with a `persist(payload)` function instead of `apiUrl`, and throw from it when your server did not store the record.
-
-Each record says who decided, what they chose, when, how and where:
-
-```json
-{
-  "recordId": "9lBcA17N3AVZ.mul2v4rq.9wicmt",
-  "consentId": "9lBcA17N3AVZ",
-  "categories": {
-    "necessary": true,
-    "functional": false,
-    "analytics": false,
-    "performance": false,
-    "advertisement": false
-  },
-  "regulation": "GDPR",
-  "domain": "example.com",
-  "decidedAt": "2026-09-28T10:01:21.638Z",
-  "taxonomyHash": "2fbx48",
-  "action": "reject_all",
-  "source": "banner"
-}
-```
-
-`decidedAt` is when the visitor decided, not when the record was sent. `action` is `accept_all`, `reject_all`, `accept_selected` or `save`, and `source` is `banner`, `preferences`, `optout`, or `api` for a call from your own code.
-
-A record your server has not confirmed, with a `2xx` response or a `persist` that resolves, is kept in the visitor's browser and sent again: on the next page load, when the browser is back online, and on a timer while the page stays open. Up to 50 records are kept, for at most 7 days. A record can therefore reach your server more than once, so store each one by its `recordId` and ignore one you already have. Your server is where the proof lives; how long to keep it is for you and your legal team to decide.
+`self-hosted` also sends each choice to your server as a consent record, so you can keep proof of it. See [Self-hosted mode](/docs/getting-started/self-hosted) for what your server receives and how to store it.
 
 ## Common mistakes
 
 **`'apiUrl' does not exist in type 'CookieYesOfflineConfig'`.**
 You set `apiUrl` or `backend` under `mode: "cookie-only"`. Switch to `"self-hosted"` or remove them.
-
-**Your server has the same decision twice.**
-The record was sent again after your server stored it but its reply never reached the browser. Store records by `recordId`.
-
-**A record that failed in your `backend` is never sent again.**
-Your `persist` function resolved although the record was not stored. Throw when your server fails, for example `if (!res.ok) throw new Error(...)`.
 
 **`regulation is set manually, so region detection is ignored`.**
 You set both `regulation` and `region`. Keep one.

@@ -62,7 +62,7 @@ Both return a function that removes the listener. `on("save", fn)` also exists: 
 | `showPreferences()`, `hidePreferences()` | Set `activeUI` to `"dialog"` and back |
 | `resetConsent()` | Forget the decision, so the banner shows again |
 
-In `mode: "self-hosted"` each decision is sent to your server as a consent record. `acceptAll`, `rejectAll`, `acceptSelected` and `savePreferences` take an optional last argument saying where the decision was made, `"banner"`, `"preferences"` or `"optout"`, for example `consentManager.acceptAll("banner")`. Without it, the record says `"api"`.
+In `mode: "self-hosted"` each decision is sent to your server as a [consent record](/docs/getting-started/self-hosted). `acceptAll`, `rejectAll`, `acceptSelected` and `savePreferences` take an optional last argument saying where the decision was made, `"banner"`, `"preferences"` or `"optout"`, for example `consentManager.acceptAll("banner")`. Without it, the record says `"api"`.
 
 ## Good to know
 
