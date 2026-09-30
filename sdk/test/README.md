@@ -1,6 +1,7 @@
 # @cookieyes/test
 
-Unit-test your consent-dependent code without a browser.
+Unit-test your consent-dependent code without a browser. Documentation for the SDK:
+**[developers.cookieyes.com](https://developers.cookieyes.com)**.
 
 [![npm](https://img.shields.io/npm/v/@cookieyes/test)](https://www.npmjs.com/package/@cookieyes/test)
 [![license](https://img.shields.io/npm/l/@cookieyes/test)](./LICENSE)
@@ -135,7 +136,7 @@ passing for the wrong reason.
 | Option | Default | What it does |
 |---|---|---|
 | `initialConsent` | omitted | What the visitor already agreed to. **Omit** for a brand-new visitor (`hasActed: false`); pass `{}` for a returning visitor who agreed to nothing. |
-| `regulation` | `"GDPR"` | `"GDPR"` (opt-in), `"CCPA"` (opt-out — everything starts on), or `"DEFAULT"`. |
+| `regulation` | `"GDPR"` | `"GDPR"` (opt-in) or `"CCPA"` (opt-out — everything starts on). |
 | `categories` | core's built-in five | Your own taxonomy. The id union narrows to *your* ids. |
 | `mode` | `"cookie-only"` | `"self-hosted"` records the payloads that would be POSTed. |
 | `consentId` | core's generator | Fix it for deterministic snapshot assertions. |

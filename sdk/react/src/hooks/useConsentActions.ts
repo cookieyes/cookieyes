@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConsentCategory } from "@cookieyes/core";
+import type { ConsentCategory, ConsentSource } from "@cookieyes/core";
 import { useMemo } from "react";
 import { rememberFocusBeforeDialog } from "../primitives/utils.js";
 import { _tryGetCookieYes } from "../runtime.js";
@@ -38,16 +38,20 @@ const NOOP_ACTIONS: ConsentActions = {
  * Imperative actions for driving consent (accept/reject/save/reset, open or
  * close the preferences dialog, dismiss the banner). Pair this with `useConsent()` for
  * reading state — this hook only writes, it does not subscribe to changes.
+ *
+ * `source` says where your UI is (`"banner"`, `"preferences"`, `"optout"`), so the
+ * consent record shows where each decision was made. Omit it and decisions are
+ * recorded as `"api"`.
  */
-export function useConsentActions(): ConsentActions {
+export function useConsentActions(source?: ConsentSource): ConsentActions {
   const runtime = _tryGetCookieYes();
   return useMemo<ConsentActions>(() => {
     if (!runtime) return NOOP_ACTIONS;
     return {
-      acceptAll: () => runtime.manager.acceptAll(),
-      rejectAll: () => runtime.manager.rejectAll(),
-      acceptSelected: (categories) => runtime.manager.acceptSelected(categories),
-      save: () => runtime.manager.savePreferences(),
+      acceptAll: () => runtime.manager.acceptAll(source),
+      rejectAll: () => runtime.manager.rejectAll(source),
+      acceptSelected: (categories) => runtime.manager.acceptSelected(categories, source),
+      save: () => runtime.manager.savePreferences(source),
       updateCategory: (category, value) => runtime.manager.updateCategory(category, value),
       reset: () => runtime.manager.resetConsent(),
       showPreferences: () => {
@@ -62,5 +66,5 @@ export function useConsentActions(): ConsentActions {
       hideOptOut: () => runtime.hideOptOut(),
       dismissBanner: () => runtime.manager.dismissBanner(),
     };
-  }, [runtime]);
+  }, [runtime, source]);
 }

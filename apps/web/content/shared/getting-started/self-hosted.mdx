@@ -1,0 +1,141 @@
+---
+title: Self-hosted mode
+description: Send each consent decision to your own server as a record, and keep it as proof.
+frameworks: [nextjs, react, core]
+---
+
+In `mode: "self-hosted"`, every decision a visitor makes is also sent to your server as a consent record, so you can keep proof of it. The choice is still kept in the browser cookie too.
+
+## Turn it on
+
+```ts check="false"
+initCookieYes({
+  mode: "self-hosted",
+  apiUrl: "https://example.com/api/consent", // your server's endpoint
+});
+```
+
+Each decision is sent as one `POST` with a JSON body. If you set `apiKey`, it goes in an `Authorization: Bearer` header; anyone can see it in the browser, so never treat it as a secret.
+
+## Receive it
+
+Any server works. Store the record, then reply with a `2xx` status.
+
+<Framework when="nextjs">
+
+For example, a route handler at `/api/consent`, the path in `apiUrl` above:
+
+```ts title="app/api/consent/route.ts"
+// A stand-in for your database.
+const records = new Map<string, unknown>();
+
+export async function POST(request: Request) {
+  const record = await request.json();
+  // A record can arrive twice, with the same recordId. Keep the first.
+  if (!records.has(record.recordId)) records.set(record.recordId, record);
+  return new Response(null, { status: 204 });
+}
+```
+
+</Framework>
+
+<Framework when="react core">
+
+For example, a handler for `POST /api/consent`, the path in `apiUrl` above, written with the standard `Request` and `Response` most servers use:
+
+```ts title="server/consent.ts"
+// A stand-in for your database.
+const records = new Map<string, unknown>();
+
+export async function handleConsent(request: Request) {
+  const record = await request.json();
+  // A record can arrive twice, with the same recordId. Keep the first.
+  if (!records.has(record.recordId)) records.set(record.recordId, record);
+  return new Response(null, { status: 204 });
+}
+```
+
+</Framework>
+
+## The request body
+
+An example of what your server receives:
+
+```json title="Example request body"
+{
+  "recordId": "9lBcA17N3AVZ.mul2v4rq.9wicmt",
+  "consentId": "9lBcA17N3AVZ",
+  "categories": {
+    "necessary": true,
+    "functional": false,
+    "analytics": false,
+    "performance": false,
+    "advertisement": false
+  },
+  "regulation": "GDPR",
+  "domain": "example.com",
+  "decidedAt": "2026-09-28T10:01:21.638Z",
+  "taxonomyHash": "2fbx48",
+  "action": "reject_all",
+  "source": "banner"
+}
+```
+
+| Field | What it is |
+| --- | --- |
+| `recordId` | This decision's id. The same decision always has the same id, so store each one once |
+| `consentId` | The visitor. It stays the same until their consent is reset |
+| `categories` | Each category, and whether it is granted |
+| `regulation` | `GDPR` or `CCPA` |
+| `domain` | The site the decision was made on |
+| `region` | The visitor's detected region, like `US-CA`. Sent only with region detection |
+| `decidedAt` | When the visitor decided, in UTC. Not when the record was sent |
+| `taxonomyHash` | A fingerprint of your category list. It changes when you add, remove or rename a category, so you can tell which list a decision was made against |
+| `action` | What the visitor did: `accept_all`, `reject_all`, `accept_selected` or `save` |
+| `source` | Where: `banner`, `preferences`, `optout`, or `api` for a call from your own code |
+
+## When your server is down
+
+A record your server has not confirmed is kept in the visitor's browser and sent again: on the next page load, when the browser is back online, and on a timer while the page stays open. Up to 10 records are kept, for at most 7 days.
+
+Your server is where the proof lives. How long to keep records is for you and your legal team to decide.
+
+## Your own transport
+
+Instead of `apiUrl`, pass a `backend` with a `persist(record)` function. Throw when your server did not store the record, so it is sent again:
+
+```ts check="false"
+initCookieYes({
+  mode: "self-hosted",
+  backend: {
+    async persist(record) {
+      const res = await fetch("/api/consent", { method: "POST", body: JSON.stringify(record) });
+      if (!res.ok) throw new Error(`Consent record not stored: HTTP ${res.status}`);
+    },
+  },
+});
+```
+
+## Common mistakes
+
+**Your server has the same decision twice.**
+It stored the record, but its reply never reached the browser, so the record was sent again. Store records by `recordId`.
+
+**A record that failed in your `backend` is never sent again.**
+Your `persist` function resolved although the record was not stored. Throw when your server fails.
+
+**Records never arrive when your server is on another domain.**
+The browser blocks the request unless your server allows it. Answer the `OPTIONS` request and allow `POST` and the `Content-Type` header, plus `Authorization` if you set `apiKey`. The console shows a CORS error.
+
+**Your Content Security Policy blocks the request.**
+Add your `apiUrl` origin to `connect-src`.
+
+## Next steps
+
+- [Configuration](/docs/getting-started/configuration): every other option of `initCookieYes()`
+
+<Framework when="nextjs react">
+
+- [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
+
+</Framework>

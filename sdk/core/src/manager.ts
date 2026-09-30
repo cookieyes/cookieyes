@@ -8,6 +8,7 @@ import {
   writeConsentCookie,
 } from "./cookie.js";
 import { broadcastGoogleConsent, warnOverlappingGcm } from "./google-consent-mode.js";
+import { createRecordQueue } from "./record-queue.js";
 import { applyScripts, registerScript } from "./scripts.js";
 import {
   applyStopHandlers,
@@ -15,18 +16,22 @@ import {
   registerStopHandler,
   resolveBuiltInIntegration,
 } from "./stop-handlers.js";
-import { buildConsentPayload, pushConsent } from "./sync.js";
+import { buildConsentPayload } from "./sync.js";
 import type {
+  ConsentAction,
   ConsentCategory,
   ConsentConfig,
   ConsentManager,
   ConsentSnapshot,
+  ConsentSource,
   ReloadNoticeState,
   ScriptEntry,
 } from "./types.js";
 
 export function createConsentManager(config: ConsentConfig): ConsentManager {
   const listeners = new Set<(state: ConsentSnapshot) => void>();
+  // Only when there is somewhere to send records (self-hosted mode).
+  const records = config.backend || config.apiUrl ? createRecordQueue(config) : undefined;
 
   // Resolve the category taxonomy (built-in five, or the customer's, or a
   // validated fallback to the five). Everything below is driven by this.
@@ -178,7 +183,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
    * So: commit the decision and tell the UI first, then run each side effect in
    * isolation, so no single failure can strand the banner or block the others.
    */
-  function persist(): void {
+  function persist(action: ConsentAction, source: ConsentSource | undefined): void {
     state = {
       ...state,
       hasActed: true,
@@ -205,19 +210,14 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     notify();
     config.onConsentUpdate?.(state);
 
-    // Best-effort: swallow both sync throws and async rejections so a
-    // broken/missing backend never breaks the consent UX.
-    if (config.backend) {
-      try {
-        Promise.resolve(config.backend.persist(buildConsentPayload(state, config.region))).catch(
-          () => undefined,
-        );
-      } catch {
-        // sync throw from .persist itself
-      }
-    } else if (config.apiUrl) {
-      void pushConsent(config.apiUrl, config.apiKey, state, config.region);
-    }
+    // `typeof` guard: an action wired straight to a click handler receives the event here.
+    const payload = buildConsentPayload(state, config.region, {
+      action,
+      source: typeof source === "string" ? source : "api",
+    });
+    // Kept until the server confirms it; never throws, so a broken or missing
+    // server can't break the consent UX.
+    records?.send(payload);
 
     // Apply script gating from the committed consent. Isolated: a DOM failure
     // here must not stop the integrations below from being told about the change.
@@ -254,7 +254,7 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
 
     // Legacy opt-in hard reload (off by default). The stop-handlers above are
     // the safe path; this remains only for customers who explicitly want it.
-    // pushConsent uses keepalive: true so it survives the navigation.
+    // Records are sent with keepalive: true, and kept until confirmed.
     if (didRevoke && config.reloadOnRevoke && typeof window !== "undefined") {
       window.location.reload();
     }
@@ -289,22 +289,22 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       return bannerDismissed;
     },
 
-    acceptAll() {
+    acceptAll(source) {
       state = { ...state, categories: buildCategories(() => true) };
       isPreferencesOpen = false;
-      persist();
+      persist("accept_all", source);
     },
 
-    rejectAll() {
+    rejectAll(source) {
       state = { ...state, categories: buildCategories(() => false) };
       isPreferencesOpen = false;
-      persist();
+      persist("reject_all", source);
     },
 
-    acceptSelected(categories: ConsentCategory[]) {
+    acceptSelected(categories: ConsentCategory[], source) {
       state = { ...state, categories: buildCategories((id) => categories.includes(id)) };
       isPreferencesOpen = false;
-      persist();
+      persist("accept_selected", source);
     },
 
     updateCategory(category: ConsentCategory, value: boolean) {
@@ -319,9 +319,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
       notify();
     },
 
-    savePreferences() {
+    savePreferences(source) {
       isPreferencesOpen = false;
-      persist();
+      persist("save", source);
     },
 
     resetConsent() {
@@ -411,6 +411,9 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
   } catch {
     // Google tags keep whatever default the page set; the banner still works.
   }
+
+  // Records an earlier page kept because the server hadn't confirmed them.
+  void records?.flush();
 
   return manager;
 }

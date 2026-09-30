@@ -2,33 +2,6 @@
 
 import type { SVGProps } from "react";
 
-export function CookieIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      width="36"
-      height="36"
-      viewBox="0 0 36 36"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <circle cx="18" cy="18" r="18" fill="#1A6AFF" fillOpacity="0.1" />
-      <circle cx="18" cy="18" r="10" fill="#1A6AFF" fillOpacity="0.15" />
-      {/* Cookie body */}
-      <circle cx="18" cy="18" r="8" fill="#1A6AFF" />
-      {/* Chips */}
-      <circle cx="15" cy="15" r="1.5" fill="white" />
-      <circle cx="20" cy="14" r="1" fill="white" />
-      <circle cx="21" cy="20" r="1.5" fill="white" />
-      <circle cx="15" cy="21" r="1" fill="white" />
-      <circle cx="18" cy="18" r="1" fill="white" />
-      {/* Bite */}
-      <circle cx="24" cy="12" r="4" fill="#1A6AFF" fillOpacity="0.1" />
-      <path d="M22 10 Q26 10 26 14 Q24 12 22 10Z" fill="white" fillOpacity="0.4" />
-    </svg>
-  );
-}
-
 /** The "X" on a close button: two lines corner to corner in a `size`-pixel square. */
 export function CrossIcon({ size, strokeWidth = 1.5 }: { size: number; strokeWidth?: number }) {
   const end = size - 1;
@@ -45,27 +18,6 @@ export function CrossIcon({ size, strokeWidth = 1.5 }: { size: number; strokeWid
         d={`M1 1L${end} ${end}M${end} 1L1 ${end}`}
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-export function CloseIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 20 20"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      {...props}
-    >
-      <path
-        d="M15 5L5 15M5 5l10 10"
-        stroke="currentColor"
-        strokeWidth="1.75"
         strokeLinecap="round"
       />
     </svg>
@@ -157,28 +109,6 @@ export function RevisitIcon(props: SVGProps<SVGSVGElement>) {
         fill="white"
       />
       <path d="M19.94 25.79H16.47V29.24H19.94V25.79Z" fill="white" />
-    </svg>
-  );
-}
-
-export function CookieSmallIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      {...props}
-    >
-      <circle cx="12" cy="12" r="10" fill="currentColor" fillOpacity="0.15" />
-      <circle cx="12" cy="12" r="7" fill="currentColor" />
-      <circle cx="10" cy="10" r="1.2" fill="white" />
-      <circle cx="14" cy="10" r="0.9" fill="white" />
-      <circle cx="14" cy="14" r="1.2" fill="white" />
-      <circle cx="10" cy="14" r="0.9" fill="white" />
-      <circle cx="12" cy="12" r="0.9" fill="white" />
     </svg>
   );
 }

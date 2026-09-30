@@ -1,6 +1,7 @@
 # @cookieyes/scripts
 
 Ready-made, consent-gated third-party integrations for [CookieYes](https://github.com/cookieyes/cookieyes).
+Guides for every integration: **[developers.cookieyes.com](https://developers.cookieyes.com/docs/nextjs/integrations)**.
 
 Nothing loads until the visitor grants the matching consent category. When they
 withdraw it, the script is removed or silenced — **no page reload**, nothing the

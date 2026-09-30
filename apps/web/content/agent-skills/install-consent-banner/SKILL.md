@@ -108,7 +108,7 @@ export const { consentStore, consentManager } = initCookieYes({
 - **Banner renders as plain text**: the `styles.css` import is missing.
 - **Nothing renders and no error**: `<CookieYesRoot />` is not rendered anywhere, so `initCookieYes()` never ran.
 - **"You're importing a component that needs use client"** (Next.js): the consent file lost its `"use client"` line, or `initCookieYes()` was called in the layout.
-- Do not pass `"DEFAULT"` as the regulation. Use `"GDPR"` or `"CCPA"`.
+- **Set `regulation` to `"GDPR"` or `"CCPA"`**, or leave it out to behave as GDPR.
 
 ## Next
 

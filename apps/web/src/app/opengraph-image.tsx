@@ -38,7 +38,7 @@ export default async function OpenGraphImage() {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <div style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.1, letterSpacing: "-2px" }}>
-          Consent that ships in your bundle
+          Cookie consent that ships in your bundle
         </div>
         <div style={{ fontSize: 32, color: "#b4b8c7" }}>
           Open-source cookie consent SDK for React and Next.js

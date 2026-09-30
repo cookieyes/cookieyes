@@ -11,9 +11,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/@cookieyes/core?label=%40cookieyes%2Fcore)](https://www.npmjs.com/package/@cookieyes/core)
 
-[Roadmap](https://github.com/orgs/cookieyes/projects/3) · [Contributing](./CONTRIBUTING.md)
+**[Documentation](https://developers.cookieyes.com)** · [Roadmap](https://github.com/orgs/cookieyes/projects/3) · [Contributing](./CONTRIBUTING.md)
 
-Open-source cookie consent SDK for developers. Build consent banners and manage GDPR, CCPA, and privacy compliance.
+Open-source cookie consent SDK for developers. Build consent banners and manage GDPR, CCPA, and privacy compliance. Guides, API reference and a live playground are at **[developers.cookieyes.com](https://developers.cookieyes.com)**.
 
 ## Packages
 
@@ -38,7 +38,7 @@ Open-source cookie consent SDK for developers. Build consent banners and manage 
 All business logic lives in `@cookieyes/core`. Framework adapters are thin wrappers — no logic, only wiring.
 
 **Not sure which API reads consent status in your case?** See the
-[decision tree](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/which-api.mdx) — there's one recommended
+[decision tree](https://developers.cookieyes.com/docs/nextjs/getting-started/which-api) — there's one recommended
 path per platform; everything else is a documented low-level option for a
 specific edge case.
 
@@ -67,7 +67,7 @@ Verified by installing the exact versions above, building a real Next.js app, se
 You configure the SDK once with a single config object, then drop in the banner
 and dialog components. Every package — core, React, and Next.js — accepts the
 exact same `initCookieYes(config)` shape. Full options are documented in
-[Configuration](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx).
+[Configuration](https://developers.cookieyes.com/docs/nextjs/getting-started/configuration).
 
 ### React
 
@@ -88,7 +88,7 @@ import {
 
 initCookieYes({
   mode: "cookie-only",    // "cookie-only" | "self-hosted"
-  regulation: "GDPR",     // "GDPR" | "CCPA" | "DEFAULT"
+  regulation: "GDPR",     // "GDPR" | "CCPA"
   colorScheme: "system",  // "light" | "dark" | "system"
 });
 

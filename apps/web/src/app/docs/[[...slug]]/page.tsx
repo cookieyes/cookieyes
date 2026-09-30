@@ -6,7 +6,7 @@ import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layo
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
 import { MAIN_CONTENT_ID } from "@/app/SkipLink";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
@@ -15,7 +15,6 @@ import { TocFooter } from "@/components/docs/TocFooter";
 import { JsonLd } from "@/components/JsonLd";
 import { getMDXComponents } from "@/components/mdx";
 import {
-  DEFAULT_FRAMEWORK,
   FRAMEWORK_LABEL,
   type Framework,
   frameworkOf,
@@ -116,10 +115,9 @@ function issueUrl(title: string, url: string): string {
 
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
-  // `/docs` itself has no page: every section lives under a framework root, and the
-  // sidebar and header choose theirs from the URL. Old un-prefixed links are redirected in
-  // next.config.mjs; this handles the bare path.
-  if (!params.slug?.length) redirect(`/docs/${DEFAULT_FRAMEWORK}`);
+  // `/docs` is the neutral landing page (content/docs/index.mdx) that sends each reader
+  // to their framework; every other section lives under a framework root. Old
+  // un-prefixed links are redirected in next.config.mjs.
   const page = source.getPage(params.slug);
   if (!page) notFound();
 

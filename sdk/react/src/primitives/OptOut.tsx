@@ -215,7 +215,7 @@ const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
   ref,
 ) {
   const { optOut, setSaved } = useOptOutContext();
-  const { acceptAll, rejectAll, hideOptOut } = useConsentActions();
+  const { acceptAll, rejectAll, hideOptOut } = useConsentActions("optout");
   const t = useTranslations();
 
   const behavior = {

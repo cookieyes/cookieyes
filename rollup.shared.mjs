@@ -68,8 +68,10 @@ function injectPkgVersion(version) {
 function useClientBanner(exclude = []) {
   return {
     name: "use-client-banner",
-    renderChunk(code, chunk) {
-      if (!chunk.isEntry) return null;
+    renderChunk(code, chunk, options) {
+      // With one file per module, any file can be imported on its own (a bundler
+      // skipping the index re-exports), so every file needs the directive.
+      if (!chunk.isEntry && !options.preserveModules) return null;
       if (exclude.includes(chunk.name)) return null;
       return { code: `"use client";\n${code}`, map: null };
     },
@@ -87,6 +89,10 @@ function useClientBanner(exclude = []) {
  * @param {boolean} [opts.sourcemap]   default true
  * @param {string}  [opts.target]      esbuild target (default "es2020")
  * @param {string}  [opts.shebang]     optional shebang banner (cli)
+ * @param {boolean} [opts.preserveModules] emit the ESM build as one file per source
+ *   module, so an app's bundler can drop the files it never imports. The single-file
+ *   bundle hides that: its top-level calls (e.g. `forwardRef(...)`) might have side
+ *   effects, so bundlers keep all of it.
  * @param {import('rollup').Plugin[]} [opts.extraPlugins]  package-specific plugins, run
  *   before resolution on the JS build only (never the .d.ts build). For build-time
  *   sentinel replacement in the style of `injectPkgVersion`.
@@ -101,6 +107,7 @@ export function createLibConfig({
   sourcemap = true,
   target = "es2020",
   shebang,
+  preserveModules = false,
   extraPlugins = [],
 }) {
   const deps = [...Object.keys(pkg.dependencies ?? {}), ...Object.keys(pkg.peerDependencies ?? {})];
@@ -116,6 +123,7 @@ export function createLibConfig({
       format: "es",
       entryFileNames: "[name].js",
       chunkFileNames: "[name]-[hash].js",
+      ...(preserveModules ? { preserveModules: true, preserveModulesRoot: "src" } : {}),
       sourcemap,
       banner,
     });
