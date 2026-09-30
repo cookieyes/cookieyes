@@ -14,7 +14,6 @@ import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
 import { JsonLd } from "@/components/JsonLd";
 import { getMDXComponents } from "@/components/mdx";
-import { canonicalDocsPath } from "@/lib/canonical-docs";
 import {
   FRAMEWORK_LABEL,
   type Framework,
@@ -281,6 +280,5 @@ export async function generateMetadata(props: PageProps<"/docs/[[...slug]]">): P
     absoluteTitle: isRelease,
     description: label && description ? `${label}: ${description}` : description,
     path: page.url,
-    canonicalPath: canonicalDocsPath(page),
   });
 }

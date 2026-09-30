@@ -31,18 +31,11 @@ export function pageMetadata({
   title,
   description,
   path,
-  canonicalPath = path,
   absoluteTitle = false,
 }: {
   title: string;
   description?: string;
   path: string;
-  /**
-   * The URL search engines should index, when it isn't this page's own: a Next.js docs
-   * page that says the same as its React twin (see lib/canonical-docs.ts). `og:url`
-   * follows it, as the Open Graph spec expects.
-   */
-  canonicalPath?: string;
   /** Use `title` as the whole <title>, without the site-name suffix. */
   absoluteTitle?: boolean;
 }): Metadata {
@@ -51,11 +44,11 @@ export function pageMetadata({
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
-    alternates: { canonical: canonicalPath },
+    alternates: { canonical: path },
     openGraph: {
       title: fullTitle,
       description,
-      url: canonicalPath,
+      url: path,
       siteName: SITE_NAME,
       type: "website",
       locale: "en_US",
