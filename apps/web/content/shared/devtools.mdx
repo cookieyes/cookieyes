@@ -1,0 +1,74 @@
+---
+title: Devtools
+description: An in-page panel that shows live what the SDK believes and does — and is provably absent from your production bundle.
+frameworks: [react, nextjs]
+---
+
+## What it does
+
+`@cookieyes/devtools` is an in-page debugging panel for the CookieYes SDK. Mount it once and get:
+
+- **Consent** — working (unsaved) vs committed values, side by side. Toggle any category right there, then Save, Accept all or Reject all, without going through the banner.
+- **Integrations** — every configured integration's live status, with a per-status summary and a filter.
+- **Blocked** — requests the [network blocker](/docs/network-blocking) stopped.
+- **Google Consent Mode** — the current 7 signals, plus a history of every push, including the pre-hydration server default.
+- **Events** — an interleaved timeline of consent saves, integration status changes and blocked requests. Filter by kind, search text and payloads, click a row for its JSON, export or clear. The timeline survives a page reload in the same tab.
+- **Region** — the resolved region/regulation and how it was reached, plus a `forceRegion` override to test any region locally, without a VPN.
+- **Actions** — open the preferences or opt-out dialog, copy the full state, download a debug bundle (`.json`) for a bug report, or reset consent.
+
+It is **React/Next.js only** in this first version. A core-only/vanilla-JS panel is a follow-up.
+
+## Install
+
+```bash
+npm install --save-dev @cookieyes/devtools
+```
+
+It is a `devDependency` on purpose — see [How production exclusion works](#how-production-exclusion-works).
+
+## Mount it
+
+<Framework when="react nextjs">
+
+```tsx title="app/devtools-root.tsx"
+"use client";
+import { CookieYesDevtools } from "@cookieyes/devtools";
+import "@cookieyes/devtools/styles.css";
+
+export function DevtoolsRoot() {
+  return <CookieYesDevtools position="bottom-right" />;
+}
+```
+
+</Framework>
+
+Render `<DevtoolsRoot />` anywhere in your tree — it mounts a fixed-position overlay, so placement doesn't matter. Mounting the component **is** the opt-in: there is no other flag to set.
+
+- **Toggle** the panel with the floating CookieYes logo button, or `Ctrl/Cmd+Shift+Y`. `Escape` closes it. Drag the button to any corner; it snaps there and remembers it.
+- **`position`**: `"top-left" | "top-right" | "bottom-left" | "bottom-right"` (default `"bottom-right"`).
+- **`theme`**: `"light" | "dark" | "system"` (default `"system"`) — the host page's scheme, so the panel can match it. The System / Light / Dark switch in the panel header overrides it (saved in `localStorage["cyd:theme"]`); choosing System there follows this prop again.
+
+## Testing another region — `forceRegion`
+
+Open the **Region** tab and enter a region code (e.g. `US-CA`, `DE`, `GB`) to see how your banner would behave there, without a VPN or changing your own geo-detection config. A persistent banner reads **"this would differ in production"** the whole time an override is active, so it can never be mistaken for a real decision.
+
+The override is stored in a `__cyd_region` cookie and mirrored to `localStorage` — it never touches the SDK's runtime. The client picks it up on the next mount/render; a server-rendered banner needs a page reload to see it on its next request. The Region tab's own copy discloses this rather than hiding it.
+
+## How production exclusion works
+
+This is the whole point, and it's proven, not promised: `@cookieyes/devtools`'s `package.json` uses a **conditional export**, not a runtime flag.
+
+```json
+{
+  "exports": {
+    ".": {
+      "development": { "import": "./dist/index.js" },
+      "import": "./dist/stub.js"
+    }
+  }
+}
+```
+
+A dev server (`next dev`, a Vite dev server) sets the `development` condition, so bundlers resolve the real panel. A production build (`next build`, `vite build`) never sets it, so bundlers resolve the stub instead — a function that renders `null` and touches no React state, no `@cookieyes/core`, no `@cookieyes/react`. The real panel's entire module graph, including its CSS import, is never reached, parsed, or shipped.
+
+There is deliberately **no** `NODE_ENV`/`disabled`-prop fallback in the real panel's entry — a fallback that can run in production is a path a future change could accidentally reactivate. The CookieYes SDK's own size gate (the same one that catches every unnoticed size regression across the whole SDK) includes a fixture that mounts `<CookieYesDevtools />` in a real production Next.js build and asserts, by measurement: the byte delta over the same app without it stays within a fixed ceiling, and no distinctive string from the real panel's code appears in any emitted production chunk.

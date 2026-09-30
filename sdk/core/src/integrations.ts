@@ -1,6 +1,18 @@
 import type { ConsentCategory, RegionDecision } from "./types.js";
 
 /**
+ * Declared locally rather than pulled in from `@types/node` — see the
+ * identical note in `deprecations.ts`. Guards each inline devtools queue push
+ * below so a consumer's bundler can fold it away in production.
+ */
+declare const process: { env: { NODE_ENV?: string } };
+
+/** See the identical declaration + note in `network-blocker.ts`. */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
+
+/**
  * The integration format — the shared contract between the consent engine and
  * every vendor preset (Google, Segment, Meta, …). It carries no vendor
  * knowledge; a preset in `@cookieyes/scripts` fills it in.
@@ -308,11 +320,35 @@ export function runIntegrations(
     // `keep` leaves the script on the page (only the listener was released).
     if (entry.integration.onRevoke === "remove") entry.status = "removed";
     else if (entry.integration.onRevoke === "silence") entry.status = "silenced";
+    // Dev-only devtools instrumentation: a single guard after the if/else,
+    // not one per branch — two guarded blocks in an if/else-if chain can
+    // confuse a minifier's constant-folding (observed: one of the two dead
+    // branches surviving in production because the assignment and the dead
+    // condition got merged via a comma operator). Checking `entry.status`
+    // here instead of duplicating the onRevoke comparisons also means this
+    // reports nothing for the "keep" case, where neither branch ran and the
+    // status is still "active". See the note at the top of network-blocker.ts.
+    if (process.env.NODE_ENV !== "production" && entry.status !== "active") {
+      const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+        v: 1,
+      }));
+      if (q.length >= 500) q.shift();
+      q.push({ k: "i", t: Date.now(), d: { id: entry.integration.id, status: entry.status } });
+    }
   }
 
   function load(entry: Entry): void {
     entry.loading = true;
     entry.status = "loading";
+    // Dev-only devtools instrumentation: an inline push onto a global queue —
+    // see the note at the top of network-blocker.ts. Folds away in production.
+    if (process.env.NODE_ENV !== "production") {
+      const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+        v: 1,
+      }));
+      if (q.length >= 500) q.shift();
+      q.push({ k: "i", t: Date.now(), d: { id: entry.integration.id, status: entry.status } });
+    }
     // Normalise sync/async setup into a promise; a sync throw becomes a reject.
     Promise.resolve()
       .then(() => entry.integration.setup(ctxFor(entry)))
@@ -321,6 +357,15 @@ export function runIntegrations(
         entry.control = control ?? undefined;
         entry.everLoaded = true;
         entry.status = "active";
+        // Dev-only devtools instrumentation: an inline push onto a global queue —
+        // see the note at the top of network-blocker.ts. Folds away in production.
+        if (process.env.NODE_ENV !== "production") {
+          const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+            v: 1,
+          }));
+          if (q.length >= 500) q.shift();
+          q.push({ k: "i", t: Date.now(), d: { id: entry.integration.id, status: entry.status } });
+        }
         if (stopped) {
           // Torn down while loading → undo this load right away so the vendor
           // doesn't linger past teardown.
@@ -333,6 +378,15 @@ export function runIntegrations(
       .catch((err) => {
         entry.loading = false;
         entry.status = "error";
+        // Dev-only devtools instrumentation: an inline push onto a global queue —
+        // see the note at the top of network-blocker.ts. Folds away in production.
+        if (process.env.NODE_ENV !== "production") {
+          const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+            v: 1,
+          }));
+          if (q.length >= 500) q.shift();
+          q.push({ k: "i", t: Date.now(), d: { id: entry.integration.id, status: entry.status } });
+        }
         releaseSubs(entry); // a failed setup may have subscribed before throwing
         warn(
           `integration "${entry.integration.id}" failed to load; will retry on the next change.`,
@@ -374,6 +428,15 @@ export function runIntegrations(
         }
         entry.control = undefined;
         entry.status = "removed";
+        // Dev-only devtools instrumentation: an inline push onto a global queue —
+        // see the note at the top of network-blocker.ts. Folds away in production.
+        if (process.env.NODE_ENV !== "production") {
+          const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+            v: 1,
+          }));
+          if (q.length >= 500) q.shift();
+          q.push({ k: "i", t: Date.now(), d: { id: entry.integration.id, status: entry.status } });
+        }
       }
       return;
     }
@@ -387,6 +450,15 @@ export function runIntegrations(
         warn(`integration "${integration.id}" silence() threw.`, err);
       }
       entry.status = "silenced";
+      // Dev-only devtools instrumentation: an inline push onto a global queue —
+      // see the note at the top of network-blocker.ts. Folds away in production.
+      if (process.env.NODE_ENV !== "production") {
+        const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+          v: 1,
+        }));
+        if (q.length >= 500) q.shift();
+        q.push({ k: "i", t: Date.now(), d: { id: entry.integration.id, status: entry.status } });
+      }
     } else if (granted && entry.status === "silenced") {
       try {
         sc?.resume();
@@ -394,6 +466,15 @@ export function runIntegrations(
         warn(`integration "${integration.id}" resume() threw.`, err);
       }
       entry.status = "active";
+      // Dev-only devtools instrumentation: an inline push onto a global queue —
+      // see the note at the top of network-blocker.ts. Folds away in production.
+      if (process.env.NODE_ENV !== "production") {
+        const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+          v: 1,
+        }));
+        if (q.length >= 500) q.shift();
+        q.push({ k: "i", t: Date.now(), d: { id: entry.integration.id, status: entry.status } });
+      }
     }
   }
 

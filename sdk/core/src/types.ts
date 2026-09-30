@@ -111,8 +111,12 @@ export type RegionConfig = {
   debug?: boolean | undefined;
 };
 
-/** How the active regulation was decided. */
-export type RegionSource = "manual" | "detected" | "strictest";
+/**
+ * How the active regulation was decided. `"forced"` means a
+ * `@cookieyes/devtools` region override is active — dev-only, never reachable
+ * in a production bundle (see `resolveRegion`'s third parameter).
+ */
+export type RegionSource = "manual" | "detected" | "strictest" | "forced";
 
 /** The outcome of geo-detection — the region seen and the regulation chosen. */
 export type RegionDecision = {

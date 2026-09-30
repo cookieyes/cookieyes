@@ -8,6 +8,9 @@ import {
   googleTagManager,
 } from "../google.js";
 
+/** Declared locally — see the identical note in core's `deprecations.ts`. */
+declare const process: { env: { NODE_ENV?: string | undefined } };
+
 const REGION: RegionDecision = {
   region: undefined,
   regulation: "DEFAULT",
@@ -97,6 +100,24 @@ describe("bootstrapGoogleConsentMode()", () => {
     const count = commands().length;
     bootstrapGoogleConsentMode(); // second call is a no-op
     expect(commands().length).toBe(count);
+  });
+
+  it("records a dev-only GCM default onto the global devtools queue", () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "development";
+    type DevQueueEntry = { k: string; t: number; d: unknown };
+    type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueEntry[] };
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    try {
+      bootstrapGoogleConsentMode();
+      const queue = (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ?? [];
+      const pushed = queue.filter((e) => e.k === "g");
+      expect(pushed).toHaveLength(1);
+      expect(pushed[0]?.d).toMatchObject({ trigger: "default", source: "bootstrap" });
+    } finally {
+      process.env.NODE_ENV = originalNodeEnv;
+      delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    }
   });
 });
 

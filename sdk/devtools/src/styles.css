@@ -1,0 +1,1443 @@
+/*
+ * @cookieyes/devtools stylesheet — imported by the developer, never injected.
+ * Per the SDK's strict-CSP rule (AD-6): a real file, `.cyd-*` classes only,
+ * `--cyd-*` custom properties, no CSS Modules, no inline `style=`, no
+ * generated CSS text. All selectors are scoped under one root, `.cyd-root`.
+ *
+ * Token values are COPIED (not imported) from apps/web's
+ * `src/styles/docs/theme.css` `--cy-doc-*` tokens (light + dark) — see the
+ * design doc's §8 token table. This package's visual identity is
+ * independently versioned from the docs site's on purpose: it must never
+ * depend on apps/web.
+ */
+
+.cyd-root {
+  --cyd-bg: #ffffff;
+  --cyd-surface: #ffffff;
+  --cyd-bg2: #f8f9fc;
+  --cyd-bg3: #f4f5fa;
+  --cyd-bd: #e3e5f1;
+  --cyd-bd2: #c7cade;
+  --cyd-bd3: #8f92af;
+  --cyd-tx: #14142a;
+  --cyd-tx2: #4e4b66;
+  --cyd-tx3: #6b6f8c;
+  --cyd-ac: #136fe8;
+  --cyd-ac-bg: rgba(19, 111, 232, 0.07);
+  --cyd-gr: #00754e;
+  --cyd-gr-bg: rgba(0, 117, 78, 0.08);
+  --cyd-am: #8f6322;
+  --cyd-am-bg: rgba(232, 154, 31, 0.12);
+  --cyd-re: #b9172b;
+  --cyd-re-bg: rgba(185, 23, 43, 0.07);
+  --cyd-pu: #8250df;
+  --cyd-shadow: 0 16px 40px rgba(20, 20, 42, 0.12), 0 2px 6px rgba(20, 20, 42, 0.06);
+  --cyd-shadow-trigger: 0 4px 14px rgba(0, 86, 167, 0.22), 0 1px 3px rgba(20, 20, 42, 0.12);
+  --cyd-row-hover: #f8f9fc;
+  --cyd-radius: 6px;
+  --cyd-radius-sm: 4px;
+  --cyd-radius-lg: 12px;
+  --cyd-font-ui:
+    Inter, "Inter var", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --cyd-font-display: Poppins, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cyd-font-mono: "Geist Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  position: fixed;
+  z-index: 2147483000;
+  font-family: var(--cyd-font-ui);
+  color: var(--cyd-tx);
+}
+
+@media (prefers-color-scheme: dark) {
+  .cyd-root:not([data-cyd-theme="light"]) {
+    --cyd-bg: #15171a;
+    --cyd-surface: #1f2124;
+    --cyd-bg2: #1b1d20;
+    --cyd-bg3: #1f2124;
+    --cyd-bd: rgba(255, 255, 255, 0.1);
+    --cyd-bd2: rgba(255, 255, 255, 0.1);
+    --cyd-bd3: #82868b;
+    --cyd-tx: #f1f3f5;
+    --cyd-tx2: #b4b8bd;
+    --cyd-tx3: #9a9ea3;
+    --cyd-ac: #6c9bea;
+    --cyd-ac-bg: #0c2b5e;
+    --cyd-gr: #8fe786;
+    --cyd-gr-bg: #1c3519;
+    --cyd-am: #edd2ad;
+    --cyd-am-bg: #3e2906;
+    --cyd-re: #eac3c2;
+    --cyd-re-bg: #472122;
+    --cyd-pu: #d59eff;
+    --cyd-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --cyd-shadow-trigger: 0 4px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+    --cyd-row-hover: #1f2124;
+  }
+}
+
+.cyd-root[data-cyd-theme="dark"] {
+  --cyd-bg: #15171a;
+  --cyd-surface: #1f2124;
+  --cyd-bg2: #1b1d20;
+  --cyd-bg3: #1f2124;
+  --cyd-bd: rgba(255, 255, 255, 0.1);
+  --cyd-bd2: rgba(255, 255, 255, 0.1);
+  --cyd-bd3: #82868b;
+  --cyd-tx: #f1f3f5;
+  --cyd-tx2: #b4b8bd;
+  --cyd-tx3: #9a9ea3;
+  --cyd-ac: #6c9bea;
+  --cyd-ac-bg: #0c2b5e;
+  --cyd-gr: #8fe786;
+  --cyd-gr-bg: #1c3519;
+  --cyd-am: #edd2ad;
+  --cyd-am-bg: #3e2906;
+  --cyd-re: #eac3c2;
+  --cyd-re-bg: #472122;
+  --cyd-pu: #d59eff;
+  --cyd-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --cyd-shadow-trigger: 0 4px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --cyd-row-hover: #1f2124;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Trigger — the CookieYes mark on a round light backdrop                  */
+/* ---------------------------------------------------------------------- */
+
+.cyd-trigger {
+  position: fixed;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--cyd-bd);
+  background: #fbfbfb;
+  cursor: pointer;
+  box-shadow: var(--cyd-shadow-trigger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483001;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.cyd-trigger:hover {
+  transform: translateY(-1px);
+}
+
+.cyd-trigger:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: 3px;
+}
+
+.cyd-trigger-open {
+  box-shadow:
+    0 0 0 3px var(--cyd-ac-bg),
+    var(--cyd-shadow-trigger);
+}
+
+.cyd-trigger-mark {
+  width: 46px;
+  height: 46px;
+  pointer-events: none;
+}
+
+.cyd-trigger-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #e89a1f;
+  border: 2px solid #fbfbfb;
+}
+
+.cyd-pos-top-left {
+  top: 16px;
+  left: 16px;
+}
+.cyd-pos-top-right {
+  top: 16px;
+  right: 16px;
+}
+.cyd-pos-bottom-left {
+  bottom: 16px;
+  left: 16px;
+}
+.cyd-pos-bottom-right {
+  bottom: 16px;
+  right: 16px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Panel — framed like the docs' search dialog                             */
+/* ---------------------------------------------------------------------- */
+
+.cyd-panel {
+  position: fixed;
+  width: min(700px, calc(100vw - 32px));
+  height: min(560px, calc(100vh - 96px));
+  display: flex;
+  flex-direction: column;
+  background: var(--cyd-bg);
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius-lg);
+  box-shadow: var(--cyd-shadow);
+  /* clip, not hidden: the panel itself can't be scrolled into view, only its body. */
+  overflow: clip;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Opens beside the trigger, clear of it. */
+.cyd-panel-bottom-right {
+  bottom: 76px;
+  right: 16px;
+}
+.cyd-panel-bottom-left {
+  bottom: 76px;
+  left: 16px;
+}
+.cyd-panel-top-right {
+  top: 76px;
+  right: 16px;
+}
+.cyd-panel-top-left {
+  top: 76px;
+  left: 16px;
+}
+
+.cyd-panel *,
+.cyd-panel *::before,
+.cyd-panel *::after {
+  box-sizing: border-box;
+}
+
+.cyd-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-bottom: 1px solid var(--cyd-bd);
+  background: var(--cyd-bg);
+}
+
+.cyd-panel-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cyd-panel-mark {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.cyd-panel-title {
+  font-family: var(--cyd-font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--cyd-tx);
+}
+
+.cyd-panel-subtitle {
+  font-size: 13px;
+  color: var(--cyd-tx3);
+  padding-left: 10px;
+  border-left: 1px solid var(--cyd-bd);
+}
+
+.cyd-panel-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cyd-chip {
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--cyd-bd);
+  background: var(--cyd-bg2);
+  color: var(--cyd-tx2);
+  white-space: nowrap;
+}
+
+.cyd-chip-warning {
+  border-color: transparent;
+  background: var(--cyd-am-bg);
+  color: var(--cyd-am);
+}
+
+.cyd-icon-btn {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--cyd-radius);
+  background: transparent;
+  color: var(--cyd-tx3);
+  cursor: pointer;
+}
+
+.cyd-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cyd-icon-btn:hover {
+  background: var(--cyd-bg3);
+  color: var(--cyd-tx);
+}
+
+.cyd-panel-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 16px;
+  color: var(--cyd-tx2);
+}
+
+.cyd-panel-footer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 9px 16px;
+  border-top: 1px solid var(--cyd-bd);
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-panel-footer-end {
+  margin-left: auto;
+}
+
+.cyd-kbd {
+  font-family: inherit;
+  font-size: 10px;
+  padding: 1px 5px;
+  margin-right: 4px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius-sm);
+  background: var(--cyd-bg2);
+  color: var(--cyd-tx2);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Tablist — the docs' code-tab bar: plain text, accent underline          */
+/* ---------------------------------------------------------------------- */
+
+.cyd-tablist {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 0 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--cyd-bg2);
+  border-bottom: 1px solid var(--cyd-bd);
+}
+
+.cyd-tab {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--cyd-tx3);
+  font-size: 12.5px;
+  font-family: var(--cyd-font-ui);
+  padding: 10px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cyd-tab:hover {
+  color: var(--cyd-tx);
+}
+
+.cyd-tab:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: -4px;
+  border-radius: var(--cyd-radius-sm);
+}
+
+.cyd-tab-active {
+  color: var(--cyd-tx);
+  font-weight: 500;
+}
+
+.cyd-tab-active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--cyd-ac);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Shared building blocks                                                  */
+/* ---------------------------------------------------------------------- */
+
+.cyd-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cyd-toolbar-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.cyd-meta {
+  display: flex;
+  gap: 20px;
+  margin: 0;
+}
+
+.cyd-meta-item dt {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--cyd-tx3);
+}
+
+.cyd-meta-item dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--cyd-tx);
+}
+
+/* The docs' bordered "Copy" button. */
+.cyd-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  border: 1px solid var(--cyd-bd);
+  background: var(--cyd-bg);
+  color: var(--cyd-tx2);
+  border-radius: var(--cyd-radius);
+  padding: 4px 10px;
+  font-family: var(--cyd-font-ui);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.cyd-btn:hover {
+  color: var(--cyd-tx);
+  border-color: var(--cyd-bd2);
+  background: var(--cyd-bg2);
+}
+
+.cyd-btn:focus-visible,
+.cyd-icon-btn:focus-visible,
+.cyd-input:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: 1px;
+}
+
+.cyd-btn-primary {
+  border-color: var(--cyd-ac);
+  background: var(--cyd-ac);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.cyd-btn-primary:hover {
+  border-color: var(--cyd-ac);
+  background: var(--cyd-ac);
+  color: #ffffff;
+  filter: brightness(1.08);
+}
+
+.cyd-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 28px;
+  border: 1px solid var(--cyd-bd2);
+  border-radius: var(--cyd-radius);
+  padding: 4px 10px;
+  font-family: var(--cyd-font-mono);
+  font-size: 12px;
+  background: var(--cyd-surface);
+  color: var(--cyd-tx);
+}
+
+.cyd-input::placeholder {
+  color: var(--cyd-tx3);
+}
+
+/* Tables — the docs' .cy-doc-table, inside a rounded frame. */
+.cyd-table-wrap {
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius);
+  overflow: hidden;
+}
+
+.cyd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.cyd-table th,
+.cyd-table td {
+  text-align: left;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--cyd-bd);
+  vertical-align: middle;
+}
+
+.cyd-table tbody tr:last-child th,
+.cyd-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cyd-table thead th {
+  background: var(--cyd-bg2);
+  font-weight: 500;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  color: var(--cyd-tx2);
+}
+
+.cyd-table td {
+  color: var(--cyd-tx2);
+}
+
+.cyd-table tbody tr:hover td,
+.cyd-table tbody tr:hover th {
+  background: var(--cyd-row-hover);
+}
+
+/* Key/value table (Region): label column in the header style. */
+.cyd-table-kv tbody th {
+  width: 36%;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--cyd-tx3);
+  background: var(--cyd-bg2);
+  border-right: 1px solid var(--cyd-bd);
+}
+
+.cyd-table-kv td {
+  color: var(--cyd-tx);
+}
+
+.cyd-code {
+  font-family: var(--cyd-font-mono);
+  font-size: 12px;
+  color: var(--cyd-tx);
+}
+
+.cyd-root code {
+  font-family: var(--cyd-font-mono);
+  font-size: 0.92em;
+  padding: 1px 4px;
+  border-radius: var(--cyd-radius-sm);
+  background: var(--cyd-bg3);
+}
+
+/* A working value that differs from the committed one: amber rail + tint. */
+.cyd-row-diff td {
+  background: var(--cyd-am-bg);
+}
+
+.cyd-row-diff td:first-child {
+  box-shadow: inset 3px 0 0 #e89a1f;
+}
+
+.cyd-table tbody tr.cyd-row-diff:hover td {
+  background: var(--cyd-am-bg);
+}
+
+.cyd-legend-diff {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  border-radius: 2px;
+  background: var(--cyd-am-bg);
+  box-shadow: inset 3px 0 0 #e89a1f;
+}
+
+.cyd-empty {
+  margin: 0;
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--cyd-tx3);
+  font-size: 12.5px;
+  border: 1px dashed var(--cyd-bd2);
+  border-radius: var(--cyd-radius);
+}
+
+.cyd-note {
+  margin: 12px 0 0;
+  color: var(--cyd-tx3);
+  font-size: 12px;
+}
+
+.cyd-warning {
+  margin: 0;
+  padding: 8px 16px;
+  background: var(--cyd-am-bg);
+  color: var(--cyd-am);
+  border-bottom: 1px solid var(--cyd-bd);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cyd-subheading {
+  margin: 20px 0 8px;
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cyd-tx3);
+}
+
+/* Pills: booleans, statuses and tags. */
+.cyd-bool,
+.cyd-status,
+.cyd-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  line-height: 18px;
+  padding: 0 7px;
+  border-radius: var(--cyd-radius-sm);
+  white-space: nowrap;
+}
+
+.cyd-bool::before,
+.cyd-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.cyd-bool-true,
+.cyd-status-granted,
+.cyd-status-active {
+  background: var(--cyd-gr-bg);
+  color: var(--cyd-gr);
+}
+
+.cyd-bool-false,
+.cyd-status-idle,
+.cyd-status-loading,
+.cyd-status-silenced {
+  background: var(--cyd-bg3);
+  color: var(--cyd-tx3);
+}
+
+.cyd-status-denied,
+.cyd-status-error,
+.cyd-status-removed {
+  background: var(--cyd-re-bg);
+  color: var(--cyd-re);
+}
+
+.cyd-tag {
+  background: var(--cyd-bg3);
+  color: var(--cyd-tx2);
+}
+
+.cyd-tag-accent,
+.cyd-tag-consent {
+  background: var(--cyd-ac-bg);
+  color: var(--cyd-ac);
+}
+
+.cyd-tag-integration {
+  background: rgba(130, 80, 223, 0.1);
+  color: var(--cyd-pu);
+}
+
+.cyd-tag-danger,
+.cyd-tag-blocked {
+  background: var(--cyd-re-bg);
+  color: var(--cyd-re);
+}
+
+/* Lists (blocked requests, events, Consent Mode history). */
+.cyd-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius);
+  overflow: hidden;
+}
+
+.cyd-list-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--cyd-bd);
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+.cyd-list-row:last-child {
+  border-bottom: none;
+}
+
+.cyd-list-row:hover {
+  background: var(--cyd-row-hover);
+}
+
+.cyd-list-time {
+  flex-shrink: 0;
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-list-url,
+.cyd-list-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cyd-tx);
+}
+
+.cyd-list-url {
+  font-family: var(--cyd-font-mono);
+  font-size: 12px;
+}
+
+.cyd-list-detail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.cyd-list-rule {
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  color: var(--cyd-tx3);
+}
+
+/* Banners (Region). */
+.cyd-banner {
+  border-radius: var(--cyd-radius);
+  padding: 10px 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  border: 1px solid transparent;
+}
+
+.cyd-banner-warning {
+  background: var(--cyd-am-bg);
+  color: var(--cyd-am);
+  border-color: rgba(232, 154, 31, 0.35);
+}
+
+/* An override is set but has no effect (regulation pinned manually). */
+.cyd-banner-info {
+  background: var(--cyd-ac-bg);
+  color: var(--cyd-tx);
+  border-color: rgba(19, 111, 232, 0.25);
+}
+
+/* Force-region form. */
+.cyd-force {
+  margin-top: 16px;
+}
+
+.cyd-force-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cyd-tx);
+}
+
+.cyd-force-row {
+  display: flex;
+  gap: 6px;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Dark adjustments                                                         */
+/* ---------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  .cyd-root:not([data-cyd-theme="light"]) .cyd-panel-mark path {
+    fill: var(--cyd-ac);
+  }
+  .cyd-root:not([data-cyd-theme="light"]) .cyd-btn-primary {
+    color: #0b1220;
+  }
+}
+
+.cyd-root[data-cyd-theme="dark"] .cyd-panel-mark path {
+  fill: var(--cyd-ac);
+}
+
+.cyd-root[data-cyd-theme="dark"] .cyd-btn-primary {
+  color: #0b1220;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Theme switch (header)                                                   */
+/* ---------------------------------------------------------------------- */
+
+.cyd-seg {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: 999px;
+  background: var(--cyd-bg2);
+}
+
+.cyd-seg-btn {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cyd-tx3);
+  cursor: pointer;
+}
+
+.cyd-seg-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cyd-seg-btn:hover {
+  color: var(--cyd-tx);
+}
+
+.cyd-seg-btn:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: 1px;
+}
+
+.cyd-seg-btn-active {
+  background: var(--cyd-bg);
+  color: var(--cyd-tx);
+  box-shadow: 0 1px 2px rgba(20, 20, 42, 0.12);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Motion                                                                  */
+/* ---------------------------------------------------------------------- */
+
+@keyframes cyd-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cyd-panel {
+  animation: cyd-panel-in 0.16s ease-out;
+}
+.cyd-panel-bottom-right {
+  transform-origin: bottom right;
+}
+.cyd-panel-bottom-left {
+  transform-origin: bottom left;
+}
+.cyd-panel-top-right {
+  transform-origin: top right;
+}
+.cyd-panel-top-left {
+  transform-origin: top left;
+}
+
+.cyd-trigger-dragging {
+  cursor: grabbing;
+  transition: none;
+  box-shadow: 0 10px 28px rgba(20, 20, 42, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyd-panel,
+  .cyd-trigger {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/* Icons, tab badges, footer status                                        */
+/* ---------------------------------------------------------------------- */
+
+.cyd-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.cyd-icon-btn .cyd-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.cyd-tab .cyd-icon {
+  opacity: 0.8;
+}
+
+.cyd-tab-active .cyd-icon {
+  color: var(--cyd-ac);
+  opacity: 1;
+}
+
+.cyd-tab-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--cyd-bg3);
+  color: var(--cyd-tx3);
+  font-family: var(--cyd-font-mono);
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.cyd-tab-active .cyd-tab-count {
+  background: var(--cyd-ac-bg);
+  color: var(--cyd-ac);
+}
+
+.cyd-panel-footer {
+  gap: 8px;
+}
+
+.cyd-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cyd-gr);
+}
+
+.cyd-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--cyd-gr);
+  box-shadow: 0 0 0 3px var(--cyd-gr-bg);
+}
+
+.cyd-footer-sep {
+  color: var(--cyd-bd2);
+}
+
+.cyd-footer-forced {
+  color: var(--cyd-am);
+}
+
+.cyd-panel-footer-end {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.cyd-panel-footer-end .cyd-kbd {
+  margin-right: 0;
+}
+
+.cyd-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Buttons: sizes, states                                                  */
+/* ---------------------------------------------------------------------- */
+
+.cyd-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cyd-btn:disabled:hover {
+  color: var(--cyd-tx2);
+  border-color: var(--cyd-bd);
+  background: var(--cyd-bg);
+}
+
+.cyd-btn-primary:disabled:hover {
+  border-color: var(--cyd-ac);
+  background: var(--cyd-ac);
+  color: #ffffff;
+  filter: none;
+}
+
+.cyd-btn-sm {
+  min-height: 26px;
+  padding: 2px 8px;
+  font-size: 11.5px;
+}
+
+.cyd-btn-danger {
+  border-color: transparent;
+  background: var(--cyd-re-bg);
+  color: var(--cyd-re);
+  font-weight: 500;
+}
+
+.cyd-btn-danger:hover {
+  border-color: var(--cyd-re);
+  background: var(--cyd-re-bg);
+  color: var(--cyd-re);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Consent tab: switches and the unsaved footer                            */
+/* ---------------------------------------------------------------------- */
+
+.cyd-tab-panel-footer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.cyd-switch {
+  appearance: none;
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--cyd-bd2);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background 0.15s ease;
+}
+
+.cyd-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(20, 20, 42, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.cyd-switch[aria-checked="true"] {
+  background: var(--cyd-gr);
+}
+
+.cyd-switch[aria-checked="true"] .cyd-switch-knob {
+  transform: translateX(14px);
+}
+
+.cyd-switch:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.cyd-switch:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: 2px;
+}
+
+.cyd-lock {
+  display: inline-flex;
+  margin-left: 6px;
+  color: var(--cyd-tx3);
+  vertical-align: -2px;
+}
+
+.cyd-lock .cyd-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.cyd-footer-bar {
+  position: sticky;
+  bottom: -16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: auto -16px -16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--cyd-bd);
+  background: var(--cyd-bg);
+}
+
+.cyd-footer-bar-dirty {
+  background: var(--cyd-am-bg);
+}
+
+.cyd-footer-status {
+  font-size: 12px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-footer-bar-dirty .cyd-footer-status {
+  color: var(--cyd-am);
+  font-weight: 500;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Actions tab                                                             */
+/* ---------------------------------------------------------------------- */
+
+.cyd-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cyd-action {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius-lg);
+  background: var(--cyd-bg);
+  color: var(--cyd-tx);
+  font-family: var(--cyd-font-ui);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.cyd-action:hover {
+  border-color: var(--cyd-bd2);
+  background: var(--cyd-bg2);
+}
+
+.cyd-action:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: 1px;
+}
+
+.cyd-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cyd-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: var(--cyd-radius);
+  background: var(--cyd-ac-bg);
+  color: var(--cyd-ac);
+}
+
+.cyd-action-icon .cyd-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.cyd-action-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cyd-action-text strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cyd-action-text span {
+  font-size: 11.5px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-danger-zone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--cyd-re-bg);
+  border-radius: var(--cyd-radius-lg);
+}
+
+.cyd-danger-zone strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cyd-tx);
+}
+
+.cyd-danger-zone p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--cyd-tx3);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Filters, search, selectable lists, payload                              */
+/* ---------------------------------------------------------------------- */
+
+.cyd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cyd-chip-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: 999px;
+  background: var(--cyd-bg);
+  color: var(--cyd-tx2);
+  font-family: var(--cyd-font-ui);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cyd-chip-btn:hover {
+  color: var(--cyd-tx);
+  border-color: var(--cyd-bd2);
+}
+
+.cyd-chip-btn-active {
+  border-color: var(--cyd-ac);
+  background: var(--cyd-ac-bg);
+  color: var(--cyd-ac);
+  font-weight: 500;
+}
+
+.cyd-chip-count {
+  font-family: var(--cyd-font-mono);
+  font-size: 10.5px;
+  opacity: 0.75;
+}
+
+.cyd-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 10px;
+  border: 1px solid var(--cyd-bd2);
+  border-radius: var(--cyd-radius);
+  background: var(--cyd-surface);
+  color: var(--cyd-tx3);
+}
+
+.cyd-search:focus-within {
+  border-color: var(--cyd-ac);
+  box-shadow: 0 0 0 3px var(--cyd-ac-bg);
+}
+
+.cyd-search-inline {
+  margin-bottom: 0;
+  width: 180px;
+}
+
+.cyd-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--cyd-tx);
+  font-family: var(--cyd-font-ui);
+  font-size: 12.5px;
+}
+
+.cyd-search-input::placeholder {
+  color: var(--cyd-tx3);
+}
+
+.cyd-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cyd-list-item {
+  border-bottom: 1px solid var(--cyd-bd);
+}
+
+.cyd-list-item:last-child {
+  border-bottom: none;
+}
+
+.cyd-list-select .cyd-list-row {
+  appearance: none;
+  width: 100%;
+  border: none;
+  border-bottom: none;
+  background: transparent;
+  font-family: var(--cyd-font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cyd-list-row-selected,
+.cyd-list-select .cyd-list-row-selected:hover {
+  background: var(--cyd-ac-bg);
+  box-shadow: inset 3px 0 0 var(--cyd-ac);
+}
+
+.cyd-list-row-previous {
+  opacity: 0.6;
+}
+
+.cyd-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--cyd-bg2);
+  border-bottom: 1px solid var(--cyd-bd);
+  font-family: var(--cyd-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyd-tx3);
+}
+
+.cyd-payload {
+  padding: 0 12px 12px;
+  background: var(--cyd-ac-bg);
+}
+
+.cyd-pre {
+  margin: 0;
+  max-height: 200px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius);
+  background: var(--cyd-bg2);
+  font-family: var(--cyd-font-mono);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--cyd-tx);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Consent Mode signal grid                                                */
+/* ---------------------------------------------------------------------- */
+
+.cyd-subheading-first {
+  margin-top: 0;
+}
+
+.cyd-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.cyd-signal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius);
+  background: var(--cyd-bg);
+}
+
+.cyd-signal-granted {
+  border-color: var(--cyd-gr-bg);
+}
+
+.cyd-signal-name {
+  font-family: var(--cyd-font-mono);
+  font-size: 12px;
+  color: var(--cyd-tx);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .cyd-action-grid,
+  .cyd-signal-grid {
+    grid-template-columns: 1fr;
+  }
+  .cyd-search-inline {
+    width: 100%;
+  }
+}
+
+fieldset.cyd-chips {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+}

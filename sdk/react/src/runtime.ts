@@ -226,6 +226,37 @@ function makeBuilder(cfg: RuntimeConfig): Builder {
  */
 declare const process: { env: { NODE_ENV?: string } };
 
+/**
+ * Dev-only `forceRegion` reader (`@cookieyes/devtools`, AD-4) — client-side.
+ * Deliberately NOT exported from `@cookieyes/core`: a cross-package export
+ * that's always referenced (even behind a guard) is a symbol a bundler's
+ * reachability analysis keeps around; a plain, unexported, single-call-site
+ * function like this one is eliminated by the SAME dead-code pass that
+ * removes its only caller once the guard around that caller folds away. See
+ * `mountRuntime`'s call site.
+ */
+function readForcedRegion(): string | undefined {
+  if (typeof document !== "undefined") {
+    const match = /(?:^|;\s*)__cyd_region=([^;]*)/.exec(document.cookie);
+    if (match?.[1]) {
+      try {
+        return decodeURIComponent(match[1]);
+      } catch {
+        // A malformed cookie value is ignored rather than breaking mount.
+        return undefined;
+      }
+    }
+  }
+  if (typeof window !== "undefined") {
+    try {
+      return window.localStorage.getItem("__cyd_region") ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 let _builderDeprecationWarned = false;
 
 /**
@@ -337,16 +368,36 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
     );
   }
 
+  // Dev-only `forceRegion` override (@cookieyes/devtools, AD-4): read behind
+  // this exact literal guard so the reader is never even called in a
+  // production bundle. `resolveRegion` itself stays pure — this is the only
+  // place the override enters it.
+  const forcedRegion = process.env.NODE_ENV !== "production" ? readForcedRegion() : undefined;
+
   // Geo-detection if configured, else the manual/default regulation. Drives the
   // banner and the SSR snapshot so the first paint matches.
   const regionDecision: RegionDecision = cfg.region
-    ? resolveRegion(cfg.region, cfg.regulation)
+    ? resolveRegion(cfg.region, cfg.regulation, forcedRegion)
     : {
         region: undefined,
         regulation: cfg.regulation ?? "DEFAULT",
         source: "manual",
         confidence: "high",
       };
+
+  // Dev-only: hand the region config to @cookieyes/devtools through its global
+  // queue, so the panel can preview a forced region with the same
+  // `resolveRegion` rules (mapping, strictest fallback, manual regulation wins).
+  // Folds away in production.
+  if (process.env.NODE_ENV !== "production") {
+    const q = ((
+      globalThis as typeof globalThis & {
+        __COOKIEYES_DEVTOOLS__?: { k: string; t: number; d: unknown }[] & { v?: number };
+      }
+    ).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], { v: 1 }));
+    if (q.length >= 500) q.shift();
+    q.push({ k: "r", t: Date.now(), d: { region: cfg.region, regulation: cfg.regulation } });
+  }
 
   const coreCfg: ConsentConfig = {};
   if (cfg.mode === "self-hosted") {
@@ -471,7 +522,15 @@ function mountRuntime(cfg: RuntimeConfig): CookieYesRuntime {
   // hydration render (no regulation or category-shape mismatch), including for
   // custom taxonomies. CCPA is opt-out (everything on); otherwise only the
   // required category(ies) start on. Mirrors core's defaultSnapshot.
-  const ssrRegulation = regionDecision.regulation;
+  //
+  // Dev-only: an active `forceRegion` override comes from the browser's cookie,
+  // which the server never saw, so the server snapshot uses the decision without
+  // it. Hydration then matches the server's markup, and the live snapshot
+  // switches to the forced regulation right after. Folds away in production.
+  const ssrRegulation =
+    process.env.NODE_ENV !== "production" && forcedRegion !== undefined && cfg.region
+      ? resolveRegion(cfg.region, cfg.regulation).regulation
+      : regionDecision.regulation;
   const ssrOptOut = ssrRegulation === "CCPA";
   const ssrCategories: Record<string, boolean> = {};
   for (const id of resolved.ids) {
