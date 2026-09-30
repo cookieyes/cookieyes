@@ -1,6 +1,6 @@
 // Notebook, not docs: the page components are paired with the layout they render
 // under, and src/app/docs/layout.tsx uses the notebook layout for its top header.
-import { getBreadcrumbItems } from "fumadocs-core/breadcrumb";
+import { getBreadcrumbItems, searchPath } from "fumadocs-core/breadcrumb";
 import { findNeighbour } from "fumadocs-core/page-tree";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/notebook/page";
 import { createRelativeLink } from "fumadocs-ui/mdx";
@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
 import { MAIN_CONTENT_ID } from "@/app/SkipLink";
+import { type Crumb, DocsBreadcrumb } from "@/components/docs/DocsBreadcrumb";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
 import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
@@ -145,12 +146,37 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   // and its Google Consent Mode page, the changelog index) gets a one-item trail that only
   // repeats the h1, so the trail is drawn only when it adds a parent. The Integrations
   // tab is a root folder the SDK menus do not list, which Fumadocs keeps in `fallback`.
+  //
+  // A framework page's trail starts with its framework ("Next.js › Styling › CSP"), linked
+  // to that framework's installation page like the JSON-LD trail below. The React and
+  // Next.js copies of a page otherwise open with the same trail and h1, and the framework
+  // shows only in the sidebar picker. An Integrations page also names its tab, linked to
+  // the tab's overview: "Next.js › Integrations › Ready-made integrations › GA4".
   const breadcrumbOptions = { includePage: true, includeSeparator: true };
   const tree = source.pageTree;
-  const trail =
-    getBreadcrumbItems(page.url, tree, breadcrumbOptions).length ||
-    (tree.fallback ? getBreadcrumbItems(page.url, tree.fallback, breadcrumbOptions).length : 0);
-  const showBreadcrumb = trail > 1;
+  const inMainTree = getBreadcrumbItems(page.url, tree, breadcrumbOptions);
+  const trail: Crumb[] =
+    inMainTree.length || !tree.fallback
+      ? inMainTree
+      : getBreadcrumbItems(page.url, tree.fallback, breadcrumbOptions);
+  if (framework && !inMainTree.length && tree.fallback) {
+    // Fumadocs' own includeRoot names the whole tree ("Docs"), not the tab's folder.
+    const tab = (searchPath(tree.fallback.children, page.url) ?? [])
+      .filter((node) => node.type === "folder" && node.root)
+      .at(-1);
+    // The Integrations overview is the tab's first page, not a folder index.
+    if (tab?.type === "folder") {
+      const url = tab.index?.url ?? tab.children.find((node) => node.type === "page")?.url;
+      trail.unshift({ name: tab.name, url });
+    }
+  }
+  if (framework) {
+    trail.unshift({
+      name: FRAMEWORK_LABEL[framework],
+      url: `/docs/${framework}/getting-started/installation`,
+    });
+  }
+  const showBreadcrumb = trail.length > 1;
 
   // Design's .pnav-b (docs.html:279-283) carries only a literal "Previous"/"Next"
   // caption (`.nl`) and the neighbouring page's title (`.nt`) — never its description.
@@ -180,12 +206,9 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         toc={page.data.toc}
         full={page.data.full}
         // The design shows the full trail including the current page —
-        // "Getting Started › Quickstart" — rather than the parent alone.
-        breadcrumb={{
-          enabled: showBreadcrumb,
-          ...breadcrumbOptions,
-          className: "cy-doc-bc",
-        }}
+        // "Getting Started › Quickstart" — rather than the parent alone. Drawn by
+        // DocsBreadcrumb as the first child, where Fumadocs' own slot would sit.
+        breadcrumb={{ enabled: false }}
         tableOfContent={{
           // TOCItemsProps spreads unrecognized keys onto the rendered container
           // <div> (verified in fumadocs-ui's default.js), but its type is typed
@@ -216,15 +239,22 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           },
         }}
       >
-        {/* Header: .bc (breadcrumb prop, above) → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
+        {/* Header: .bc → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
           matching docs.html's own runtime assembly (initPageMeta(), docs.html:2119-2168). */}
+        {showBreadcrumb && <DocsBreadcrumb items={trail} />}
         {/* The skip link's target. Fumadocs' own <main> is display: contents, which cannot
             be scrolled to, so the page title stands in for it. */}
         <div className="cy-doc-ptitle" id={MAIN_CONTENT_ID}>
           {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}
-          <DocsTitle>{isReleasePage ? releaseVersionLabel : page.data.title}</DocsTitle>
+          {/* A framework page's h1 names its framework ("CSP for Next.js"), so the React and
+            Next.js copies don't share a heading. The sidebar and breadcrumb keep the short
+            title; the suffix is muted so the topic still leads. */}
+          <DocsTitle>
+            {isReleasePage ? releaseVersionLabel : page.data.title}
+            {framework && <span className="cy-doc-h1-fw"> for {FRAMEWORK_LABEL[framework]}</span>}
+          </DocsTitle>
 
           {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
             See design doc content-tier-d.md. */}
