@@ -161,7 +161,7 @@ export default function NotFound() {
                 {"Take me home"}
               </a>
               <a
-                href="/docs/nextjs/getting-started/installation"
+                href="/docs"
                 className="scp7 scp6"
                 style={{
                   height: "52px",

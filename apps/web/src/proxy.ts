@@ -22,5 +22,5 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-// The bare /docs redirects to a framework root and has no Markdown form.
-export const config = { matcher: ["/", "/playground", "/docs/:path+"] };
+// `/docs/:path*` includes the bare /docs, the framework chooser (served from /api/md).
+export const config = { matcher: ["/", "/playground", "/docs/:path*"] };

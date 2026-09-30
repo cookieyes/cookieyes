@@ -152,7 +152,9 @@ export function Hero() {
         <h1
           style={{
             margin: "var(--cy-space-16) 0 var(--cy-space-28)",
-            maxWidth: "560px",
+            // 600, not the design's 560: "Cookie" in the H1 (SEO) makes the second line
+            // wide enough that the caret would otherwise wrap onto a line of its own.
+            maxWidth: "600px",
             fontFamily: "Poppins, Inter, sans-serif",
             fontWeight: "500",
             fontSize: "3.5rem",
@@ -162,7 +164,7 @@ export function Hero() {
             whiteSpace: "pre-line",
           }}
         >
-          {"Consent that ships\nin your bundle."}
+          {"Cookie consent that\nships in your bundle."}
           <span
             data-hero-caret=""
             aria-hidden="true"
@@ -434,9 +436,9 @@ export function Hero() {
             </div>{" "}
           </div>{" "}
           <a
-            /* The framework is in the URL, so this always opens the Next.js docs whatever
-               the reader picked last time. */
-            href="/docs/nextjs/getting-started/installation"
+            /* The neutral docs landing, which offers each framework; the two buttons
+               above already go straight to Next.js and React. */
+            href="/docs"
             className="scp1"
             style={{
               marginTop: "var(--cy-space-16)",

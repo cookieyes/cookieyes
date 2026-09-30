@@ -215,14 +215,9 @@ const config = {
     // Browsers and crawlers that never read the page's <link rel="icon"> still ask for
     // /favicon.ico; the site's only icon is the SVG.
     const favicon = { source: "/favicon.ico", destination: "/icon.svg", permanent: true };
-    // Bare /docs, one permanent hop to the default framework's installation page. After
-    // byQuery, so a `?pkg=` link still reaches the framework it asked for.
-    const docsRoot = {
-      source: "/docs",
-      destination: "/docs/nextjs/getting-started/installation",
-      permanent: true,
-    };
-    return [...roots, ...moved, ...byQuery, docsRoot, ...byPath, ...parentSite, favicon];
+    // Bare /docs is a page of its own (the framework chooser, content/docs/index.mdx); only
+    // a `?pkg=` link is still redirected, by byQuery above.
+    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite, favicon];
   },
 
   /**
