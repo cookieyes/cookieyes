@@ -2600,7 +2600,9 @@ class DesignMotion {
         .map(
           (b) =>
             (b.classList.contains("cy-band-dark") ? "d" : "l") +
-            (b.style.background || "") +
+            // Computed, not the inline `light-dark(...)` string: that string is the same in
+            // both themes, so a theme switch would never redraw the bands in the new colours.
+            getComputedStyle(b).backgroundColor +
             Math.round(b.getBoundingClientRect().top - contRect.top) +
             ":" +
             Math.round(b.getBoundingClientRect().height),
@@ -2646,8 +2648,12 @@ class DesignMotion {
     const bevelPx = parseFloat(getComputedStyle(el).getPropertyValue("--seam-bevel")) || 15;
     bandRanges.forEach((b, i) => {
       const next = bandRanges[i + 1];
-      // extend this band's bottom into the next band's top notch so the upper color fills it (visible separator)
-      const overlap = next && (next.bevel === "top" || next.bevel === "panel") ? bevelPx + 2 : 1;
+      // extend this band's bottom into the next band's top notch so the upper color fills it (visible separator).
+      // Only when the next band starts right here: with a non-band section between them (the FAQ),
+      // the extension would paint a strip of this band's colour across that section instead.
+      const adjacent = next && next.top - b.bottom < 2;
+      const overlap =
+        adjacent && (next.bevel === "top" || next.bevel === "panel") ? bevelPx + 2 : 1;
       const bh = b.bottom - b.top + overlap;
       const bandBg = b.bg || (b.light ? "#FFFFFF" : "#F4F5FA");
       const bandEdge = b.light ? "#E3E5F1" : "#E3E5F1";
