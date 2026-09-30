@@ -260,7 +260,7 @@ export function MobileMenu() {
       </div>{" "}
       <div style={{ marginTop: "var(--cy-space-24)", display: "flex", flexDirection: "column" }}>
         {" "}
-        <a href="/docs/nextjs/getting-started/installation" style={MENU_LINK}>
+        <a href="/docs" style={MENU_LINK}>
           {"Documentation"}
         </a>{" "}
         <a href="/playground" style={MENU_LINK}>

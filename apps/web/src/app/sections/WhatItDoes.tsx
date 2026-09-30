@@ -98,7 +98,7 @@ export function WhatItDoes() {
                 color: "var(--cy-fg)",
               }}
             >
-              {"What it does"}
+              {"Cookie consent features for React and Next.js"}
             </h2>{" "}
             <p
               style={{
