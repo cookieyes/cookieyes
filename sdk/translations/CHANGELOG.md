@@ -1,5 +1,11 @@
 # @cookieyes/translations
 
+## 0.4.1
+
+### Patch Changes
+
+- 8459865: The READMEs now link to the documentation site, [developers.cookieyes.com](https://developers.cookieyes.com). Their "Docs", "Configuration" and "Which API should I use?" links pointed at Markdown files on GitHub that had moved, so they no longer opened anything; they now open the matching page on the site, for the package's own framework. No code change.
+
 ## 0.4.0
 
 ### Minor Changes
