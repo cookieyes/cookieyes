@@ -63,6 +63,12 @@ export const en: TranslationMap = {
     placeholder: "This content requires {category} cookies to be enabled.",
     action: "Manage Preferences",
   },
+  embedPlaceholder: {
+    message:
+      "This content is hosted by {provider}. Viewing it needs your consent to {category} cookies.",
+    allow: "Allow {category} cookies",
+    privacyPolicy: "{provider} privacy policy",
+  },
   reloadNotice: {
     message:
       "Some tracking on this page can only be fully stopped by reloading. Reload to apply your change, or dismiss to keep browsing.",

@@ -63,6 +63,12 @@ export const fr: TranslationMap = {
     placeholder: "Ce contenu nécessite l'activation des cookies {category}.",
     action: "Gérer les préférences",
   },
+  embedPlaceholder: {
+    message:
+      "Ce contenu est hébergé par {provider}. Pour l'afficher, vous devez accepter les cookies {category}.",
+    allow: "Autoriser les cookies {category}",
+    privacyPolicy: "Politique de confidentialité de {provider}",
+  },
   reloadNotice: {
     message:
       "Certains traceurs de cette page ne peuvent être totalement arrêtés qu'en rechargeant. Rechargez pour appliquer votre choix, ou ignorez ce message pour continuer.",
