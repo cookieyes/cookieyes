@@ -5,6 +5,10 @@ import { type NextRequest, NextResponse } from "next/server";
  * from the same URL: docs pages from /api/md (the "Copy as Markdown" text), the landing
  * page and the playground from hand-written files. Browsers never ask for Markdown, so
  * they are unaffected.
+ *
+ * Both representations carry `Vary: Accept`, so a cache in between keeps the HTML and the
+ * Markdown of a URL apart: the Markdown routes set it on their response, and next.config
+ * declares it for the HTML.
  */
 const PAGE_MARKDOWN: Record<string, string> = {
   "/": "/api/page-md/home",
