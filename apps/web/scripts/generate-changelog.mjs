@@ -193,8 +193,12 @@ function shortName(name) {
   return name.replace("@cookieyes/", "");
 }
 
-/** The most-installed packages first, so the list reads the way a reader thinks. */
-const PACKAGE_ORDER = ["react", "nextjs", "core", "cli", "scripts", "translations"];
+/**
+ * The most-installed packages first, so the list reads the way a reader thinks. Every
+ * released package must be listed: an unlisted one sorts first (indexOf is -1) and would
+ * name the release.
+ */
+const PACKAGE_ORDER = ["react", "nextjs", "core", "cli", "scripts", "translations", "test"];
 
 /**
  * How a release is named: the version of the most prominent package it shipped.
