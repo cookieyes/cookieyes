@@ -3,15 +3,24 @@
   "headers": [
     {
       "source": "/",
-      "headers": [{ "key": "Vary", "value": "Accept" }]
+      "headers": [
+        { "key": "Vary", "value": "Accept" },
+        { "key": "X-Cy-Vercel-Json", "value": "1" }
+      ]
     },
     {
       "source": "/playground",
-      "headers": [{ "key": "Vary", "value": "Accept" }]
+      "headers": [
+        { "key": "Vary", "value": "Accept" },
+        { "key": "X-Cy-Vercel-Json", "value": "1" }
+      ]
     },
     {
       "source": "/docs/:path*",
-      "headers": [{ "key": "Vary", "value": "Accept" }]
+      "headers": [
+        { "key": "Vary", "value": "Accept" },
+        { "key": "X-Cy-Vercel-Json", "value": "1" }
+      ]
     }
   ]
 }
