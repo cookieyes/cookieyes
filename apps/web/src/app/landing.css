@@ -1890,17 +1890,17 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   justify-content: center;
 }
 
-/* Title above the list, both centred in the band. The questions themselves stay
-   left-aligned so each chevron lines up on the right edge. */
+/* Title on the left of the questions, centred on the list's height rather than pinned
+   to its top. */
 .cy-page .cy-faq-inner {
   width: 100%;
   max-width: 1152px;
   padding: var(--cy-section-y) var(--cy-space-gutter);
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--cy-space-48);
+  align-items: center;
 }
 
 .cy-page .cy-faq-title {
@@ -1911,13 +1911,10 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   line-height: 40px;
   letter-spacing: -0.9px;
   color: var(--cy-fg);
-  text-align: center;
   text-wrap: balance;
 }
 
 .cy-page .cy-faq-list {
-  width: 100%;
-  max-width: 760px;
   border-top: 1px solid rgba(var(--cy-line-rgb), 0.18);
 }
 
@@ -1977,6 +1974,7 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
 
 @media (max-width: 860px) {
   .cy-page .cy-faq-inner {
+    grid-template-columns: 1fr;
     gap: var(--cy-space-24);
   }
   .cy-page .cy-faq-title {
