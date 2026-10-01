@@ -142,7 +142,7 @@ describe("blockIframes", () => {
     const manager = startBlocking(createRuntime());
     manager.acceptAll();
     expect(warn).toHaveBeenCalledTimes(1);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('data-cy-category="videos"'));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"videos"'));
   });
 
   it("stops reacting to consent and new iframes once stopped", async () => {

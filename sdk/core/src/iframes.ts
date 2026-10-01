@@ -1,3 +1,4 @@
+import { categoryLabel, warnUnknownEmbedCategory } from "./embed-category.js";
 import type { ConsentManager, ConsentStore } from "./types.js";
 
 /** Declared locally and checked as a literal so bundlers strip the warnings; see `deprecations.ts`. */
@@ -59,18 +60,10 @@ export function blockIframes(
 ): () => void {
   if (typeof document === "undefined") return () => undefined;
 
-  const warnedCategories = new Set<string>();
-
   const allowCategory = (category: string) => {
     const granted = consentManager.committedCategories;
     consentManager.acceptSelected([...Object.keys(granted).filter((id) => granted[id]), category]);
   };
-
-  const categoryLabel = (category: string) =>
-    consentStore.getCategoryText(category)?.label ??
-    consentStore.categories.list.find((def) => def.id === category)?.label ??
-    consentStore.translations.categories[category]?.label ??
-    category;
 
   /** Draws the placeholder into the iframe's `srcdoc` document, once it is reachable. */
   const fillPlaceholder = (iframe: HTMLIFrameElement) => {
@@ -80,8 +73,14 @@ export function blockIframes(
     const translations = consentStore.translations;
     const text = translations.embedPlaceholder ?? PLACEHOLDER_TEXT;
     const provider = providerOf(iframe);
+    const label = categoryLabel(
+      category,
+      translations,
+      consentStore.categories,
+      consentStore.getCategoryText(category),
+    );
     const fill = (template: string) =>
-      template.replace("{provider}", provider.name).replace("{category}", categoryLabel(category));
+      template.replace("{provider}", provider.name).replace("{category}", label);
 
     const { language, direction } = consentStore.getLanguageInfo();
     doc.documentElement.lang = language;
@@ -129,10 +128,7 @@ export function blockIframes(
       warnUnparkedSrc(src);
     }
     const granted = consentManager.committedCategories;
-    if (!(category in granted) && !warnedCategories.has(category)) {
-      warnedCategories.add(category);
-      warnUnknownCategory(category);
-    }
+    if (!(category in granted)) warnUnknownEmbedCategory(category);
     if (granted[category] === true) {
       if (iframe.getAttribute("src") === src) return;
       iframe.removeAttribute("srcdoc");
@@ -197,13 +193,5 @@ function warnUnparkedSrc(src: string): void {
   console.warn(
     `[cookieyes] the iframe ${src} has data-cy-category but a plain src, so the browser ` +
       "started loading it before consent. Put the address in data-cy-src instead.",
-  );
-}
-
-function warnUnknownCategory(category: string): void {
-  if (process.env.NODE_ENV === "production") return;
-  console.warn(
-    `[cookieyes] data-cy-category="${category}" is not one of your configured categories, ` +
-      "so these iframes will never load. Use an id from your categories.",
   );
 }

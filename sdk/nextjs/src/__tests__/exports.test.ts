@@ -27,6 +27,7 @@ describe("@cookieyes/nextjs barrel", () => {
     "RecallButton",
     "GatedScript",
     "GatedFrame",
+    "blockIframes",
     // Hooks
     "useConsent",
     "useConsentActions",
