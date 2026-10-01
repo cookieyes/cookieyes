@@ -147,11 +147,10 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   // repeats the h1, so the trail is drawn only when it adds a parent. The Integrations
   // tab is a root folder the SDK menus do not list, which Fumadocs keeps in `fallback`.
   //
-  // A framework page's trail starts with its framework ("Next.js › Styling › CSP"), linked
-  // to that framework's installation page like the JSON-LD trail below. The React and
-  // Next.js copies of a page otherwise open with the same trail and h1, and the framework
-  // shows only in the sidebar picker. An Integrations page also names its tab, linked to
-  // the tab's overview: "Next.js › Integrations › Ready-made integrations › GA4".
+  // A framework page's trail starts with its framework ("React › Styling › CSP"), linked
+  // to that framework's installation page like the JSON-LD trail below. An Integrations
+  // page also names its tab, linked to the tab's overview:
+  // "React › Integrations › Ready-made integrations › GA4".
   const breadcrumbOptions = { includePage: true, includeSeparator: true };
   const tree = source.pageTree;
   const inMainTree = getBreadcrumbItems(page.url, tree, breadcrumbOptions);
@@ -176,7 +175,18 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
       url: `/docs/${framework}/getting-started/installation`,
     });
   }
-  const showBreadcrumb = trail.length > 1;
+
+  // The React and Next.js copies of a page would otherwise open with the same trail and
+  // h1, so the two frameworks get different headers:
+  // - React: the breadcrumb above, and an h1 that names the framework ("CSP for React");
+  // - Next.js: no breadcrumb, only the section the page sits in as a small label above a
+  //   plain h1 ("STYLING" / "CSP"), the way c15t's docs head a page.
+  // Pages outside a framework (the changelog) keep the breadcrumb.
+  const isNext = framework === "nextjs";
+  const showBreadcrumb = !isNext && trail.length > 1;
+  // The crumb above the page, skipping the framework itself: a top-level page such as
+  // Translations has no section to name.
+  const section = isNext && trail.length > 2 ? trail.at(-2)?.name : undefined;
 
   // Design's .pnav-b (docs.html:279-283) carries only a literal "Previous"/"Next"
   // caption (`.nl`) and the neighbouring page's title (`.nt`) — never its description.
@@ -242,18 +252,21 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         {/* Header: .bc → .ptitle[h1 + actions] → .pd → .pmeta → .phr,
           matching docs.html's own runtime assembly (initPageMeta(), docs.html:2119-2168). */}
         {showBreadcrumb && <DocsBreadcrumb items={trail} />}
+        {section && <div className="cy-doc-eyebrow">{section}</div>}
         {/* The skip link's target. Fumadocs' own <main> is display: contents, which cannot
             be scrolled to, so the page title stands in for it. */}
         <div className="cy-doc-ptitle" id={MAIN_CONTENT_ID}>
           {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}
-          {/* A framework page's h1 names its framework ("CSP for Next.js"), so the React and
-            Next.js copies don't share a heading. The sidebar and breadcrumb keep the short
-            title; the suffix is muted so the topic still leads. */}
+          {/* A React page's h1 names its framework ("CSP for React"); see the header note
+            above. The sidebar and breadcrumb keep the short title, and the suffix is muted
+            so the topic still leads. */}
           <DocsTitle>
             {isReleasePage ? releaseVersionLabel : page.data.title}
-            {framework && <span className="cy-doc-h1-fw"> for {FRAMEWORK_LABEL[framework]}</span>}
+            {framework && !isNext && (
+              <span className="cy-doc-h1-fw"> for {FRAMEWORK_LABEL[framework]}</span>
+            )}
           </DocsTitle>
 
           {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.

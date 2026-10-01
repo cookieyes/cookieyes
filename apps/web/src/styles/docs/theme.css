@@ -2975,3 +2975,17 @@
     max-width: 760px;
   }
 }
+
+/* The section label above a Next.js page's h1 ("STYLING"), in place of the breadcrumb:
+   10px mono, semibold, uppercase, 0.08em tracking, 12px above the h1, after c15t's docs
+   (c15t.com/docs/frameworks/next/concepts/initialization-flow). */
+.cy-doc-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cy-doc-tx3);
+  margin-bottom: 12px;
+}
