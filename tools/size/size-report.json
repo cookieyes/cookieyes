@@ -11,14 +11,14 @@
     "next": "16.3.0",
     "react": "19.2.8"
   },
-  "measuredAt": "2026-10-01T04:35:55.192Z",
+  "measuredAt": "2026-10-01T05:37:36.250Z",
   "node": "v22.16.0",
   "versions": {
     "@cookieyes/core": "0.9.0",
     "@cookieyes/react": "0.11.0",
     "@cookieyes/nextjs": "0.6.3"
   },
-  "sdkFingerprint": "2e378c14f4a9e706",
+  "sdkFingerprint": "4b63a43bfb8cc14c",
   "apps": {
     "baseline": {
       "label": "empty Next.js app (control)",

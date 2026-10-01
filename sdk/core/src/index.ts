@@ -28,6 +28,7 @@ export {
   primaryOf,
   resolveTranslations,
 } from "./i18n.js";
+export type { IframeBlockerStore } from "./iframes.js";
 export { blockIframes } from "./iframes.js";
 export type {
   Cleanup,

@@ -73,6 +73,18 @@ export type TranslationMap = {
     /** Label of the placeholder's button, which opens the preferences dialog. */
     action: string;
   };
+  /**
+   * Placeholder that `@cookieyes/core/iframes` shows in a blocked iframe.
+   * Optional: its English text ships with that entry, not with every page.
+   */
+  embedPlaceholder?: {
+    /** `{provider}` and `{category}` are substituted. */
+    message: string;
+    /** Button that allows the category. `{category}` is substituted. */
+    allow: string;
+    /** Link to the provider's privacy policy. `{provider}` is substituted. */
+    privacyPolicy: string;
+  };
   reloadNotice: {
     message: string;
     reloadButton: string;
