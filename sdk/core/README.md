@@ -279,6 +279,34 @@ off(); // stop listening when you're done
 This is the recommended way to react to consent. The paths below still work but
 aren't the primary one.
 
+## Blocking embeds
+
+Put an iframe's address in `data-cy-src` instead of `src`, and its category in
+`data-cy-category`. The browser loads nothing from `data-cy-src`, so nothing
+reaches YouTube, Vimeo or a map provider before consent:
+
+```html
+<iframe
+  data-cy-src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  data-cy-category="functional"
+  width="560"
+  height="315"
+  title="Product tour"
+></iframe>
+```
+
+```ts
+import { initCookieYes } from "@cookieyes/core";
+import { blockIframes } from "@cookieyes/core/iframes";
+
+const { consentManager, consentStore } = initCookieYes({ mode: "cookie-only" });
+blockIframes(consentManager, consentStore);
+```
+
+Until the category is granted, each iframe shows a placeholder at its own size,
+with a button that allows the category. Iframes added later are handled too.
+See [Block embeds](https://developers.cookieyes.com/docs/core/embeds).
+
 ## Translations & language
 
 For a framework-less custom UI, `consentStore` carries the active language and
