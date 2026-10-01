@@ -38,6 +38,11 @@
       "types": "./dist/network-blocker.d.ts",
       "import": "./dist/network-blocker.js",
       "require": "./dist/network-blocker.cjs"
+    },
+    "./iframes": {
+      "types": "./dist/iframes.d.ts",
+      "import": "./dist/iframes.js",
+      "require": "./dist/iframes.cjs"
     }
   },
   "main": "./dist/index.cjs",

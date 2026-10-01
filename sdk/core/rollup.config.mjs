@@ -20,5 +20,6 @@ export default createLibConfig({
     index: "src/index.ts",
     integrations: "src/integrations.ts",
     "network-blocker": "src/network-blocker.ts",
+    iframes: "src/iframes.ts",
   },
 });
