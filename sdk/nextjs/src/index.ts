@@ -44,6 +44,7 @@ export type {
   GoogleConsentSignal,
   HeaderSource,
   I18nConfig,
+  IframeBlockerStore,
   LanguageInfo,
   OptOutPart,
   PartialTranslations,
@@ -73,6 +74,7 @@ export type {
 // Core utilities
 export {
   Banner,
+  blockIframes,
   CookieBanner,
   CookieOptOut,
   CookiePreferences,
