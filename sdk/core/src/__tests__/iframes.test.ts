@@ -14,6 +14,9 @@ function addIframe(attributes: Record<string, string>): HTMLIFrameElement {
 const addVideo = (category = "functional") =>
   addIframe({ "data-cy-src": VIDEO, "data-cy-category": category });
 
+/** MutationObserver callbacks run as a microtask. */
+const settle = () => Promise.resolve();
+
 let stop: () => void = () => undefined;
 
 beforeEach(() => {
@@ -77,27 +80,76 @@ describe("blockIframes", () => {
     expect(iframe.getAttribute("src")).toBe(VIDEO);
   });
 
-  it("waits for the page to finish loading", () => {
-    vi.spyOn(document, "readyState", "get").mockReturnValue("loading");
+  it("gates iframes added after it started", async () => {
     const manager = createConsentManager({ regulation: "GDPR" });
     manager.acceptAll();
     stop = blockIframes(manager);
-    const iframe = addVideo();
-    expect(iframe.hasAttribute("src")).toBe(false);
-    document.dispatchEvent(new Event("DOMContentLoaded"));
+    const nested = document.createElement("div");
+    nested.innerHTML = `<iframe data-cy-src="${VIDEO}" data-cy-category="functional"></iframe>`;
+    document.body.append(nested);
+    await settle();
+    expect(nested.querySelector("iframe")?.getAttribute("src")).toBe(VIDEO);
+  });
+
+  it("follows a data-cy-src set later", async () => {
+    const manager = createConsentManager({ regulation: "GDPR" });
+    manager.acceptAll();
+    const iframe = addIframe({ "data-cy-category": "functional" });
+    stop = blockIframes(manager);
+    iframe.dataset.cySrc = VIDEO;
+    await settle();
     expect(iframe.getAttribute("src")).toBe(VIDEO);
   });
 
-  it("stops reacting to consent once stopped", () => {
-    const iframe = addVideo();
+  it("stops an iframe given a plain src until consent, and warns", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const manager = createConsentManager({ regulation: "GDPR" });
-    blockIframes(manager)();
+    stop = blockIframes(manager);
+    const iframe = addIframe({ src: VIDEO, "data-cy-category": "functional" });
+    await settle();
+    expect(iframe.hasAttribute("src")).toBe(false);
+    expect(iframe.dataset.cySrc).toBe(VIDEO);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("data-cy-src instead"));
     manager.acceptAll();
+    expect(iframe.getAttribute("src")).toBe(VIDEO);
+  });
+
+  it("keeps a plain src that is already allowed", () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const manager = createConsentManager({ regulation: "GDPR" });
+    manager.acceptAll();
+    const iframe = addIframe({ src: VIDEO, "data-cy-category": "functional" });
+    stop = blockIframes(manager);
+    expect(iframe.getAttribute("src")).toBe(VIDEO);
+    manager.rejectAll();
     expect(iframe.hasAttribute("src")).toBe(false);
   });
 
-  it("leaves iframes without data-cy-src alone", () => {
-    const iframe = addIframe({ src: VIDEO, "data-cy-category": "functional" });
+  it("warns once about a category that is not configured", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    addVideo("videos");
+    addVideo("videos");
+    const manager = createConsentManager({ regulation: "GDPR" });
+    stop = blockIframes(manager);
+    manager.acceptAll();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('data-cy-category="videos"'));
+  });
+
+  it("stops reacting to consent and new iframes once stopped", async () => {
+    const iframe = addVideo();
+    const manager = createConsentManager({ regulation: "GDPR" });
+    manager.acceptAll();
+    blockIframes(manager)();
+    manager.rejectAll();
+    expect(iframe.getAttribute("src")).toBe(VIDEO);
+    const later = addIframe({ src: VIDEO, "data-cy-category": "functional" });
+    await settle();
+    expect(later.getAttribute("src")).toBe(VIDEO);
+  });
+
+  it("leaves iframes without data-cy-category alone", () => {
+    const iframe = addIframe({ src: VIDEO });
     stop = blockIframes(createConsentManager({ regulation: "GDPR" }));
     expect(iframe.getAttribute("src")).toBe(VIDEO);
   });
