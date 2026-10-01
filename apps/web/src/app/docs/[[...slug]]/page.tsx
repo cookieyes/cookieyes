@@ -177,10 +177,11 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   }
 
   // The React and Next.js copies of a page would otherwise open with the same trail and
-  // h1, so the two frameworks get different headers:
-  // - React: the breadcrumb above, and an h1 that names the framework ("CSP for React");
-  // - Next.js: no breadcrumb, only the section the page sits in as a small label above a
-  //   plain h1 ("STYLING" / "CSP"), the way c15t's docs head a page.
+  // h1, so every framework page's h1 names its framework ("CSP for React", "CSP for
+  // Next.js"), and the two frameworks head the page differently:
+  // - React: the breadcrumb above the h1;
+  // - Next.js: no breadcrumb, only the section the page sits in as a small label
+  //   ("STYLING"), the way c15t's docs head a page.
   // Pages outside a framework (the changelog) keep the breadcrumb.
   const isNext = framework === "nextjs";
   const showBreadcrumb = !isNext && trail.length > 1;
@@ -259,14 +260,12 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}
-          {/* A React page's h1 names its framework ("CSP for React"); see the header note
-            above. The sidebar and breadcrumb keep the short title, and the suffix is muted
-            so the topic still leads. */}
+          {/* A framework page's h1 names its framework ("CSP for Next.js"); see the header
+            note above. The sidebar and breadcrumb keep the short title, and the suffix is
+            muted so the topic still leads. */}
           <DocsTitle>
             {isReleasePage ? releaseVersionLabel : page.data.title}
-            {framework && !isNext && (
-              <span className="cy-doc-h1-fw"> for {FRAMEWORK_LABEL[framework]}</span>
-            )}
+            {framework && <span className="cy-doc-h1-fw"> for {FRAMEWORK_LABEL[framework]}</span>}
           </DocsTitle>
 
           {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
