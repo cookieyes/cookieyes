@@ -102,13 +102,6 @@ const config = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
-      // These URLs answer with Markdown instead of HTML when asked for it (src/proxy.ts),
-      // so caches must key them on Accept. The Markdown routes set it on their own
-      // response; this declares it for the HTML.
-      ...["/", "/playground", "/docs/:path*"].map((source) => ({
-        source,
-        headers: [{ key: "Vary", value: "Accept" }],
-      })),
       // Production only: the dev server's hot reload relies on eval, which this blocks.
       ...(process.env.NODE_ENV === "production"
         ? [
