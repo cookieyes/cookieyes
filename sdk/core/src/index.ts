@@ -14,6 +14,11 @@ export {
   _warnBuiltInIntegrationsDeprecated,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
+/** @internal — embed helpers shared with React's `GatedFrame`. */
+export {
+  categoryLabel as _categoryLabel,
+  warnUnknownEmbedCategory as _warnUnknownEmbedCategory,
+} from "./embed-category.js";
 export type { ConsentEmitter } from "./events.js";
 export { createConsentEmitter } from "./events.js";
 export {
@@ -28,6 +33,8 @@ export {
   primaryOf,
   resolveTranslations,
 } from "./i18n.js";
+export type { IframeBlockerStore } from "./iframes.js";
+export { blockIframes } from "./iframes.js";
 export type {
   Cleanup,
   Integration,
