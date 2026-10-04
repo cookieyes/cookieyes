@@ -224,7 +224,13 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}
-          <DocsTitle>{isReleasePage ? releaseVersionLabel : page.data.title}</DocsTitle>
+          {/* A framework page's h1 names its framework ("CSP for Next.js"), so the copies of a
+            page under each framework don't share a heading. The sidebar and breadcrumb keep
+            the short title; the suffix is muted so the topic still leads. */}
+          <DocsTitle>
+            {isReleasePage ? releaseVersionLabel : page.data.title}
+            {framework && <span className="cy-doc-h1-fw"> for {FRAMEWORK_LABEL[framework]}</span>}
+          </DocsTitle>
 
           {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
             See design doc content-tier-d.md. */}

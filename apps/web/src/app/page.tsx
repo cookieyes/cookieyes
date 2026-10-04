@@ -41,7 +41,8 @@ const STRUCTURED_DATA = {
       "@id": "https://www.cookieyes.com/#organization",
       name: "CookieYes",
       url: "https://www.cookieyes.com",
-      logo: `${SITE_URL}/apple-icon`,
+      // A static file, so the URL Google stores for the logo never changes.
+      logo: `${SITE_URL}/logo.png`,
       sameAs: [REPO_URL],
     },
     {

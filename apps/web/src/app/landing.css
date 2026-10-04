@@ -1890,6 +1890,8 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   justify-content: center;
 }
 
+/* Title on the left of the questions, centred on the list's height rather than pinned
+   to its top. */
 .cy-page .cy-faq-inner {
   width: 100%;
   max-width: 1152px;
@@ -1898,7 +1900,7 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   gap: var(--cy-space-48);
-  align-items: start;
+  align-items: center;
 }
 
 .cy-page .cy-faq-title {

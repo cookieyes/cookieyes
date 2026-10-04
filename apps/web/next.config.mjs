@@ -212,12 +212,10 @@ const config = {
         permanent: false,
       }),
     );
-    // Browsers and crawlers that never read the page's <link rel="icon"> still ask for
-    // /favicon.ico; the site's only icon is the SVG.
-    const favicon = { source: "/favicon.ico", destination: "/icon.svg", permanent: true };
     // Bare /docs is a page of its own (the framework chooser, content/docs/index.mdx); only
-    // a `?pkg=` link is still redirected, by byQuery above.
-    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite, favicon];
+    // a `?pkg=` link is still redirected, by byQuery above. /favicon.ico is a real file in
+    // public/ (see the icons in app/layout.tsx), not a redirect.
+    return [...roots, ...moved, ...byQuery, ...byPath, ...parentSite];
   },
 
   /**

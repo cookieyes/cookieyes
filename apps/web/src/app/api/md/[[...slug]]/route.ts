@@ -49,6 +49,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   return new Response(content, {
     headers: {
       "Content-Type": "text/markdown; charset=utf-8",
+      // Served at the page's own URL too, by Accept (see proxy.ts).
+      Vary: "Accept",
       "Cache-Control": "public, max-age=0, must-revalidate",
     },
   });
