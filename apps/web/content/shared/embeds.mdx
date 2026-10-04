@@ -18,7 +18,7 @@ For an iframe you render in a component, [`GatedFrame`](/docs/components/gated-f
 
 ### 1. Mark each iframe
 
-Put the address in `data-cy-src` instead of `src`, and the category in `data-cy-category`:
+Put the address in `data-cy-src` instead of `src`, and the category in `data-cy-category`. The YouTube video below is only an example; use your own embed's address.
 
 ```html
 <iframe
@@ -31,6 +31,13 @@ Put the address in `data-cy-src` instead of `src`, and the category in `data-cy-
 ```
 
 Keep the address out of `src`. The browser starts loading `src` as soon as it reads the HTML, before any script can stop it, so the provider has already received the visitor's IP address.
+
+| Attribute | | What it does |
+| --- | --- | --- |
+| `data-cy-src` | Required | The iframe's address, loaded only after consent |
+| `data-cy-category` | Required | The category the visitor must grant, such as `functional` |
+| `data-cy-provider` | Optional | The provider's name in the [placeholder](#the-placeholder). Not needed for YouTube and Vimeo |
+| `data-cy-privacy-url` | Optional | A link to the provider's privacy policy in the placeholder. Not needed for YouTube and Vimeo |
 
 ### 2. Start the blocker
 
@@ -76,7 +83,7 @@ Each marked iframe loads once its category is granted, and is emptied again if t
 
 While an iframe is blocked, it shows at its own size: who hosts the content, the category it needs, a button that allows that category, and a link to the provider's privacy policy. The button grants that one category for the whole site and keeps the visitor's other choices.
 
-YouTube and Vimeo are recognised from the address. For any other provider, add its name and privacy policy:
+YouTube and Vimeo are recognised from the address, so they need nothing more. For any other provider, you can add the two optional attributes. Google Maps below is only an example; use your own embed's address and its provider's details:
 
 ```html
 <iframe
@@ -90,7 +97,7 @@ YouTube and Vimeo are recognised from the address. For any other provider, add i
 ></iframe>
 ```
 
-Without `data-cy-provider`, the placeholder names the host, such as `example.com`, and shows no privacy link.
+Both are optional, and blocking works the same without them. Without `data-cy-provider`, the placeholder names the host, such as `example.com`; without `data-cy-privacy-url`, it shows no privacy link.
 
 The text follows the visitor's language. English, German, Spanish, French and Italian ship in `@cookieyes/translations`. To change the wording, set `embedPlaceholder.message`, `embedPlaceholder.allow` and `embedPlaceholder.privacyPolicy` in `i18n`; `{provider}` and `{category}` are filled in for you.
 
