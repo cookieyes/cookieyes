@@ -9,6 +9,11 @@
 /.agents/          @cookieyes/sdk-maintainers
 /.claude/          @cookieyes/sdk-maintainers
 
+# Guidance for the AI tools of people using the SDK. The owner keeps it current with
+# every release that changes the API (CONTRIBUTING.md, "Releases").
+/skills/           @cookieyes/sdk-maintainers
+/context7.json     @cookieyes/sdk-maintainers
+
 # Per-package ownership (extend as the team grows)
 /sdk/core/        @cookieyes/sdk-maintainers
 /sdk/react/       @cookieyes/sdk-maintainers

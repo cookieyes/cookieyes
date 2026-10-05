@@ -28,6 +28,7 @@
 - [ ] `pnpm build` passes
 - [ ] `pnpm test` passes
 - [ ] I have updated documentation where relevant
+- [ ] If this changes a public API, config option or default: `skills/` and the `context7.json` rules are updated
 - [ ] I have added a changeset (`pnpm changeset`) for any user-facing change
 - [ ] My commits follow the [Conventional Commits](https://www.conventionalcommits.org) format
 - [ ] If an AI coding tool helped, the change follows `AGENTS.md` and I have reviewed every line myself

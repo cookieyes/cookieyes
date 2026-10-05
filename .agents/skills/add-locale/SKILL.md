@@ -1,6 +1,8 @@
 ---
 name: add-locale
-description: Add a language to @cookieyes/translations: the locale file, the package export, the locale lists in README and docs, and the changeset. Use when asked to add, translate or support a new language or locale.
+description: 'Add a language to @cookieyes/translations: the locale file, the package export, the locale lists in README and docs, and the changeset. Use when asked to add, translate or support a new language or locale.'
+metadata:
+  internal: true
 ---
 
 # Add a locale

@@ -1,6 +1,8 @@
 ---
 name: plan-major-change
-description: Research and plan before writing code for a change that touches consent behaviour in sdk/core, a public API or export, a config option, more than one package, or anything with legal or compliance meaning. Also use when a request is large or unclear. Ends with the developer approving a plan.
+description: 'Research and plan before writing code for a change that touches consent behaviour in sdk/core, a public API or export, a config option, more than one package, or anything with legal or compliance meaning. Also use when a request is large or unclear. Ends with the developer approving a plan.'
+metadata:
+  internal: true
 ---
 
 # Plan a major change
