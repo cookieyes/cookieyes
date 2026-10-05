@@ -40,8 +40,9 @@ Read, in this order, and note what you learn:
 Ask only the questions the code did not answer. Ask them all in one message and wait for the
 answers. Do not guess the answers and do not start coding.
 
-1. **Goal.** What problem does this solve, for whom? Is there an issue or discussion? If this is
-   `lane:core` and there is no approved issue, say that one is needed and stop here.
+1. **Goal.** What problem does this solve, for whom? Is there an issue or discussion? Issues live
+   at `github.com/cookieyes/cookieyes/issues` (`gh issue list --repo cookieyes/cookieyes`). If this
+   is `lane:core` and there is no approved issue, say that one is needed and stop here.
 2. **Scope.** Which packages? Is anything breaking for current users? (Breaking changes ship
    before 1.0 as a `minor` with an "Action required" note, but they still need agreement.)
 3. **Compliance.** Does it change what is granted or denied, under GDPR or CCPA, what is recorded,

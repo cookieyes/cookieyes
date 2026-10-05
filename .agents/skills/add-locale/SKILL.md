@@ -55,7 +55,8 @@ Then regenerate the framework docs: `pnpm --filter @cookieyes/web generate:frame
 ## 6. Changeset and finish
 
 Changeset for `@cookieyes/translations`, bump `minor`: one sentence naming the language and the
-import path. Then the checklist in the root `AGENTS.md`. The size report does not change for a
-new locale; still run `pnpm size` if you touched anything else under `sdk/*/src`.
+import path. If the CLI picker changed, list `@cookieyes/cli` too. Then the checklist in the root
+`AGENTS.md`. Do not run `pnpm size`: the measurement covers `core`, `react` and `nextjs` only, so
+a locale cannot move it.
 
 Commit as `feat(translations): add <Language> (<code>)`.

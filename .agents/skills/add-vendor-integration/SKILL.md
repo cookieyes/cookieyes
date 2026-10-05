@@ -74,8 +74,9 @@ Run `pnpm --filter @cookieyes/scripts test`.
 
 ## 6. Size and changeset
 
-- `pnpm build && pnpm size`; commit `tools/size/size-report.json`. Integrations are separate
-  entry points, so core and the UI bundles should not move. If they do, find out why.
+- Do not run `pnpm size`: the measurement covers `core`, `react` and `nextjs` only, and
+  `@cookieyes/scripts` is not part of it. Keep the integration small anyway; a consumer ships every
+  byte of it.
 - Changeset for `@cookieyes/scripts`, bump `minor`. Follow the `write-changeset` guide. Mention
   the vendor setting the user must change.
 

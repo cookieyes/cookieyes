@@ -116,8 +116,10 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 
 ## Bundle size
 
-- Any change under `sdk/*/src` needs `pnpm build && pnpm size`, and the updated
-  `tools/size/size-report.json` committed. `pnpm build:web` (and CI) fails on a stale report.
+- `pnpm size` covers `core`, `react` and `nextjs` only (`tools/size/sdk-fingerprint.mjs`). After
+  changing their `src`, their Rollup configs or their `package.json` export fields, run
+  `pnpm build && pnpm size` and commit `tools/size/size-report.json`; `pnpm build:web` and CI fail
+  on a stale one. Other packages never need it, and re-measuring for them only adds noise.
 - Budgets in `tools/size/budgets.json` are ceilings. If a change grows a bundle, first remove the
   growth. If the growth is justified, raise the budget in the same PR with the reason written in
   the file. Never raise a budget to make a red build green.
@@ -128,8 +130,7 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 - `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`: optional properties are
   typed `?: T | undefined`. Relative imports end in `.js`.
 - Biome formats and lints: 2 spaces, double quotes, semicolons, 100 columns. Run `pnpm lint:fix`.
-- A `biome-ignore` comment always states the reason after the colon. No `eslint-disable`
-  comments; this repo has no ESLint.
+- Every `biome-ignore` states its reason after the colon. No `eslint-disable`: there is no ESLint.
 
 ## Comments
 
@@ -139,15 +140,14 @@ Things that look safe and are not. Each is recorded in the code; read the commen
   not add comments to lines you did not change.
 - Every exported symbol has a prose `/** ... */` block. No `@param`, `@returns` or `@throws`;
   `@example` where a one-liner helps; `@internal` on underscore-prefixed exports.
-- No TODO, FIXME or commented-out code. Finish it or leave it out.
+- No TODO, FIXME or commented-out code.
 
 ## Tests
 
 - Tests live in `src/__tests__/<module>.test.ts` next to the code. Import `describe`, `it`,
   `expect` from `vitest`; globals are off.
 - `describe` names the function, `it` states the behaviour in plain English.
-- Coverage threshold is 80% and is never lowered. A behaviour change and its test land in the
-  same commit.
+- Coverage threshold is 80%, never lowered. A behaviour change and its test land in one commit.
 - The Vitest environment per package is deliberate (jsdom: core, react, scripts; node: cli,
   translations, nextjs, test). Never change a `vitest.config.ts` to pass a test; opt one file in
   with `// @vitest-environment jsdom`.
@@ -158,7 +158,7 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 |---|---|---|
 | `apps/web/content/docs/{nextjs,react,core}/**` | `pnpm --filter @cookieyes/web generate:framework-docs` | anything in `apps/web/content/shared` |
 | `sdk/react/src/styles/critical.css` | `pnpm --filter @cookieyes/react build:critical-css` | `cookieyes.css` |
-| `tools/size/size-report.json` | `pnpm build && pnpm size` | any `sdk/*/src` file |
+| `tools/size/size-report.json` | `pnpm build && pnpm size` | `core`, `react` or `nextjs` source |
 | `PEER-MATRIX` blocks in `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md` | `pnpm --filter @cookieyes/web generate:peer-matrix-readme` | `matrix/matrix-results.json` |
 | `matrix/matrix-results.json` | the `peer-matrix` workflow | peer-dependency ranges |
 
@@ -189,7 +189,7 @@ decision worth keeping goes in `docs/design/` as a note anyone may read.
 ## Before you say you are done
 
 1. `pnpm lint:fix && pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test`.
-2. Touched `sdk/*/src`? `pnpm size`; commit the report; explain any budget change.
+2. Touched `core`, `react` or `nextjs` source? `pnpm size`; commit the report; explain any budget change.
 3. Touched `cookieyes.css`? Regenerate `critical.css`.
 4. Touched a config option, prop, token or export? Sidecar, docs page, `exports.test.ts`.
 5. Touched consent behaviour? `@cookieyes/test` and its fidelity table.
