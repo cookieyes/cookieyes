@@ -24,7 +24,10 @@ the PR.
 
 - File: `apps/web/content/shared/<section>/<page>.mdx`. Sections are the folders listed in
   `content/shared/_root-order.json`.
-- Add the page to that folder's `meta.json` in a sensible position.
+- Add the page to that folder's `meta.json` in a sensible position. A new top-level section goes
+  in `_root-order.json` too.
+- Add the page to `ENABLED_FILES` in `apps/web/scripts/check-examples.mjs`, or its code fences are
+  never type-checked. The list is manual on purpose.
 - Frontmatter, exactly these keys:
 
 ```yaml
@@ -49,7 +52,8 @@ Copy the structure of the closest existing page in the same section. Typical sha
 5. "Common mistakes": symptom in bold, then the fix.
 6. "Next steps": two or three framework-relative links.
 
-Leave out any section that would be empty. Do not add sections the neighbours do not have.
+Leave out any section that would be empty. Do not add sections the neighbours do not have. Compare
+the length with the neighbouring pages; if yours is much longer, cut it or split it.
 
 ## 4. Code fences
 
@@ -59,6 +63,9 @@ Leave out any section that would be empty. Do not add sections the neighbours do
 - Every `ts`/`tsx` fence must compile against the built SDK. Fences under one heading compile
   together; use `group="name"` to join fences across headings.
 - `check="false"` is only for a fragment that cannot stand alone. Never use it to hide an error.
+- If an example imports a package that `apps/web/package.json` does not list, stop and ask before
+  adding a devDependency, touching `pnpm-lock.yaml` or changing the checker. Often the example can
+  be written without it.
 - Package install commands use the `npm` fence language.
 
 ## 5. Language

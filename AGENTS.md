@@ -26,6 +26,7 @@ with zero runtime dependencies; `react` and `nextjs` are wiring only; plus `scri
 ## Commands
 
 ```bash
+pnpm install --frozen-lockfile  # never plain pnpm install: it rewrites the lockfile and drops other platforms
 pnpm lint:fix && pnpm lint      # Biome: format and lint; then pnpm typecheck
 pnpm build                      # all sdk/* packages
 pnpm test                       # Vitest, 80% coverage gate; one package: pnpm --filter @cookieyes/core test
@@ -38,7 +39,7 @@ pnpm build:web                  # docs site: runs the generators and the doc-exa
 - Do the task that was asked. Do not refactor, rename, reformat or "improve" code outside it.
 - No new abstraction, helper, option, parameter or layer unless this change needs it now. Three
   plain lines are better than a helper used once.
-- No new dependencies. `@cookieyes/core` has none and that is a feature of the product.
+- No new dependencies, devDependencies included, and no `pnpm-lock.yaml` change without asking first.
 - Before changing behaviour, read the module, its tests in `src/__tests__/`, and any note in
   `docs/design/` about it. The comments in this codebase record past bugs; take them seriously.
 - A large or unclear task is not started by writing code. Follow `plan-major-change`: research,
@@ -135,12 +136,11 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 ## Comments
 
 - Comments explain why: the constraint, the bug that happened, the alternative that was rejected.
-  They do not describe what the next line does.
+  They do not describe what the next line does. No TODO, FIXME or commented-out code.
 - Full sentences, as short as the reason allows. Match the density of the file you are in and do
   not add comments to lines you did not change.
 - Every exported symbol has a prose `/** ... */` block. No `@param`, `@returns` or `@throws`;
   `@example` where a one-liner helps; `@internal` on underscore-prefixed exports.
-- No TODO, FIXME or commented-out code.
 
 ## Tests
 

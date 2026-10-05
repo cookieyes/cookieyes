@@ -65,10 +65,13 @@ Run `pnpm --filter @cookieyes/scripts test`.
   react, core]`. Sections: lead paragraph, "Set it up", "Options", "Good to know", "Common
   mistakes", "Next steps".
 - Add the page to `apps/web/content/shared/integrations/meta.json` under "Ready-made
-  integrations".
+  integrations", and to `ENABLED_FILES` in `apps/web/scripts/check-examples.mjs` so its examples
+  are type-checked.
 - Add a card to `apps/web/content/shared/integrations/index.mdx`. If a logo is needed, add an
   SVG to `apps/web/public/figma-logos/` only if its licence allows redistribution.
 - Add a row to the table and a section in `sdk/scripts/README.md`, matching the existing ones.
+- Other places list the integrations by name. Find them all with
+  `grep -rli clarity apps/web/content apps/web/src sdk/*/README.md` and add yours to each list.
 - Regenerate: `pnpm --filter @cookieyes/web generate:framework-docs`, then `pnpm build` and
   `pnpm build:web`.
 
