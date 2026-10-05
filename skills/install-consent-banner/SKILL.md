@@ -9,7 +9,7 @@ Use this when someone wants a cookie consent banner in a Next.js, React or plain
 
 ## Decide two things first
 
-1. **Regulation**: `"GDPR"` (opt-in, most sites) or `"CCPA"` (California-style opt-out).
+1. **Regulation**: `"GDPR"` (opt-in, most sites) or `"CCPA"` (California-style opt-out). It applies to every visitor, so pick the strictest law your visitors fall under. To choose per visitor by country, set the `region` option instead (see the configuration docs); a manual `regulation` always wins over `region`. Under `"CCPA"` in React or Next.js, also render `<CookieOptOut />` next to `<CookieBanner />`: the Do Not Sell button opens it.
 2. **Mode**: `"cookie-only"` (default, no backend) or `"self-hosted"` with an `apiUrl`, only if a server-side record of each consent is required.
 
 ## Fastest path: the CLI
@@ -106,8 +106,10 @@ export const { consentStore, consentManager } = initCookieYes({
 - **Nothing renders and no error**: `<CookieYesRoot />` is not rendered anywhere, so `initCookieYes()` never ran.
 - **"You're importing a component that needs use client"** (Next.js): the consent file lost its `"use client"` line, or `initCookieYes()` was called in the layout.
 - **Set `regulation` to `"GDPR"` or `"CCPA"`**, or leave it out to behave as GDPR.
+- **`tsc` reports TS2882 for the `styles.css` import** in a fresh Next.js checkout: run `next dev` or `next build` once. It creates `next-env.d.ts`, which loads the Next.js types that declare CSS imports.
 
 ## Next
 
 - Every option: https://developers.cookieyes.com/docs/nextjs/getting-started/configuration
 - Load analytics and ads only after consent: use the `gate-third-party-scripts` skill on this host.
+- Unit-test code that depends on consent: use the `test-consent` skill on this host.

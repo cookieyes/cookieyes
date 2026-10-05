@@ -252,10 +252,11 @@ function checkVariant(relFile, variant, source, baseTsconfigPath) {
 
     // Some examples import the reader's own tooling rather than ours: a
     // design-system component (conventionally `@/components/ui/*`) in the
-    // `asChild` demos, or a test runner in the end-to-end ones. Those belong to
-    // the reader and cannot resolve here, but the examples are still worth
-    // checking for their CookieYes usage. Ambient declarations type only those
-    // imports as `any`, so the rest of each file is checked for real.
+    // `asChild` demos, a test runner in the end-to-end ones, or Testing Library in
+    // the `test-consent` skill. Those belong to the reader and cannot resolve
+    // here, but the examples are still worth checking for their CookieYes usage.
+    // Ambient declarations type only those imports as `any`, so the rest of each
+    // file is checked for real.
     // The test-runner stub carries just enough of a signature that destructured
     // fixtures (`{ page }`) are contextually typed rather than implicitly `any`,
     // which `strict` would otherwise reject.
@@ -263,6 +264,7 @@ function checkVariant(relFile, variant, source, baseTsconfigPath) {
       join(groupDir, "reader-tooling.d.ts"),
       [
         'declare module "@/*";',
+        'declare module "@testing-library/react";',
         'declare module "@playwright/test" {',
         "  type Fixtures = Record<string, any>;",
         "  export const test: (name: string, fn: (fixtures: Fixtures) => unknown) => void;",

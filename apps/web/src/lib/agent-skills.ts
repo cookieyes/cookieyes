@@ -9,7 +9,11 @@ import { join } from "node:path";
  * index carries a sha256 of each SKILL.md exactly as served, so it is computed from the file
  * rather than written by hand.
  */
-export const SKILLS = ["install-consent-banner", "gate-third-party-scripts"] as const;
+export const SKILLS = [
+  "install-consent-banner",
+  "gate-third-party-scripts",
+  "test-consent",
+] as const;
 export type Skill = (typeof SKILLS)[number];
 
 export function isSkill(name: string): name is Skill {
