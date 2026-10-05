@@ -1,0 +1,167 @@
+---
+title: Block embeds
+description: Load YouTube videos, maps and other iframes only after the visitor consents, on any site.
+frameworks: [nextjs, react, core]
+---
+
+## What it does
+
+`blockIframes()` keeps an iframe empty until the visitor grants its category, and shows a placeholder in its place. It works on any HTML: your own templates, CMS content, Markdown, or a page with no framework at all.
+
+<Framework when="nextjs react">
+
+For an iframe you render in a component, [`GatedFrame`](/docs/components/gated-frame) is simpler. Use `blockIframes()` for iframes in HTML you do not render yourself, such as CMS or Markdown content.
+
+</Framework>
+
+## Set it up
+
+### 1. Mark each iframe
+
+Put the address in `data-cy-src` instead of `src`, and the category in `data-cy-category`. The YouTube video below is only an example; use your own embed's address.
+
+```html
+<iframe
+  data-cy-src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  data-cy-category="functional"
+  width="560"
+  height="315"
+  title="Product tour"
+></iframe>
+```
+
+Keep the address out of `src`. The browser starts loading `src` as soon as it reads the HTML, before any script can stop it, so the provider has already received the visitor's IP address.
+
+| Attribute | | What it does |
+| --- | --- | --- |
+| `data-cy-src` | Required | The iframe's address, loaded only after consent |
+| `data-cy-category` | Required | The category the visitor must grant, such as `functional` |
+| `data-cy-provider` | Optional | The provider's name in the [placeholder](#the-placeholder). Not needed for YouTube and Vimeo |
+| `data-cy-privacy-url` | Optional | A link to the provider's privacy policy in the placeholder. Not needed for YouTube and Vimeo |
+
+### 2. Start the blocker
+
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { blockIframes } from "@cookieyes/core/iframes";
+
+export const { consentStore, consentManager } = initCookieYes({ mode: "cookie-only" });
+
+blockIframes(consentManager, consentStore);
+```
+
+The blocker is a separate import, so sites that do not use it do not download it.
+
+</Framework>
+
+<Framework when="nextjs react">
+
+```tsx title="app/embed-blocker.tsx"
+"use client";
+
+import { useEffect } from "react";
+import { blockIframes, getCookieYes } from "@cookieyes/react";
+
+export function EmbedBlocker() {
+  useEffect(() => {
+    const cookieYes = getCookieYes();
+    return blockIframes(cookieYes.manager, cookieYes);
+  }, []);
+  return null;
+}
+```
+
+Render `<EmbedBlocker />` once, next to `<CookieBanner />`. Apps that never import `blockIframes` do not download it.
+
+</Framework>
+
+Each marked iframe loads once its category is granted, and is emptied again if the visitor withdraws consent. The blocker watches the page, so iframes added later, by a client-side route or content loaded on scroll, are handled too.
+
+## The placeholder
+
+While an iframe is blocked, it shows at its own size: who hosts the content, the category it needs, a button that allows that category, and a link to the provider's privacy policy. The button grants that one category for the whole site and keeps the visitor's other choices.
+
+YouTube and Vimeo are recognised from the address, so they need nothing more. For any other provider, you can add the two optional attributes. Google Maps below is only an example; use your own embed's address and its provider's details:
+
+```html
+<iframe
+  data-cy-src="https://www.google.com/maps/embed?pb=YOUR_MAP"
+  data-cy-category="functional"
+  data-cy-provider="Google Maps"
+  data-cy-privacy-url="https://policies.google.com/privacy"
+  width="600"
+  height="450"
+  title="Our office"
+></iframe>
+```
+
+Both are optional, and blocking works the same without them. Without `data-cy-provider`, the placeholder names the host, such as `example.com`; without `data-cy-privacy-url`, it shows no privacy link.
+
+The text follows the visitor's language. English, German, Spanish, French and Italian ship in `@cookieyes/translations`. To change the wording, set `embedPlaceholder.message`, `embedPlaceholder.allow` and `embedPlaceholder.privacyPolicy` in `i18n`; `{provider}` and `{category}` are filled in for you.
+
+The placeholder is drawn inside the iframe, so your page's CSS cannot restyle it.
+
+## YouTube
+
+```html
+<iframe
+  data-cy-src="https://www.youtube-nocookie.com/embed/VIDEO_ID"
+  data-cy-category="functional"
+  width="560"
+  height="315"
+  title="Video title"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  allowfullscreen
+></iframe>
+```
+
+- Use `youtube-nocookie.com`, YouTube's privacy-enhanced mode. It stores less about the visitor before they press play, but it still stores data in the browser and contacts Google, so it still needs consent.
+- Copy `allow` and `allowfullscreen` from YouTube's own embed code. Without them, full screen and some player features do not work.
+
+## Good to know
+
+Only saved choices count: switching a category on in the preferences dialog loads nothing until the visitor saves.
+
+An iframe with `sandbox` but without `allow-same-origin` shows an empty box instead of the placeholder. It still stays blocked, and loads after consent.
+
+With a Content-Security-Policy, add the embed's origin to `frame-src`, or the iframe stays empty after consent.
+
+## Common mistakes
+
+**The embed loads before consent.**
+The address is in `src`. Move it to `data-cy-src`. The blocker stops the rest of the load, but the first request has already gone, and a development build warns about it in the console.
+
+**The embed never loads, even after accepting.**
+`data-cy-category` is not one of your [configured categories](/docs/getting-started/configuration#consent-categories). A development build names it in the console.
+
+<Framework when="core">
+
+**Nothing is blocked and no placeholder appears.**
+`blockIframes()` never runs. Call it once, after `initCookieYes()`.
+
+</Framework>
+
+<Framework when="nextjs react">
+
+**Nothing is blocked and no placeholder appears.**
+`<EmbedBlocker />` is not rendered. Render it once, next to `<CookieBanner />`.
+
+</Framework>
+
+## Next steps
+
+<Framework when="nextjs react">
+
+- [GatedFrame](/docs/components/gated-frame): an iframe you render in a component
+- [Network blocking](/docs/network-blocking): requests that scripts make on their own
+
+</Framework>
+
+<Framework when="core">
+
+- [Network blocking](/docs/network-blocking): requests that scripts make on their own
+- [Configuration → consent categories](/docs/getting-started/configuration#consent-categories): the categories an embed can wait for
+
+</Framework>

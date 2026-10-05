@@ -29,6 +29,7 @@ describe("@cookieyes/react public exports", () => {
     "RecallButton",
     "GatedScript",
     "GatedFrame",
+    "blockIframes",
     "useConsent",
     "useConsentActions",
     "useConsentCategory",

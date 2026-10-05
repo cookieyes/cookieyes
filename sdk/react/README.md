@@ -227,6 +227,9 @@ full option reference (modes, `theme`, `i18n`, self-hosted persistence, callback
   ```
 
 - **`<GatedFrame />`** — blocks an iframe until its category is granted, showing a placeholder otherwise.
+- **`blockIframes(manager, runtime)`**: does the same for iframes in HTML you do not render yourself
+  (CMS or Markdown content), marked with `data-cy-src` and `data-cy-category`. See
+  [Block embeds](https://developers.cookieyes.com/docs/react/embeds).
 
 **Headless primitives**
 

@@ -63,6 +63,12 @@ export const de: TranslationMap = {
     placeholder: "Für diesen Inhalt müssen {category}-Cookies aktiviert sein.",
     action: "Einstellungen verwalten",
   },
+  embedPlaceholder: {
+    message:
+      "Dieser Inhalt wird von {provider} bereitgestellt. Zum Anzeigen ist Ihre Zustimmung zu {category}-Cookies erforderlich.",
+    allow: "{category}-Cookies erlauben",
+    privacyPolicy: "Datenschutzerklärung von {provider}",
+  },
   reloadNotice: {
     message:
       "Einige Tracking-Dienste auf dieser Seite lassen sich nur durch Neuladen vollständig stoppen. Laden Sie die Seite neu, um Ihre Änderung anzuwenden, oder schließen Sie diesen Hinweis, um weiterzulesen.",

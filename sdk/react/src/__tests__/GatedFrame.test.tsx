@@ -1,5 +1,5 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GatedFrame } from "../controls/GatedFrame.js";
 import { clearCookie, mountOffline, teardown } from "./test-utils.js";
 
@@ -17,6 +17,20 @@ describe("GatedFrame", () => {
     const { container } = render(<GatedFrame src={SRC} category="analytics" />);
     expect(container.querySelector("iframe")).toBeNull();
     expect(screen.getByText("Manage Preferences")).toBeTruthy();
+  });
+
+  it("names the category by its label, not its id", () => {
+    mountOffline("GDPR");
+    render(<GatedFrame src={SRC} category="analytics" />);
+    expect(screen.getByText("Analytics").tagName).toBe("STRONG");
+  });
+
+  it("warns about a category that is not configured", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    mountOffline("GDPR");
+    render(<GatedFrame src={SRC} category="videos" />);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"videos"'));
+    warn.mockRestore();
   });
 
   it("renders a custom placeholder when provided", () => {
