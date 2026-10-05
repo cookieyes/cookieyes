@@ -16,8 +16,9 @@ else. The root `AGENTS.md` still applies here.
   `"use client"` dropped, `app/` to `src/`, `frameworkSwap=false`, `<Framework when="...">`):
   `content/shared/README.md`. Read it before writing a page.
 - Links are framework-relative: `/docs/hooks/use-consent`.
-- `content/agent-skills/*` are skills for SDK users, served at `/.well-known/agent-skills`. They
-  are not the contributor skills in the repo root `.agents/skills/`.
+- The skills for SDK users live in the repo root `skills/` and are served at
+  `/.well-known/agent-skills` (`src/lib/agent-skills.ts`). They are not the contributor skills
+  in `.agents/skills/`. `scripts/check-examples.mjs` type-checks their code too.
 - `llms.txt`, the sitemap and the changelog pages are built at request or build time from page
   metadata and the package `CHANGELOG.md` files. Do not hand-edit them.
 

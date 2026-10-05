@@ -20,8 +20,9 @@ One set of files, read by every AI coding tool. Please keep it that way.
 - On Windows without symlink support, Git checks the links out as small text files holding the
   link path. Claude Code then does not see the skills there, but the table at the top of
   `AGENTS.md` still points every agent at `.agents/skills/`. Nothing else breaks.
-- `apps/web/content/agent-skills/` is a different thing: skills for people using the SDK, served
-  from the docs site. Contributor skills live here.
+- `skills/` at the repository root is a different thing: skills for people using the SDK,
+  installed with `npx skills add cookieyes/cookieyes` and served from the docs site.
+  Contributor skills live here.
 
 Skill format: [agentskills.io/specification](https://agentskills.io/specification). Keep each
 `SKILL.md` under 500 lines and write the `description` so a tool can tell when to use it.

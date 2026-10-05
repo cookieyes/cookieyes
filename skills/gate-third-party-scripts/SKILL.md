@@ -15,7 +15,7 @@ npm install @cookieyes/scripts
 
 ## 2. Add the integration to the existing `initCookieYes()` call
 
-```tsx
+```tsx title="app/consent-manager.tsx"
 import { initCookieYes } from "@cookieyes/nextjs"; // or "@cookieyes/react" / "@cookieyes/core"
 import { ga4 } from "@cookieyes/scripts";
 
@@ -45,7 +45,7 @@ GA4, GTM and Google Ads read consent through Google Consent Mode. Add a "denied"
 
 Next.js, first thing in `<body>` of the root layout:
 
-```tsx
+```tsx check="false"
 import { GoogleConsentMode } from "@cookieyes/nextjs/server";
 // ...
 <body>
@@ -57,7 +57,7 @@ import { GoogleConsentMode } from "@cookieyes/nextjs/server";
 
 React or plain JavaScript, in the same file as `initCookieYes()`, before the call:
 
-```ts
+```ts title="src/consent.ts"
 import { bootstrapGoogleConsentMode } from "@cookieyes/scripts";
 
 bootstrapGoogleConsentMode();

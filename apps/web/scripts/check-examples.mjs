@@ -11,7 +11,7 @@
 // does not compile fails here, not in front of a reader.
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +19,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const webRoot = join(here, "..");
 const contentDir = join(webRoot, "content", "shared");
 const outDir = join(webRoot, ".doc-examples");
+// The customer skills in the repository's root `skills/` folder. They are checked too, all of
+// them and without an enable-list: an AI assistant copies a skill's code as written, so a
+// skill that stops compiling after an API change must fail the build, not ship.
+const skillsDir = join(webRoot, "..", "..", "skills");
 
 // Enable-list. Expand this array to bring more pages under the harness — see design §2.5 for why
 // this is a plain array and not a frontmatter flag.
@@ -230,6 +234,65 @@ function writeBaseTsconfig() {
   return path;
 }
 
+/**
+ * Type-checks every fence group of one composed source. Returns false when any group fails;
+ * the compiler output is already written to stderr by then.
+ */
+function checkVariant(relFile, variant, source, baseTsconfigPath) {
+  const variantId = `${relFile.replace(/[\\/]/g, "__")}__${variant}`;
+  let ok = true;
+  extractGroups(source).forEach((group, idx) => {
+    const groupDir = join(outDir, variantId, `group-${idx}`);
+    mkdirSync(groupDir, { recursive: true });
+    for (const f of group.files) {
+      const target = resolveContained(groupDir, f.relPath, relFile, f.line);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, f.content);
+    }
+
+    // Some examples import the reader's own tooling rather than ours: a
+    // design-system component (conventionally `@/components/ui/*`) in the
+    // `asChild` demos, or a test runner in the end-to-end ones. Those belong to
+    // the reader and cannot resolve here, but the examples are still worth
+    // checking for their CookieYes usage. Ambient declarations type only those
+    // imports as `any`, so the rest of each file is checked for real.
+    // The test-runner stub carries just enough of a signature that destructured
+    // fixtures (`{ page }`) are contextually typed rather than implicitly `any`,
+    // which `strict` would otherwise reject.
+    writeFileSync(
+      join(groupDir, "reader-tooling.d.ts"),
+      [
+        'declare module "@/*";',
+        'declare module "@playwright/test" {',
+        "  type Fixtures = Record<string, any>;",
+        "  export const test: (name: string, fn: (fixtures: Fixtures) => unknown) => void;",
+        "  export const expect: (actual: unknown) => Record<string, any>;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    writeFileSync(
+      join(groupDir, "tsconfig.json"),
+      JSON.stringify({ extends: baseTsconfigPath, include: ["**/*"] }, null, 2),
+    );
+
+    try {
+      execFileSync("pnpm", ["exec", "tsc", "--noEmit", "-p", groupDir], {
+        cwd: webRoot,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (error) {
+      ok = false;
+      process.stderr.write(String(error.stdout ?? ""));
+      process.stderr.write(
+        `\n[check-examples] FAILED: ${relFile} as ${variant} (heading group ${group.sectionId}) — ` +
+          `${group.files.map((f) => f.relPath).join(", ")}\n`,
+      );
+    }
+  });
+  return ok;
+}
+
 function main() {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
@@ -237,6 +300,7 @@ function main() {
 
   let checkedFiles = 0;
   let checkedVariants = 0;
+  let checkedSkills = 0;
   let skippedFences = 0;
   let failed = false;
 
@@ -255,66 +319,29 @@ function main() {
 
     const frameworks = frameworksOf(source, relFile).filter((fw) => FRAMEWORKS.includes(fw));
     for (const framework of frameworks) {
-      const groups = extractGroups(composeFor(source, framework));
-      const variantId = `${relFile.replace(/[\\/]/g, "__")}__${framework}`;
-
-      groups.forEach((group, idx) => {
-        const groupDir = join(outDir, variantId, `group-${idx}`);
-        mkdirSync(groupDir, { recursive: true });
-        for (const f of group.files) {
-          const target = resolveContained(groupDir, f.relPath, relFile, f.line);
-          mkdirSync(dirname(target), { recursive: true });
-          writeFileSync(target, f.content);
-        }
-
-        // Some examples import the reader's own tooling rather than ours: a
-        // design-system component (conventionally `@/components/ui/*`) in the
-        // `asChild` demos, or a test runner in the end-to-end ones. Those belong to
-        // the reader and cannot resolve here, but the examples are still worth
-        // checking for their CookieYes usage. Ambient declarations type only those
-        // imports as `any`, so the rest of each file is checked for real.
-        // The test-runner stub carries just enough of a signature that destructured
-        // fixtures (`{ page }`) are contextually typed rather than implicitly `any`,
-        // which `strict` would otherwise reject.
-        writeFileSync(
-          join(groupDir, "reader-tooling.d.ts"),
-          [
-            'declare module "@/*";',
-            'declare module "@playwright/test" {',
-            "  type Fixtures = Record<string, any>;",
-            "  export const test: (name: string, fn: (fixtures: Fixtures) => unknown) => void;",
-            "  export const expect: (actual: unknown) => Record<string, any>;",
-            "}",
-            "",
-          ].join("\n"),
-        );
-        writeFileSync(
-          join(groupDir, "tsconfig.json"),
-          JSON.stringify({ extends: baseTsconfigPath, include: ["**/*"] }, null, 2),
-        );
-
-        try {
-          execFileSync("pnpm", ["exec", "tsc", "--noEmit", "-p", groupDir], {
-            cwd: webRoot,
-            stdio: ["ignore", "pipe", "pipe"],
-          });
-        } catch (error) {
-          failed = true;
-          process.stderr.write(String(error.stdout ?? ""));
-          process.stderr.write(
-            `\n[check-examples] FAILED: ${relFile} as ${framework} (heading group ${group.sectionId}) — ` +
-              `${group.files.map((f) => f.relPath).join(", ")}\n`,
-          );
-        }
-      });
+      if (!checkVariant(relFile, framework, composeFor(source, framework), baseTsconfigPath)) {
+        failed = true;
+      }
       checkedVariants++;
     }
     checkedFiles++;
   }
 
+  // Skills are plain Markdown: no frontmatter frameworks and no <Framework> blocks, so each
+  // is checked once, exactly as an assistant reads it.
+  for (const skill of readdirSync(skillsDir).sort()) {
+    const absFile = join(skillsDir, skill, "SKILL.md");
+    if (!existsSync(absFile)) continue;
+    const relFile = `skills/${skill}/SKILL.md`;
+    const source = readFileSync(absFile, "utf8");
+    skippedFences += (source.match(/check="false"/g) ?? []).length;
+    if (!checkVariant(relFile, "skill", source, baseTsconfigPath)) failed = true;
+    checkedSkills++;
+  }
+
   console.log(
-    `[check-examples] checked ${checkedFiles} page(s) as ${checkedVariants} framework variant(s), ` +
-      `skipped ${skippedFences} opted-out fence(s).`,
+    `[check-examples] checked ${checkedFiles} page(s) as ${checkedVariants} framework variant(s) ` +
+      `and ${checkedSkills} skill(s), skipped ${skippedFences} opted-out fence(s).`,
   );
   if (failed) {
     console.error("[check-examples] one or more examples failed to type-check.");

@@ -30,8 +30,7 @@ It detects the framework, asks for backend mode, regulation, colour scheme and e
 npm install @cookieyes/nextjs
 ```
 
-```tsx
-// app/consent-manager.tsx
+```tsx title="app/consent-manager.tsx"
 "use client";
 
 import { CookieBanner, CookiePreferences, RecallButton, initCookieYes } from "@cookieyes/nextjs";
@@ -53,8 +52,7 @@ export function CookieYesRoot() {
 }
 ```
 
-```tsx
-// app/layout.tsx
+```tsx title="app/layout.tsx"
 import { CookieYesRoot } from "./consent-manager";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -85,8 +83,7 @@ Same `consent-manager.tsx` as above without the `"use client"` line, importing f
 npm install @cookieyes/core
 ```
 
-```ts
-// src/consent.ts
+```ts title="src/consent.ts"
 import { initCookieYes } from "@cookieyes/core";
 
 export const { consentStore, consentManager } = initCookieYes({
