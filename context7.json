@@ -1,0 +1,49 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "CookieYes SDK",
+  "description": "Open-source cookie consent for Next.js, React and plain JavaScript: a consent banner, Google Consent Mode v2, and third-party scripts loaded only after consent.",
+  "folders": [
+    "skills",
+    "apps/web/content/shared",
+    "sdk/core",
+    "sdk/react",
+    "sdk/nextjs",
+    "sdk/scripts",
+    "sdk/test",
+    "sdk/translations",
+    "sdk/cli"
+  ],
+  "excludeFolders": [
+    "sdk/core/src",
+    "sdk/react/src",
+    "sdk/nextjs/src",
+    "sdk/scripts/src",
+    "sdk/test/src",
+    "sdk/translations/src",
+    "sdk/cli/src",
+    "sdk/core/dist",
+    "sdk/react/dist",
+    "sdk/nextjs/dist",
+    "sdk/scripts/dist",
+    "sdk/test/dist",
+    "sdk/translations/dist",
+    "sdk/cli/dist",
+    "sdk/react/scripts",
+    "sdk/nextjs/scripts"
+  ],
+  "excludeFiles": ["CHANGELOG.md", "migration.mdx"],
+  "rules": [
+    "Import from @cookieyes/nextjs in Next.js apps, @cookieyes/react in other React apps, and @cookieyes/core for plain JavaScript, Vue, Svelte or Angular.",
+    "Next.js apps import \"@cookieyes/nextjs/styles.css\", never \"@cookieyes/react/styles.css\". Without a stylesheet import the banner renders unstyled and nothing warns.",
+    "In Next.js, call initCookieYes() in a file that starts with \"use client\" and render it from the root layout, which stays a Server Component.",
+    "Use mode: \"cookie-only\" (no backend) or mode: \"self-hosted\" with an apiUrl. mode: \"offline\" is deprecated; write \"cookie-only\".",
+    "Set regulation to \"GDPR\" (opt-in) or \"CCPA\" (opt-out).",
+    "Load third-party tools with presets from @cookieyes/scripts (ga4, googleTagManager, googleAds, metaPixel, clarity, posthog, segment, customScript) in the integrations option. builtInIntegrations is deprecated.",
+    "Remove vendor snippets pasted into the HTML by hand; the integration adds the script itself.",
+    "For GA4, GTM or Google Ads add the Consent Mode default: <GoogleConsentMode /> from @cookieyes/nextjs/server in Next.js, bootstrapGoogleConsentMode() from @cookieyes/scripts elsewhere.",
+    "Google presets default to consentMode: \"advanced\", which loads the tag at once and relies on Consent Mode. Pass consentMode: \"basic\" when nothing may reach Google before the visitor accepts.",
+    "If GA4 or Google Ads is loaded inside a GTM container, use googleTagManager() only, not also ga4() or googleAds().",
+    "A custom integration uses load: \"afterConsent\" and a category that exists in the categories list, or it never loads.",
+    "Unit-test consent logic with @cookieyes/test: createConsentTest(), or createReactConsentTest() from @cookieyes/test/react, and reset state after each test."
+  ]
+}
