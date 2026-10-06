@@ -1,6 +1,8 @@
 ---
 name: add-vendor-integration
-description: Add a consent-gated third-party integration (analytics, ads, session recording, chat widget) to @cookieyes/scripts, with tests, docs page, README entry and changeset. Use when asked to support a new vendor or tool.
+description: 'Add a consent-gated third-party integration (analytics, ads, session recording, chat widget) to @cookieyes/scripts, with tests, docs page, README entry and changeset. Use when asked to support a new vendor or tool.'
+metadata:
+  internal: true
 ---
 
 # Add a vendor integration

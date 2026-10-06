@@ -21,7 +21,9 @@ README has the full layout. In short: `sdk/*` are the published packages (`core`
 with zero runtime dependencies; `react` and `nextjs` are wiring only; plus `scripts`,
 `translations`, `cli` and `test`), `apps/web` is developers.cookieyes.com (docs source in
 `apps/web/content/shared`, rules in `apps/web/AGENTS.md`), `tools/size` measures bundles,
-`matrix` checks peer compatibility, `docs/design` holds design notes.
+`matrix` checks peer compatibility, `docs/design` holds design notes. `skills/` holds the
+guides for the AI tools of people using the SDK; `.agents/skills/` holds the ones for
+contributors (`.agents/README.md` explains both).
 
 ## Commands
 
@@ -194,7 +196,8 @@ decision worth keeping goes in `docs/design/` as a note anyone may read.
 1. `pnpm lint:fix && pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test`.
 2. Touched `core`, `react` or `nextjs` source? `pnpm size`; commit the report; explain any budget change.
 3. Touched `cookieyes.css`? Regenerate `critical.css`.
-4. Touched a config option, prop, token or export? Sidecar, docs page, `exports.test.ts`.
+4. Touched a config option, prop, token or export? Sidecar, docs page, `exports.test.ts`,
+   and `skills/` plus the `context7.json` rules if they mention it.
 5. Touched consent behaviour? `@cookieyes/test` and its fidelity table.
 6. Touched docs? `pnpm build:web` passes, generated framework docs regenerated and committed.
 7. Changeset written.

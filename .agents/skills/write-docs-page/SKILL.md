@@ -1,6 +1,8 @@
 ---
 name: write-docs-page
-description: Add or rewrite a page on developers.cookieyes.com from the shared docs source, with correct frontmatter, framework handling, verified API facts and passing example checks. Use when asked to document a feature, fix a docs page, or add a guide.
+description: 'Add or rewrite a page on developers.cookieyes.com from the shared docs source, with correct frontmatter, framework handling, verified API facts and passing example checks. Use when asked to document a feature, fix a docs page, or add a guide.'
+metadata:
+  internal: true
 ---
 
 # Write a docs page

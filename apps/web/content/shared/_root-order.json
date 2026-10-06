@@ -2,6 +2,7 @@
   "title": "SDKs",
   "pages": [
     "getting-started",
+    "ai-agents",
     "store",
     "components",
     "headless",

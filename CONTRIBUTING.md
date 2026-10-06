@@ -149,7 +149,13 @@ repo carries the instructions they need, so every tool works to the same standar
   skills pick them up; `.claude/skills/` links to the same files for Claude Code. On Windows
   without symlink support those links check out as text files, and the table at the top of
   `AGENTS.md` still points the agent at the right guide.
-- `pnpm agents:check` validates the skill files and links; CI runs it.
+- `skills/*/SKILL.md` are different: guides for the AI tools of people *using* the SDK. They
+  install with `npx skills add cookieyes/cookieyes` and the docs site serves them. That command
+  also searches `.agents/skills/`, so every contributor skill carries `metadata.internal: true`
+  to stay out of users' projects. `context7.json` steers answers from Context7 the same way.
+- `pnpm agents:check` validates the skill files and links; CI runs it. `pnpm build:web`
+  type-checks the code in every `skills/` guide against the built SDK, so a guide that no
+  longer matches the API fails CI.
 
 The agent does the typing; you own the result. Read the whole diff, run the checks, and make
 sure the PR describes what changed and why. If an agent keeps making a mistake these files don't
@@ -174,6 +180,11 @@ Releases are automated with [Changesets](https://github.com/changesets/changeset
   [provenance](https://docs.npmjs.com/generating-provenance-statements) via GitHub Actions.
 
 You do **not** publish from your machine — `npm publish` is performed only by CI.
+
+Keeping the AI guidance current is part of every release. A PR that changes a public API, a
+config option or a default updates `skills/` and the `rules` in `context7.json` in the same PR.
+Before merging the "Version Packages" PR, a maintainer reads its changelog against both and
+fixes anything they no longer describe. `@cookieyes/sdk-maintainers` owns these files.
 
 ## Licensing
 
