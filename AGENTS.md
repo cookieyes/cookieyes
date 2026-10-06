@@ -169,7 +169,9 @@ config option, component prop or CSS token needs its entry there or `pnpm build:
 
 Never document an option, default, prop, export or behaviour you have not read in the source.
 Docs source is `apps/web/content/shared` (rules in `apps/web/AGENTS.md`). Package READMEs are
-published to npm; keep their examples valid against the current API.
+published to npm; keep their examples valid against the current API. No em dashes (U+2014) in
+anything you write: docs, READMEs, changesets, comments, commit messages. Use a colon, a comma or
+two sentences.
 
 ## This repo is public
 
@@ -181,7 +183,8 @@ decision worth keeping goes in `docs/design/` as a note anyone may read.
 
 - Conventional Commits: `type(scope): summary`. Types in use: `feat`, `fix`, `docs`, `perf`,
   `refactor`, `test`, `style`, `chore`, `build`. Scopes in use: `core`, `react`, `nextjs`,
-  `scripts`, `cli`, `translations`, `test`, `web`, `size`, `matrix`.
+  `scripts`, `cli`, `translations`, `test`, `web`, `size`, `matrix`. Subject at most 72
+  characters. Body wrapped at 72, a few lines on what changed and why.
 - One logical change per commit. A regenerated file goes in the commit that changed its source.
 - Every user-facing change has a changeset (`write-changeset` guide). `@cookieyes/web` is private
   and never appears in one.
