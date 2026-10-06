@@ -49,7 +49,9 @@ pnpm build:web                  # docs site: runs the generators and the doc-exa
 - `lane:core` (consent engine, regulation logic, categories, consent records, script and network
   blocking) is maintainer-owned: mistakes there have legal consequences for sites using the SDK.
   Changes there need an approved issue first. Open lanes (vendors, locales, adapters, docs) do not.
-- Do not commit or push unless the developer asks. Never publish; CI publishes.
+- Work on a `feature/*` branch. Never commit to `main`. Commit to `integration/next-release`
+  only when the developer asks for it explicitly. Check `git branch --show-current` before each
+  commit. Do not commit or push unless the developer asks. Never publish; CI publishes.
 
 ## Things that must not break
 
@@ -186,7 +188,8 @@ decision worth keeping goes in `docs/design/` as a note anyone may read.
 - Conventional Commits: `type(scope): summary`. Types in use: `feat`, `fix`, `docs`, `perf`,
   `refactor`, `test`, `style`, `chore`, `build`. Scopes in use: `core`, `react`, `nextjs`,
   `scripts`, `cli`, `translations`, `test`, `web`, `size`, `matrix`. Subject at most 72
-  characters. Body wrapped at 72, a few lines on what changed and why.
+  characters. Keep the body short, ideally a few short bullet points on what changed and why,
+  wrapped at 72. No Co-Authored-By or other AI attribution lines in commits or PRs.
 - One logical change per commit. A regenerated file goes in the commit that changed its source.
 - Every user-facing change has a changeset (`write-changeset` guide). `@cookieyes/web` is private
   and never appears in one.
