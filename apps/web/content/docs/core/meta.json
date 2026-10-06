@@ -3,6 +3,7 @@
   "root": true,
   "pages": [
     "getting-started",
+    "ai-agents",
     "store",
     "embeds",
     "network-blocking",

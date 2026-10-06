@@ -87,6 +87,9 @@ importers:
       '@cookieyes/scripts':
         specifier: workspace:*
         version: link:../../sdk/scripts
+      '@cookieyes/test':
+        specifier: workspace:*
+        version: link:../../sdk/test
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
