@@ -21,6 +21,8 @@ else. The root `AGENTS.md` still applies here.
   in `.agents/skills/`. `scripts/check-examples.mjs` type-checks their code too.
 - `llms.txt`, the sitemap and the changelog pages are built at request or build time from page
   metadata and the package `CHANGELOG.md` files. Do not hand-edit them.
+- The announcement strip at the top of every page comes from `content/announcement.json`, or
+  `null` for none. Publishing, wording and limits: `ANNOUNCEMENTS.md`; read it before editing.
 
 ## Writing rules
 

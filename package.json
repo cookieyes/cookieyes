@@ -20,7 +20,7 @@
   "scripts": {
     "build": "turbo run build --filter='./sdk/*'",
     "dev": "turbo run dev --filter='./sdk/*'",
-    "test": "turbo run test --filter='./sdk/*'",
+    "test": "turbo run test --filter='./sdk/*' --filter=@cookieyes/web",
     "typecheck": "turbo run typecheck --filter='./sdk/*'",
     "dev:web": "pnpm --filter @cookieyes/web dev",
     "build:web": "turbo run build --filter=@cookieyes/web",

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter, Poppins } from "next/font/google";
 import "./global.css";
 import { Analytics } from "@/components/Analytics";
+import { AnnouncementGate, AnnouncementStrip } from "@/components/Announcement";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { getSearchIndex } from "@/lib/search-index";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -82,9 +83,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <ConsentBanner />
+        <AnnouncementGate />
       </head>
       <body>
         <SkipLink />
+        <AnnouncementStrip />
         <Providers pageIndex={getSearchIndex()}>{children}</Providers>
         <Analytics />
       </body>
