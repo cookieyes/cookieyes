@@ -13,11 +13,38 @@ export type AnnouncementKind = (typeof ANNOUNCEMENT_KINDS)[number];
 /**
  * Longest message and link text the build accepts. Measured in the browser: at these lengths
  * the strip stays on one line from 1024px wide, and wraps to at most two lines between 601px
- * and 1023px. Phones follow the design's layout and may take three. Raise them only after
- * measuring again.
+ * and 1023px. Raise them only after measuring again.
  */
 export const MESSAGE_MAX = 60;
 export const LINK_TEXT_MAX = 24;
+
+/**
+ * Phones show the message and the link's arrow in a 234px column (on a 320px screen). How
+ * many lines that takes depends on the words, not only the length: one long word can push
+ * a 50-character message to three lines. So the wrap is simulated with 8px for every
+ * character, wider than Inter's average at 14px. Checked against the browser for 3000
+ * random messages, it never counted fewer lines than the real ones; it does reject some
+ * messages that would just fit.
+ */
+const PHONE_LINE_PX = 234;
+const PHONE_CHAR_PX = 8;
+const PHONE_SPACE_PX = 4;
+const PHONE_ARROW_PX = 28;
+
+function phoneLines(message: string): number {
+  let lines = 1;
+  let x = 0;
+  for (const word of message.split(" ")) {
+    const width = word.length * PHONE_CHAR_PX;
+    if (x === 0) x = width;
+    else if (x + PHONE_SPACE_PX + width <= PHONE_LINE_PX) x += PHONE_SPACE_PX + width;
+    else {
+      lines++;
+      x = width;
+    }
+  }
+  return x + PHONE_ARROW_PX > PHONE_LINE_PX ? lines + 1 : lines;
+}
 
 /** Days an announcement stays up when `expires` is not set. */
 export const DEFAULT_LIFETIME_DAYS = 30;
@@ -105,10 +132,15 @@ export function getAnnouncement(now = Date.now()): Announcement | null {
       : parseDate("expires", raw.expires);
   if (expiresAt <= published) fail(`"expires" must be after "published".`);
 
+  const message = text("message", raw.message, MESSAGE_MAX);
+  if (phoneLines(message) > 2) {
+    fail(`"message" would wrap to three lines on a small phone. Shorten it, or use shorter words.`);
+  }
+
   const announcement: Announcement = {
     id: raw.id,
     kind,
-    message: text("message", raw.message, MESSAGE_MAX),
+    message,
     linkText: text("linkText", raw.linkText, LINK_TEXT_MAX),
     ...checkHref(raw.href),
     version: kind === "event" ? undefined : reactManifest.version,

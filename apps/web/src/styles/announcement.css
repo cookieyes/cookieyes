@@ -243,7 +243,9 @@ html[data-cy-ann="closing"] {
   outline-offset: 2px;
 }
 
-/* Phones: the pill on its own row, the message and its link below it. */
+/* Phones: the link text is the first thing to give way. It stays in the link's name for
+   screen readers, the arrow stays on screen, and the link's target stretches over the whole
+   message, so the text keeps to two lines down to 320px wide. */
 @media (max-width: 600px) {
   .cy-ann {
     position: relative;
@@ -254,6 +256,7 @@ html[data-cy-ann="closing"] {
   }
 
   .cy-ann-content {
+    position: relative;
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
@@ -273,6 +276,31 @@ html[data-cy-ann="closing"] {
   .cy-ann-link::before {
     content: " ";
     white-space: pre;
+  }
+
+  .cy-ann-link-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .cy-ann-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+  }
+
+  .cy-ann-link:focus-visible {
+    outline: none;
+  }
+
+  .cy-ann-link:focus-visible::after {
+    outline: 2px solid var(--cy-ann-focus);
+    outline-offset: 2px;
   }
 }
 

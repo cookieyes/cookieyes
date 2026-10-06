@@ -34,6 +34,9 @@ the strip scrolls away); Fumadocs reads it as `--fd-banner-height`. A new sticky
   the strip did not fill, so while the strip stood still the nav slid up underneath it. The
   strip now has no `max-height` until dismissed, and collapses from its measured height on the
   same curve as `--cy-ann-h`.
+- Character limits alone did not keep phone text to two lines: one long word pushed a 52-character
+  message to three. The build now simulates the wrap at a 320px phone, with deliberately wide
+  characters.
 
 ## Checks
 

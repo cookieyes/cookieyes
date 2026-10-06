@@ -59,12 +59,9 @@ same number as the pill on the homepage. It is never typed here.
 - No em dashes. Use a colon or a comma.
 
 The build fails, and names the problem, when the kind is unknown, a text is too long, a date is
-wrong, or `href` is a site page that does not exist. An `https://` link cannot be checked by the
-build: open it yourself before merging.
-
-On phones the version sits on its own row, with the message and the link below it. A long
-message can take three lines on a small phone; check the preview at 360px wide, and shorten it
-if that matters for this one.
+wrong, or `href` is a site page that does not exist. It also fails when the message would wrap to
+three lines on a small phone; shorten it, or use shorter words. An `https://` link cannot be
+checked by the build: open it yourself before merging.
 
 ## Change or remove one
 
@@ -80,4 +77,5 @@ if that matters for this one.
 - A first-time visitor sees the consent banner first. The strip waits, and appears from their next
   page load after they make a choice.
 - Opening the linked page counts as dismissing it.
-- On phones the strip scrolls away with the page instead of staying at the top.
+- On phones the link text is hidden (screen readers still hear it), the whole message is the tap
+  target, and the strip scrolls away with the page instead of staying at the top.

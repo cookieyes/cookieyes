@@ -138,7 +138,7 @@ export function AnnouncementBar({ announcement }: { announcement: Announcement }
           <span className="cy-ann-message">
             {message}
             <Link className="cy-ann-link" href={href} onClick={() => rememberDismissed(id)}>
-              {linkText}
+              <span className="cy-ann-link-text">{linkText}</span>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                 <path
                   d="M6 3.5L10.5 8L6 12.5"
