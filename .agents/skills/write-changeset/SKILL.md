@@ -1,6 +1,6 @@
 ---
 name: write-changeset
-description: Write the .changeset file for a user-facing change in the house style: correct packages and bump, a lead sentence stating the outcome, bold "Action required" for anything users must do. Use before opening a PR that changes a published package.
+description: 'Write the .changeset file for a user-facing change in the house style: correct packages and bump, a lead sentence stating the outcome, bold "Action required" for anything users must do. Use before opening a PR that changes a published package.'
 ---
 
 # Write a changeset
