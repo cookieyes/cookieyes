@@ -58,10 +58,11 @@ same number as the pill on the homepage. It is never typed here.
   stays; a heading inside a long page may not. The homepage is refused.
 - No em dashes. Use a colon or a comma.
 
-The build fails, and names the problem, when the kind is unknown, a text is too long, a date is
-wrong, or `href` is a site page that does not exist. It also fails when the message would wrap to
-three lines on a small phone; shorten it, or use shorter words. An `https://` link cannot be
-checked by the build: open it yourself before merging.
+The build fails, and names the problem, when the kind is unknown, a text is too long, the link
+text does not say where it goes, a date is wrong, or `href` is a site page that does not exist.
+It also fails when the message would wrap to three lines on a small phone; shorten it, or use
+shorter words. An `https://` link cannot be checked by the build: open it yourself before
+merging.
 
 ## Change or remove one
 

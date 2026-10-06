@@ -46,6 +46,13 @@ function phoneLines(message: string): number {
   return x + PHONE_ARROW_PX > PHONE_LINE_PX ? lines + 1 : lines;
 }
 
+/**
+ * Link text that does not say where it goes. Screen readers list links by their text alone,
+ * so "Learn more" tells a visitor nothing.
+ */
+const VAGUE_LINK_TEXT =
+  /^(learn more|read more|find out more|see more|more|more info|details|click here|here|this)$/i;
+
 /** Days an announcement stays up when `expires` is not set. */
 export const DEFAULT_LIFETIME_DAYS = 30;
 
@@ -136,12 +143,16 @@ export function getAnnouncement(now = Date.now()): Announcement | null {
   if (phoneLines(message) > 2) {
     fail(`"message" would wrap to three lines on a small phone. Shorten it, or use shorter words.`);
   }
+  const linkText = text("linkText", raw.linkText, LINK_TEXT_MAX);
+  if (VAGUE_LINK_TEXT.test(linkText.trim().replace(/[.!]+$/, ""))) {
+    fail(`"linkText" must say where the link goes, such as "Read the release notes".`);
+  }
 
   const announcement: Announcement = {
     id: raw.id,
     kind,
     message,
-    linkText: text("linkText", raw.linkText, LINK_TEXT_MAX),
+    linkText,
     ...checkHref(raw.href),
     version: kind === "event" ? undefined : reactManifest.version,
     expiresAt,
