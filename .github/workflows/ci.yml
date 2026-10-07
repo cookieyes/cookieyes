@@ -70,6 +70,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Check agent skills
+        run: pnpm agents:check
+
       - name: Typecheck
         run: pnpm typecheck
 

@@ -1,6 +1,12 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "Hero".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+import releaseDates from "../../../../../tools/changelog/release-dates.json";
 import sdkManifest from "../../../../../sdk/react/package.json";
+
+// The pill names this release, so it opens this release's own changelog page. A version not
+// dated yet has no page, so it falls back to the changelog index.
+const releaseDate = (releaseDates as Record<string, string>)[`@cookieyes/react@${sdkManifest.version}`];
+const RELEASE_HREF = releaseDate ? `/docs/changelog/${releaseDate}` : "/docs/changelog";
 
 export function Hero() {
   return (
@@ -89,7 +95,7 @@ export function Hero() {
           />{" "}
         </div>{" "}
         <a
-          href="/docs/changelog"
+          href={RELEASE_HREF}
           aria-label="What's new"
           className="scp4"
           style={{

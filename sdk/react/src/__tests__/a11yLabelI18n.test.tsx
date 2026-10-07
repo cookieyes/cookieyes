@@ -134,9 +134,9 @@ describe("accessible labels are translatable", () => {
     });
     render(<GatedFrame src="https://example.com/embed" category="functional" title="Embed" />);
 
-    // English default, with the category interpolated into the sentence.
+    // English default, with the category's label interpolated into the sentence.
     expect(document.body.textContent).toContain("This content requires");
-    expect(document.body.textContent).toContain("functional");
+    expect(document.body.textContent).toContain("Functional");
     expect(document.body.textContent).toContain("Manage Preferences");
 
     act(() => {
@@ -145,7 +145,7 @@ describe("accessible labels are translatable", () => {
 
     // German, and the substitution still happens — the category is not swallowed.
     expect(document.body.textContent).toContain("Für diesen Inhalt");
-    expect(document.body.textContent).toContain("functional");
+    expect(document.body.textContent).toContain("Functional");
     expect(document.body.textContent).toContain("Einstellungen verwalten");
     expect(document.body.textContent).not.toContain("Manage Preferences");
   });

@@ -1,0 +1,47 @@
+---
+title: AI coding assistants
+description: Install the CookieYes skills so Claude Code, Cursor, Codex, Copilot and other AI coding assistants set up consent with the current API.
+frameworks: [nextjs, react, core]
+---
+
+An AI coding assistant that writes consent code from memory can invent options or use ones that were removed. The CookieYes skills are short guides your assistant reads before it writes code: how to install the banner, gate third-party tools and test the result, written against the current packages.
+
+## Install the skills
+
+Run this in your project:
+
+```npm
+npx skills add cookieyes/cookieyes
+```
+
+The command asks which skills to install and for which assistants. To install one skill only, name it:
+
+```npm
+npx skills add cookieyes/cookieyes --skill install-consent-banner
+```
+
+Then ask your assistant in plain words, for example "add a cookie consent banner". It picks the matching skill from its description.
+
+## The skills
+
+| Skill | Use it to |
+| --- | --- |
+| `install-consent-banner` | Add the banner to a Next.js, React or plain JavaScript site |
+| `gate-third-party-scripts` | Load Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment or any script only after consent, or write your own integration |
+| `test-consent` | Unit-test code that depends on consent with `@cookieyes/test` |
+
+## Without installing anything
+
+- Every docs page is also available as Markdown: use **Copy as Markdown** at the top of a page, or send `Accept: text/markdown` to the page URL.
+- [llms.txt](https://developers.cookieyes.com/llms.txt) lists every page with a one-line description.
+- Assistants that support skill discovery find the same skills at [/.well-known/agent-skills/index.json](https://developers.cookieyes.com/.well-known/agent-skills/index.json).
+
+## Good to know
+
+- The skills are Markdown instructions only. Nothing in them runs on its own.
+- They are updated with each release of the packages. Install them again after you upgrade.
+
+## Next steps
+
+- [Quick start](/docs/getting-started/quick-start): set up the banner yourself
+- [Integrations](/docs/integrations): every ready-made integration

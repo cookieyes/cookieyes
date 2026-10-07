@@ -1,12 +1,14 @@
 "use client";
 
-import type { ConsentCategory } from "@cookieyes/core";
+import { _categoryLabel, _warnUnknownEmbedCategory, type ConsentCategory } from "@cookieyes/core";
 import { type IframeHTMLAttributes, type ReactNode, useEffect, useRef, useState } from "react";
+import { useCategories } from "../hooks/useCategories.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useConsentCategory } from "../hooks/useConsentCategory.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
+import { _tryGetCookieYes } from "../runtime.js";
 
 export type GatedFrameProps = Omit<IframeHTMLAttributes<HTMLIFrameElement>, "src"> & {
   src: string;
@@ -20,6 +22,7 @@ export function GatedFrame({ src, category, placeholder, ...rest }: GatedFramePr
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { theme, colorScheme } = useThemeConfig();
   const t = useTranslations();
+  const categories = useCategories();
   useThemeVars(containerRef, theme, colorScheme);
 
   // Never render a third-party iframe during SSR or the first hydration render:
@@ -29,6 +32,10 @@ export function GatedFrame({ src, category, placeholder, ...rest }: GatedFramePr
   // (no hydration mismatch, no cross-visitor leak).
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!categories.ids.includes(category)) _warnUnknownEmbedCategory(category);
+  }, [categories, category]);
 
   // Latch: once loaded under a committed grant, keep the iframe for the rest of
   // the session. Revoking doesn't swap it back to the placeholder mid-session;
@@ -48,7 +55,14 @@ export function GatedFrame({ src, category, placeholder, ...rest }: GatedFramePr
               return (
                 <>
                   {before}
-                  <strong>{category}</strong>
+                  <strong>
+                    {_categoryLabel(
+                      category,
+                      t,
+                      categories,
+                      _tryGetCookieYes()?.getCategoryText(category),
+                    )}
+                  </strong>
                   {after}
                 </>
               );

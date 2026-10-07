@@ -78,6 +78,13 @@ export {
  * `installNetworkBlocker`/`uninstallNetworkBlocker` are deliberately not
  * re-exported — the config key is still the only declarative path here.
  */
+/**
+ * Re-exported from `@cookieyes/core/iframes` for the same reason, so a React app
+ * can block embeds in HTML it does not render itself (CMS or Markdown content):
+ * `blockIframes(cy.manager, cy)` with `cy` from `getCookieYes()`. Unused, it is
+ * dropped from the bundle like the network blocker.
+ */
+export { blockIframes, type IframeBlockerStore } from "@cookieyes/core/iframes";
 export { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
 // Provider — supplies the per-request regulation so SSR banners are correct
 export {

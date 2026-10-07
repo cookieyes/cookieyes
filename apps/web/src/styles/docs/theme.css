@@ -2723,8 +2723,8 @@
    !important, per the existing #nd-toc a[href^="#"] colour overrides above. */
 #nd-toc {
   padding: 16px 16px 0 28px;
-  top: calc(var(--fd-nav-height) + 44px);
-  max-height: calc(100vh - var(--fd-nav-height) - 68px);
+  top: calc(var(--fd-banner-height, 0px) + var(--fd-nav-height) + 44px);
+  max-height: calc(100vh - var(--fd-banner-height, 0px) - var(--fd-nav-height) - 68px);
   overflow-y: auto;
 }
 

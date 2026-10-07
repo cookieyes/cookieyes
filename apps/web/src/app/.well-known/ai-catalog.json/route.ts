@@ -2,7 +2,7 @@ import { SITE_URL } from "@/lib/site";
 
 /**
  * ARD manifest (agenticresourcediscovery.org): what an agent can use on this host. The
- * docs index and the two skills; there is no API, MCP server or login here.
+ * docs index and the skills; there is no API, MCP server or login here.
  */
 export const dynamic = "force-static";
 
@@ -49,6 +49,19 @@ export function GET() {
           "load Google Analytics only after cookie consent in Next.js",
           "Google Consent Mode v2 with a React consent banner",
           "block Meta Pixel until the user accepts marketing cookies",
+        ],
+      },
+      {
+        identifier: `urn:air:${host}:skill:test-consent`,
+        displayName: "Test code that depends on consent",
+        type: "text/markdown",
+        url: `${SITE_URL}/.well-known/agent-skills/test-consent/SKILL.md`,
+        description:
+          "Skill for unit-testing code that depends on cookie consent with @cookieyes/test: a pretend visitor running the real consent engine in Vitest, Jest or node:test, plus React component tests.",
+        representativeQueries: [
+          "unit test cookie consent logic in Vitest",
+          "test a React component that reads cookie consent",
+          "mock cookie consent in Jest",
         ],
       },
     ],
