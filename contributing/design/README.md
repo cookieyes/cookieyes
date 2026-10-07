@@ -1,7 +1,7 @@
 # Design notes
 
-Notes for whoever changes a sensitive part of the SDK next: what the code guarantees, why that
-guarantee exists, and how it has been broken before. They are for contributors and are not
+Notes for whoever changes a sensitive part of this repository next: what the code guarantees, why
+that guarantee exists, and how it has been broken before. They are for contributors and are not
 published on the docs site.
 
 A note is added or updated when a change introduces a guarantee others must protect. Keep it
