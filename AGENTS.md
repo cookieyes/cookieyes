@@ -21,9 +21,9 @@ README has the full layout. In short: `sdk/*` are the published packages (`core`
 with zero runtime dependencies; `react` and `nextjs` are wiring only; plus `scripts`,
 `translations`, `cli` and `test`), `apps/web` is developers.cookieyes.com (docs source in
 `apps/web/content/shared`, rules in `apps/web/AGENTS.md`), `tools/size` measures bundles,
-`matrix` checks peer compatibility, `docs/design` holds design notes. `skills/` holds the
-guides for the AI tools of people using the SDK; `.agents/skills/` holds the ones for
-contributors (`.agents/README.md` explains both).
+`matrix` checks peer compatibility, `contributing/design` holds design notes for contributors
+(`docs/` is for SDK users). `skills/` holds the guides for the AI tools of people using the SDK;
+`.agents/skills/` holds the ones for contributors (`.agents/README.md` explains both).
 
 ## Commands
 
@@ -43,7 +43,8 @@ pnpm build:web                  # docs site: runs the generators and the doc-exa
   plain lines are better than a helper used once.
 - No new dependencies, devDependencies included, and no `pnpm-lock.yaml` change without asking first.
 - Before changing behaviour, read the module, its tests in `src/__tests__/`, and any note in
-  `docs/design/` about it. The comments in this codebase record past bugs; take them seriously.
+  `contributing/design/` about it. The comments in this codebase record past bugs; take them
+  seriously.
 - A large or unclear task is not started by writing code. Follow `plan-major-change`: research,
   ask the developer, propose, wait.
 - `lane:core` (consent engine, regulation logic, categories, consent records, script and network
@@ -62,8 +63,8 @@ pnpm build:web                  # docs site: runs the generators and the doc-exa
 - An unknown region resolves to the strictest regulation, never the lightest
   (`sdk/core/src/region.ts`).
 - Server and client resolve the same consent state; no hydration mismatch and no banner flash.
-  Read `docs/banner-first-paint.md` before touching banner rendering, `critical.css` or
-  anything server-rendered.
+  Read `contributing/design/banner-first-paint.md` before touching banner rendering,
+  `critical.css` or anything server-rendered.
 - `core`, `react`, `nextjs` and `test` pin their public surface in
   `src/__tests__/exports.test.ts`. Adding or removing an export anywhere is an API change: update
   that test where it exists, the docs and the changeset.
@@ -181,7 +182,7 @@ two sentences.
 
 Nothing internal goes into code, comments, docs, commits or changesets: no ticket numbers, no
 internal document paths, no customer names, no credentials, no links to internal tools. A design
-decision worth keeping goes in `docs/design/` as a note anyone may read.
+decision worth keeping goes in `contributing/design/` as a note anyone may read.
 
 ## Commits, changesets and PRs
 
