@@ -31,7 +31,8 @@ Read, in this order, and note what you learn:
 2. `src/__tests__/exports.test.ts` of each affected package: the public surface you must keep or
    consciously change.
 3. The docs page for the feature in `apps/web/content/shared/`, and the README of the package.
-4. `docs/design/` for a note on the area (its README lists them). Read it fully if one exists.
+4. `contributing/design/` for a note on the area (its README lists them). Read it fully if one
+   exists.
 5. `sdk/test/README.md`, section "Fidelity & limitations", if consent behaviour is involved.
 6. `tools/size/budgets.json`: how much headroom the affected bundle has.
 7. `CONTRIBUTING.md`, section "The Roadmap": is this `lane:core`? Then an approved issue is
@@ -76,8 +77,9 @@ change per commit. Finish with the checklist in the root `AGENTS.md`.
 
 ## Step 5: leave a design note
 
-For a change that adds a guarantee others must protect, add or update a note in `docs/design/`:
-what to protect, why, and how it has broken before. Short. Public. No internal references.
+For a change that adds a guarantee others must protect, add or update a note in
+`contributing/design/` and list it in that folder's README: what to protect, why, and how it has
+broken before. Short. Public. No internal references.
 
 ## Do not
 
