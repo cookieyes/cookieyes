@@ -22,7 +22,9 @@ const customerDir = join(root, "skills");
 const siteList = join(root, "apps/web/src/lib/agent-skills.ts");
 
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const INTERNAL = /^metadata:\s*\n(?:[ \t]+.*\n)*?[ \t]+internal:\s*true\s*$/m;
+// Each skipped line starts with exactly one [ \t], so a line can be split only one way
+// and the match cannot backtrack exponentially.
+const INTERNAL = /^metadata:[ \t]*\n(?:[ \t][^\n]*\n)*?[ \t]+internal:[ \t]*true[ \t]*$/m;
 const errors = [];
 
 const skills = listSkills(sourceDir);
