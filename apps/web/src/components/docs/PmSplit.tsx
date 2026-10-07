@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -28,17 +29,20 @@ type CopyState = "idle" | "loading" | "copied" | "error";
  * design's "both change and revert as one" behaviour. See design doc
  * content-tier-d.md §2.7 for the full comparison.
  *
- * Ships two menu rows only (Copy as Markdown, View as Markdown) — the prototype's
- * third row ("Agent setup", docs.html:2151-2155) links to an `ai-agents` page that
- * does not exist in this docs tree; a seam for it is marked below. The prototype's
- * `pg.id === 'pg-changelog' ? '' : ...` conditional, which existed only to hide that
- * third row on one page, is not ported — with two rows shipped everywhere, it has
- * no purpose. See design doc content-tier-d.md §1/§2.3-2.8 for every other decision
+ * The third row ("Agent setup") links to the `ai-agents` page. Like the prototype, the
+ * changelog leaves it out: the caller passes no `agentSetupHref` there. See design doc
+ * content-tier-d.md §1/§2.3-2.8 for every other decision
  * this component makes versus the prototype (accessibility pattern, click-outside
  * handling, width-pinning, and a verified prototype colour bug it does NOT
  * reproduce).
  */
-export function PmSplit({ markdownUrl }: { markdownUrl: string }) {
+export function PmSplit({
+  markdownUrl,
+  agentSetupHref,
+}: {
+  markdownUrl: string;
+  agentSetupHref?: string | undefined;
+}) {
   const [open, setOpen] = useState(false);
   const [copyState, setCopyState] = useState<CopyState>("idle");
 
@@ -228,18 +232,20 @@ export function PmSplit({ markdownUrl }: { markdownUrl: string }) {
           </span>
         </button>
 
-        {/* Tier D seam: a third row — "Agent setup" / "Install SKILL.md files for
-            your agent" (docs.html:2151-2155), linking to `nav('ai-agents')` — is
-            NOT shipped (design doc §1: no `ai-agents` page exists in this docs
-            tree). Add it here, same shape as the two rows above, once that page
-            exists:
-              <button type="button" role="menuitem" className="cy-doc-pm-row" onClick={...}>
-                <span className="cy-doc-pm-tile"><GearIcon /></span>
-                <span className="cy-doc-pm-tx">
-                  <span className="cy-doc-pm-t">Agent setup<ExternalIcon /></span>
-                  <span className="cy-doc-pm-d">Install SKILL.md files for your agent</span>
-                </span>
-              </button> */}
+        {agentSetupHref && (
+          <Link role="menuitem" className="cy-doc-pm-row" href={agentSetupHref}>
+            <span className="cy-doc-pm-tile">
+              <GearIcon />
+            </span>
+            <span className="cy-doc-pm-tx">
+              <span className="cy-doc-pm-t">
+                Agent setup
+                <ExternalIcon />
+              </span>
+              <span className="cy-doc-pm-d">Install SKILL.md files for your agent</span>
+            </span>
+          </Link>
+        )}
       </div>
 
       <ViewMarkdownDialog ref={viewDialogRef} markdownUrl={markdownUrl} />
@@ -332,6 +338,25 @@ function EyeIcon() {
     >
       <circle cx="12" cy="12" r="2.5" />
       <path d="M21 12c-2.4 3.8-5.4 5.7-9 5.7S5.4 15.8 3 12c2.4-3.8 5.4-5.7 9-5.7s6.6 1.9 9 5.7z" />
+    </svg>
+  );
+}
+
+function GearIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path d="M10.3 4.3a1.7 1.7 0 0 1 3.4 0 1.7 1.7 0 0 0 2.5 1.1 1.7 1.7 0 0 1 2.4 2.4 1.7 1.7 0 0 0 1 2.5 1.7 1.7 0 0 1 0 3.4 1.7 1.7 0 0 0-1 2.5 1.7 1.7 0 0 1-2.4 2.4 1.7 1.7 0 0 0-2.5 1 1.7 1.7 0 0 1-3.4 0 1.7 1.7 0 0 0-2.5-1 1.7 1.7 0 0 1-2.4-2.4 1.7 1.7 0 0 0-1-2.5 1.7 1.7 0 0 1 0-3.4 1.7 1.7 0 0 0 1-2.5 1.7 1.7 0 0 1 2.4-2.4 1.7 1.7 0 0 0 2.5-1.1z" />
+      <circle cx="12" cy="12" r="2.5" />
     </svg>
   );
 }

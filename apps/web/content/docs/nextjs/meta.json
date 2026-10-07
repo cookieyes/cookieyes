@@ -3,7 +3,6 @@
   "root": true,
   "pages": [
     "getting-started",
-    "ai-agents",
     "components",
     "headless",
     "hooks",
@@ -13,6 +12,7 @@
     "embeds",
     "network-blocking",
     "migration",
-    "troubleshooting"
+    "troubleshooting",
+    "ai-agents"
   ]
 }

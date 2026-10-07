@@ -2,7 +2,6 @@
   "title": "SDKs",
   "pages": [
     "getting-started",
-    "ai-agents",
     "store",
     "components",
     "headless",
@@ -13,6 +12,7 @@
     "embeds",
     "network-blocking",
     "migration",
-    "troubleshooting"
+    "troubleshooting",
+    "ai-agents"
   ]
 }

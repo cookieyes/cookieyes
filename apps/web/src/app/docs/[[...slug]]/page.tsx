@@ -235,7 +235,10 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
             See design doc content-tier-d.md. */}
           <div className="cy-doc-page-actions">
-            <PmSplit markdownUrl={md} />
+            <PmSplit
+              markdownUrl={md}
+              agentSetupHref={framework ? `/docs/${framework}/ai-agents` : undefined}
+            />
           </div>
         </div>
 
