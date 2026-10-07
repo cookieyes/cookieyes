@@ -1,8 +1,9 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "Navigation".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
 //
-// The one addition: the dark-mode switch, which the design file does not yet carry —
-// dark-mode-plan.md §3 specifies it for the nav.
+// Two additions: the dark-mode switch, which the design file does not yet carry
+// (dark-mode-plan.md §3 specifies it for the nav); and a sticky `top` that keeps the nav
+// below the announcement strip (components/AnnouncementBar.tsx) while it shows.
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function SiteNav() {
@@ -12,7 +13,7 @@ export function SiteNav() {
       data-screen-label="Navigation"
       style={{
         position: "sticky",
-        top: "0px",
+        top: "var(--cy-ann-offset, 0px)",
         zIndex: "20",
         display: "flex",
         flexDirection: "column",

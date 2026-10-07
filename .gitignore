@@ -70,5 +70,5 @@ tools/size/fixtures/*/pnpm-lock.yaml
 # committed artifact the docs site generates its published figure from.
 tools/size/breakdown.json
 
-# Tempoary folder
-tmp
+# Temporary folder
+tmp/
