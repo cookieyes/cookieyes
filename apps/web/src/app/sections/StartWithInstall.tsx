@@ -1042,7 +1042,7 @@ export function StartWithInstall() {
               color: "var(--cy-fg)",
             }}
           >
-            {"Start with install."}
+            {"Install in React or Next.js"}
           </h2>{" "}
           <p
             style={{
@@ -1300,7 +1300,7 @@ export function StartWithInstall() {
               </div>{" "}
             </div>{" "}
             <a
-              href="/docs/nextjs/getting-started/installation"
+              href="/docs"
               className="scp1"
               style={{
                 marginTop: "var(--cy-space-16)",

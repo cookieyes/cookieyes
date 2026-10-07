@@ -17,6 +17,7 @@ describe("@cookieyes/core public exports", () => {
     "resolveTranslations",
     "installNetworkBlocker",
     "uninstallNetworkBlocker",
+    "blockIframes",
     "resolveCategories",
     "DEFAULT_CATEGORIES",
     "broadcastGoogleConsent",

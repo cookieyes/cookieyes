@@ -1082,6 +1082,13 @@
   text-wrap: pretty;
 }
 
+/* "for Next.js" after a framework page's title: part of the h1 text, so search engines
+   and screen readers read it, but in the secondary colour and lighter so the topic leads. */
+.cy-doc-h1-fw {
+  color: var(--cy-doc-tx3);
+  font-weight: 400;
+}
+
 .cy-doc-page-actions {
   display: flex;
   align-items: center;
@@ -2716,8 +2723,8 @@
    !important, per the existing #nd-toc a[href^="#"] colour overrides above. */
 #nd-toc {
   padding: 16px 16px 0 28px;
-  top: calc(var(--fd-nav-height) + 44px);
-  max-height: calc(100vh - var(--fd-nav-height) - 68px);
+  top: calc(var(--fd-banner-height, 0px) + var(--fd-nav-height) + 44px);
+  max-height: calc(100vh - var(--fd-banner-height, 0px) - var(--fd-nav-height) - 68px);
   overflow-y: auto;
 }
 

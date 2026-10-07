@@ -1,6 +1,7 @@
 # @cookieyes/test
 
-Unit-test your consent-dependent code without a browser.
+Unit-test your consent-dependent code without a browser. Documentation for the SDK:
+**[developers.cookieyes.com](https://developers.cookieyes.com)**.
 
 [![npm](https://img.shields.io/npm/v/@cookieyes/test)](https://www.npmjs.com/package/@cookieyes/test)
 [![license](https://img.shields.io/npm/l/@cookieyes/test)](./LICENSE)

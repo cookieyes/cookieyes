@@ -1,5 +1,17 @@
 # @cookieyes/nextjs
 
+## 0.6.3
+
+### Patch Changes
+
+- 8459865: The READMEs now link to the documentation site, [developers.cookieyes.com](https://developers.cookieyes.com). Their "Docs", "Configuration" and "Which API should I use?" links pointed at Markdown files on GitHub that had moved, so they no longer opened anything; they now open the matching page on the site, for the package's own framework. No code change.
+- Updated dependencies [a193f0a]
+- Updated dependencies [7b2e5d6]
+- Updated dependencies [8459865]
+  - @cookieyes/core@0.9.0
+  - @cookieyes/react@0.11.0
+  - @cookieyes/scripts@0.2.4
+
 ## 0.6.2
 
 ### Patch Changes

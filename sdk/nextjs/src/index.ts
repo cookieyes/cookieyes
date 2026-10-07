@@ -44,6 +44,7 @@ export type {
   GoogleConsentSignal,
   HeaderSource,
   I18nConfig,
+  IframeBlockerStore,
   LanguageInfo,
   OptOutPart,
   PartialTranslations,
@@ -79,6 +80,7 @@ export type {
 export {
   _tryGetCookieYes,
   Banner,
+  blockIframes,
   CookieBanner,
   CookieOptOut,
   CookiePreferences,

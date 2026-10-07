@@ -9,9 +9,11 @@
     "styling",
     "translations",
     "accessibility",
+    "embeds",
     "network-blocking",
     "devtools",
     "migration",
-    "troubleshooting"
+    "troubleshooting",
+    "ai-agents"
   ]
 }

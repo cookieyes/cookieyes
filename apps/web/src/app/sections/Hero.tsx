@@ -1,6 +1,12 @@
 // Ported from design/cydev/CookieYes Landing.dc.html — section "Hero".
 // Markup mirrors the design file; change the design and re-port rather than diverging here.
+import releaseDates from "../../../../../tools/changelog/release-dates.json";
 import sdkManifest from "../../../../../sdk/react/package.json";
+
+// The pill names this release, so it opens this release's own changelog page. A version not
+// dated yet has no page, so it falls back to the changelog index.
+const releaseDate = (releaseDates as Record<string, string>)[`@cookieyes/react@${sdkManifest.version}`];
+const RELEASE_HREF = releaseDate ? `/docs/changelog/${releaseDate}` : "/docs/changelog";
 
 export function Hero() {
   return (
@@ -89,7 +95,7 @@ export function Hero() {
           />{" "}
         </div>{" "}
         <a
-          href="/docs/changelog"
+          href={RELEASE_HREF}
           aria-label="What's new"
           className="scp4"
           style={{
@@ -152,7 +158,9 @@ export function Hero() {
         <h1
           style={{
             margin: "var(--cy-space-16) 0 var(--cy-space-28)",
-            maxWidth: "560px",
+            // 600, not the design's 560: "Cookie" in the H1 (SEO) makes the second line
+            // wide enough that the caret would otherwise wrap onto a line of its own.
+            maxWidth: "600px",
             fontFamily: "Poppins, Inter, sans-serif",
             fontWeight: "500",
             fontSize: "3.5rem",
@@ -162,7 +170,7 @@ export function Hero() {
             whiteSpace: "pre-line",
           }}
         >
-          {"Consent that ships\nin your bundle."}
+          {"Cookie consent that\nships in your bundle."}
           <span
             data-hero-caret=""
             aria-hidden="true"
@@ -434,9 +442,9 @@ export function Hero() {
             </div>{" "}
           </div>{" "}
           <a
-            /* The framework is in the URL, so this always opens the Next.js docs whatever
-               the reader picked last time. */
-            href="/docs/nextjs/getting-started/installation"
+            /* The neutral docs landing, which offers each framework; the two buttons
+               above already go straight to Next.js and React. */
+            href="/docs"
             className="scp1"
             style={{
               marginTop: "var(--cy-space-16)",

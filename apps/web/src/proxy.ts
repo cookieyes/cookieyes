@@ -5,6 +5,10 @@ import { type NextRequest, NextResponse } from "next/server";
  * from the same URL: docs pages from /api/md (the "Copy as Markdown" text), the landing
  * page and the playground from hand-written files. Browsers never ask for Markdown, so
  * they are unaffected.
+ *
+ * The Markdown responses carry `Vary: Accept` (set by the routes themselves). The HTML
+ * can't: the pages are prerendered, and on Vercel a prerendered page keeps the headers
+ * Next stored for it at build time, whatever next.config or vercel.json add.
  */
 const PAGE_MARKDOWN: Record<string, string> = {
   "/": "/api/page-md/home",
@@ -22,5 +26,5 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-// The bare /docs redirects to a framework root and has no Markdown form.
-export const config = { matcher: ["/", "/playground", "/docs/:path+"] };
+// `/docs/:path*` includes the bare /docs, the framework chooser (served from /api/md).
+export const config = { matcher: ["/", "/playground", "/docs/:path*"] };

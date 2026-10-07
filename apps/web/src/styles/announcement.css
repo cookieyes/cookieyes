@@ -1,0 +1,321 @@
+/* Announcement strip (components/AnnouncementBar.tsx), transcribed from the design's
+   "Top announcement banners" board. The strip takes the opposite tone of the page so it
+   stands out: dark on the light theme, light on the dark one. */
+
+/* Registered so it can transition: on dismiss the sticky headers below the strip slide up
+   with it, on the same curve, instead of jumping once it has gone. */
+@property --cy-ann-h {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+/* --cy-ann-h is the strip's live height, set on <html> by the script after the strip and kept
+   current by the component; 0 when it is hidden. --cy-ann-offset is how far the sticky headers
+   sit below the top, and where in-page links land: the strip's height while it is sticky.
+   Fumadocs offsets its own header, sidebar and TOC by --fd-banner-height. */
+:root {
+  --cy-ann-offset: var(--cy-ann-h);
+  --fd-banner-height: var(--cy-ann-offset);
+  scroll-padding-top: var(--cy-ann-offset);
+}
+
+/* Phones: the strip scrolls away with the page. Kept sticky, it would hold a third of a docs
+   page's screen together with the docs header and the "On this page" bar. */
+@media (max-width: 600px) {
+  :root {
+    --cy-ann-offset: 0px;
+  }
+}
+
+html[data-cy-ann="closing"] {
+  transition: --cy-ann-h 0.18s ease;
+}
+
+.cy-ann {
+  /* The content lines up with the header below it: the landing nav's centred column and
+     gutter here, the full-width docs header further down. */
+  --cy-ann-container: 1152px;
+  --cy-ann-gutter: clamp(1rem, 4vw + 0.5rem, 3rem);
+  --cy-ann-bg: #171a21;
+  --cy-ann-border: rgba(255, 255, 255, 0.08);
+  --cy-ann-ink: #cecdc3;
+  --cy-ann-muted: #878580;
+  --cy-ann-link: #7dbef8;
+  --cy-ann-link-hover: #b9d7fd;
+  --cy-ann-focus: #cecdc3;
+  --cy-ann-ghost-hover: rgba(255, 255, 255, 0.08);
+  --cy-ann-ghost-press: rgba(255, 255, 255, 0.14);
+  --cy-ann-dot: rgba(255, 255, 255, 0.14);
+  --cy-ann-diff: #879a39;
+  --cy-ann-mark: #7dbef8;
+  --cy-ann-pill-fill: #0a3c44;
+  --cy-ann-pill-edge: #126571;
+  --cy-ann-pill-ink: #94dce9;
+
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--cy-ann-bg);
+  border-bottom: 1px solid var(--cy-ann-border);
+  color: var(--cy-ann-ink);
+  font-family: var(--font-ui);
+  transition:
+    max-height 0.18s ease,
+    opacity 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-cy-ann="closing"],
+  .cy-ann {
+    transition: none;
+  }
+}
+
+.dark .cy-ann {
+  --cy-ann-bg: #e1e3e6;
+  --cy-ann-border: #e3e5f1;
+  --cy-ann-ink: #14142a;
+  --cy-ann-muted: #4e4b66;
+  --cy-ann-link: #0d47a1;
+  --cy-ann-link-hover: #0d47a1;
+  --cy-ann-focus: #136fe8;
+  --cy-ann-ghost-hover: rgba(0, 0, 0, 0.04);
+  --cy-ann-ghost-press: rgba(0, 0, 0, 0.08);
+  --cy-ann-dot: rgba(20, 20, 42, 0.2);
+  --cy-ann-diff: #00754e;
+  --cy-ann-mark: #136fe8;
+  --cy-ann-pill-fill: #bdf4f6;
+  --cy-ann-pill-edge: #5dd2d8;
+  --cy-ann-pill-ink: #0e4648;
+}
+
+/* The loud look: a solid pill in the page's tone instead of a tint of the strip. */
+.cy-ann[data-kind="breaking"] {
+  --cy-ann-pill-fill: #bdf4f6;
+  --cy-ann-pill-edge: #bdf4f6;
+  --cy-ann-pill-ink: #0e4648;
+}
+
+.dark .cy-ann[data-kind="breaking"] {
+  --cy-ann-pill-fill: #0a3c44;
+  --cy-ann-pill-edge: #0a3c44;
+  --cy-ann-pill-ink: #94dce9;
+}
+
+/* The component animates max-height from the strip's real height to 0 alongside this. */
+.cy-ann[data-closing] {
+  opacity: 0;
+}
+
+/* Decorative dot grid, faded out to the right; the coloured mark tells the kinds apart. */
+.cy-ann-motif {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  /* The left gutter, so the dots never run under the text. */
+  width: max(var(--cy-ann-gutter), calc(50% - var(--cy-ann-container) / 2 + var(--cy-ann-gutter)));
+  overflow: hidden;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, black 45%, transparent 100%);
+  mask-image: linear-gradient(90deg, black 45%, transparent 100%);
+}
+
+.cy-ann-motif svg {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: block;
+  transform: translateY(-50%);
+}
+
+.cy-ann-dot {
+  fill: var(--cy-ann-dot);
+}
+
+.cy-ann[data-kind="release"] .cy-ann-mark {
+  fill: var(--cy-ann-diff);
+}
+
+.cy-ann[data-kind="breaking"] .cy-ann-mark {
+  fill: var(--cy-ann-mark);
+}
+
+.cy-ann[data-kind="event"] .cy-ann-mark {
+  fill: #e89a1f;
+}
+
+.cy-ann-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  max-width: var(--cy-ann-container);
+  margin: 0 auto;
+  padding: 8px var(--cy-ann-gutter);
+}
+
+.cy-ann-content {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.cy-ann-pill {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 24px;
+  padding: 0 12px;
+  border: 1px solid var(--cy-ann-pill-edge);
+  border-radius: 10px;
+  background: var(--cy-ann-pill-fill);
+  color: var(--cy-ann-pill-ink);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.cy-ann-message {
+  flex: 1 1 160px;
+  min-width: 0;
+  color: var(--cy-ann-ink);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.cy-ann-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  border-radius: 4px;
+  color: var(--cy-ann-link);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-decoration: none;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
+.cy-ann-link:hover {
+  color: var(--cy-ann-link-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cy-ann-dismiss {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cy-ann-muted);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.cy-ann-dismiss:hover {
+  background: var(--cy-ann-ghost-hover);
+}
+
+.cy-ann-dismiss:active {
+  background: var(--cy-ann-ghost-press);
+}
+
+.cy-ann-link:focus-visible,
+.cy-ann-dismiss:focus-visible {
+  outline: 2px solid var(--cy-ann-focus);
+  outline-offset: 2px;
+}
+
+/* Phones: the link text is the first thing to give way. It stays in the link's name for
+   screen readers, the arrow stays on screen, and the link's target stretches over the whole
+   message, so the text keeps to two lines down to 320px wide. */
+@media (max-width: 600px) {
+  .cy-ann {
+    position: relative;
+  }
+
+  .cy-ann-inner {
+    align-items: flex-start;
+  }
+
+  .cy-ann-content {
+    position: relative;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+  }
+
+  .cy-ann-message {
+    flex: none;
+    width: 100%;
+    text-wrap: pretty;
+  }
+
+  .cy-ann-link {
+    margin-left: 0;
+  }
+
+  .cy-ann-link::before {
+    content: " ";
+    white-space: pre;
+  }
+
+  .cy-ann-link-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .cy-ann-link::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+  }
+
+  .cy-ann-link:focus-visible {
+    outline: none;
+  }
+
+  .cy-ann-link:focus-visible::after {
+    outline: 2px solid var(--cy-ann-focus);
+    outline-offset: 2px;
+  }
+}
+
+/* Docs pages: the header spans the window with a 28px gutter (20px from 640px down). */
+body:has(#nd-notebook-layout) .cy-ann {
+  --cy-ann-container: 100%;
+  --cy-ann-gutter: 28px;
+}
+
+@media (max-width: 640px) {
+  body:has(#nd-notebook-layout) .cy-ann {
+    --cy-ann-gutter: 20px;
+  }
+}
+
+html[data-cy-ann="off"] .cy-ann {
+  display: none;
+}

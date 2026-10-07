@@ -8,7 +8,7 @@ frameworks: [nextjs, react]
 
 Renders a placeholder instead of the iframe until its category is granted. The placeholder says which cookies are needed and has a button that opens the preferences dialog. Once the visitor agrees, the iframe appears in its place, without a reload.
 
-Use it for embeds that set cookies: YouTube, Vimeo, Google Maps, Spotify, social posts, Calendly.
+Use it for embeds that set cookies: YouTube, Vimeo, Google Maps, Spotify, social posts, Calendly. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds).
 
 ## Add it
 
@@ -82,7 +82,7 @@ Give the placeholder the same size as the iframe, or the page jumps when it swap
 ## Common mistakes
 
 **The embed never appears, even after accepting.**
-The `category` is not in your `categories` list, or the visitor granted a different one.
+The `category` is not in your `categories` list, or the visitor granted a different one. A development build names an unknown category in the console.
 
 **The placeholder flashes on every load, even after consent.**
 Expected: consent is only known in the browser, so the placeholder renders first. Give it the iframe's size so nothing moves.
@@ -90,4 +90,5 @@ Expected: consent is only known in the browser, so the placeholder renders first
 ## Next steps
 
 - [GatedScript](/docs/components/gated-script): the same idea for scripts
+- [Block embeds](/docs/embeds): iframes in HTML you do not render yourself
 - [Translations](/docs/translations): the placeholder text in every language

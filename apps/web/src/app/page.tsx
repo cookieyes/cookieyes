@@ -8,6 +8,7 @@ import { LandingMotion } from "./motion/LandingMotion";
 import { SearchTriggers } from "./SearchTriggers";
 import { MAIN_CONTENT_ID } from "./SkipLink";
 import { BuiltToLast } from "./sections/BuiltToLast";
+import { FAQ_ITEMS, Faq } from "./sections/Faq";
 import { GridFrame } from "./sections/GridFrame";
 import { Hero } from "./sections/Hero";
 import { OwnTheRecord } from "./sections/OwnTheRecord";
@@ -20,7 +21,7 @@ import { WhatItDoes } from "./sections/WhatItDoes";
 import { WorksWithYourStack } from "./sections/WorksWithYourStack";
 
 export const metadata: Metadata = pageMetadata({
-  title: "CookieYes for Developers: Consent that ships in your bundle",
+  title: "React Cookie Consent SDK for React & Next.js | CookieYes",
   absoluteTitle: true,
   description:
     "Open-source cookie consent SDK for React and Next.js. Manage consent in code, control when third-party tools load, and keep everything in your frontend.",
@@ -40,7 +41,8 @@ const STRUCTURED_DATA = {
       "@id": "https://www.cookieyes.com/#organization",
       name: "CookieYes",
       url: "https://www.cookieyes.com",
-      logo: `${SITE_URL}/apple-icon`,
+      // A static file, so the URL Google stores for the logo never changes.
+      logo: `${SITE_URL}/logo.png`,
       sameAs: [REPO_URL],
     },
     {
@@ -60,6 +62,15 @@ const STRUCTURED_DATA = {
       programmingLanguage: "TypeScript",
       license: "https://opensource.org/licenses/MIT",
       author: { "@id": "https://www.cookieyes.com/#organization" },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": `${SITE_URL}/#faq`,
+      mainEntity: FAQ_ITEMS.map((item) => ({
+        "@type": "Question",
+        name: item.question,
+        acceptedAnswer: { "@type": "Answer", text: item.answer },
+      })),
     },
   ],
 };
@@ -90,6 +101,7 @@ export default function LandingPage() {
         <WorksWithYourStack />
         <OwnTheRecord />
         <BuiltToLast />
+        <Faq />
         <StartWithInstall />
       </main>
       <SiteFooter />

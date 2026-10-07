@@ -4,7 +4,9 @@
   "pages": [
     "getting-started",
     "store",
+    "embeds",
     "network-blocking",
-    "migration"
+    "migration",
+    "ai-agents"
   ]
 }

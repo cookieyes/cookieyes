@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono, Inter, Poppins } from "next/font/google";
 import "./global.css";
 import { Analytics } from "@/components/Analytics";
+import { AnnouncementGate, AnnouncementStrip } from "@/components/Announcement";
 import { ConsentBanner } from "@/components/ConsentBanner";
 import { getSearchIndex } from "@/lib/search-index";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
@@ -42,12 +43,26 @@ const poppins = Poppins({
  * Defaults every page inherits: absolute URLs resolve against the public origin, a page's
  * own title is suffixed with the site name, and links shared on Slack, X or LinkedIn get a
  * card with the shared image in app/opengraph-image.tsx. Each page sets its own canonical.
+ *
+ * The icons are static files in public/, rendered from public/icon.svg, so each keeps one
+ * URL across deploys (Next's app/icon convention appends a content hash). Google Search
+ * shows a site's favicon only from a stable, crawlable raster icon whose side is a
+ * multiple of 48px; browsers that support it still pick the SVG.
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
   openGraph: { siteName: SITE_NAME, type: "website", locale: "en_US" },
   twitter: { card: "summary_large_image" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon-48x48.png", type: "image/png", sizes: "48x48" },
+      { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  },
 };
 
 /**
@@ -68,9 +83,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         <ConsentBanner />
+        <AnnouncementGate />
       </head>
       <body>
         <SkipLink />
+        <AnnouncementStrip />
         <Providers pageIndex={getSearchIndex()}>{children}</Providers>
         <Analytics />
       </body>

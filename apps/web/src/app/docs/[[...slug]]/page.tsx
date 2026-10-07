@@ -6,7 +6,7 @@ import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layo
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
 import { MAIN_CONTENT_ID } from "@/app/SkipLink";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
@@ -15,7 +15,6 @@ import { TocFooter } from "@/components/docs/TocFooter";
 import { JsonLd } from "@/components/JsonLd";
 import { getMDXComponents } from "@/components/mdx";
 import {
-  DEFAULT_FRAMEWORK,
   FRAMEWORK_LABEL,
   type Framework,
   frameworkOf,
@@ -116,10 +115,9 @@ function issueUrl(title: string, url: string): string {
 
 export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
   const params = await props.params;
-  // `/docs` itself has no page: every section lives under a framework root, and the
-  // sidebar and header choose theirs from the URL. Old un-prefixed links are redirected in
-  // next.config.mjs; this handles the bare path.
-  if (!params.slug?.length) redirect(`/docs/${DEFAULT_FRAMEWORK}`);
+  // `/docs` is the neutral landing page (content/docs/index.mdx) that sends each reader
+  // to their framework; every other section lives under a framework root. Old
+  // un-prefixed links are redirected in next.config.mjs.
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
@@ -226,12 +224,21 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
           {/* A release page's frontmatter title carries "react X.Y.Z: Headline" so the sidebar
             and breadcrumb read like the prototype's changelog nav, but its own <h1> shows
             the bare version (the headline is already the summary's lead-in just below). */}
-          <DocsTitle>{isReleasePage ? releaseVersionLabel : page.data.title}</DocsTitle>
+          {/* A framework page's h1 names its framework ("CSP for Next.js"), so the copies of a
+            page under each framework don't share a heading. The sidebar and breadcrumb keep
+            the short title; the suffix is muted so the topic still leads. */}
+          <DocsTitle>
+            {isReleasePage ? releaseVersionLabel : page.data.title}
+            {framework && <span className="cy-doc-h1-fw"> for {FRAMEWORK_LABEL[framework]}</span>}
+          </DocsTitle>
 
           {/* .pm-split split-button (docs.html:157-179) — Copy as Markdown / caret / menu.
             See design doc content-tier-d.md. */}
           <div className="cy-doc-page-actions">
-            <PmSplit markdownUrl={md} />
+            <PmSplit
+              markdownUrl={md}
+              agentSetupHref={framework ? `/docs/${framework}/ai-agents` : undefined}
+            />
           </div>
         </div>
 

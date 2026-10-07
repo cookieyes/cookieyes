@@ -1880,3 +1880,111 @@ a[data-screen-label="Top banner"]:hover .cy-banner-arrow {
      here put a nearer ancestor in the way, which left the globe on its light values in
      dark mode. */
 }
+
+/* ── FAQ (not in the design file; see sections/Faq.tsx) ─────────────────── */
+
+.cy-page .cy-faq {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+}
+
+/* Title on the left of the questions, centred on the list's height rather than pinned
+   to its top. */
+.cy-page .cy-faq-inner {
+  width: 100%;
+  max-width: 1152px;
+  padding: var(--cy-section-y) var(--cy-space-gutter);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: var(--cy-space-48);
+  align-items: center;
+}
+
+.cy-page .cy-faq-title {
+  margin: 0;
+  font-family: Poppins, Inter, sans-serif;
+  font-weight: 500;
+  font-size: 2.25rem;
+  line-height: 40px;
+  letter-spacing: -0.9px;
+  color: var(--cy-fg);
+  text-wrap: balance;
+}
+
+.cy-page .cy-faq-list {
+  border-top: 1px solid rgba(var(--cy-line-rgb), 0.18);
+}
+
+.cy-page .cy-faq-item {
+  border-bottom: 1px solid rgba(var(--cy-line-rgb), 0.18);
+}
+
+.cy-page .cy-faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cy-space-16);
+  padding: var(--cy-space-20, 20px) 0;
+  font-family: Inter, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  line-height: 24px;
+  color: var(--cy-fg);
+  cursor: pointer;
+  list-style: none;
+}
+
+.cy-page .cy-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+.cy-page .cy-faq-q:hover {
+  color: var(--cy-accent);
+}
+
+.cy-page .cy-faq-q:focus-visible {
+  outline: 2px solid var(--cy-accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.cy-page .cy-faq-chevron {
+  flex-shrink: 0;
+  color: var(--cy-muted);
+  transition: transform 0.2s ease;
+}
+
+.cy-page .cy-faq-item[open] .cy-faq-chevron {
+  transform: rotate(180deg);
+}
+
+.cy-page .cy-faq-a {
+  margin: 0;
+  padding: 0 var(--cy-space-32) var(--cy-space-20, 20px) 0;
+  font-family: Inter, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.9375rem;
+  line-height: 24px;
+  color: var(--cy-muted);
+  max-width: 620px;
+  text-wrap: pretty;
+}
+
+@media (max-width: 860px) {
+  .cy-page .cy-faq-inner {
+    grid-template-columns: 1fr;
+    gap: var(--cy-space-24);
+  }
+  .cy-page .cy-faq-title {
+    font-size: 1.75rem;
+    line-height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cy-page .cy-faq-chevron {
+    transition: none;
+  }
+}

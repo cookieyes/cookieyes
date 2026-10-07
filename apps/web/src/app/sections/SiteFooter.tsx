@@ -114,7 +114,7 @@ export function SiteFooter() {
                 whiteSpace: "pre-line",
               }}
             >
-              {"Open-source, frontend-native cookie consent.\nMIT licensed."}
+              {"Open-source cookie consent library for React and Next.js.\nMIT licensed."}
             </span>{" "}
           </div>{" "}
           <div
@@ -150,7 +150,7 @@ export function SiteFooter() {
                 {"Product"}
               </span>{" "}
               <a
-                href="/docs/nextjs/getting-started/installation"
+                href="/docs"
                 className="scpf"
                 style={{
                   padding: "var(--cy-space-12) 0 var(--cy-space-12)",

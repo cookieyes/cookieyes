@@ -3,8 +3,8 @@
 Thanks for your interest in contributing! This document explains how to set up the
 project, the standards we hold code to, and how releases work. It applies across all
 CookieYes packages in this monorepo (`@cookieyes/core`, `@cookieyes/react`,
-`@cookieyes/nextjs`, `@cookieyes/cli`, `@cookieyes/translations`) — the process is the
-same no matter which package you're working on.
+`@cookieyes/nextjs`, `@cookieyes/scripts`, `@cookieyes/cli`, `@cookieyes/translations`,
+`@cookieyes/test`) — the process is the same no matter which package you're working on.
 
 ## Ways to contribute
 
@@ -68,8 +68,8 @@ someone *else* to add one.)
    until the declared category is granted.
 2. Export its config type and factory from `sdk/scripts/src/index.ts`.
 3. Add tests at `sdk/scripts/src/__tests__/<vendor-id>.test.ts`.
-4. Add a docs page under `apps/web/content/docs/{react,nextjs}/integrations/` and list it in
-   that folder's `meta.json`.
+4. Add a docs page under `apps/web/content/shared/integrations/` and list it in that folder's
+   `meta.json`. (`apps/web/content/docs/*` is generated from `content/shared`; don't edit it.)
 5. Add a changeset (`pnpm changeset`) for `@cookieyes/scripts`.
 
 **A language** (`@cookieyes/translations`):
@@ -136,6 +136,31 @@ packages live under `sdk/*`.
   `fix(core): stop tracking scripts without a full page reload`. Keep commits focused —
   one logical change per commit where practical.
 
+## Working with AI coding tools
+
+You're welcome to use Claude Code, Codex, Cursor, Antigravity, Copilot or any other agent. The
+repo carries the instructions they need, so every tool works to the same standard:
+
+- [`AGENTS.md`](./AGENTS.md) holds the rules. Codex, Cursor, Antigravity and Copilot load it on
+  their own; Claude Code loads it through `CLAUDE.md`. `apps/web/AGENTS.md` adds the docs-site
+  rules when an agent works there. The layout is explained in [`.agents/README.md`](./.agents/README.md).
+- `.agents/skills/*/SKILL.md` are step-by-step guides for recurring tasks (adding a vendor or a
+  locale, writing a docs page or a changeset, planning a larger change). Tools that support
+  skills pick them up; `.claude/skills/` links to the same files for Claude Code. On Windows
+  without symlink support those links check out as text files, and the table at the top of
+  `AGENTS.md` still points the agent at the right guide.
+- `skills/*/SKILL.md` are different: guides for the AI tools of people *using* the SDK. They
+  install with `npx skills add cookieyes/cookieyes` and the docs site serves them. That command
+  also searches `.agents/skills/`, so every contributor skill carries `metadata.internal: true`
+  to stay out of users' projects. `context7.json` steers answers from Context7 the same way.
+- `pnpm agents:check` validates the skill files and links; CI runs it. `pnpm build:web`
+  type-checks the code in every `skills/` guide against the built SDK, so a guide that no
+  longer matches the API fails CI.
+
+The agent does the typing; you own the result. Read the whole diff, run the checks, and make
+sure the PR describes what changed and why. If an agent keeps making a mistake these files don't
+cover, fix the files in the same PR — that's how the rules improve.
+
 ## Pull request workflow
 
 1. Fork the repo and create a feature branch off `main`.
@@ -155,6 +180,11 @@ Releases are automated with [Changesets](https://github.com/changesets/changeset
   [provenance](https://docs.npmjs.com/generating-provenance-statements) via GitHub Actions.
 
 You do **not** publish from your machine — `npm publish` is performed only by CI.
+
+Keeping the AI guidance current is part of every release. A PR that changes a public API, a
+config option or a default updates `skills/` and the `rules` in `context7.json` in the same PR.
+Before merging the "Version Packages" PR, a maintainer reads its changelog against both and
+fixes anything they no longer describe. `@cookieyes/sdk-maintainers` owns these files.
 
 ## Licensing
 

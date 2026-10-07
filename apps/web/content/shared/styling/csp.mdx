@@ -20,7 +20,7 @@ No `'unsafe-inline'`, no nonce. The banner, both dialogs, the recall button and 
 | `script-src` | `'self'` | Always |
 | `script-src` | The vendor's origin, such as `https://www.googletagmanager.com` | For every tool you load with `GatedScript` or an [integration](/docs/integrations) |
 | `connect-src` | Your `apiUrl` origin | `mode: "self-hosted"` |
-| `frame-src` | The embed's origin | Every `GatedFrame` |
+| `frame-src` | The embed's origin | Every `GatedFrame`, and every iframe [blocked until consent](/docs/embeds) |
 
 Roll a new policy out with `Content-Security-Policy-Report-Only` first, and click through the whole flow, including opening the preferences dialog: it exists in the page only while open, so a policy that passes on load can still block it.
 

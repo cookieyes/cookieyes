@@ -10,6 +10,7 @@
 @import "../styles/docs/index.css";
 /* Playground: its own cy-pg-* namespace, overriding nothing above. */
 @import "../styles/playground/index.css";
+@import "../styles/announcement.css";
 
 html {
   scrollbar-gutter: stable;

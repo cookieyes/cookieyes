@@ -22,7 +22,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#api">API</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
-  <a href="https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx">Docs</a> ·
+  <a href="https://developers.cookieyes.com/docs/core/getting-started/configuration">Docs</a> ·
   <a href="https://github.com/orgs/cookieyes/projects/3">Roadmap</a>
 </p>
 
@@ -65,7 +65,7 @@ bun add @cookieyes/core
 **2. Initialise the runtime**
 
 > **Which API should I use?** `consentStore.subscribe` is the recommended way to
-> read consent outside React. See the [shared decision tree](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/which-api.mdx)
+> read consent outside React. See the [shared decision tree](https://developers.cookieyes.com/docs/nextjs/getting-started/which-api)
 > if you're not sure which API applies to your situation — core also exposes a
 > handful of lower-level options (see [Low-level / advanced API](#low-level--advanced-api))
 > for specific edge cases.
@@ -213,9 +213,9 @@ still works today and logs a one-time console warning, and will be removed
 Both accept the canonical `CookieYesConfig` and return `{ consentManager, consentStore }` (a
 singleton — call `resetConsentRuntime()` to clear it, mainly for tests). `initCookieYes` is an
 alias provided so one setup name reads across every package. Every option is documented once in
-**[Configuration](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx)**.
+**[Configuration](https://developers.cookieyes.com/docs/core/getting-started/configuration)**.
 Migrating off the deprecated `overrides.regulation` / `backendURL` keys? See the
-**[migration guide](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/migration.mdx)**.
+**[migration guide](https://developers.cookieyes.com/docs/core/migration)**.
 
 **`config`** (`CookieYesConfig`):
 
@@ -279,6 +279,34 @@ off(); // stop listening when you're done
 This is the recommended way to react to consent. The paths below still work but
 aren't the primary one.
 
+## Blocking embeds
+
+Put an iframe's address in `data-cy-src` instead of `src`, and its category in
+`data-cy-category`. The browser loads nothing from `data-cy-src`, so nothing
+reaches YouTube, Vimeo or a map provider before consent:
+
+```html
+<iframe
+  data-cy-src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  data-cy-category="functional"
+  width="560"
+  height="315"
+  title="Product tour"
+></iframe>
+```
+
+```ts
+import { initCookieYes } from "@cookieyes/core";
+import { blockIframes } from "@cookieyes/core/iframes";
+
+const { consentManager, consentStore } = initCookieYes({ mode: "cookie-only" });
+blockIframes(consentManager, consentStore);
+```
+
+Until the category is granted, each iframe shows a placeholder at its own size,
+with a button that allows the category. Iframes added later are handled too.
+See [Block embeds](https://developers.cookieyes.com/docs/core/embeds).
+
 ## Translations & language
 
 For a framework-less custom UI, `consentStore` carries the active language and
@@ -298,7 +326,7 @@ await consentStore.setLanguage("fr");   // switch live; loads via i18n.loadLangu
 ```
 
 Missing text falls back to English; custom categories translate by id (see the
-[configuration guide](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx)).
+[configuration guide](https://developers.cookieyes.com/docs/core/getting-started/configuration)).
 In React, use the `useTranslations()` / `useLanguage()` hooks instead.
 
 ## Region-based regulation (geo-detection)
@@ -354,7 +382,7 @@ is lost.
 There are three layers:
 
 1. **Network blocking** (`networkBlocker` / `blockNetwork`) — see
-   [Network blocking](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/network-blocking.mdx) for what it
+   [Network blocking](https://developers.cookieyes.com/docs/core/network-blocking) for what it
    can and cannot stop, its measured cost, and starter rules for common vendors. It intercepts
    `fetch`, `XMLHttpRequest`, **and `navigator.sendBeacon`** to blocked domains,
    in real time, for as long as the page is open. `sendBeacon` matters because
@@ -587,7 +615,7 @@ Still stuck? [Open an issue](https://github.com/cookieyes/cookieyes/issues).
 
 - [Open an issue](https://github.com/cookieyes/cookieyes/issues) — bug reports and feature requests.
 - Email — [support@cookieyes.com](mailto:support@cookieyes.com).
-- [Full documentation](https://github.com/cookieyes/cookieyes/blob/main/apps/web/content/docs/getting-started/configuration.mdx).
+- [Full documentation](https://developers.cookieyes.com/docs/core/getting-started/configuration).
 
 _(A community chat channel is on the roadmap.)_
 
