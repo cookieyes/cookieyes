@@ -49,7 +49,10 @@ resolve a production `next build` to `@cookieyes/devtools`'s stub entry, which r
 touches nothing. `measure.mjs` also greps every emitted chunk of this fixture for marker strings
 that exist only in the real panel (`cyd-*` classes, tab labels, the `__COOKIEYES_DEVTOOLS_REAL__`
 sentinel) and fails `--check` if any is found — the real proof that the real panel never reaches a
-production bundle, independent of the byte-ceiling check.
+production bundle, independent of the byte-ceiling check. The fixture also imports
+`@cookieyes/devtools/styles.css` as the docs say to, and the check scans the emitted stylesheets
+too: that export resolves to an empty stub in production the same way, and before it did, the
+whole panel stylesheet reached production while the JS check stayed green.
 
 ### An opt-in fixture
 

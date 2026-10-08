@@ -11,6 +11,9 @@
  */
 
 import { CookieYesDevtools } from "@cookieyes/devtools";
+// Imported as the docs say to, so the content check below proves the
+// stylesheet is stubbed out of production too, not only the JS.
+import "@cookieyes/devtools/styles.css";
 
 export function DevtoolsRoot() {
   return <CookieYesDevtools position="bottom-right" />;

@@ -188,6 +188,21 @@ function measureFiles(files) {
 // ---------------------------------------------------------------------------
 
 /** Every `.js` Turbopack emitted under `.next/static`, as absolute paths. */
+/** Every stylesheet a fixture's build emitted, for the devtools content check. */
+function emittedStylesheets(appDir) {
+  const root = join(appDir, ".next", "static");
+  const found = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir).sort()) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (name.endsWith(".css")) found.push(full);
+    }
+  };
+  if (existsSync(root)) walk(root);
+  return found;
+}
+
 function emittedChunks(appDir) {
   const root = join(appDir, ".next", "static");
   const found = [];
@@ -694,7 +709,14 @@ const DEVTOOLS_REAL_PANEL_MARKERS = [
 if (measured.devtools) {
   const devtoolsAppDir = join(FIXTURES, "with-nextjs-devtools");
   const devtoolsSets = chunkSets(devtoolsAppDir);
-  const allChunks = new Set([...devtoolsSets.initial, ...devtoolsSets.total]);
+  // Stylesheets too: the docs have users import `@cookieyes/devtools/styles.css`,
+  // and an unconditional export once shipped the whole panel stylesheet to
+  // production while the JS check above stayed green.
+  const allChunks = new Set([
+    ...devtoolsSets.initial,
+    ...devtoolsSets.total,
+    ...emittedStylesheets(devtoolsAppDir),
+  ]);
   for (const file of allChunks) {
     const source = readFileSync(file, "utf8");
     for (const marker of DEVTOOLS_REAL_PANEL_MARKERS) {
