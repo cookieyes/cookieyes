@@ -1,4 +1,11 @@
-# @cookieyes/test
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes Consent SDK" width="820">
+  </picture>
+</p>
+
+<h1 align="center">@cookieyes/test</h1>
 
 Unit-test your consent-dependent code without a browser. Documentation for the SDK:
 **[developers.cookieyes.com](https://developers.cookieyes.com)**.

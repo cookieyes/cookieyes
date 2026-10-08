@@ -1,4 +1,11 @@
-# `@cookieyes/devtools`
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes Consent SDK" width="820">
+  </picture>
+</p>
+
+<h1 align="center">@cookieyes/devtools</h1>
 
 An in-page debugging panel for the CookieYes consent SDK — see live what the SDK believes and does,
 test other regions locally without a VPN, and be provably absent from your production bundle.
