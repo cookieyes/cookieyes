@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/devtools",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "description": "In-page debugging panel for the CookieYes consent SDK — dev-only, provably absent from production bundles",
   "keywords": [
     "cookie consent",
@@ -67,8 +67,8 @@
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
-    "@cookieyes/core": ">=0.8.0 <1.0.0",
-    "@cookieyes/react": ">=0.10.0 <1.0.0",
+    "@cookieyes/core": ">=0.11.0 <1.0.0",
+    "@cookieyes/react": ">=0.13.0 <1.0.0",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0"
   },
