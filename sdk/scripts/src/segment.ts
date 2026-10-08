@@ -1,5 +1,6 @@
 import type { Cleanup, Integration } from "@cookieyes/core";
 import { deleteCookie } from "./cookies.js";
+import { devTrackScript } from "./dev-queue.js";
 
 export type SegmentConfig = {
   /** Your Segment source write key. Public by design — safe in browser code. */
@@ -140,6 +141,7 @@ function ensureSegment(writeKey: string): HTMLScriptElement | null {
   script.id = SCRIPT_ID;
   script.async = true;
   script.src = `${CDN}/${writeKey}/analytics.min.js`;
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }

@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { _clearScriptRegistry, applyScripts, registerScript } from "../scripts.js";
 import type { ConsentCategory } from "../types.js";
 
+/** Declared locally — see the identical note in `deprecations.ts`. */
+declare const process: { env: { NODE_ENV?: string | undefined } };
+
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueEntry[] };
+
 function categories(overrides: Partial<Record<ConsentCategory, boolean>> = {}) {
   return {
     necessary: true,
@@ -145,5 +151,47 @@ describe("_clearScriptRegistry", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe("registerScript devtools instrumentation", () => {
+  function withNodeEnv(env: string, run: () => void): void {
+    const original = process.env.NODE_ENV;
+    process.env.NODE_ENV = env;
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    try {
+      run();
+    } finally {
+      process.env.NODE_ENV = original;
+      delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    }
+  }
+
+  it("records each registered script on the devtools queue, before consent", () => {
+    withNodeEnv("development", () => {
+      const id = uniqueId();
+      registerScript({ id, src: "https://cdn.example.com/s.js", category: "analytics" });
+      const pushed = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ?? []).filter(
+        (e) => e.k === "s",
+      );
+      expect(pushed).toHaveLength(1);
+      expect(pushed[0]?.d).toEqual({
+        id,
+        src: "https://cdn.example.com/s.js",
+        category: "analytics",
+        via: "registerScript",
+      });
+    });
+  });
+
+  it("records nothing in production", () => {
+    withNodeEnv("production", () => {
+      registerScript({
+        id: uniqueId(),
+        src: "https://cdn.example.com/p.js",
+        category: "analytics",
+      });
+      expect((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__).toBeUndefined();
+    });
   });
 });

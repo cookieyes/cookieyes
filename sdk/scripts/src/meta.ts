@@ -1,5 +1,6 @@
 import type { Integration, SilenceControl } from "@cookieyes/core";
 import { deleteCookie } from "./cookies.js";
+import { devTrackScript } from "./dev-queue.js";
 
 export type MetaPixelConfig = {
   /** Your Meta Pixel ID (the numeric id from Events Manager). */
@@ -139,6 +140,7 @@ function ensureMeta(
   script.id = SCRIPT_ID;
   script.async = true;
   script.src = FBEVENTS;
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }

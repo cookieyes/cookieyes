@@ -1,4 +1,5 @@
 import type { Integration, SilenceControl } from "@cookieyes/core";
+import { devTrackScript } from "./dev-queue.js";
 
 export type ClarityConfig = {
   /** Your Microsoft Clarity project id (the id in `clarity.ms/tag/<id>`). */
@@ -101,6 +102,7 @@ function ensureClarity(projectId: string): HTMLScriptElement | null {
   script.id = SCRIPT_ID;
   script.async = true;
   script.src = `https://www.clarity.ms/tag/${projectId}`;
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }

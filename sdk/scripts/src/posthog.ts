@@ -1,5 +1,6 @@
 import type { Cleanup, Integration, SilenceControl } from "@cookieyes/core";
 import { deleteCookie } from "./cookies.js";
+import { devTrackScript } from "./dev-queue.js";
 import { safeCall } from "./safe-call.js";
 
 /** PostHog Cloud region — sets the `api_host`. Use `apiHost` instead for self-hosted. */
@@ -231,6 +232,7 @@ function ensurePosthog(
   script.id = SCRIPT_ID;
   script.async = true;
   script.src = arrayJsUrl(initConfig.api_host as string);
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }

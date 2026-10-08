@@ -48,6 +48,7 @@ describe("@cookieyes/nextjs barrel", () => {
     "DEFAULT_CATEGORIES",
     "readServerConsent",
     "CookieYesProvider",
+    "_tryGetCookieYes",
   ] as const;
 
   it.each(EXPECTED)("re-exports %s and it is defined", (name) => {
@@ -77,6 +78,12 @@ describe("@cookieyes/nextjs/server entry", () => {
     const server = await import("../server.js");
     expect(server).toHaveProperty("getServerConsent");
     expect(typeof server.getServerConsent).toBe("function");
+  });
+
+  it("exports getServerRegion", async () => {
+    const server = await import("../server.js");
+    expect(server).toHaveProperty("getServerRegion");
+    expect(typeof server.getServerRegion).toBe("function");
   });
 
   it("is a separate entry from the client barrel", () => {

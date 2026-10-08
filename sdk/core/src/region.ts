@@ -1,5 +1,16 @@
 import type { RegionConfig, RegionDecision, Regulation } from "./types.js";
 
+/**
+ * Declared locally rather than pulled in from `@types/node` — see the
+ * identical note in `deprecations.ts`. A build-time constant read behind a
+ * literal comparison does not make `resolveRegion` impure in any sense that
+ * matters here (it's still deterministic for a given build — the literal is
+ * replaced once, at bundle time, not read per call) — it exists purely so a
+ * consumer's bundler can fold the `forced` handling away and leave the
+ * REST of this function's compiled output identical to the pre-AD-4 version.
+ */
+declare const process: { env: { NODE_ENV?: string } };
+
 /** Anything with a header getter — a `Headers` object, Next's `headers()`, etc. */
 export type HeaderSource = { get(name: string): string | null | undefined };
 
@@ -60,8 +71,22 @@ function mapRegion(
  * GPC is deliberately *not* considered here: it never changes which banner
  * shows (that is geo only), it only opts a CCPA visitor out client-side. Server
  * and client therefore resolve the same regulation, with no hydration mismatch.
+ *
+ * `forced` is the `@cookieyes/devtools` region-override value (AD-4): when
+ * present in a non-production build, it is used in place of
+ * `config.detect()`'s return and `source` becomes `"forced"` — never
+ * confusable with a real detection. It is handled in its own early-return
+ * branch, guarded by this exact literal, so the MAIN body below — the
+ * pre-AD-4 code — is untouched source, byte for byte: in production the
+ * whole `if` folds to `if (false)` and disappears, and every caller that
+ * omits the third argument (or a caller whose own guard already folded it to
+ * `undefined`) sees exactly the original function.
  */
-export function resolveRegion(config: RegionConfig, manual?: Regulation): RegionDecision {
+export function resolveRegion(
+  config: RegionConfig,
+  manual?: Regulation,
+  forced?: string,
+): RegionDecision {
   const strictest = config.strictest ?? "GDPR";
 
   // A manual regulation always wins.
@@ -74,6 +99,18 @@ export function resolveRegion(config: RegionConfig, manual?: Regulation): Region
       );
     }
     return { region: undefined, regulation: manual, source: "manual", confidence: "high" };
+  }
+
+  // Dev-only `forceRegion` override — a separate branch, not woven into the
+  // detection path below, so that path stays exactly what it was before AD-4.
+  if (process.env.NODE_ENV !== "production" && forced !== undefined) {
+    const mapped = mapRegion(config.map, forced);
+    return {
+      region: forced,
+      regulation: mapped ?? strictest,
+      source: "forced",
+      confidence: "high",
+    };
   }
 
   // Detect the region and map it. Unknown/unmapped → strictest.

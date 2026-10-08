@@ -1,5 +1,24 @@
 import type { Cleanup, Integration, SetupCtx } from "@cookieyes/core";
 import { deleteCookie } from "./cookies.js";
+import { devTrackScript } from "./dev-queue.js";
+
+/**
+ * Declared locally rather than pulled in from `@types/node` — see the
+ * identical note in core's `deprecations.ts`. Guards the inline devtools
+ * queue push below so a consumer's bundler can fold it away in production.
+ */
+declare const process: { env: { NODE_ENV?: string } };
+
+/**
+ * @cookieyes/core imports nothing for devtools either (no shared registry) —
+ * this package pushes to the SAME global queue directly, matching the exact
+ * shape core's own push sites use. See the note in core's
+ * `network-blocker.ts` for the full "dataLayer-style queue, not a shared
+ * module" reasoning.
+ */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
 
 /**
  * Google Consent Mode + tag loaders (GA4, Google Ads, GTM).
@@ -100,9 +119,37 @@ export function bootstrapGoogleConsentMode(options?: ConsentModeOptions): void {
     };
   }
   w.gtag("js", new Date());
-  w.gtag("consent", "default", buildDefault(options));
+  const defaults = buildDefault(options);
+  w.gtag("consent", "default", defaults);
   if (options?.urlPassthrough) w.gtag("set", "url_passthrough", true);
   if (options?.adsDataRedaction) w.gtag("set", "ads_data_redaction", true);
+
+  // Dev-only devtools instrumentation: an inline push onto the same global
+  // queue core's own instrumentation uses — see the note at the top of this
+  // file (and core's `network-blocker.ts`). Folds away in production.
+  if (process.env.NODE_ENV !== "production") {
+    const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+      v: 1,
+    }));
+    if (q.length >= 500) q.shift();
+    q.push({
+      k: "g",
+      t: Date.now(),
+      d: {
+        signals: {
+          ad_storage: defaults.ad_storage as "granted" | "denied",
+          ad_user_data: defaults.ad_user_data as "granted" | "denied",
+          ad_personalization: defaults.ad_personalization as "granted" | "denied",
+          analytics_storage: defaults.analytics_storage as "granted" | "denied",
+          functionality_storage: defaults.functionality_storage as "granted" | "denied",
+          personalization_storage: defaults.personalization_storage as "granted" | "denied",
+          security_storage: defaults.security_storage as "granted" | "denied",
+        },
+        trigger: "default",
+        source: "bootstrap",
+      },
+    });
+  }
 }
 
 const GTAG_SRC = "https://www.googletagmanager.com/gtag/js";
@@ -171,6 +218,7 @@ function ensureGtagLibrary(firstId: string): HTMLScriptElement | null {
   script.id = GTAG_SCRIPT_ID;
   script.async = true;
   script.src = `${GTAG_SRC}?id=${encodeURIComponent(firstId)}`;
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }
@@ -207,6 +255,7 @@ function ensureGtm(containerId: string): HTMLScriptElement | null {
   script.id = GTM_SCRIPT_ID;
   script.async = true;
   script.src = `${GTM_SRC}?id=${encodeURIComponent(containerId)}`;
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }

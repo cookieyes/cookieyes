@@ -13,7 +13,7 @@ Open-source cookie consent SDK for React and Next.js. Manage consent in code, co
 
 ## Performance
 
-The whole point of frontend-native: it barely touches the page. Time to banner and transferred bytes are measured by Cookiebannerbench (throttled mobile, cold cache, p75): https://cookiebannerbench.com/. `@cookieyes/react` is 13.9 KB gzipped with no third-party dependencies.
+The whole point of frontend-native: it barely touches the page. Time to banner and transferred bytes are measured by Cookiebannerbench (throttled mobile, cold cache, p75): https://www.cookiebannerbench.com/. `@cookieyes/react` is 13.9 KB gzipped with no third-party dependencies.
 
 ## Cookie consent features for React and Next.js
 

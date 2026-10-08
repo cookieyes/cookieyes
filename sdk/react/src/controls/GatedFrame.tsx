@@ -10,6 +10,14 @@ import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { _tryGetCookieYes } from "../runtime.js";
 
+/** Declared locally so the guard survives as a literal; see core's `deprecations.ts`. */
+declare const process: { env: { NODE_ENV?: string } };
+
+/** The global queue core pushes to; see the note in core's `network-blocker.ts`. */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
+
 export type GatedFrameProps = Omit<IframeHTMLAttributes<HTMLIFrameElement>, "src"> & {
   src: string;
   category: ConsentCategory;
@@ -36,6 +44,22 @@ export function GatedFrame({ src, category, placeholder, ...rest }: GatedFramePr
   useEffect(() => {
     if (!categories.ids.includes(category)) _warnUnknownEmbedCategory(category);
   }, [categories, category]);
+
+  // Dev-only devtools instrumentation: the rendered `<iframe>` carries no
+  // marker, so tell the scanner this src is managed, placeholder or not.
+  // Folds away in production; see core's `network-blocker.ts`.
+  // The guard sits around the hook, not inside it, so production drops the
+  // whole call rather than keeping an empty effect.
+  if (process.env.NODE_ENV !== "production") {
+    // biome-ignore lint/correctness/useHookAtTopLevel: guarded by a build-time constant, stable per build.
+    useEffect(() => {
+      const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+        v: 1,
+      }));
+      if (q.length >= 500) q.shift();
+      q.push({ k: "s", t: Date.now(), d: { id: src, src, category, via: "GatedFrame" } });
+    }, [src, category]);
+  }
 
   // Latch: once loaded under a committed grant, keep the iframe for the rest of
   // the session. Revoking doesn't swap it back to the placeholder mid-session;

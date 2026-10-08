@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * `getServerConsent` is the Next.js wrapper around core's `readServerConsent`:
@@ -9,10 +9,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  */
 
 const cookieStore = { entries: [] as { name: string; value: string }[] };
+const headerStore = { values: {} as Record<string, string> };
 
 vi.mock("next/headers", () => ({
   cookies: async () => ({
     getAll: () => cookieStore.entries,
+  }),
+  headers: async () => ({
+    get: (name: string) => headerStore.values[name.toLowerCase()] ?? null,
   }),
 }));
 
@@ -32,6 +36,7 @@ const CONSENT = encodeURIComponent(
 
 beforeEach(() => {
   cookieStore.entries = [];
+  headerStore.values = {};
 });
 
 describe("getServerConsent", () => {
@@ -80,5 +85,66 @@ describe("getServerConsent", () => {
     cookieStore.entries = [{ name: "cookieyes-consent", value: CONSENT }];
     const { getServerConsent } = await import("../server.js");
     await expect(getServerConsent()).resolves.not.toBeNull();
+  });
+});
+
+describe("getServerRegion", () => {
+  const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
+  afterEach(() => {
+    process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+  });
+
+  it("reads the region and driving signal from geo headers", async () => {
+    headerStore.values["x-vercel-ip-country"] = "US";
+    headerStore.values["x-vercel-ip-country-region"] = "CA";
+    const { getServerRegion } = await import("../server.js");
+    const info = await getServerRegion();
+    expect(info.region).toBe("US-CA");
+    expect(info.drivingSignal).toEqual({ header: "x-vercel-ip-country-region", value: "CA" });
+  });
+
+  it("falls back to the country header alone when there's no region header", async () => {
+    headerStore.values["cf-ipcountry"] = "GB";
+    const { getServerRegion } = await import("../server.js");
+    const info = await getServerRegion();
+    expect(info.region).toBe("GB");
+    expect(info.drivingSignal).toEqual({ header: "cf-ipcountry", value: "GB" });
+  });
+
+  it("has no driving signal when no known geo header is present", async () => {
+    const { getServerRegion } = await import("../server.js");
+    const info = await getServerRegion();
+    expect(info.region).toBeUndefined();
+    expect(info.drivingSignal).toBeUndefined();
+  });
+
+  it("reports the Sec-GPC signal", async () => {
+    headerStore.values["sec-gpc"] = "1";
+    const { getServerRegion } = await import("../server.js");
+    expect((await getServerRegion()).gpc).toBe(true);
+  });
+
+  it("gpc is false when Sec-GPC is absent", async () => {
+    const { getServerRegion } = await import("../server.js");
+    expect((await getServerRegion()).gpc).toBe(false);
+  });
+
+  it("has no forced region when the __cyd_region cookie is absent", async () => {
+    const { getServerRegion } = await import("../server.js");
+    expect((await getServerRegion()).forcedRegion).toBeUndefined();
+  });
+
+  it("reads a forced region from the __cyd_region cookie in development", async () => {
+    process.env.NODE_ENV = "development";
+    cookieStore.entries = [{ name: "__cyd_region", value: "DE" }];
+    const { getServerRegion } = await import("../server.js");
+    expect((await getServerRegion()).forcedRegion).toBe("DE");
+  });
+
+  it("never reads a forced region in production", async () => {
+    process.env.NODE_ENV = "production";
+    cookieStore.entries = [{ name: "__cyd_region", value: "DE" }];
+    const { getServerRegion } = await import("../server.js");
+    expect((await getServerRegion()).forcedRegion).toBeUndefined();
   });
 });

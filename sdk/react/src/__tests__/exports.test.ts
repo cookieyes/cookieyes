@@ -43,6 +43,7 @@ describe("@cookieyes/react public exports", () => {
     "resolveTranslations",
     "getOrCreateConsentRuntime",
     "resetConsentRuntime",
+    "_tryGetCookieYes",
   ] as const;
 
   it.each(EXPECTED)("exports %s", (name) => {

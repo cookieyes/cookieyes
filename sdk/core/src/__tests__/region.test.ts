@@ -55,6 +55,39 @@ describe("resolveRegion", () => {
     expect(resolveRegion({ detect: () => "US", map }).regulation).toBe("DEFAULT");
     expect(resolveRegion({ detect: () => "DE", map }).source).toBe("detected");
   });
+
+  // Test 26 (design §9): a forced region (devtools override) wins over
+  // detection and is tagged "forced" so the UI can never confuse it with a
+  // real decision.
+  it('source is "forced" only when a forced region is passed', () => {
+    const d = resolveRegion({ detect: () => "DE", map }, undefined, "US-CA");
+    expect(d).toMatchObject({
+      region: "US-CA",
+      regulation: "CCPA",
+      source: "forced",
+      confidence: "high",
+    });
+  });
+
+  // Test 27 (design §9): omitting the third argument must be byte-for-byte
+  // identical to the pre-change function for every existing case above.
+  it("is unchanged when the forced-region argument is omitted", () => {
+    expect(resolveRegion({ detect: () => "DE", map })).toEqual(
+      resolveRegion({ detect: () => "DE", map }, undefined),
+    );
+    expect(resolveRegion({ detect: () => "JP", map }).source).toBe("strictest");
+  });
+
+  it("ignores a forced region with NODE_ENV=production, resolving as if it were never passed", () => {
+    const original = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    try {
+      const d = resolveRegion({ detect: () => "DE", map }, undefined, "US-CA");
+      expect(d).toMatchObject({ region: "DE", regulation: "GDPR", source: "detected" });
+    } finally {
+      process.env.NODE_ENV = original;
+    }
+  });
 });
 
 describe("regionFromHeaders", () => {

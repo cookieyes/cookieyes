@@ -1026,6 +1026,41 @@
   color: var(--cy-doc-tx3);
 }
 
+/* One level deeper: the framework-neutral /docs page. It belongs to no framework, so its
+   sidebar shows each framework (Next.js, React, JavaScript) as a collapsible folder whose
+   own Getting Started label and sub-folders (Components, Hooks…) sit one level down. The
+   rules above assume those are top-level, pinning their titles at 12px, so the outer
+   folder's 18px rail ran straight through "Getting Started" and "Components". A framework
+   page never has this outer level: these selectors only match a folder's items region
+   that itself holds a folder, so they leave every framework page as it was.
+
+   Inside it, everything shifts one rail gutter (30px, the same as the items rule above),
+   so titles sit beside the outer rail instead of under it, and each sub-folder draws its
+   own rail at that offset (Fumadocs only draws the first level's), with its links one
+   more gutter in. */
+#nd-sidebar
+  [data-state][id]:not([data-disabled]):has([data-state])
+  [data-disabled]:not([id])
+  > div:first-child,
+#nd-sidebar [data-state][id]:not([data-disabled]) p:not([class*="cy-doc-"]) {
+  margin-inline-start: 30px;
+}
+
+#nd-sidebar [data-state][id]:not([data-disabled]):has([data-state]) button[data-state] {
+  width: calc(100% - 30px);
+  margin-inline-start: 30px;
+}
+
+#nd-sidebar [data-state][id]:not([data-disabled]) [data-state][id]:not([data-disabled])::before {
+  content: "";
+  position: absolute;
+  inset-inline-start: 48px;
+}
+
+#nd-sidebar [data-state][id]:not([data-disabled]) [data-state][id]:not([data-disabled]) a[href] {
+  margin-inline-start: 60px;
+}
+
 /* ── Breadcrumb + page meta row ──────────────────────────────────────────── */
 
 /* .bc in the design: a sans, muted trail above the h1. Fumadocs renders it as a

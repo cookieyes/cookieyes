@@ -21,16 +21,20 @@ function inFramework(url: string, pathname: string): string {
   return url.replace(/^\/docs/, `/docs/${framework}`);
 }
 
+/** A framework root, which is how "SDKs" reads once `inFramework` has run: `/docs/react`. */
+function isFrameworkRoot(url: string): boolean {
+  return /^\/docs\/[^/]+$/.test(url) && Boolean(frameworkOf(url));
+}
+
 /**
- * Where a section link actually goes. A framework root ("SDKs" → `/docs/react`) has no
- * page of its own and redirects to its installation page, so the link points there
- * directly instead of through the redirect. The root stays the section's identity for
- * working out which tab is active.
+ * Where a section link actually goes. "SDKs" goes to the docs index (`/docs`), the page
+ * that lists every SDK, from whichever framework the reader is on: the tab names all
+ * of them, not the current one. It used to point at the current framework's
+ * installation page, from before the index existed, so the tab never reached it. The
+ * framework root stays the section's identity for working out which tab is active.
  */
 function linkTarget(url: string): string {
-  return /^\/docs\/[^/]+$/.test(url) && frameworkOf(url)
-    ? `${url}/getting-started/installation`
-    : url;
+  return isFrameworkRoot(url) ? "/docs" : url;
 }
 
 /** Fumadocs' own classes on the header element. Kept verbatim: they carry the grid
@@ -113,10 +117,15 @@ export function DocsHeader() {
     .filter(isSectionLink)
     .map((item) => ({ ...item, url: inFramework(item.url, pathname) }));
   const iconLinks = navItems.filter((item) => item.type === "icon").filter(hasUrl);
-  const activeUrl = activeSectionUrl(
-    pathname,
-    sectionLinks.map((item) => item.url),
-  );
+  // The index has no framework in its path, so prefix matching finds nothing for it;
+  // it is the SDKs tab's own page.
+  const activeUrl =
+    pathname === "/docs"
+      ? sectionLinks.find((item) => isFrameworkRoot(item.url))?.url
+      : activeSectionUrl(
+          pathname,
+          sectionLinks.map((item) => item.url),
+        );
 
   if (nav?.component) return nav.component;
 

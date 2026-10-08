@@ -72,6 +72,7 @@ jobs:
         run: pnpm build
 
       - name: Create release PR or publish to npm
+        id: changesets
         if: steps.detect.outputs.work == 'true'
         uses: changesets/action@v1
         with:
@@ -80,3 +81,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
+
+      # The docs changelog needs each release's date, and changesets records none: the
+      # only record is the tag `changeset publish` just created (see
+      # tools/changelog/collect-dates.mjs). Collected by hand, this was missed after the
+      # 7 October 2026 release, and the docs build passed without it because it treats a
+      # package's current version as not yet released. Collect the dates here, from this
+      # run's own tags, and open a PR to main, so a release cannot reach npm without
+      # reaching the docs. A PR rather than a push: main takes changes through PRs.
+      - name: Record release dates for the docs changelog
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pnpm changelog:dates
+          if git diff --quiet -- tools/changelog/release-dates.json; then
+            echo "Release dates already recorded; nothing to do"
+            exit 0
+          fi
+          branch="chore/changelog-dates-${GITHUB_SHA::7}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add tools/changelog/release-dates.json
+          git commit -m "docs(web): record the dates of the release just published"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "docs(web): record the dates of the release just published" \
+            --body "Adds the publish dates of the versions released in this run to \`tools/changelog/release-dates.json\`, so the docs changelog lists the release. Before merging, add a one-line title for the release to \`tools/changelog/release-titles.json\` (optional; without one it is labelled by its version)."

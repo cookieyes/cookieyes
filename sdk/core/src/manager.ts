@@ -9,6 +9,19 @@ import {
 } from "./cookie.js";
 import { broadcastGoogleConsent, warnOverlappingGcm } from "./google-consent-mode.js";
 import { createRecordQueue } from "./record-queue.js";
+
+/**
+ * Declared locally rather than pulled in from `@types/node` — see the
+ * identical note in `deprecations.ts`. Guards `persist`'s inline devtools
+ * queue push so a consumer's bundler can fold it away in production.
+ */
+declare const process: { env: { NODE_ENV?: string } };
+
+/** See the identical declaration + note in `network-blocker.ts`. */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
+
 import { applyScripts, registerScript } from "./scripts.js";
 import {
   applyStopHandlers,
@@ -193,7 +206,8 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
     writeConsentCookie(state);
 
     // Detect "revoke" — any category that was previously consented but now isn't.
-    // Computed before `lastPersistedCategories` is overwritten below.
+    // Computed before `lastPersistedCategories` is overwritten below. Unchanged
+    // from before AD-4.
     let didRevoke = false;
     for (const id of resolved.ids) {
       if (lastPersistedCategories[id] && !state.categories[id]) {
@@ -201,6 +215,34 @@ export function createConsentManager(config: ConsentConfig): ConsentManager {
         break;
       }
     }
+
+    // Dev-only devtools instrumentation: computed and pushed right here,
+    // before `lastPersistedCategories` is overwritten below, because this is
+    // the only point with both the old and new category maps in scope —
+    // capturing the old map in an extra variable to use after the
+    // reassignment would cost bytes even in production (some bundlers don't
+    // eliminate a declaration whose only reads are inside this very guard).
+    // Sequencing this push before `notify()`/`onConsentUpdate` (unlike
+    // AD-4's other instrumentation) is fine: unlike those, a queue push can't
+    // throw or block the banner closing.
+    if (process.env.NODE_ENV !== "production") {
+      const changedCategories: string[] = [];
+      for (const id of resolved.ids) {
+        if (lastPersistedCategories[id] !== state.categories[id]) {
+          changedCategories.push(id);
+        }
+      }
+      const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+        v: 1,
+      }));
+      if (q.length >= 500) q.shift();
+      q.push({
+        k: "c",
+        t: Date.now(),
+        d: { kind: "save", categories: { ...state.categories }, changedCategories },
+      });
+    }
+
     lastPersistedCategories = { ...state.categories };
     // This is a real decision → commit it.
     committedCategories = { ...state.categories };
