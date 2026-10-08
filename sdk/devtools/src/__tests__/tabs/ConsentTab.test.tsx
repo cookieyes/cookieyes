@@ -68,4 +68,13 @@ describe("ConsentTab", () => {
     expect(parsed).toHaveProperty("consent");
     expect(() => parsed).not.toThrow();
   });
+
+  it("resets consent from the footer, so the banner shows again", async () => {
+    const runtime = mountCookieOnly("GDPR");
+    runtime.manager.acceptAll();
+    const user = await openTab("consent");
+    expect(runtime.getSnapshot().hasActed).toBe(true);
+    await user.click(document.querySelector('[data-cyd-part="consent-reset"]') as HTMLElement);
+    expect(runtime.getSnapshot().hasActed).toBe(false);
+  });
 });

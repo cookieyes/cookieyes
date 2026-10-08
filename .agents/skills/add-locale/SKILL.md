@@ -48,8 +48,9 @@ Search for an existing code and add the new one wherever locales are listed:
 grep -rn "translations/it" sdk apps/web/content/shared --include='*.md' --include='*.mdx' --include='*.ts'
 ```
 
-Today that is `sdk/translations/README.md` (the locale count and the table) and
-`apps/web/content/shared/translations.mdx`. Check whether `sdk/cli/src/commands/init.ts` offers
+Today that is `sdk/translations/README.md` (the locale count and the table),
+`apps/web/content/shared/translations.mdx` and `TRANSLATION_LOCALES` in
+`sdk/devtools/src/lib/languages.ts` (the devtools language picker). Check whether `sdk/cli/src/commands/init.ts` offers
 a fixed list of locales; if it does, add the new one there and to its tests.
 
 Then regenerate the framework docs: `pnpm --filter @cookieyes/web generate:framework-docs`.

@@ -1,6 +1,8 @@
 "use client";
 
-import type { ConsentManager, CookieYesRuntime } from "@cookieyes/react";
+import type { ConsentManager, CookieYesRuntime, LanguageInfo } from "@cookieyes/react";
+import type { LanguageSwitchStatus } from "../hooks/useLanguageOverride.js";
+import type { Finding } from "../scanner/classify.js";
 import type { DevRuntimeData, DevtoolsPosition, DevtoolsTheme, TabId } from "../types.js";
 import { CookieYesMark } from "./CookieYesMark.js";
 import { DevtoolsTablist } from "./DevtoolsTablist.js";
@@ -13,6 +15,7 @@ import { EventsTab } from "./tabs/EventsTab.js";
 import { GoogleConsentModeTab } from "./tabs/GoogleConsentModeTab.js";
 import { IntegrationsTab } from "./tabs/IntegrationsTab.js";
 import { RegionTab } from "./tabs/RegionTab.js";
+import { ScannerTab } from "./tabs/ScannerTab.js";
 
 export type DevtoolsPanelProps = {
   panelId: string;
@@ -32,6 +35,22 @@ export type DevtoolsPanelProps = {
   runtime?: CookieYesRuntime | undefined;
   /** Clears the Events tab (and the blocked-request list). */
   onClearEvents?: (() => void) | undefined;
+  /** The language picker; hidden when `onLanguageChange` is not given. */
+  language?: LanguageInfo | undefined;
+  languageOverride?: string | undefined;
+  languageStatus?: LanguageSwitchStatus | undefined;
+  onLanguageChange?: ((tag: string) => void) | undefined;
+  onClearLanguage?: (() => void) | undefined;
+  /** The Scanner tab; hidden from the tab body when `scanner` is not given. */
+  scanner?:
+    | {
+        findings: Finding[];
+        dismissed: string[];
+        dismiss: (key: string) => void;
+        restore: (key: string) => void;
+        rescan: () => void;
+      }
+    | undefined;
 };
 
 /**
@@ -55,13 +74,27 @@ export function DevtoolsPanel({
   onThemeChange,
   runtime,
   onClearEvents,
+  language,
+  languageOverride,
+  languageStatus,
+  onLanguageChange,
+  onClearLanguage,
+  scanner,
 }: DevtoolsPanelProps) {
   const decision = data.region.decision;
-  const forced = decision.source === "forced";
+  // The footer reports what the page is running on, never a pending preview.
+  const applied = data.region.applied ?? decision;
+  const forced = applied.source === "forced";
   const counts: Partial<Record<TabId, number>> = {
     blocked: data.blockedRequests.length,
     events: data.events.length,
   };
+  const dismissedKeys = new Set(scanner?.dismissed);
+  const scanIssues =
+    scanner?.findings.filter(
+      (f) => (f.preConsent || f.afterWithdrawal) && !dismissedKeys.has(f.key),
+    ).length ?? 0;
+  if (scanIssues > 0) counts.scanner = scanIssues;
   return (
     // Escape is handled globally by `useKeyboardShortcut` (attached at
     // `document` level in devtools.tsx) — not duplicated here.
@@ -123,8 +156,25 @@ export function DevtoolsPanel({
             drivingSignal={data.region.drivingSignal}
             forcedRegion={data.region.forcedRegion}
             forcedRegionIgnored={data.region.forcedRegionIgnored === true}
+            pendingReload={data.region.pendingReload === true}
+            applied={data.region.applied}
+            regionConfig={data.region.config?.region}
             onForceRegion={onForceRegion}
             onClearOverride={onClearRegionOverride}
+            language={language}
+            languageOverride={languageOverride}
+            languageStatus={languageStatus}
+            onLanguageChange={onLanguageChange}
+            onClearLanguage={onClearLanguage}
+          />
+        ) : null}
+        {activeTab === "scanner" && scanner ? (
+          <ScannerTab
+            findings={scanner.findings}
+            dismissed={scanner.dismissed}
+            onDismiss={scanner.dismiss}
+            onRestore={scanner.restore}
+            onRescan={scanner.rescan}
           />
         ) : null}
         {activeTab === "actions" ? (
@@ -140,14 +190,27 @@ export function DevtoolsPanel({
           ·
         </span>
         <span>{data.consent.regulation}</span>
-        {decision.region ? (
+        {applied.region ? (
           <>
             <span className="cyd-footer-sep" aria-hidden="true">
               ·
             </span>
             <span className={forced ? "cyd-footer-forced" : undefined}>
-              {decision.region}
+              {applied.region}
               {forced ? " (forced)" : ""}
+            </span>
+          </>
+        ) : null}
+        {language ? (
+          <>
+            <span className="cyd-footer-sep" aria-hidden="true">
+              ·
+            </span>
+            <span
+              className={languageOverride !== undefined ? "cyd-footer-forced" : undefined}
+              data-cyd-part="footer-language"
+            >
+              {language.language}
             </span>
           </>
         ) : null}

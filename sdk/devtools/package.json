@@ -39,7 +39,10 @@
       "import": "./dist/stub.js",
       "require": "./dist/stub.cjs"
     },
-    "./styles.css": "./dist/styles.css"
+    "./styles.css": {
+      "development": "./dist/styles.css",
+      "default": "./dist/stub.css"
+    }
   },
   "main": "./dist/stub.cjs",
   "module": "./dist/stub.js",
@@ -57,7 +60,7 @@
     "provenance": true
   },
   "scripts": {
-    "build": "rm -rf dist && rollup -c && cp src/styles.css dist/styles.css",
+    "build": "rm -rf dist && rollup -c && cp src/styles.css dist/styles.css && cp src/stub.css dist/stub.css",
     "dev": "rollup -c -w",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",

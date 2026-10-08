@@ -9,8 +9,11 @@ import {
   writeLocalStorage,
 } from "../lib/storage.js";
 
-const STORAGE_KEY = "cyd:region";
+// One name for both: the SDK's own readers (react's `runtime.ts` and
+// `CookieYesProvider`) fall back to localStorage under this key. A different
+// key here once made the panel show an override the SDK wasn't applying.
 const COOKIE_NAME = "__cyd_region";
+const STORAGE_KEY = COOKIE_NAME;
 
 function readInitial(): string | undefined {
   // The cookie is authoritative (a server helper can read it too); fall back

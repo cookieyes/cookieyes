@@ -18,7 +18,10 @@ export function useKeyboardShortcut(open: boolean, onToggle: () => void, onClose
         onToggle();
         return;
       }
-      if (open && event.key === "Escape") {
+      // Skip an Escape something else already handled (an open dropdown in the
+      // panel, or the host page's own dialog). stopPropagation can't keep it
+      // from us: in Next.js React's root listener is on `document` too.
+      if (open && event.key === "Escape" && !event.defaultPrevented) {
         onClose();
       }
     }

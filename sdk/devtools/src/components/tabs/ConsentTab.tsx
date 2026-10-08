@@ -123,6 +123,18 @@ export function ConsentTab({ data, manager, requiredIds }: ConsentTabProps) {
         <div className="cyd-toolbar-actions">
           <button
             type="button"
+            className="cyd-btn cyd-btn-danger"
+            data-cyd-part="consent-reset"
+            title="Clear the stored decision; the banner shows again"
+            disabled={!manager}
+            onClick={() => manager?.resetConsent()}
+          >
+            <Icon name="reset" />
+            Reset
+          </button>
+          <span className="cyd-toolbar-sep" aria-hidden="true" />
+          <button
+            type="button"
             className="cyd-btn"
             data-cyd-part="consent-reject-all"
             onClick={() => manager?.rejectAll("api")}

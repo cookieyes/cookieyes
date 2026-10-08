@@ -1,5 +1,5 @@
 import { getCookieYes } from "@cookieyes/react";
-import { act, cleanup, fireEvent, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CookieYesDevtools } from "../devtools.js";
@@ -63,17 +63,130 @@ describe("Consent tab controls", () => {
 });
 
 describe("Actions tab", () => {
-  it("opens preferences (closing the panel) and the opt-out dialog", async () => {
-    mountCookieOnly("GDPR");
+  /**
+   * Stands in for a mounted `<CookiePreferences />` / `<CookieOptOut />`: renders
+   * each preset's root marker while the runtime says that dialog is open.
+   */
+  function mountStandInDialogs(): () => void {
+    const runtime = getCookieYes();
+    const sync = () => {
+      const snap = runtime.getSnapshot();
+      for (const [open, partName] of [
+        [snap.isPreferencesOpen, "dialog"],
+        [snap.isOptOutOpen, "optout"],
+      ] as const) {
+        const existing = document.querySelector(`[data-cy-part="${partName}"]`);
+        if (open && !existing) {
+          const el = document.createElement("div");
+          el.setAttribute("data-cy-part", partName);
+          document.body.appendChild(el);
+        } else if (!open) existing?.remove();
+      }
+    };
+    const unsubscribe = runtime.subscribe(sync);
+    return () => {
+      unsubscribe();
+      for (const el of document.querySelectorAll(
+        '[data-cy-part="dialog"], [data-cy-part="optout"]',
+      )) {
+        el.remove();
+      }
+    };
+  }
+
+  it("opens a mounted preferences or opt-out dialog and closes the panel", async () => {
+    mountCookieOnly("CCPA");
+    const stop = mountStandInDialogs();
     const user = await openTab("actions");
     await user.click(part("action-open-preferences"));
+    await waitFor(() => expect(part("panel")).toBeNull());
     expect(getCookieYes().getSnapshot().isPreferencesOpen).toBe(true);
-    expect(part("panel")).toBeNull();
 
     act(() => getCookieYes().manager.hidePreferences());
     await user.click(part("trigger"));
     await user.click(part("action-open-optout"));
+    await waitFor(() => expect(part("panel")).toBeNull());
     expect(getCookieYes().getSnapshot().isOptOutOpen).toBe(true);
+    stop();
+  });
+
+  it("never leaves both dialogs open: opening one closes the other", async () => {
+    mountCookieOnly("CCPA");
+    const stop = mountStandInDialogs();
+    try {
+      const user = await openTab("actions");
+      await user.click(part("action-open-preferences"));
+      await waitFor(() => expect(part("panel")).toBeNull());
+
+      await user.click(part("trigger"));
+      await user.click(part("action-open-optout"));
+      await waitFor(() => expect(part("panel")).toBeNull());
+      expect(getCookieYes().getSnapshot().isOptOutOpen).toBe(true);
+      expect(getCookieYes().getSnapshot().isPreferencesOpen).toBe(false);
+
+      await user.click(part("trigger"));
+      await user.click(part("action-open-preferences"));
+      await waitFor(() => expect(part("panel")).toBeNull());
+      expect(getCookieYes().getSnapshot().isPreferencesOpen).toBe(true);
+      expect(getCookieYes().getSnapshot().isOptOutOpen).toBe(false);
+    } finally {
+      stop();
+    }
+  });
+
+  it("uses the regulation a CookieYesProvider resolved over the runtime's startup value", async () => {
+    mountCookieOnly("GDPR");
+    // What <CookieYesProvider regulation="CCPA"> reports in development.
+    const g = globalThis as { __COOKIEYES_DEVTOOLS__?: unknown[] };
+    g.__COOKIEYES_DEVTOOLS__ ??= Object.assign([], { v: 1 });
+    const queue = g.__COOKIEYES_DEVTOOLS__;
+    queue.push({
+      k: "p",
+      t: Date.now(),
+      d: { region: undefined, regulation: "CCPA", source: "manual", confidence: "high" },
+    });
+    await openTab("actions");
+    expect(part("action-open-optout").hasAttribute("disabled")).toBe(false);
+    expect(document.querySelector(".cyd-panel-footer")?.textContent).toContain("CCPA");
+  });
+
+  it("offers opt-out only under CCPA, and says how to test it otherwise", async () => {
+    mountCookieOnly("GDPR");
+    await openTab("actions");
+    expect(part("action-open-optout").hasAttribute("disabled")).toBe(true);
+    expect(part("action-open-optout-hint").textContent).toContain("CCPA only");
+    expect(part("action-open-preferences").hasAttribute("disabled")).toBe(false);
+  });
+
+  it("doesn't mistake a site modal that was already open for the missing dialog", async () => {
+    mountCookieOnly("GDPR");
+    const siteModal = document.createElement("div");
+    siteModal.setAttribute("role", "dialog");
+    document.body.appendChild(siteModal);
+    try {
+      const user = await openTab("actions");
+      await user.click(part("action-open-preferences"));
+      await waitFor(() => expect(part("action-dialog-missing")).not.toBeNull());
+      expect(getCookieYes().getSnapshot().isPreferencesOpen).toBe(false);
+    } finally {
+      siteModal.remove();
+    }
+  });
+
+  it("undoes the open when nothing renders the dialog, so the banner isn't left hidden", async () => {
+    mountCookieOnly("CCPA");
+    const user = await openTab("actions");
+    await user.click(part("action-open-optout"));
+    await waitFor(() => expect(part("action-dialog-missing")).not.toBeNull());
+    expect(getCookieYes().getSnapshot().isOptOutOpen).toBe(false);
+    expect(part("panel")).not.toBeNull();
+    expect(part("action-dialog-missing").textContent).toContain("<CookieOptOut />");
+
+    await user.click(part("action-open-preferences"));
+    await waitFor(() =>
+      expect(part("action-dialog-missing").textContent).toContain("<CookiePreferences />"),
+    );
+    expect(getCookieYes().getSnapshot().isPreferencesOpen).toBe(false);
   });
 
   it("exports a debug bundle and copies state", async () => {

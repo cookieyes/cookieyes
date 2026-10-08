@@ -10,6 +10,7 @@ import type {
   IntegrationStatus,
 } from "@cookieyes/core";
 import type { RegionConfig, RegionDecision, Regulation } from "@cookieyes/react";
+import type { ManagedResource } from "./scanner/classify.js";
 
 /**
  * These four shapes used to be exported from `@cookieyes/core` (a shared
@@ -68,6 +69,7 @@ export type TabId =
   | "gcm"
   | "events"
   | "region"
+  | "scanner"
   | "actions";
 
 export const TAB_IDS: readonly TabId[] = [
@@ -77,6 +79,7 @@ export const TAB_IDS: readonly TabId[] = [
   "gcm",
   "events",
   "region",
+  "scanner",
   "actions",
 ];
 
@@ -86,7 +89,8 @@ export const TAB_LABELS: Record<TabId, string> = {
   blocked: "Blocked",
   gcm: "Consent Mode",
   events: "Events",
-  region: "Region",
+  region: "Locale",
+  scanner: "Scanner",
   actions: "Actions",
 };
 
@@ -129,6 +133,10 @@ export type DevRuntimeData = {
      * the region in those cases too, so the panel says so instead of warning.
      */
     forcedRegionIgnored?: boolean | undefined;
+    /** The decision the page is running on now; `decision` previews a pending override. */
+    applied?: RegionDecision | undefined;
+    /** An override was set or cleared here and applies on the next page load. */
+    pendingReload?: boolean | undefined;
     /**
      * The runtime's `region` config and pinned `regulation`, from the queue's
      * `"r"` entry — what the panel previews a forced region against.
@@ -136,6 +144,11 @@ export type DevRuntimeData = {
      */
     config: { region: RegionConfig | undefined; regulation: Regulation | undefined } | undefined;
   };
+  /**
+   * Every script and iframe the SDK said it manages (the queue's `"s"`
+   * entries), so the scanner can tell them from ones it doesn't.
+   */
+  managed: ManagedResource[];
 };
 
 /**

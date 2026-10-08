@@ -26,7 +26,7 @@ describe("useForceRegion", () => {
     act(() => result.current.setRegion("US-CA"));
     expect(result.current.region).toBe("US-CA");
     expect(document.cookie).toContain("__cyd_region=US-CA");
-    expect(window.localStorage.getItem("cyd:region")).toBe("US-CA");
+    expect(window.localStorage.getItem("__cyd_region")).toBe("US-CA");
   });
 
   it("clearRegion removes both", () => {
@@ -35,7 +35,7 @@ describe("useForceRegion", () => {
     act(() => result.current.clearRegion());
     expect(result.current.region).toBeUndefined();
     expect(document.cookie).not.toContain("__cyd_region=US-CA");
-    expect(window.localStorage.getItem("cyd:region")).toBeNull();
+    expect(window.localStorage.getItem("__cyd_region")).toBeNull();
   });
 
   it("rehydrates a previously-set region cookie on a fresh mount", () => {

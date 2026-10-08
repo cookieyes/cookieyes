@@ -49,9 +49,20 @@ There is deliberately no other opt-in — mounting the component *is* the opt-in
 - **Events** — an interleaved timeline of consent saves, integration status changes and blocked
   requests (capped at 200): kind filters, search, a JSON payload per row, export and clear. The
   last 100 are kept in `sessionStorage["cyd:events"]`, so they survive a reload in the same tab.
-- **Region** — the resolved region/regulation and how it was reached, plus a `forceRegion` override
-  to test any region locally. An active override shows a persistent "this would differ in
-  production" banner and is impossible to enable in production (see below).
+- **Locale** — the resolved region/regulation and how it was reached, plus a `forceRegion` override
+  to test any region locally: a searchable picker of every country and US state, grouped with the
+  regions in your `region.map` first, each tagged with the regulation it would resolve to, and
+  one-click presets. An active override shows a persistent "this would differ in production"
+  banner and is impossible to enable in production (see below). A language picker switches the
+  banner live through the runtime's own `setLanguage`, listing the languages your config loads and
+  the ones `@cookieyes/translations` ships, and says so when a language has no translations.
+- **Scanner** — everything third-party on the page, live: scripts, iframes, requests, cookies and
+  localStorage keys. Each is matched against what the SDK manages and a built-in table of common
+  vendors, so you see what's managed, what isn't and which category it probably needs. Anything
+  that appeared before its category was granted (or a vendor cookie still set after withdrawal)
+  is flagged at the top, and each unmanaged row has the `@cookieyes/scripts` preset,
+  `customScript`, `<GatedFrame>` or network-blocker rule that would gate it, ready to copy.
+  Dismissals persist; results export as JSON.
 - **Actions** — open preferences / opt-out, copy the full state, download a debug bundle, reset
   consent.
 
@@ -73,7 +84,8 @@ Production exclusion is via **package.json conditional exports**, not a runtime 
 A dev server (`next dev`, Vite dev) sets the `development` condition, so the real panel resolves.
 A production build (`next build`, `vite build`) never sets it, so bundlers resolve `stub.js` instead
 — a function that renders `null` and touches no React state, no `@cookieyes/core`, no
-`@cookieyes/react`. The real panel's entire module graph — its components, hooks and CSS import —
+`@cookieyes/react`. `@cookieyes/devtools/styles.css` resolves the same way: the real stylesheet under
+`development`, an empty file otherwise, so the import is safe to leave in production code. The real panel's entire module graph — its components, hooks and CSS import —
 is never reached, never parsed, and contributes nothing to a production bundle.
 
 This is the **only** exclusion mechanism. There is no `NODE_ENV`/`disabled`-prop fallback in the real
@@ -90,6 +102,13 @@ The region override is stored in a `__cyd_region` cookie (readable by a server h
 SDK's runtime singleton — writing it only updates storage. The client picks it up on the next
 `initCookieYes`/`CookieYesProvider` render; a server-rendered banner needs a page reload to see it on
 its next request. The panel discloses this asymmetry rather than hiding it.
+
+## Language override
+
+The chosen language is applied with the runtime's own `setLanguage` and kept in
+`localStorage["cyd:language"]`, so it is re-applied after a reload until you press Reset (which
+returns to the language your config picked). The SDK itself never reads that key: a reload shows
+the configured language for a moment before the override is applied again.
 
 ## Peer dependencies
 

@@ -7,8 +7,9 @@
 // one unavoidable exception to "never import core directly for anything react
 // already re-exports": there is nothing to re-export from.
 import { computeGoogleConsent } from "@cookieyes/core";
-import type { CookieYesRuntime, GoogleConsentSignal } from "@cookieyes/react";
+import type { CookieYesRuntime, GoogleConsentSignal, RegionDecision } from "@cookieyes/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ManagedResource } from "../scanner/classify.js";
 import {
   type DevBlockedRequestEvent,
   type DevConsentEvent,
@@ -150,6 +151,13 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [queueVersionUnknown, setQueueVersionUnknown] = useState(false);
   const [regionConfig, setRegionConfig] = useState<DevRuntimeData["region"]["config"]>(undefined);
+  const [managed, setManaged] = useState<ManagedResource[]>([]);
+  const previousPages = useRef<EventRow[] | null>(null);
+  // What a `<CookieYesProvider>` resolved (the queue's `"p"` entry). In Next.js
+  // the regulation is decided per request there, and the runtime singleton
+  // keeps its startup value, so the banner can show CCPA while the runtime
+  // says GDPR. The provider's answer is the one the visitor sees.
+  const [providerDecision, setProviderDecision] = useState<RegionDecision | undefined>(undefined);
 
   useEffect(() => {
     if (!runtime) {
@@ -166,6 +174,7 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
       setGcmHistory([]);
       setEvents([]);
       setQueueVersionUnknown(false);
+      setManaged([]);
       return;
     }
 
@@ -182,6 +191,7 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
     const initialBlocked: DevBlockedRequestEvent[] = [];
     const initialGcm: DevGcmRecord[] = serverSnippet ? [serverSnippet] : [];
     const initialEvents: EventRow[] = [];
+    const initialManaged: ManagedResource[] = [];
 
     function apply(entry: DevQueueEntry): void {
       if (entry.k === "b") {
@@ -197,6 +207,11 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
         setEvents((prev) => cap([...prev, { kind: "integration", ...event }], EVENT_CAP));
       } else if (entry.k === "r") {
         setRegionConfig(entry.d as DevRuntimeData["region"]["config"]);
+      } else if (entry.k === "p") {
+        setProviderDecision(entry.d as RegionDecision);
+      } else if (entry.k === "s") {
+        const resource = entry.d as ManagedResource;
+        setManaged((prev) => [...prev, resource]);
       } else if (entry.k === "c") {
         const event = toConsentEvent(entry);
         const { kind: action, ...rest } = event;
@@ -214,6 +229,8 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
       else if (entry.k === "i")
         initialEvents.push({ kind: "integration", ...toIntegrationEvent(entry) });
       else if (entry.k === "r") setRegionConfig(entry.d as DevRuntimeData["region"]["config"]);
+      else if (entry.k === "s") initialManaged.push(entry.d as ManagedResource);
+      else if (entry.k === "p") setProviderDecision(entry.d as RegionDecision);
       else if (entry.k === "c") {
         const { kind: action, ...rest } = toConsentEvent(entry);
         initialEvents.push({ kind: "consent", action, ...rest });
@@ -221,7 +238,12 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
     }
     setBlockedRequests(cap(initialBlocked, EVENT_CAP));
     setGcmHistory(cap(initialGcm, GCM_HISTORY_CAP));
-    setEvents(cap([...readStoredEvents(), ...initialEvents], EVENT_CAP));
+    setManaged(initialManaged);
+    // Earlier pages' history is read once: by the time the runtime is swapped
+    // (a hot reload of the config) storage also holds this page's events, which
+    // the queue drain above already has, and re-reading would show them twice.
+    previousPages.current ??= readStoredEvents();
+    setEvents(cap([...previousPages.current, ...initialEvents], EVENT_CAP));
 
     // Wrap `push` (gtag/dataLayer style) to receive live entries — restore
     // the original on unmount so this hook never leaves the queue patched
@@ -251,6 +273,7 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
   }, [events, runtime]);
 
   const clearEvents = useCallback(() => {
+    previousPages.current = [];
     setEvents([]);
     setBlockedRequests([]);
     writeStoredEvents([]);
@@ -268,7 +291,7 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
         working: snapshot.categories,
         committed: snapshot.committedCategories,
         hasActed: snapshot.hasActed,
-        regulation: snapshot.regulation,
+        regulation: providerDecision?.regulation ?? snapshot.regulation,
       },
       // Re-read on every integrationsTick bump — the runner's own list() call
       // is the source of truth; the dev hook only tells us *when* to re-read it.
@@ -277,15 +300,18 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
       gcm: { current: gcmSignals, history: gcmHistory },
       events,
       region: {
-        decision: runtime.getRegion(),
+        decision: providerDecision ?? runtime.getRegion(),
         // Not knowable from this hook alone — devtools.tsx overrides this
         // with either the `serverRegion` prop's driving signal or a
         // client-determined fallback label (Story 3.5).
         drivingSignal: undefined,
-        forcedRegion:
-          runtime.getRegion().source === "forced" ? runtime.getRegion().region : undefined,
+        forcedRegion: (() => {
+          const decision = providerDecision ?? runtime.getRegion();
+          return decision.source === "forced" ? decision.region : undefined;
+        })(),
         config: regionConfig,
       },
+      managed,
     };
     // `integrationsTick` is a dependency read only for its side effect (it's
     // the signal to re-read `runtime.getIntegrations()`, not itself part of
@@ -299,6 +325,8 @@ export function useDevRuntimeData(runtime: CookieYesRuntime | null): {
     integrationsTick,
     queueVersionUnknown,
     regionConfig,
+    managed,
+    providerDecision,
   ]);
 
   return { data, clearEvents };

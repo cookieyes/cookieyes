@@ -14,3 +14,14 @@ export async function copyJson(value: unknown): Promise<boolean> {
     return false;
   }
 }
+
+/** Copy plain text, with the same best-effort contract as {@link copyJson}. */
+export async function copyText(text: string): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.clipboard) return false;
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}

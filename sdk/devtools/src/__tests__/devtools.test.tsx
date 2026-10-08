@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CookieYesDevtools } from "../devtools.js";
@@ -38,6 +38,22 @@ describe("CookieYesDevtools", () => {
     expect(panel()).not.toBeNull();
     await user.keyboard("{Escape}");
     expect(panel()).toBeNull();
+  });
+
+  // In Next.js React's root listener is on `document`, beside the panel's own,
+  // so a dropdown's stopPropagation can't hide the Escape it already handled;
+  // preventDefault is the signal instead. Same for the host page's own dialogs.
+  it("ignores an Escape something else already handled", async () => {
+    mountCookieOnly("GDPR");
+    const user = userEvent.setup();
+    render(<CookieYesDevtools />);
+    await user.click(trigger());
+    const handled = new KeyboardEvent("keydown", { key: "Escape", cancelable: true });
+    handled.preventDefault();
+    act(() => {
+      document.dispatchEvent(handled);
+    });
+    expect(panel()).not.toBeNull();
   });
 
   // Test 6 (design §9)

@@ -178,7 +178,7 @@
 
 .cyd-panel {
   position: fixed;
-  width: min(700px, calc(100vw - 32px));
+  width: min(760px, calc(100vw - 32px));
   height: min(560px, calc(100vh - 96px));
   display: flex;
   flex-direction: column;
@@ -305,8 +305,16 @@
   color: var(--cyd-tx);
 }
 
+/* Only the body gives up height when the panel is short. Without this the
+   header, tablist and footer shrank too (flex-shrink defaults to 1), and a
+   long tab such as Events squashed the tablist and clipped the tabs. */
+.cyd-panel > :not(.cyd-panel-body) {
+  flex-shrink: 0;
+}
+
 .cyd-panel-body {
   flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   padding: 16px;
   color: var(--cyd-tx2);
@@ -343,15 +351,79 @@
 /* Tablist — the docs' code-tab bar: plain text, accent underline          */
 /* ---------------------------------------------------------------------- */
 
+.cyd-tabbar {
+  position: relative;
+  background: var(--cyd-bg2);
+  border-bottom: 1px solid var(--cyd-bd);
+}
+
 .cyd-tablist {
   display: flex;
   flex-wrap: nowrap;
   gap: 0;
   padding: 0 6px;
+  /* overflow-x: auto alone computes overflow-y to auto too, and the active
+     tab's underline then made the bar scroll vertically when a tab took
+     focus, cutting the tabs' tops off. */
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
-  background: var(--cyd-bg2);
-  border-bottom: 1px solid var(--cyd-bd);
+}
+
+.cyd-tablist::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fade the edge that has tabs hidden behind it. */
+.cyd-tabbar[data-cyd-overflow-end] .cyd-tablist {
+  mask-image: linear-gradient(to right, #000 calc(100% - 48px), transparent);
+}
+.cyd-tabbar[data-cyd-overflow-start] .cyd-tablist {
+  mask-image: linear-gradient(to left, #000 calc(100% - 48px), transparent);
+}
+.cyd-tabbar[data-cyd-overflow-start][data-cyd-overflow-end] .cyd-tablist {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 48px,
+    #000 calc(100% - 48px),
+    transparent
+  );
+}
+
+.cyd-tabbar-scroll {
+  appearance: none;
+  position: absolute;
+  top: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: -11px;
+  padding: 0 0 2px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: 999px;
+  background: var(--cyd-bg);
+  color: var(--cyd-tx2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(20, 20, 42, 0.12);
+}
+
+.cyd-tabbar-scroll:hover {
+  color: var(--cyd-tx);
+  border-color: var(--cyd-bd2);
+}
+
+.cyd-tabbar-scroll-start {
+  left: 4px;
+}
+
+.cyd-tabbar-scroll-end {
+  right: 4px;
 }
 
 .cyd-tab {
@@ -391,7 +463,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   height: 2px;
   background: var(--cyd-ac);
 }
@@ -782,12 +854,33 @@
   border-color: rgba(19, 111, 232, 0.25);
 }
 
-/* Force-region form. */
-.cyd-force {
-  margin-top: 16px;
+/* Locale tab sections. */
+.cyd-section + .cyd-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--cyd-bd);
 }
 
-.cyd-force-label {
+.cyd-section-title {
+  margin: 0 0 10px;
+  font-family: var(--cyd-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cyd-tx);
+}
+
+.cyd-field-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.cyd-field-row > .cyd-btn {
+  min-height: 32px;
+}
+
+.cyd-field-label {
   display: block;
   margin-bottom: 6px;
   font-size: 12px;
@@ -795,9 +888,197 @@
   color: var(--cyd-tx);
 }
 
-.cyd-force-row {
+.cyd-quick {
+  margin-bottom: 12px;
+}
+
+/* Searchable select (Combobox.tsx). */
+.cyd-combo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cyd-combo-trigger {
+  appearance: none;
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--cyd-bd2);
+  border-radius: var(--cyd-radius);
+  background: var(--cyd-surface);
+  color: var(--cyd-tx);
+  font-family: var(--cyd-font-ui);
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cyd-combo-trigger:hover {
+  border-color: var(--cyd-bd3);
+}
+
+.cyd-combo-trigger:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: 1px;
+}
+
+.cyd-combo-trigger[aria-expanded="true"] {
+  border-color: var(--cyd-ac);
+}
+
+.cyd-combo-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cyd-combo-placeholder {
+  color: var(--cyd-tx3);
+}
+
+/* A fixed-width code column (DE, US-CA), so names line up down the list. */
+.cyd-combo-leading {
+  flex-shrink: 0;
+  width: 44px;
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-combo-active .cyd-combo-leading,
+.cyd-combo-option[aria-selected="true"] .cyd-combo-leading {
+  color: var(--cyd-ac);
+}
+
+.cyd-combo-badge {
+  flex-shrink: 0;
+  font-family: var(--cyd-font-mono);
+  font-size: 10.5px;
+  line-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--cyd-bg3);
+  color: var(--cyd-tx2);
+}
+
+.cyd-combo-caret {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-combo-popover {
+  position: fixed;
+  z-index: 2147483002;
+  display: flex;
+  flex-direction: column;
+  background: var(--cyd-bg);
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius);
+  box-shadow: var(--cyd-shadow);
+  overflow: hidden;
+  animation: cyd-combo-in 0.12s ease-out;
+}
+
+@keyframes cyd-combo-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cyd-combo-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--cyd-bd);
+  color: var(--cyd-tx3);
+}
+
+.cyd-combo-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 34px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--cyd-tx);
+  font-family: var(--cyd-font-ui);
+  font-size: 12.5px;
+}
+
+.cyd-combo-list {
+  overflow-y: auto;
+  padding: 4px;
+  overscroll-behavior: contain;
+}
+
+.cyd-combo-group {
+  padding: 8px 8px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cyd-tx3);
+}
+
+.cyd-combo-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border-radius: var(--cyd-radius-sm);
+  color: var(--cyd-tx);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.cyd-combo-active {
+  background: var(--cyd-ac-bg);
+}
+
+.cyd-combo-option[aria-selected="true"] {
+  font-weight: 500;
+}
+
+.cyd-combo-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cyd-combo-check {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--cyd-ac);
+}
+
+.cyd-combo-empty {
+  padding: 16px 8px;
+  text-align: center;
+  color: var(--cyd-tx3);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyd-combo-popover {
+    animation: none;
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1440,4 +1721,230 @@ fieldset.cyd-chips {
   padding: 0;
   border: none;
   min-width: 0;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Scanner tab                                                             */
+/* ---------------------------------------------------------------------- */
+
+.cyd-scan-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 560px) {
+  .cyd-scan-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.cyd-scan-tile {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--cyd-bd);
+  border-radius: var(--cyd-radius);
+  background: var(--cyd-surface);
+  font-family: var(--cyd-font-ui);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.cyd-scan-tile:hover {
+  border-color: var(--cyd-bd2);
+}
+
+.cyd-scan-tile:focus-visible {
+  outline: 2px solid var(--cyd-ac);
+  outline-offset: 1px;
+}
+
+.cyd-scan-tile-active {
+  border-color: var(--cyd-ac);
+  box-shadow: inset 0 0 0 1px var(--cyd-ac);
+}
+
+.cyd-scan-tile-count {
+  font-family: var(--cyd-font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--cyd-tx);
+}
+
+.cyd-scan-tile-label {
+  font-size: 11.5px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-scan-tile-danger .cyd-scan-tile-count {
+  color: var(--cyd-re);
+}
+
+.cyd-scan-tile-warn .cyd-scan-tile-count {
+  color: var(--cyd-am);
+}
+
+.cyd-scan-tile-ok .cyd-scan-tile-count {
+  color: var(--cyd-gr);
+}
+
+.cyd-scan-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+}
+
+.cyd-scan-icon-danger {
+  background: var(--cyd-re-bg);
+  color: var(--cyd-re);
+}
+
+.cyd-scan-icon-warn {
+  background: var(--cyd-am-bg);
+  color: var(--cyd-am);
+}
+
+.cyd-scan-icon-ok {
+  background: var(--cyd-gr-bg);
+  color: var(--cyd-gr);
+}
+
+.cyd-scan-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cyd-scan-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cyd-tx);
+  font-weight: 500;
+}
+
+.cyd-scan-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--cyd-font-mono);
+  font-size: 11px;
+  color: var(--cyd-tx3);
+}
+
+.cyd-scan-detail {
+  padding: 4px 12px 12px 44px;
+  background: var(--cyd-ac-bg);
+}
+
+.cyd-scan-why {
+  margin: 0 0 10px;
+  color: var(--cyd-tx);
+  font-size: 12.5px;
+}
+
+.cyd-scan-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 12px;
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.cyd-scan-facts dt {
+  color: var(--cyd-tx3);
+}
+
+.cyd-scan-facts dd {
+  margin: 0;
+  color: var(--cyd-tx);
+  min-width: 0;
+}
+
+.cyd-scan-url {
+  font-family: var(--cyd-font-mono);
+  font-size: 11.5px;
+  word-break: break-all;
+}
+
+.cyd-scan-snippet {
+  margin-bottom: 10px;
+}
+
+.cyd-scan-snippet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cyd-tx);
+}
+
+.cyd-scan-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cyd-link-btn {
+  appearance: none;
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cyd-ac);
+  font-family: var(--cyd-font-ui);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cyd-link-btn:hover {
+  text-decoration: underline;
+}
+
+.cyd-toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: var(--cyd-bd);
+}
+
+/* Set by DevtoolsTablist when the tabs don't fit: tighter spacing first, then
+   icons go, so every label still shows. */
+.cyd-tablist[data-cyd-compact] .cyd-tab {
+  gap: 4px;
+  padding: 10px 5px;
+}
+.cyd-tablist[data-cyd-compact="labels"] .cyd-tab .cyd-icon {
+  display: none;
+}
+
+.cyd-banner-text {
+  margin: 0 0 8px;
+}
+
+.cyd-banner .cyd-pre {
+  margin-top: 0;
+}
+
+.cyd-banner-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }

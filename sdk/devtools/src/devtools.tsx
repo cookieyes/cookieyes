@@ -10,6 +10,8 @@ import { useDevtoolsTheme } from "./hooks/useDevtoolsTheme.js";
 import { useDevtoolsUiState } from "./hooks/useDevtoolsUiState.js";
 import { useForceRegion } from "./hooks/useForceRegion.js";
 import { useKeyboardShortcut } from "./hooks/useKeyboardShortcut.js";
+import { useLanguageOverride } from "./hooks/useLanguageOverride.js";
+import { useScanner } from "./hooks/useScanner.js";
 import type { CookieYesDevtoolsProps } from "./types.js";
 
 /**
@@ -23,6 +25,7 @@ import type { CookieYesDevtoolsProps } from "./types.js";
 export const __COOKIEYES_DEVTOOLS_REAL__ = true;
 
 const PANEL_ID = "cookieyes-devtools-panel";
+const NO_MANAGED: never[] = [];
 
 /**
  * The in-page CookieYes debugging panel. SSR-safe (`_tryGetCookieYes()`
@@ -57,6 +60,8 @@ export function CookieYesDevtools(props?: CookieYesDevtoolsProps) {
   const { region: forcedRegion, setRegion, clearRegion } = useForceRegion();
   const { data, clearEvents } = useDevRuntimeData(runtime);
   const theme = useDevtoolsTheme(props?.theme);
+  const language = useLanguageOverride(runtime ?? undefined);
+  const scanner = useScanner(runtime, data?.managed ?? NO_MANAGED);
 
   useKeyboardShortcut(
     state.open,
@@ -86,12 +91,21 @@ export function CookieYesDevtools(props?: CookieYesDevtoolsProps) {
   // (the answer is known) rather than trigger its manual-vs-detect warning on
   // every render.
   const previewDecision: RegionDecision =
-    forcedRegion !== undefined && regionConfig?.region && !regionConfig.regulation
+    forcedRegion !== undefined &&
+    regionConfig?.region &&
+    !regionConfig.regulation &&
+    // A provider can pin the regulation per request; then the region is ignored.
+    baseDecision.source !== "manual"
       ? resolveRegion(regionConfig.region, undefined, forcedRegion)
       : baseDecision;
   // An override is set but can't take effect: `regulation` is pinned manually
   // (or there is no region config at all), so production ignores the region too.
   const forcedRegionIgnored = forcedRegion !== undefined && previewDecision.source !== "forced";
+  // The override is read once, when the runtime (or a provider) starts, so a
+  // change made here applies on the next page load. Until then the page still
+  // runs on `baseDecision`; say so instead of presenting the preview as live.
+  const appliedForced = baseDecision.source === "forced" ? baseDecision.region : undefined;
+  const pendingReload = !forcedRegionIgnored && forcedRegion !== appliedForced;
 
   // Story 3.5 ("clear which header or signal drove the real decision"): a
   // server helper (`getServerRegion()`) is the only thing that actually knows
@@ -133,6 +147,8 @@ export function CookieYesDevtools(props?: CookieYesDevtoolsProps) {
             region: {
               ...data.region,
               decision: previewDecision,
+              applied: baseDecision,
+              pendingReload,
               forcedRegion,
               forcedRegionIgnored,
               drivingSignal: drivingSignalLabel,
@@ -146,6 +162,12 @@ export function CookieYesDevtools(props?: CookieYesDevtoolsProps) {
           onThemeChange={theme.setTheme}
           runtime={runtime}
           onClearEvents={clearEvents}
+          language={language.info}
+          languageOverride={language.override}
+          languageStatus={language.status}
+          onLanguageChange={language.setLanguage}
+          onClearLanguage={language.clearLanguage}
+          scanner={scanner}
         />
       ) : null}
     </div>
