@@ -1,5 +1,13 @@
 # @cookieyes/test
 
+## 0.1.2
+
+### Patch Changes
+
+- 8d7036c: The README on npm now opens with the CookieYes banner, like the other packages.
+
+  Documentation only; no behaviour change.
+
 ## 0.1.1
 
 ### Patch Changes
