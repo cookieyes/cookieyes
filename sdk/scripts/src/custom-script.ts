@@ -1,4 +1,5 @@
 import type { Cleanup, Integration } from "@cookieyes/core";
+import { devTrackScript } from "./dev-queue.js";
 import { createQueue } from "./queue.js";
 
 export type CustomScriptConfig = {
@@ -61,6 +62,7 @@ export function customScript(config: CustomScriptConfig): Integration {
       const el = document.createElement("script");
       el.id = elId;
       el.src = config.src;
+      devTrackScript(el, config.category);
       el.async = true;
       for (const [key, value] of Object.entries(config.attrs ?? {})) el.setAttribute(key, value);
       el.addEventListener("load", () => resolve(el), { once: true });

@@ -1,29 +1,12 @@
 ---
 "@cookieyes/core": minor
 "@cookieyes/react": minor
-"@cookieyes/nextjs": patch
+"@cookieyes/nextjs": minor
 "@cookieyes/scripts": patch
 ---
 
-Dev-only instrumentation hooks for the new `@cookieyes/devtools` package (DEVP-149).
+The SDK now reports what it is doing in development, so the new `@cookieyes/devtools` panel can show it. Production builds are unchanged.
 
-`@cookieyes/core` gains an internal, `@internal`-tagged pub/sub registry (`_devHookRegistry`)
-that the network blocker, Google Consent Mode broadcast, integration runner, and consent
-manager report to — blocked requests, Consent Mode pushes, integration status changes, and
-consent saves. `@cookieyes/react`'s `CookieYesRuntime` exposes the registry as a new internal
-`_devtools` field so `@cookieyes/devtools` can subscribe the same way `useConsent` subscribes
-to the runtime. None of this is a public API: it exists so the devtools panel can show live
-state without scraping `window` or patching anything a second time.
+**What is reported.** Consent saves, integration status changes, requests the network blocker stops, Google Consent Mode updates, the region decision, and every script or iframe the SDK manages (`registerScript`, `GatedScript`, `GatedFrame` and the `@cookieyes/scripts` integrations). The reports go onto a global array that the panel reads, the same way a page reads `window.dataLayer`. Every report is guarded by `process.env.NODE_ENV`, so a production build removes it.
 
-`resolveRegion()` (`@cookieyes/core`) gains an optional third parameter, a forced region code
-used in place of geo-detection — the mechanism behind the devtools panel's region override
-(`RegionDecision.source` gains `"forced"`). Omitting the parameter is byte-for-byte identical
-to the previous behavior. `@cookieyes/nextjs` gains `getServerRegion()` (alongside
-`getServerConsent`) so a server-rendered banner can reflect an active override on its next
-request, and report which geo header actually drove an unforced decision.
-
-Every new code path is dev-only, guarded by the SDK's existing `process.env.NODE_ENV ===
-"production"` literal-guard pattern (see `@cookieyes/core`'s `deprecations.ts`) so it is dead
-code in a production bundle — verified by `tools/size`'s size gate, which now includes a
-`with-nextjs-devtools` fixture asserting both a byte ceiling and the absence of the devtools
-panel's own code from any production chunk.
+**New: force a region in development.** `resolveRegion()` takes an optional third argument, a region code to use instead of detection, and `RegionDecision.source` can now be `"forced"`. Without the argument it behaves exactly as before. `CookieYesProvider` accepts a `forcedRegion` prop, and `@cookieyes/nextjs/server` adds `getServerRegion()`. It returns the region from the request's geo headers, the header that supplied it, the GPC signal and any devtools override, so a server-rendered banner follows a forced region. Production builds ignore overrides.

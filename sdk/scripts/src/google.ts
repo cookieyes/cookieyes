@@ -1,5 +1,6 @@
 import type { Cleanup, Integration, SetupCtx } from "@cookieyes/core";
 import { deleteCookie } from "./cookies.js";
+import { devTrackScript } from "./dev-queue.js";
 
 /**
  * Declared locally rather than pulled in from `@types/node` — see the
@@ -217,6 +218,7 @@ function ensureGtagLibrary(firstId: string): HTMLScriptElement | null {
   script.id = GTAG_SCRIPT_ID;
   script.async = true;
   script.src = `${GTAG_SRC}?id=${encodeURIComponent(firstId)}`;
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }
@@ -253,6 +255,7 @@ function ensureGtm(containerId: string): HTMLScriptElement | null {
   script.id = GTM_SCRIPT_ID;
   script.async = true;
   script.src = `${GTM_SRC}?id=${encodeURIComponent(containerId)}`;
+  devTrackScript(script);
   document.head.appendChild(script);
   return script;
 }

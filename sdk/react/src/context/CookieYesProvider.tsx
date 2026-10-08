@@ -7,7 +7,7 @@ import {
   type Regulation,
   resolveRegion,
 } from "@cookieyes/core";
-import { type ReactNode, useMemo, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useMemo, useSyncExternalStore } from "react";
 import { RegionContext } from "./region-context.js";
 import { SsrConsentContext } from "./ssr-consent-context.js";
 
@@ -16,6 +16,11 @@ import { SsrConsentContext } from "./ssr-consent-context.js";
  * identical note in core's `deprecations.ts`.
  */
 declare const process: { env: { NODE_ENV?: string } };
+
+/** The global queue core pushes to; see the note in core's `network-blocker.ts`. */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
 
 /**
  * Dev-only `forceRegion` reader (`@cookieyes/devtools`, AD-4) — client-side.
@@ -154,6 +159,20 @@ export function CookieYesProvider(props: CookieYesProviderProps) {
     () => decide(region, regulation, forcedRegion),
     [region, regulation, forcedRegion],
   );
+  // Dev-only devtools instrumentation: the regulation this provider resolved
+  // per request is what the banner shows, and it can differ from the runtime's
+  // own (startup) value, which is all a panel mounted outside the provider can
+  // read. Folds away in production; see core's `network-blocker.ts`.
+  if (process.env.NODE_ENV !== "production") {
+    // biome-ignore lint/correctness/useHookAtTopLevel: guarded by a build-time constant, stable per build.
+    useEffect(() => {
+      const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+        v: 1,
+      }));
+      if (q.length >= 500) q.shift();
+      q.push({ k: "p", t: Date.now(), d: value });
+    }, [value]);
+  }
   return (
     <RegionContext.Provider value={value}>
       <SsrConsentContext.Provider value={initialConsent}>{children}</SsrConsentContext.Provider>

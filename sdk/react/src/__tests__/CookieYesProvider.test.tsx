@@ -166,3 +166,41 @@ describe("CookieYesProvider", () => {
     });
   });
 });
+
+describe("CookieYesProvider devtools instrumentation", () => {
+  type DevQueueEntry = { k: string; t: number; d: unknown };
+  type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueEntry[] };
+  afterEach(() => {
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+  });
+
+  it("reports the regulation it resolved, which can differ from the runtime's", () => {
+    process.env.NODE_ENV = "development";
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    mountCookieOnly("GDPR");
+    render(
+      <CookieYesProvider regulation="CCPA">
+        <span />
+      </CookieYesProvider>,
+    );
+    const pushed = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ?? []).filter(
+      (e) => e.k === "p",
+    );
+    expect(pushed[pushed.length - 1]?.d).toMatchObject({ regulation: "CCPA", source: "manual" });
+  });
+
+  it("reports nothing in production", () => {
+    process.env.NODE_ENV = "production";
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    mountCookieOnly("GDPR");
+    render(
+      <CookieYesProvider regulation="CCPA">
+        <span />
+      </CookieYesProvider>,
+    );
+    const pushed = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ?? []).filter(
+      (e) => e.k === "p",
+    );
+    expect(pushed).toEqual([]);
+  });
+});
