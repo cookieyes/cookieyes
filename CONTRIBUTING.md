@@ -170,6 +170,11 @@ cover, fix the files in the same PR — that's how the rules improve.
    semver bump, and write a short, user-facing summary. Commit the generated file in
    `.changeset/`.
 5. Open a PR against `main`. CI must be green and at least one maintainer must approve.
+   A bot comments with the PR's effect on bundle and package size, and a PR that grows
+   core or the React layer past the per-change limit cannot merge. If the growth is
+   deliberate, write `Size override: <reason>` in the PR description and ask a
+   maintainer to add the `size-override` label. [`tools/size/README.md`](./tools/size/README.md)
+   has the limits.
 
 ## Releases
 

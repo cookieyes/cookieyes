@@ -1,0 +1,112 @@
+name: Bundle size
+
+# Measures the SDK, enforces the budgets in tools/size/budgets.json and, on a
+# pull request, the per-change limits against the base branch's committed
+# size-report.json. The comment it writes is posted by size-comment.yml, which
+# has the write token this workflow deliberately does not.
+#
+# Its own workflow, not a job in ci.yml, so that adding the size-override label
+# or writing the reason into the description re-runs this check alone instead
+# of the whole pipeline.
+
+on:
+  push:
+    branches: [main, integration/next-release]
+  pull_request:
+    branches: [main, integration/next-release]
+    types: [opened, synchronize, reopened, labeled, unlabeled, edited]
+
+concurrency:
+  group: size-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  size-budget:
+    name: Bundle-size budget
+    runs-on: ubuntu-latest
+    # A single Node version on purpose. The measurement is a *delta* against a
+    # control app built in the same job, so it is insensitive to the runner,
+    # but running it three times across the Node matrix would produce three
+    # near-identical numbers and invite arguing about which one is the figure.
+    # There is one figure, and it comes from here.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The fixtures install the SDK from packed tarballs, so `dist/` must exist
+      # and must be current. `measure.mjs` fails loudly on a missing one rather
+      # than quietly measuring nothing.
+      - name: Build SDK
+        run: pnpm build
+
+      # The committed report is the base branch's measurement: `pnpm build:web`
+      # fails when it no longer matches the SDK in the tree, so it cannot be
+      # stale on a branch that passed CI. Reading it avoids building every
+      # fixture a second time.
+      - name: Fetch the base branch's size report
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          git show FETCH_HEAD:tools/size/size-report.json > "$RUNNER_TEMP/base-size-report.json"
+
+      # The description is passed through the environment, never interpolated
+      # into the script, because its author controls it.
+      - name: Measure and enforce budgets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HAS_OVERRIDE_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'size-override') }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          args=(--check)
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            args+=(--base "$RUNNER_TEMP/base-size-report.json")
+            args+=(--comment "$RUNNER_TEMP/size-comment/comment.md")
+            if [ "$HAS_OVERRIDE_LABEL" = "true" ]; then
+              reason=$(printf '%s\n' "$PR_BODY" | tr -d '\r' \
+                | sed -n 's/^[[:space:]]*Size override:[[:space:]]*//p' | head -n 1)
+              args+=(--override "$reason")
+            fi
+          fi
+          node tools/size/measure.mjs "${args[@]}"
+
+      # Uploaded whether or not the budget passed: on a failure this is the
+      # evidence for what grew, and re-running the job to find out is worse.
+      - name: Upload size report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: size-report
+          path: tools/size/size-report.json
+          if-no-files-found: error
+
+      - name: Record the pull request number
+        if: always() && github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/size-comment"
+          echo "$PR_NUMBER" > "$RUNNER_TEMP/size-comment/pr-number"
+
+      - name: Upload size comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v5
+        with:
+          name: size-comment
+          path: ${{ runner.temp }}/size-comment/
+          if-no-files-found: ignore

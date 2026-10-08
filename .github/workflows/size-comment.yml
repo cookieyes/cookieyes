@@ -1,0 +1,80 @@
+name: Bundle size comment
+
+# Posts the comment the Bundle size workflow wrote onto its pull request, and
+# edits the same comment on every later run instead of adding a new one.
+#
+# A separate workflow because a pull_request run from a fork only gets a
+# read-only token. This one runs in the repository's own context with write
+# access, so it never checks out or runs the pull request's code: it reads the
+# artifact as data and posts it. GitHub only triggers workflow_run from the
+# copy of this file on the default branch, so a change here takes effect once
+# it reaches main.
+
+on:
+  workflow_run:
+    workflows: [Bundle size]
+    types: [completed]
+
+permissions:
+  actions: read
+  pull-requests: write
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      # Missing when the run failed before measuring, e.g. a broken build. There
+      # is then nothing to report, and the failed check already says so.
+      - name: Download the size comment
+        id: download
+        continue-on-error: true
+        uses: actions/download-artifact@v5
+        with:
+          name: size-comment
+          path: size-comment
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Post or update the comment
+        if: steps.download.outcome == 'success'
+        uses: actions/github-script@v9
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            if (!fs.existsSync("size-comment/comment.md")) {
+              core.info("The run wrote no comment; it failed before measuring.");
+              return;
+            }
+            const number = Number(fs.readFileSync("size-comment/pr-number", "utf8").trim());
+            if (!Number.isInteger(number) || number <= 0) {
+              core.setFailed("The artifact has no valid pull request number.");
+              return;
+            }
+            const { owner, repo } = context.repo;
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: number });
+            // The artifact was produced by code the pull request controls, so it
+            // only posts to the pull request whose head is the commit measured.
+            // That also drops a slow run that a newer push has overtaken.
+            if (pr.head.sha !== process.env.HEAD_SHA) {
+              core.info(`Skipping: #${number} is no longer at ${process.env.HEAD_SHA}.`);
+              return;
+            }
+            const marker = "<!-- cookieyes-bundle-size -->";
+            const body = `${marker}\n${fs.readFileSync("size-comment/comment.md", "utf8")}`;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (c) => c.user?.type === "Bot" && c.body?.includes(marker),
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number: number, body });
+            }

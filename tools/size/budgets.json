@@ -91,6 +91,29 @@
       "total": 17780
     }
   },
+  "perChange": {
+    "$comment": [
+      "How much one pull request may grow the SDK, enforced by `measure.mjs --check --base`",
+      "against the base branch's committed size-report.json. The ceilings above stop the",
+      "total from creeping; these stop a single change from spending the headroom in one",
+      "go without anyone deciding to.",
+      "",
+      "Only `initial` is limited, in bytes of gzip. `total` is still capped by `budgets`,",
+      "so moving code behind a lazy import cannot be reported as a saving and cannot grow",
+      "the package without limit either. `interface` is the full React layer (banner,",
+      "preferences and recall). `tarballGrowth` is a fraction of each packed npm tarball",
+      "of core, react and nextjs.",
+      "",
+      "A pull request labelled `size-override` with a `Size override: <reason>` line in",
+      "its description passes these limits; the reason is quoted in the size comment. The",
+      "override never applies to `budgets`, which are raised here with a reason instead."
+    ],
+    "apps": {
+      "core": { "initial": 1536 },
+      "interface": { "initial": 4096 }
+    },
+    "tarballGrowth": 0.1
+  },
   "targets": {
     "$comment": [
       "The agreed targets, restated on the measured basis: core under 8 KB and the",
