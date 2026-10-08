@@ -34,6 +34,10 @@ const PACKAGES = [
   // must be packed and pinned like the rest — otherwise pnpm resolves that one
   // nested dependency from the registry (see scaffold-example-app.mjs's header).
   { name: "@cookieyes/scripts", dir: join(repoRoot, "sdk", "scripts") },
+  // Packed so tools/size's with-nextjs-devtools fixture (AD-5 / A2) can install
+  // it from a tarball like every other fixture — not used by the matrix's own
+  // example app otherwise.
+  { name: "@cookieyes/devtools", dir: join(repoRoot, "sdk", "devtools") },
 ];
 
 function parseArgs(argv) {

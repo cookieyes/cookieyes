@@ -138,7 +138,14 @@ export type {
   RuntimeMode,
 } from "./runtime.js";
 // Runtime — canonical initCookieYes + deprecated builder + module-level registry
+/**
+ * @internal — null on the server (or when no runtime is mounted yet). Added to
+ * the public barrel so `@cookieyes/devtools` can consume it like any other
+ * `@cookieyes/react` symbol, through the published entry point rather than a
+ * relative cross-package import. Not a supported public API for general use.
+ */
 export {
+  _tryGetCookieYes,
   createCookieYes,
   getCookieYes,
   initCookieYes,

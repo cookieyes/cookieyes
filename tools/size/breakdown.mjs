@@ -221,7 +221,7 @@ for (const layer of LAYERS) {
 }
 
 const versions = {};
-for (const pkg of ["core", "react"]) {
+for (const pkg of ["core", "react", "devtools"]) {
   const manifest = JSON.parse(readFileSync(join(REPO, "sdk", pkg, "package.json"), "utf8"));
   versions[manifest.name] = manifest.version;
 }

@@ -72,7 +72,13 @@ export type {
 // Styled presets
 // Controls
 // Core utilities
+/**
+ * @internal — mirrors `@cookieyes/react`'s public barrel (see the note there)
+ * so `@cookieyes/devtools` can consume it via this package's published entry
+ * too. Not a supported public API for general use.
+ */
 export {
+  _tryGetCookieYes,
   Banner,
   blockIframes,
   CookieBanner,

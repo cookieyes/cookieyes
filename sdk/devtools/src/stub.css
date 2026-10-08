@@ -1,0 +1,9 @@
+/*
+ * @cookieyes/devtools in a production build: intentionally empty.
+ *
+ * `@cookieyes/devtools/styles.css` resolves here unless the bundler sets the
+ * `development` condition, the same way the package's JS entry resolves to
+ * the null-rendering stub. Without this, the documented
+ * `import "@cookieyes/devtools/styles.css"` shipped the whole panel stylesheet
+ * to every visitor while the panel itself was stubbed out.
+ */

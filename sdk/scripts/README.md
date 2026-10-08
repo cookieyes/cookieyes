@@ -1,4 +1,11 @@
-# @cookieyes/scripts
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes Consent SDK" width="820">
+  </picture>
+</p>
+
+<h1 align="center">@cookieyes/scripts</h1>
 
 Ready-made, consent-gated third-party integrations for [CookieYes](https://github.com/cookieyes/cookieyes).
 Guides for every integration: **[developers.cookieyes.com](https://developers.cookieyes.com/docs/nextjs/integrations)**.

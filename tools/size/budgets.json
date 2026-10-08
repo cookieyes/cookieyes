@@ -69,6 +69,26 @@
       ],
       "initial": 14993,
       "total": 17680
+    },
+    "devtools": {
+      "$comment": [
+        "Amendment A2 (design doc §0, overrides AD-5's 'equality' rule for this one entry):",
+        "the with-nextjs-devtools fixture mounts <CookieYesDevtools/> from @cookieyes/devtools",
+        "on top of the exact with-nextjs fixture. Its budget is the 'nextjs' entry's own",
+        "ceiling PLUS a 100-byte-gzip allowance for the stub module wrapper (package.json's",
+        "conditional-exports resolve the production build to devtools' stub entry, which",
+        "renders null and touches nothing — see AD-1). A delta near 0 is expected; near 100",
+        "would mean the stub wrapper itself grew and is worth a second look.",
+        "",
+        "This budget is only HALF of A2's proof. The other half — that the production bundle",
+        "contains NONE of the real panel's code (not just that the delta is small) — is a",
+        "separate content check in measure.mjs that greps every emitted chunk for marker",
+        "strings that exist only in the real panel (cyd-* classes, tab labels, the",
+        "__COOKIEYES_DEVTOOLS_REAL__ sentinel) and fails the gate if any is found, independent",
+        "of this byte ceiling."
+      ],
+      "initial": 15093,
+      "total": 17780
     }
   },
   "targets": {

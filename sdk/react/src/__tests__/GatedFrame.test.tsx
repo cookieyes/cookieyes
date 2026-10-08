@@ -5,6 +5,12 @@ import { clearCookie, mountOffline, teardown } from "./test-utils.js";
 
 const SRC = "https://www.youtube.com/embed/dQw4w9WgXcQ";
 
+/** Declared locally — see the identical note in core's `deprecations.ts`. */
+declare const process: { env: { NODE_ENV?: string | undefined } };
+
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueEntry[] };
+
 beforeEach(clearCookie);
 afterEach(() => {
   cleanup();
@@ -77,5 +83,37 @@ describe("GatedFrame", () => {
     // the placeholder mid-session.
     act(() => rt.manager.rejectAll());
     expect(container.querySelector("iframe")).not.toBeNull();
+  });
+});
+
+describe("GatedFrame devtools instrumentation", () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv;
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+  });
+
+  it("records its src as managed on the devtools queue, even behind the placeholder", () => {
+    process.env.NODE_ENV = "development";
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    mountOffline("GDPR");
+    render(<GatedFrame src={SRC} category="analytics" />);
+    const pushed = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ?? []).filter(
+      (e) => e.k === "s",
+    );
+    expect(pushed.map((e) => e.d)).toEqual([
+      { id: SRC, src: SRC, category: "analytics", via: "GatedFrame" },
+    ]);
+  });
+
+  it("records nothing in production", () => {
+    process.env.NODE_ENV = "production";
+    delete (globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__;
+    mountOffline("GDPR");
+    render(<GatedFrame src={SRC} category="analytics" />);
+    const pushed = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ?? []).filter(
+      (e) => e.k === "s",
+    );
+    expect(pushed).toEqual([]);
   });
 });

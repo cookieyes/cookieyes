@@ -1,5 +1,17 @@
 import type { GoogleConsentSignal, ResolvedCategories } from "./categories.js";
 
+/**
+ * Declared locally rather than pulled in from `@types/node` — see the
+ * identical note in `deprecations.ts`. Guards the inline devtools queue push
+ * below so a consumer's bundler can fold it away in production.
+ */
+declare const process: { env: { NODE_ENV?: string } };
+
+/** See the identical declaration + note in `network-blocker.ts`. */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
+
 function warn(message: string): void {
   if (typeof console !== "undefined") console.warn(`[cookieyes] ${message}`);
 }
@@ -135,4 +147,18 @@ export function broadcastGoogleConsent(
     dataLayer.push(arguments);
   };
   gtag("consent", "update", consent);
+
+  // Dev-only devtools instrumentation: an inline push onto a global queue —
+  // see the note at the top of network-blocker.ts. Folds away in production.
+  if (process.env.NODE_ENV !== "production") {
+    const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+      v: 1,
+    }));
+    if (q.length >= 500) q.shift();
+    q.push({
+      k: "g",
+      t: Date.now(),
+      d: { signals: consent, trigger: "update", source: "broadcast" },
+    });
+  }
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createCookieYes, getCookieYes, resetCookieYes } from "../runtime.js";
+import { createCookieYes, getCookieYes, initCookieYes, resetCookieYes } from "../runtime.js";
 
 function clearCookie(): void {
   document.cookie = "cookieyes-consent=; max-age=0; path=/";
@@ -119,6 +119,20 @@ describe("runtime snapshot + actions", () => {
     expect(ssr.hasActed).toBe(false);
     expect(ssr.regulation).toBe("DEFAULT");
     expect(ssr.categories.necessary).toBe(true);
+  });
+
+  it("keeps a dev forceRegion override out of the server snapshot, so hydration matches", () => {
+    // The server never sees the browser's __cyd_region cookie, so the snapshot
+    // React hydrates against must be the unforced decision; the live snapshot
+    // carries the override.
+    document.cookie = "__cyd_region=US-CA; path=/";
+    const rt = initCookieYes({
+      mode: "cookie-only",
+      region: { detect: () => "DE", map: { DE: "GDPR", "US-CA": "CCPA" } },
+    });
+    expect(rt.getServerSnapshot().regulation).toBe("GDPR");
+    expect(rt.getSnapshot().regulation).toBe("CCPA");
+    document.cookie = "__cyd_region=; max-age=0; path=/";
   });
 
   it("showOptOut/hideOptOut are idempotent (no-op when already in that state)", () => {

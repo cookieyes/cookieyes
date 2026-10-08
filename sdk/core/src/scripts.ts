@@ -1,10 +1,33 @@
 import type { ScriptEntry } from "./types.js";
 
+/** Declared locally so the guard survives as a literal; see `deprecations.ts`. */
+declare const process: { env: { NODE_ENV?: string } };
+
+/** See the identical declaration + note in `network-blocker.ts`. */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
+
 const registry = new Map<string, ScriptEntry>();
 const injected = new Map<string, HTMLScriptElement>();
 
 export function registerScript(entry: ScriptEntry): void {
   registry.set(entry.id, entry);
+  // Dev-only devtools instrumentation: tells the scanner this src is managed,
+  // since the injected `<script>` carries no marker of its own. Pushed on
+  // registration, not injection, so a script still waiting for consent shows
+  // as managed too. Folds away in production; see `network-blocker.ts`.
+  if (process.env.NODE_ENV !== "production") {
+    const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+      v: 1,
+    }));
+    if (q.length >= 500) q.shift();
+    q.push({
+      k: "s",
+      t: Date.now(),
+      d: { id: entry.id, src: entry.src, category: entry.category, via: "registerScript" },
+    });
+  }
 }
 
 /**

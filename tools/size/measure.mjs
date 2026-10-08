@@ -108,6 +108,12 @@ const DEFAULT_APPS = [
     key: "nextjs",
     label: "@cookieyes/nextjs — banner + preferences (mirrors fair-cookieyes)",
   },
+  {
+    dir: "with-nextjs-devtools",
+    key: "devtools",
+    label:
+      "@cookieyes/nextjs + <CookieYesDevtools/> mounted (AD-5 / A2 — a production build must exclude the real panel)",
+  },
 ];
 
 const args = process.argv.slice(2);
@@ -182,6 +188,21 @@ function measureFiles(files) {
 // ---------------------------------------------------------------------------
 
 /** Every `.js` Turbopack emitted under `.next/static`, as absolute paths. */
+/** Every stylesheet a fixture's build emitted, for the devtools content check. */
+function emittedStylesheets(appDir) {
+  const root = join(appDir, ".next", "static");
+  const found = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir).sort()) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (name.endsWith(".css")) found.push(full);
+    }
+  };
+  if (existsSync(root)) walk(root);
+  return found;
+}
+
 function emittedChunks(appDir) {
   const root = join(appDir, ".next", "static");
   const found = [];
@@ -315,7 +336,8 @@ function installFixture(appDir, name, tarballs) {
   const resolved = manifest
     .replace("__TARBALL_CORE__", `file:${tarballs["@cookieyes/core"]}`)
     .replace("__TARBALL_REACT__", `file:${tarballs["@cookieyes/react"]}`)
-    .replace("__TARBALL_NEXTJS__", `file:${tarballs["@cookieyes/nextjs"]}`);
+    .replace("__TARBALL_NEXTJS__", `file:${tarballs["@cookieyes/nextjs"]}`)
+    .replace("__TARBALL_DEVTOOLS__", `file:${tarballs["@cookieyes/devtools"]}`);
   if (resolved.includes("__TARBALL_")) {
     throw new Error(`fixture "${name}" has an unresolved tarball placeholder in package.json`);
   }
@@ -388,7 +410,7 @@ function installFixture(appDir, name, tarballs) {
   // `pnpm build` just produced. Everything above is a proxy for this; this is
   // the invariant. Without it, `file:` resolution caching silently measured a
   // previous run's code and reported a real change as a 0-byte saving.
-  for (const pkg of ["core", "react", "nextjs", "scripts"]) {
+  for (const pkg of ["core", "react", "nextjs", "scripts", "devtools"]) {
     const built = join(REPO, "sdk", pkg, "dist", "index.js");
     const installed = join(appDir, "node_modules", "@cookieyes", pkg, "dist", "index.js");
     if (!existsSync(installed) || !existsSync(built)) continue;
@@ -466,7 +488,7 @@ if (doBuild) {
   // at that path is different. Putting the content hash in the path makes the
   // specifier change whenever the code does.
   const stamp = createHash("sha256");
-  for (const pkg of ["core", "react", "nextjs", "scripts", "test"]) {
+  for (const pkg of ["core", "react", "nextjs", "scripts", "test", "devtools"]) {
     const dist = join(REPO, "sdk", pkg, "dist", "index.js");
     if (existsSync(dist)) stamp.update(readFileSync(dist));
   }
@@ -667,6 +689,50 @@ for (const [key, budget] of Object.entries(budgets.budgets)) {
     const line = `${key}.${scope}: ${fmtKb(actual)} against a ${fmtKb(limit)} budget (${signedKb(headroom)} headroom)`;
     if (headroom < 0) failures.push(line);
     else notes.push(line);
+  }
+}
+
+// A2 item 2 (design doc §0): the real proof that the production bundle
+// contains NONE of the real devtools panel's code — not just that its byte
+// delta is small (a small delta could still mean partial, dead-but-present
+// code). Distinctive strings that only exist in the real panel's module graph
+// (never in the stub) must be absent from every emitted JS chunk of the
+// devtools fixture's production build.
+const DEVTOOLS_REAL_PANEL_MARKERS = [
+  "__COOKIEYES_DEVTOOLS_REAL__",
+  "cyd-trigger",
+  "cyd-tablist",
+  "data-cyd-part",
+  "Google Consent Mode",
+];
+
+if (measured.devtools) {
+  const devtoolsAppDir = join(FIXTURES, "with-nextjs-devtools");
+  const devtoolsSets = chunkSets(devtoolsAppDir);
+  // Stylesheets too: the docs have users import `@cookieyes/devtools/styles.css`,
+  // and an unconditional export once shipped the whole panel stylesheet to
+  // production while the JS check above stayed green.
+  const allChunks = new Set([
+    ...devtoolsSets.initial,
+    ...devtoolsSets.total,
+    ...emittedStylesheets(devtoolsAppDir),
+  ]);
+  for (const file of allChunks) {
+    const source = readFileSync(file, "utf8");
+    for (const marker of DEVTOOLS_REAL_PANEL_MARKERS) {
+      if (source.includes(marker)) {
+        failures.push(
+          `devtools content check: chunk "${relative(REPO, file)}" contains the real panel's ` +
+            `marker string "${marker}" — the production build did not exclude @cookieyes/devtools' ` +
+            `real entry (AD-1 / A2 item 2).`,
+        );
+      }
+    }
+  }
+  if (!allChunks.size) {
+    failures.push(
+      "devtools content check: no chunks were found to check — the fixture may not have built",
+    );
   }
 }
 

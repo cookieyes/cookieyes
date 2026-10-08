@@ -4,6 +4,29 @@ import {
 } from "./network-blocker-slot.js";
 import type { ConsentCategory } from "./types.js";
 
+/**
+ * Declared locally rather than pulled in from `@types/node` — see the
+ * identical note in `deprecations.ts`. The guard below needs
+ * `process.env.NODE_ENV` to survive into the published output as that exact
+ * literal so a consumer's bundler can fold the whole guarded block —
+ * including the queue-array access and the object literal it would otherwise
+ * construct — away in production.
+ */
+declare const process: { env: { NODE_ENV?: string } };
+
+/**
+ * A dataLayer/gtag-style global queue, not a shared module: `@cookieyes/core`
+ * imports nothing for devtools (no shared registry, no function to keep
+ * alive across a bundler's reachability analysis — see the design's "option
+ * A" note). Every push site inlines this exact shape; `@cookieyes/devtools`
+ * reads `globalThis.__COOKIEYES_DEVTOOLS__` directly, the same way a page
+ * reads `window.dataLayer`. `v` is a version marker devtools checks before
+ * trusting the shape of what's queued.
+ */
+type DevQueueEntry = { k: string; t: number; d: unknown };
+type DevQueueArray = DevQueueEntry[] & { v?: number };
+type DevGlobal = typeof globalThis & { __COOKIEYES_DEVTOOLS__?: DevQueueArray };
+
 export type NetworkBlockerRule = {
   id: string;
   domain: string;
@@ -96,6 +119,16 @@ export function installNetworkBlocker(
       );
     }
     config.onRequestBlocked?.(info);
+    // Dev-only devtools instrumentation: an inline push onto a global queue,
+    // not a call to any shared/imported function — see the note at the top
+    // of this file. Folds away entirely in production.
+    if (process.env.NODE_ENV !== "production") {
+      const q = ((globalThis as DevGlobal).__COOKIEYES_DEVTOOLS__ ??= Object.assign([], {
+        v: 1,
+      }));
+      if (q.length >= 500) q.shift();
+      q.push({ k: "b", t: Date.now(), d: info });
+    }
   }
 
   window.fetch = function patchedFetch(

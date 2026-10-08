@@ -34,11 +34,14 @@ describe("@cookieyes/test/react public exports", () => {
   ] as const;
   const EXPECTED = [...FUNCTIONS, ...CONSTANTS];
 
+  // A longer timeout, not a weaker check: this cold `import()` transforms the
+  // whole React entry, and with every package's tests running in parallel
+  // (`pnpm test`, CI) it took just over the 5 s default and failed spuriously.
   it("exports exactly the documented surface", async () => {
     const reactEntry = await import("../react.js");
     expect(Object.keys(reactEntry).sort()).toEqual([...EXPECTED].sort());
     for (const name of FUNCTIONS) {
       expect(typeof reactEntry[name]).toBe("function");
     }
-  });
+  }, 30_000);
 });

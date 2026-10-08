@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** Packages whose code the measurement covers. */
-const PACKAGES = ["core", "react", "nextjs"];
+const PACKAGES = ["core", "react", "nextjs", "devtools"];
 
 /**
  * A short hash of everything that determines the measured bundle.
