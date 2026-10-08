@@ -1,34 +1,24 @@
 ---
 title: Devtools
-description: An in-page panel that shows live what the SDK believes and does — and is provably absent from your production bundle.
+description: A panel for your dev server that shows what the SDK is doing and lets you test consent, regions, languages and third-party scripts. Production builds leave it out.
 frameworks: [react, nextjs]
 ---
 
 ## What it does
 
-`@cookieyes/devtools` is an in-page debugging panel for the CookieYes SDK. Mount it once and get:
+`@cookieyes/devtools` adds a floating panel to your site while you develop. It shows the visitor's consent, what the SDK loaded or blocked, and the Google Consent Mode signals sent. It also lets you test other regions and languages without a VPN, and finds third-party scripts that load without consent.
 
-- **Consent** — working (unsaved) vs committed values, side by side. Toggle any category right there, then Save, Accept all or Reject all, without going through the banner.
-- **Integrations** — every configured integration's live status, with a per-status summary and a filter.
-- **Blocked** — requests the [network blocker](/docs/network-blocking) stopped.
-- **Google Consent Mode** — the current 7 signals, plus a history of every push, including the pre-hydration server default.
-- **Events** — an interleaved timeline of consent saves, integration status changes and blocked requests. Filter by kind, search text and payloads, click a row for its JSON, export or clear. The timeline survives a page reload in the same tab.
-- **Region** — the resolved region/regulation and how it was reached, plus a `forceRegion` override to test any region locally, without a VPN.
-- **Actions** — open the preferences or opt-out dialog, copy the full state, download a debug bundle (`.json`) for a bug report, or reset consent.
+A production build leaves the panel out completely, code and styles, so you can keep it mounted.
 
-It is **React/Next.js only** in this first version. A core-only/vanilla-JS panel is a follow-up.
+## Set it up
 
-## Install
+Install it as a dev dependency:
 
-```bash
+```npm
 npm install --save-dev @cookieyes/devtools
 ```
 
-It is a `devDependency` on purpose — see [How production exclusion works](#how-production-exclusion-works).
-
-## Mount it
-
-<Framework when="react nextjs">
+Create a small client component for it:
 
 ```tsx title="app/devtools-root.tsx"
 "use client";
@@ -36,39 +26,144 @@ import { CookieYesDevtools } from "@cookieyes/devtools";
 import "@cookieyes/devtools/styles.css";
 
 export function DevtoolsRoot() {
-  return <CookieYesDevtools position="bottom-right" />;
+  return <CookieYesDevtools />;
 }
+```
+
+<Framework when="nextjs">
+
+Render `<DevtoolsRoot />` once, in `app/layout.tsx`, next to your consent UI. In the root layout it stays mounted when you navigate, so its history and the Scanner's timings cover the whole visit.
+
+</Framework>
+
+<Framework when="react">
+
+Render `<DevtoolsRoot />` once, in your entry file next to `<CookieYesRoot />`, so it stays mounted for the whole visit:
+
+```tsx title="src/main.tsx" check="false"
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+    <CookieYesRoot />
+    <DevtoolsRoot />
+  </StrictMode>,
+);
 ```
 
 </Framework>
 
-Render `<DevtoolsRoot />` anywhere in your tree — it mounts a fixed-position overlay, so placement doesn't matter. Mounting the component **is** the opt-in: there is no other flag to set.
+A CookieYes button appears in the bottom-right corner once the SDK has started.
 
-- **Toggle** the panel with the floating CookieYes logo button, or `Ctrl/Cmd+Shift+Y`. `Escape` closes it. Drag the button to any corner; it snaps there and remembers it.
-- **`position`**: `"top-left" | "top-right" | "bottom-left" | "bottom-right"` (default `"bottom-right"`).
-- **`theme`**: `"light" | "dark" | "system"` (default `"system"`) — the host page's scheme, so the panel can match it. The System / Light / Dark switch in the panel header overrides it (saved in `localStorage["cyd:theme"]`); choosing System there follows this prop again.
+- Click the button, or press `Ctrl+Shift+Y` (`Cmd+Shift+Y` on a Mac), to open or close the panel. `Escape` closes it.
+- Drag the button to another corner. It snaps there and remembers it.
 
-## Testing another region — `forceRegion`
+<Framework when="nextjs">
 
-Open the **Region** tab and enter a region code (e.g. `US-CA`, `DE`, `GB`) to see how your banner would behave there, without a VPN or changing your own geo-detection config. A persistent banner reads **"this would differ in production"** the whole time an override is active, so it can never be mistaken for a real decision.
+### Show which header decided the region
 
-The override is stored in a `__cyd_region` cookie and mirrored to `localStorage` — it never touches the SDK's runtime. The client picks it up on the next mount/render; a server-rendered banner needs a page reload to see it on its next request. The Region tab's own copy discloses this rather than hiding it.
+The panel runs in the browser, so it cannot see the request headers that decided the visitor's region. Read them on the server with `getServerRegion()` and pass the result to the panel. Pass its `forcedRegion` to `CookieYesProvider` too, so the server-rendered banner follows a region you force in the panel.
 
-## How production exclusion works
+```tsx title="app/devtools-root.tsx" group="server-region"
+"use client";
+import { CookieYesDevtools, type CookieYesDevtoolsProps } from "@cookieyes/devtools";
+import "@cookieyes/devtools/styles.css";
 
-This is the whole point, and it's proven, not promised: `@cookieyes/devtools`'s `package.json` uses a **conditional export**, not a runtime flag.
-
-```json
-{
-  "exports": {
-    ".": {
-      "development": { "import": "./dist/index.js" },
-      "import": "./dist/stub.js"
-    }
-  }
+export function DevtoolsRoot({ serverRegion }: Pick<CookieYesDevtoolsProps, "serverRegion">) {
+  return <CookieYesDevtools serverRegion={serverRegion} />;
 }
 ```
 
-A dev server (`next dev`, a Vite dev server) sets the `development` condition, so bundlers resolve the real panel. A production build (`next build`, `vite build`) never sets it, so bundlers resolve the stub instead — a function that renders `null` and touches no React state, no `@cookieyes/core`, no `@cookieyes/react`. The real panel's entire module graph, including its CSS import, is never reached, parsed, or shipped.
+```tsx title="app/layout.tsx" group="server-region"
+import { CookieYesProvider, type RegionConfig } from "@cookieyes/nextjs";
+import { getServerRegion } from "@cookieyes/nextjs/server";
 
-There is deliberately **no** `NODE_ENV`/`disabled`-prop fallback in the real panel's entry — a fallback that can run in production is a path a future change could accidentally reactivate. The CookieYes SDK's own size gate (the same one that catches every unnoticed size regression across the whole SDK) includes a fixture that mounts `<CookieYesDevtools />` in a real production Next.js build and asserts, by measurement: the byte delta over the same app without it stays within a fixed ceiling, and no distinctive string from the real panel's code appears in any emitted production chunk.
+// Your consent manager from Installation, and the region config you pass to it.
+declare function CookieYesRoot(): React.ReactElement;
+declare const region: RegionConfig;
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const serverRegion = await getServerRegion();
+
+  return (
+    <html lang="en">
+      <body>
+        <CookieYesProvider region={region} forcedRegion={serverRegion.forcedRegion}>
+          <CookieYesRoot />
+          {children}
+        </CookieYesProvider>
+        <DevtoolsRoot serverRegion={serverRegion} />
+      </body>
+    </html>
+  );
+}
+```
+
+`getServerRegion()` reads request headers, which makes the route dynamic. In a production build its `forcedRegion` is always `undefined`.
+
+</Framework>
+
+## Props
+
+| Prop | Type | Default | What it does |
+|---|---|---|---|
+| `position` | `"bottom-right" \| "bottom-left" \| "top-right" \| "top-left"` | `"bottom-right"` | The corner the button starts in. |
+| `theme` | `"system" \| "light" \| "dark"` | `"system"` | The panel's colour scheme. The switch in the panel header overrides it. |
+| `serverRegion` | the result of `getServerRegion()` | none | Lets the Locale tab show which request header decided the region. Next.js only. |
+
+## The tabs
+
+| Tab | Use it to |
+|---|---|
+| **Consent** | See each category's saved value next to the unsaved one. Toggle categories, save, accept or reject all, or reset so the banner shows again. |
+| **Integrations** | Check each integration's status: `idle` (waiting for consent), `loading`, `active`, `silenced`, `removed` or `error`. |
+| **Blocked** | See the requests the [network blocker](/docs/network-blocking) stopped. |
+| **Consent Mode** | See the Google Consent Mode signals now, and every update sent. |
+| **Events** | Follow consent saves, integration changes and blocked requests in order. Search, filter and export them. They survive a reload. |
+| **Locale** | Check which region and regulation apply and why. Test another region or language. |
+| **Scanner** | Find third-party scripts, requests and cookies, and anything that loaded without consent. |
+| **Actions** | Open the preferences or opt-out dialog, copy the state, download a debug file for a bug report, or reset consent. |
+
+## Test another region or language
+
+**Region.** In the **Locale** tab, pick a country or US state, or type a code such as `US-TX`. Each option shows the regulation it would get. A forced region applies on the next page load, so the tab shows **Not applied yet** with a **Reload now** button until you reload. While a region is forced, a warning says the result would differ in production. Press **Clear**, then reload, to go back to the real region.
+
+**Language.** Pick a language in the same tab. The banner switches straight away and keeps it after a reload, until you press **Reset**. The list shows the languages your config loads and the ones in `@cookieyes/translations`. If a language has no translations, the tab says so and the banner stays as it was.
+
+## Find scripts that load without consent
+
+The **Scanner** tab watches the page from the moment it loads. It lists scripts, iframes and requests from other sites, plus cookies and localStorage keys, and marks each one:
+
+- **Managed**: the SDK loads or gates it.
+- **Unmanaged**: a known tool the SDK does not control. Open the row to copy the code that would gate it.
+- **Necessary**: needs no consent, such as payments or bot protection.
+- **Unclassified**: not a tool the Scanner knows. Decide its category yourself.
+
+Anything that appeared before its category was granted is flagged **before consent**. Anything that appeared, or stayed, after consent was withdrawn is flagged **after withdrawal**. Categories for unmanaged tools come from a built-in list of common vendors, so treat them as suggestions. Dismiss findings you have checked, and export the list as JSON.
+
+## Good to know
+
+- **It is left out of production.** The package points a production build at an empty component and an empty stylesheet. You need no flag or environment check, and you can leave both imports in place.
+- **Overrides only work in development.** A production build of the SDK ignores the forced-region cookie, even one set by hand.
+- **Nothing leaves the browser.** The panel keeps its settings and history in the browser's own storage.
+- **The opt-out action needs CCPA.** Visitors only reach the opt-out dialog under CCPA, so the action is disabled under other regulations.
+- **The Scanner cannot see everything.** Cookies marked `HttpOnly`, and requests made inside iframes from other sites, are invisible to code in the page.
+
+## Common mistakes
+
+**The panel does not appear.**
+You are running a production build (`next start`, `vite preview`), or the SDK has not started on the page. Use your dev server, and check that the SDK is initialised.
+
+**The panel has no styling.**
+The stylesheet import is missing. Add `import "@cookieyes/devtools/styles.css"` next to the component.
+
+**A forced region changes nothing.**
+Reload the page after forcing it. If the tab says the override has no effect, your config sets `regulation` directly, which always wins over the region.
+
+**Open preferences says nothing renders the dialog.**
+The page has no preferences dialog. Add [`CookiePreferences`](/docs/components/cookie-preferences), or [`CookieOptOut`](/docs/components/cookie-opt-out) for the opt-out action.
+
+## Next steps
+
+- [Network blocking](/docs/network-blocking): block requests the Scanner finds but you cannot gate
+- [Integrations](/docs/integrations): load common tools only after consent
+- [Translations](/docs/translations): add the languages you test in the Locale tab
