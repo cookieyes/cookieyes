@@ -9,7 +9,7 @@
  * it came from, and ours move faster than the benchmark re-runs.
  *
  * Every figure is the p75 of 20 loads on the throttled-mobile, cold-cache condition,
- * read from each installation's detail page (cookiebannerbench.com/cmp/<name>/).
+ * read from each installation's detail page (www.cookiebannerbench.com/cmp/<name>/).
  *
  * Rows: our React package, then the four best-scoring competitors on that condition,
  * one installation per vendor (c15t is its React package in offline mode, its better
@@ -19,7 +19,7 @@
  * the section reads its headline figure from the first entry.
  */
 export const BENCH = {
-  runUrl: "https://cookiebannerbench.com/",
+  runUrl: "https://www.cookiebannerbench.com/",
   condition: "throttled mobile · cold cache · p75",
   measured: "@cookieyes/react 0.8.0, run of 24 Sep 2026",
 };
