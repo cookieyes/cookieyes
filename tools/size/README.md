@@ -229,6 +229,53 @@ growth, with a reason. It is not a fix for a red build.
 `targets` are recorded but **not enforced**. A target that fails every build is
 noise, not a signal.
 
+## On a pull request
+
+The `Bundle size` workflow (`.github/workflows/size.yml`) measures the pull
+request and compares it with the base branch's committed `size-report.json`:
+
+```
+node tools/size/measure.mjs --check --base <base report> --comment <path> [--override <reason>]
+```
+
+The base report is the base branch's measurement. It does not need rebuilding,
+because `pnpm build:web` fails on a report whose fingerprint no longer matches
+the tree. When the fingerprints match, the pull request builds the same SDK as
+the base branch, and the bundle changes are reported as 0 rather than as the
+few bytes a different machine measures.
+
+`size-comment.yml` posts the comment and edits the same one on every later
+push. It is a separate workflow so that pull requests from forks get a
+comment too: it reads the artifact as data and never runs the pull request's
+code.
+
+### What the comment reports
+
+- **initial** and **total** for every entry point, and the change against the
+  base. Only initial counts toward the per-change limits, so moving code behind
+  a lazy `import()` is not reported as a saving. Total is still held by
+  `budgets`.
+- **Packages**: the packed and unpacked size of the core, react and nextjs
+  tarballs, and **install**, the package plus the `@cookieyes/*` packages it
+  depends on. That is what `npm install @cookieyes/react` downloads; React and
+  Next are peers the consumer already has. `pnpm pack` does not compress
+  byte-for-byte reproducibly, so a tarball whose unpacked size is unchanged is
+  reported as unchanged.
+- **No size change** when every figure matches the base. A figure the base
+  report lacks shows as n/a, which is not the same as unchanged.
+
+### Per-change limits
+
+`perChange` in `budgets.json`: core's initial bundle may grow at most 1.5 KB
+(gzip) in one pull request, the full React layer (`interface`) 4 KB, and each
+tarball 10%. Going over fails the check and blocks the merge.
+
+A deliberate increase is accepted when a maintainer adds the `size-override`
+label and the description has a line `Size override: <reason>`. The reason is
+quoted in the comment. The label without a reason still fails. The override
+waives the per-change limits only: an absolute budget is raised in
+`budgets.json`, with its reason, as above.
+
 ## Updating the published figures
 
 `size-report.json` is the committed artifact and the single source for any size

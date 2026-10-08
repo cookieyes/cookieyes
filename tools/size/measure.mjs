@@ -51,6 +51,9 @@
  *   node tools/size/measure.mjs --out <path>     # where to write the report
  *   node tools/size/measure.mjs --fixtures <dir> # measure fixtures from elsewhere
  *   node tools/size/measure.mjs --apps k=dir,…   # measure a custom app set
+ *   node tools/size/measure.mjs --base <report>  # compare against another report
+ *   node tools/size/measure.mjs --comment <path> # write the pull-request comment
+ *   node tools/size/measure.mjs --override <why> # accept a per-change overrun
  *
  * Or via the root package: `pnpm size`, `pnpm size:check`.
  *
@@ -62,8 +65,13 @@
  * a competitor — without committing a fixture for it. The first `--apps` entry
  * must be the control and must be keyed `baseline`.
  *
- * Exit code is non-zero only under `--check`, and only when a budget is
- * exceeded. Measuring never fails a build on its own.
+ * `--base` takes the base branch's committed `size-report.json`, and with it
+ * `--check` also enforces the per-change limits in `budgets.json`. `--override`
+ * carries the reason from a pull request labelled `size-override`; it waives
+ * those per-change limits only, never the absolute budgets.
+ *
+ * Exit code is non-zero only under `--check`, and only when a budget or limit
+ * is exceeded. Measuring never fails a build on its own.
  */
 
 import { spawnSync } from "node:child_process";
@@ -79,7 +87,7 @@ import {
 } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { brotliCompressSync, gzipSync, constants as zlibConstants } from "node:zlib";
+import { brotliCompressSync, gunzipSync, gzipSync, constants as zlibConstants } from "node:zlib";
 import { packTarballs } from "../../matrix/scripts/pack-tarballs.mjs";
 import { sdkFingerprint } from "./sdk-fingerprint.mjs";
 
@@ -126,6 +134,9 @@ const opt = (name, fallback) => {
 const doBuild = !flag("--no-build");
 const doCheck = flag("--check");
 const outPath = resolve(opt("--out", join(HERE, "size-report.json")));
+const basePath = opt("--base", null);
+const commentPath = opt("--comment", null);
+const overrideReason = opt("--override", null);
 
 // `--fixtures` and `--apps` exist so that a one-off comparison — most usefully
 // "what did the published versions actually measure at?" — goes through this
@@ -466,6 +477,70 @@ function build(appDir, name) {
 }
 
 // ---------------------------------------------------------------------------
+// Tarballs
+// ---------------------------------------------------------------------------
+
+/** The packages whose tarballs are reported and held to the growth limit. */
+const TARBALL_PACKAGES = ["@cookieyes/core", "@cookieyes/react", "@cookieyes/nextjs"];
+
+/** Bytes of file content inside a `.tgz`, read from the tar headers. */
+function unpackedSize(tgz) {
+  const tar = gunzipSync(tgz);
+  let total = 0;
+  for (let at = 0; at + 512 <= tar.length; ) {
+    const header = tar.subarray(at, at + 512);
+    if (header.every((byte) => byte === 0)) break;
+    const size = Number.parseInt(header.toString("latin1", 124, 136).replace(/\0.*$/, ""), 8) || 0;
+    // Regular files only: pax headers carry metadata, not shipped content.
+    const type = header[156];
+    if (type === 0x30 || type === 0) total += size;
+    at += 512 + Math.ceil(size / 512) * 512;
+  }
+  return total;
+}
+
+/**
+ * What each package costs to download from npm, and what installing it costs
+ * once its own `@cookieyes/*` dependencies come along with it.
+ *
+ * `install` is the figure a reader means by "how much does this pull in": the
+ * React adapter alone is small, but nobody installs it without core. Peer
+ * dependencies (React, Next) are left out because the consumer already has
+ * them, and every runtime dependency of these packages is a `@cookieyes/*`
+ * package, so the sum is the whole install.
+ */
+function tarballReport(packed) {
+  const own = {};
+  const deps = {};
+  for (const [name, file] of Object.entries(packed)) {
+    const buf = readFileSync(file);
+    own[name] = { packed: buf.length, unpacked: unpackedSize(buf) };
+    const manifest = join(REPO, "sdk", name.split("/")[1], "package.json");
+    deps[name] = Object.keys(JSON.parse(readFileSync(manifest, "utf8")).dependencies ?? {});
+  }
+  const report = {};
+  for (const name of TARBALL_PACKAGES) {
+    const closure = new Set([name]);
+    for (const pkg of closure) {
+      for (const dep of deps[pkg] ?? []) {
+        if (!own[dep]) throw new Error(`${pkg} depends on ${dep}, which was not packed`);
+        closure.add(dep);
+      }
+    }
+    const included = [...closure];
+    report[name] = {
+      ...own[name],
+      install: {
+        packages: included,
+        packed: included.reduce((sum, pkg) => sum + own[pkg].packed, 0),
+        unpacked: included.reduce((sum, pkg) => sum + own[pkg].unpacked, 0),
+      },
+    };
+  }
+  return report;
+}
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
@@ -610,6 +685,8 @@ const report = {
   deltas,
   interfaceOverCore,
   stylesheet: stylesheet(),
+  // Only when this run packed them: `--no-build` re-reads fixtures and packs nothing.
+  ...(tarballs ? { tarballs: tarballReport(tarballs) } : {}),
 };
 
 mkdirSync(dirname(outPath), { recursive: true });
@@ -653,15 +730,21 @@ if (css["styles.css"]) {
       (css["critical.css"] ? `, critical.css ${fmtKb(css["critical.css"].gzip)}` : ""),
   );
 }
+for (const [name, t] of Object.entries(report.tarballs ?? {})) {
+  lines.push(
+    `${name}: tarball ${fmtKb(t.packed)}, unpacked ${fmtKb(t.unpacked)}; ` +
+      `install ${fmtKb(t.install.packed)} (${t.install.packages.length} packages)`,
+  );
+}
 lines.push(`report: ${relative(REPO, outPath)}`);
 lines.push("");
 process.stdout.write(`${lines.join("\n")}\n`);
 
 // ---------------------------------------------------------------------------
-// Budgets (--check)
+// Budgets (--check) and the change against the base branch (--base)
 // ---------------------------------------------------------------------------
 
-if (!doCheck) process.exit(0);
+if (!doCheck && !commentPath) process.exit(0);
 
 const budgetPath = join(HERE, "budgets.json");
 if (!existsSync(budgetPath)) {
@@ -752,14 +835,215 @@ if (budgets.previous) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Per-change limits (--base)
+// ---------------------------------------------------------------------------
+
+const basis = budgets.basis ?? "gzip";
+const baseReport = basePath ? JSON.parse(readFileSync(resolve(basePath), "utf8")) : null;
+// A matching fingerprint means this tree builds the same SDK the base report
+// measured. The fresh figures can still differ by a few bytes, because the base
+// report was measured on a contributor's machine and this one on a CI runner;
+// that is not a change, and reporting it as one would make "nothing changed"
+// impossible to say.
+const sdkUnchanged = baseReport?.sdkFingerprint === report.sdkFingerprint;
+
+/** Growth of one app scope against the base report, or null if it has no figure. */
+function appChange(key, scope) {
+  const before = baseReport?.deltas?.[key]?.[scope]?.[basis];
+  if (before == null) return null;
+  return sdkUnchanged ? 0 : deltas[key][scope][basis] - before;
+}
+
+/** Growth of one tarball field against the base report, or null if it has no figure. */
+function tarballChange(name, field) {
+  const before = baseReport?.tarballs?.[name];
+  const now = report.tarballs?.[name];
+  if (!before || !now) return null;
+  // `pnpm pack` does not compress byte-for-byte reproducibly: packing the same
+  // files twice has differed by a byte. Unchanged contents are no change.
+  if (field === "install") {
+    return now.install.unpacked === before.install.unpacked
+      ? 0
+      : now.install.packed - before.install.packed;
+  }
+  if (field === "packed" && now.unpacked === before.unpacked) return 0;
+  return now[field] - before[field];
+}
+
+const overruns = [];
+const perChange = budgets.perChange ?? {};
+if (baseReport) {
+  for (const [key, limit] of Object.entries(perChange.apps ?? {})) {
+    if (key.startsWith("$")) continue;
+    for (const scope of ["initial", "total"]) {
+      const change = limit[scope] == null ? null : appChange(key, scope);
+      if (change != null && change > limit[scope]) {
+        overruns.push(
+          `${key}.${scope} grew ${signedKb(change)}, over the ${fmtKb(limit[scope])} per-change limit`,
+        );
+      }
+    }
+  }
+  if (!baseReport.tarballs) {
+    notes.push("the base report has no tarball figures yet, so the tarball limit was not applied");
+  } else if (!report.tarballs) {
+    notes.push("this run packed no tarballs (--no-build), so the tarball limit was not applied");
+  } else if (perChange.tarballGrowth != null) {
+    for (const name of TARBALL_PACKAGES) {
+      const change = tarballChange(name, "packed");
+      const before = baseReport.tarballs[name]?.packed;
+      if (change == null || !before) continue;
+      if (change / before > perChange.tarballGrowth) {
+        overruns.push(
+          `${name} tarball grew ${(100 * (change / before)).toFixed(1)}%, over the ` +
+            `${(100 * perChange.tarballGrowth).toFixed(0)}% per-change limit`,
+        );
+      }
+    }
+  }
+}
+
+// The override waives the per-change limits and nothing else. An absolute
+// budget is raised in budgets.json, with its reason, in the same change.
+const overrideGiven = overrideReason != null && overrideReason.trim() !== "";
+if (overruns.length > 0) {
+  if (overrideGiven) {
+    for (const overrun of overruns) notes.push(`${overrun} (overridden: ${overrideReason.trim()})`);
+  } else {
+    failures.push(...overruns);
+    if (overrideReason != null) {
+      failures.push(
+        `the size-override label is set, but the pull request description has no ` +
+          `"Size override: <reason>" line`,
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pull-request comment (--comment)
+// ---------------------------------------------------------------------------
+
+const fmtChange = (bytes) => {
+  if (bytes == null) return "n/a";
+  if (bytes === 0) return "0";
+  const sign = bytes > 0 ? "+" : "−";
+  return Math.abs(bytes) < 1024 ? `${sign}${Math.abs(bytes)} B` : signedKb(bytes);
+};
+
+function commentMarkdown() {
+  const out = ["## Bundle size", ""];
+  const appKeys = APPS.map((app) => app.key).filter((key) => key !== "baseline");
+  const changes = [
+    ...appKeys.flatMap((key) => [appChange(key, "initial"), appChange(key, "total")]),
+    ...TARBALL_PACKAGES.flatMap((name) => [
+      tarballChange(name, "packed"),
+      tarballChange(name, "unpacked"),
+    ]),
+  ];
+  // A figure the base report lacks is unknown, not unchanged.
+  const nothingChanged = baseReport && changes.every((change) => change === 0);
+
+  if (failures.length > 0) {
+    out.push("**Over the limit. This blocks the merge.**", "");
+    for (const failure of failures) out.push(`- ${failure}`);
+    out.push(
+      "",
+      "A deliberate increase to a per-change limit can be accepted: a maintainer adds the " +
+        "`size-override` label and the description gets a line `Size override: <reason>`. " +
+        "An absolute budget is raised in `tools/size/budgets.json` instead, with its reason.",
+    );
+  } else if (overruns.length > 0) {
+    out.push("**Over the per-change limit, overridden.**", "");
+    for (const overrun of overruns) out.push(`- ${overrun}`);
+    out.push("", `> Size override: ${overrideReason.trim()}`);
+  } else if (!baseReport) {
+    out.push("**Within all budgets.** No base report was available to compare against.");
+  } else if (nothingChanged) {
+    out.push(
+      "**No size change.** Every bundle and package is the same size as on the base branch.",
+    );
+  } else {
+    out.push("**Within all limits.**");
+  }
+
+  out.push(
+    "",
+    "Compressed client JavaScript (gzip -9) that each entry point adds to an empty Next.js app, " +
+      "compared with the base branch's committed `size-report.json`. Only scripts the page loads " +
+      "up front count as **initial**: code moved behind a lazy `import()` leaves initial but stays " +
+      "in **total**, so a move is not reported as a saving. " +
+      "[How this is measured](https://github.com/cookieyes/cookieyes/blob/main/tools/size/README.md)",
+  );
+  if (baseReport && !baseReport.tarballs) {
+    out.push(
+      "",
+      "The base branch's report has no package figures yet, so package changes show n/a and " +
+        "the tarball limit was not applied.",
+    );
+  }
+  if (baseReport && sdkUnchanged) {
+    out.push(
+      "",
+      "The SDK sources match the base branch (same fingerprint), so bundle changes are reported as 0.",
+    );
+  }
+
+  const detail = [
+    "",
+    "| entry point | initial | change | total | change | per-change limit |",
+    "|---|--:|--:|--:|--:|--:|",
+  ];
+  for (const key of appKeys) {
+    const limit = perChange.apps?.[key]?.initial;
+    detail.push(
+      `| ${key} | ${fmtKb(deltas[key].initial[basis])} | ${fmtChange(appChange(key, "initial"))} | ` +
+        `${fmtKb(deltas[key].total[basis])} | ${fmtChange(appChange(key, "total"))} | ` +
+        `${limit == null ? "" : fmtKb(limit)} |`,
+    );
+  }
+  if (report.tarballs) {
+    detail.push(
+      "",
+      `What installing each package downloads from npm. **install** adds its \`@cookieyes/*\` ` +
+        `dependencies; each tarball may grow at most ` +
+        `${(100 * (perChange.tarballGrowth ?? 0)).toFixed(0)}% per change.`,
+      "",
+      "| package | tarball | change | unpacked | change | install | change |",
+      "|---|--:|--:|--:|--:|--:|--:|",
+    );
+    for (const name of TARBALL_PACKAGES) {
+      const t = report.tarballs[name];
+      detail.push(
+        `| \`${name}\` | ${fmtKb(t.packed)} | ${fmtChange(tarballChange(name, "packed"))} | ` +
+          `${fmtKb(t.unpacked)} | ${fmtChange(tarballChange(name, "unpacked"))} | ` +
+          `${fmtKb(t.install.packed)} | ${fmtChange(tarballChange(name, "install"))} |`,
+      );
+    }
+  }
+  // Nothing to look at when nothing moved, but the figures stay one click away.
+  if (nothingChanged)
+    out.push("", "<details><summary>Figures</summary>", ...detail, "", "</details>");
+  else out.push(...detail);
+  return `${out.join("\n")}\n`;
+}
+
+if (commentPath) {
+  mkdirSync(dirname(resolve(commentPath)), { recursive: true });
+  writeFileSync(resolve(commentPath), commentMarkdown());
+}
+
 for (const note of notes) process.stdout.write(`  ${note}\n`);
+if (!doCheck) process.exit(0);
 if (failures.length > 0) {
   process.stderr.write(
     `\nSize budget exceeded:\n${failures.map((f) => `  ✗ ${f}`).join("\n")}\n\n`,
   );
   process.stderr.write(
     "Budgets are in tools/size/budgets.json. Raising one is a deliberate decision that\n" +
-      "belongs in the same change as the growth, with a reason — not a fix for a red build.\n",
+      "belongs in the same change as the growth, with a reason, not a fix for a red build.\n" +
+      "A per-change limit is waived only by the size-override label with a written reason.\n",
   );
   process.exit(1);
 }
