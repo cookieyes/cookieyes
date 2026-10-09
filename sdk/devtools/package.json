@@ -55,6 +55,10 @@
   "types": "./dist/stub.d.ts",
   "files": [
     "dist",
+    "src",
+    "!src/**/__tests__",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
     "LICENSE",
     "README.md"
   ],

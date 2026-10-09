@@ -14,4 +14,4 @@ TypeScript projects that load the SDK with `require` now get type declarations t
 
 **What changed.** Each entry point now also ships a `.d.cts` declaration file, and every `exports` entry names its own `types` for `import` and for `require`. Projects using `import`, or a bundler, resolve exactly the same files as before. The JavaScript is unchanged.
 
-Measured with `pnpm size`: client JavaScript is unchanged. The packed tarballs grow by the added declaration files, to 177.39 KB for `@cookieyes/core`, 175.27 KB for `@cookieyes/react` and 33.32 KB for `@cookieyes/nextjs`.
+Measured with `pnpm size`: client JavaScript is unchanged.
