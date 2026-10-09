@@ -14,10 +14,24 @@ permissions:
   id-token: write # required for npm provenance
 
 jobs:
+  # The tarballs of this commit, tested before anything is published (package-gate.yml).
+  gate:
+    name: Package gate
+    uses: ./.github/workflows/package-gate.yml
+
   release:
     name: Version & publish
+    needs: gate
+    # Reporting only until PACKAGE_GATE_BLOCKING is "true": a failed gate then stops the
+    # publish. Before that the release goes ahead and the warning below says why.
+    if: ${{ !cancelled() && (needs.gate.result == 'success' || vars.PACKAGE_GATE_BLOCKING != 'true') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Report a failed package gate
+        if: needs.gate.result != 'success'
+        run: |
+          echo "::warning title=Package gate::The package gate did not pass (${{ needs.gate.result }}). Publishing anyway because PACKAGE_GATE_BLOCKING is not \"true\"."
+
       # fetch-depth: 0 so the "Detect release work" step can diff the push range.
       - uses: actions/checkout@v7
         with:
