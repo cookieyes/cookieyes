@@ -1,5 +1,29 @@
 # @cookieyes/nextjs
 
+## 0.8.1
+
+### Patch Changes
+
+- ab99460: TypeScript projects that load the SDK with `require` now get type declarations that match the CommonJS build.
+
+  **What was wrong.** Every package shipped one `.d.ts` file for both `import` and `require`. The packages are `"type": "module"`, so TypeScript read that file as ESM even when it resolved the CommonJS build. Under `"moduleResolution": "node16"` or `"nodenext"` in a CommonJS project, that meant type errors or types that described the wrong module format.
+
+  **What changed.** Each entry point now also ships a `.d.cts` declaration file, and every `exports` entry names its own `types` for `import` and for `require`. Projects using `import`, or a bundler, resolve exactly the same files as before. The JavaScript is unchanged.
+
+  Measured with `pnpm size`: client JavaScript is unchanged.
+
+- eba2cd3: The packages are smaller to install, and debugging into them works as before.
+
+  **What changed.** Every sourcemap used to carry its own copy of the original source, once for the ESM build and again for the CommonJS build. The source now ships once, as the package's `src/` folder (tests excluded), and the sourcemaps point at it. Stack traces and debuggers show the same files and lines as before. Nothing resolves `src/` through `exports`, so imports are unchanged.
+
+  Measured with `pnpm size`, together with the CommonJS type declarations in this release: client JavaScript is unchanged. The packed tarball of `@cookieyes/core` is now 140.52 KB (483.49 KB unpacked), `@cookieyes/react` 147.37 KB (501.13 KB) and `@cookieyes/nextjs` 32.28 KB (155.17 KB). A full install of `@cookieyes/nextjs` with its dependencies is 370.69 KB.
+
+- Updated dependencies [ab99460]
+- Updated dependencies [eba2cd3]
+  - @cookieyes/core@0.11.1
+  - @cookieyes/react@0.13.1
+  - @cookieyes/scripts@0.2.7
+
 ## 0.8.0
 
 ### Minor Changes
