@@ -12,4 +12,5 @@ short and factual, and remember the repository is public: no internal references
 | [banner-first-paint.md](./banner-first-paint.md) | What the banner must hold at first paint, and the regressions that taught us |
 | [ai-guidance.md](./ai-guidance.md) | The skills and Context7 rules that steer users' AI tools: one copy, internal contributor skills, code that compiles, and the questions that check Context7 |
 | [announcement-bar.md](./announcement-bar.md) | The docs site's announcement strip: decided before paint, dismissed per id, consent first, sticky offsets, and the collapse bug that taught us |
+| [package-gate.md](./package-gate.md) | The checks on the packed tarballs before publish: what they cover, how each was proven to catch its failure, and what they do not cover |
 | [devtools-instrumentation.md](./devtools-instrumentation.md) | The dev-only queue the SDK reports to: absent in production, every injected script reported as managed, and why grants are timed from the save entry |
