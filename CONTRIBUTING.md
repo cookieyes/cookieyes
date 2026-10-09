@@ -111,6 +111,7 @@ packages live under `sdk/*`.
 | `pnpm typecheck` | Type-check every package |
 | `pnpm lint` | Biome lint + format check |
 | `pnpm lint:fix` | Auto-fix lint issues and format |
+| `pnpm package-gate` | Check the packed tarballs after `pnpm build` (see [Package gate](#package-gate)) |
 
 ## Coding standards
 
@@ -250,6 +251,28 @@ Keeping the AI guidance current is part of every release. A PR that changes a pu
 config option or a default updates `skills/` and the `rules` in `context7.json` in the same PR.
 Before merging the "Version Packages" PR, a maintainer reads its changelog against both and
 fixes anything they no longer describe. `@cookieyes/sdk-maintainers` owns these files.
+
+### Package gate
+
+Before publishing, the release workflow tests the packed tarballs rather than the source: their
+contents and stylesheets, publint and attw, a clean install with npm, pnpm, yarn and bun, and
+that every package loads and `initCookieYes()` starts. It also runs on every pull request.
+[`contributing/design/package-gate.md`](./contributing/design/package-gate.md) has the full
+list and what it does **not** cover: consent before network, a single consent POST, Google
+Consent Mode, server rendering and the cookie round-trip still need a browser harness.
+
+Run it locally after `pnpm build`:
+
+```bash
+pnpm package-gate                   # contents, stylesheets, publint, attw, file list
+pnpm package-gate:install --pm yarn # clean install and start with one package manager
+```
+
+If a PR adds or removes a published file on purpose, run `pnpm package-gate --update` and commit
+`tools/package-gate/contents.json`; its diff shows reviewers exactly what changed in the package.
+
+A failed gate blocks the publish only once the repository variable `PACKAGE_GATE_BLOCKING` is
+`true`. Until then the release goes ahead with a warning.
 
 ## Licensing
 

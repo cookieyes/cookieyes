@@ -30,19 +30,34 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./network-blocker": {
-      "types": "./dist/network-blocker.d.ts",
-      "import": "./dist/network-blocker.js",
-      "require": "./dist/network-blocker.cjs"
+      "import": {
+        "types": "./dist/network-blocker.d.ts",
+        "default": "./dist/network-blocker.js"
+      },
+      "require": {
+        "types": "./dist/network-blocker.d.cts",
+        "default": "./dist/network-blocker.cjs"
+      }
     },
     "./iframes": {
-      "types": "./dist/iframes.d.ts",
-      "import": "./dist/iframes.js",
-      "require": "./dist/iframes.cjs"
+      "import": {
+        "types": "./dist/iframes.d.ts",
+        "default": "./dist/iframes.js"
+      },
+      "require": {
+        "types": "./dist/iframes.d.cts",
+        "default": "./dist/iframes.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
@@ -50,6 +65,10 @@
   "types": "./dist/index.d.ts",
   "files": [
     "dist",
+    "src",
+    "!src/**/__tests__",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
     "LICENSE",
     "README.md"
   ],

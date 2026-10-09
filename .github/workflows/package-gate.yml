@@ -1,0 +1,96 @@
+name: Package gate
+
+# Tests the packed tarballs that `changeset publish` would upload, not the source folder:
+# their contents, their types, a clean install with each package manager, and that every
+# package loads and the SDK starts. contributing/design/package-gate.md says what it
+# covers and, as importantly, what it does not.
+#
+# Runs on every pull request, and from release.yml before publishing. There it blocks a
+# publish only once the PACKAGE_GATE_BLOCKING repository variable is "true"; until then
+# a failure is reported and the release goes ahead, so a flaky new check cannot stop a
+# release while it settles in.
+
+on:
+  pull_request:
+    branches: [main, integration/next-release]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  pack:
+    name: Pack and check tarballs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      # Contents, stylesheets, publint, attw and the recorded file list.
+      - name: Check tarballs
+        run: pnpm package-gate --out "$RUNNER_TEMP/package-gate"
+
+      # The accessibility check stays part of the gate. It runs against the source, as
+      # it always has; it is axe under jsdom, not a browser.
+      - name: Accessibility check
+        run: pnpm --filter @cookieyes/react exec vitest run src/__tests__/a11y.test.tsx
+
+      - name: Upload tarballs
+        uses: actions/upload-artifact@v5
+        with:
+          name: package-gate-tarballs
+          path: ${{ runner.temp }}/package-gate/tarballs/
+          if-no-files-found: error
+
+      # The record of what each tarball contained: every file with its size, the
+      # tarball's sha256, and any failure. Kept with every run, including releases.
+      - name: Upload contents report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: package-gate-report
+          path: ${{ runner.temp }}/package-gate/report.json
+          if-no-files-found: ignore
+          retention-days: 90
+
+  install:
+    name: Install and start (${{ matrix.pm }})
+    needs: pack
+    runs-on: ubuntu-latest
+    # A fresh image with nothing installed, so no cache or global package on the
+    # runner can stand in for a dependency a tarball forgot to declare.
+    container: node:22-bookworm-slim
+    strategy:
+      fail-fast: false
+      matrix:
+        pm: [npm, pnpm, yarn, bun]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download tarballs
+        uses: actions/download-artifact@v5
+        with:
+          name: package-gate-tarballs
+          path: /tmp/package-gate-tarballs
+
+      - name: Install, load every package and start the SDK
+        run: node tools/package-gate/install.mjs --pm "${{ matrix.pm }}" --tarballs /tmp/package-gate-tarballs

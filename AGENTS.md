@@ -34,6 +34,7 @@ pnpm build                      # all sdk/* packages
 pnpm test                       # Vitest, 80% coverage gate; one package: pnpm --filter @cookieyes/core test
 pnpm size                       # measure bundles after pnpm build; updates tools/size/size-report.json
 pnpm build:web                  # docs site: runs the generators and the doc-example type-check too
+pnpm package-gate               # check the packed tarballs after pnpm build (contributing/design/package-gate.md)
 ```
 
 ## How to work
@@ -164,6 +165,7 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 | `apps/web/content/docs/{nextjs,react,core}/**` | `pnpm --filter @cookieyes/web generate:framework-docs` | anything in `apps/web/content/shared` |
 | `sdk/react/src/styles/critical.css` | `pnpm --filter @cookieyes/react build:critical-css` | `cookieyes.css` |
 | `tools/size/size-report.json` | `pnpm build && pnpm size` | `core`, `react` or `nextjs` source |
+| `tools/package-gate/contents.json` | `pnpm build && pnpm package-gate --update` | a file added to or removed from a published package |
 | `PEER-MATRIX` blocks in `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md` | `pnpm --filter @cookieyes/web generate:peer-matrix-readme` | `matrix/matrix-results.json` |
 | `matrix/matrix-results.json` | the `peer-matrix` workflow | peer-dependency ranges |
 
