@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/devtools",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "In-page debugging panel for the CookieYes consent SDK — dev-only, provably absent from production bundles",
   "keywords": [
     "cookie consent",
