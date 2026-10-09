@@ -1,0 +1,81 @@
+# The autofix.ci app only accepts fixes from a workflow with exactly this name.
+name: autofix.ci
+
+# Applies Biome's formatting and safe lint fixes to a pull request and commits them through
+# the autofix.ci app. The app's commit triggers CI again, unlike a push made with
+# GITHUB_TOKEN, and it works on pull requests from forks, because this workflow never holds
+# a write token: it uploads the diff and the app commits it.
+#
+# Nothing here can make a pull request fail that would otherwise pass:
+# - Only safe fixes (no --unsafe), and the fix commit goes through the full CI run.
+# - Anything Biome cannot fix is left alone, and `pnpm lint` in CI still fails on it.
+# - Code covered by the bundle-size fingerprint is never touched (see the restore step).
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autofix-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  autofix:
+    name: Apply safe formatting and lint fixes
+    # Off until the autofix.ci app is installed and the AUTOFIX_ENABLED repository variable
+    # is set to "true"; without the app, the action fails and every pull request shows a
+    # red check. Dependabot pull requests are skipped because Dependabot stops rebasing a
+    # branch someone else has pushed to, and the release PR because changesets force-pushes
+    # it and would drop the fix.
+    if: >-
+      vars.AUTOFIX_ENABLED == 'true'
+      && github.event.pull_request.user.login != 'dependabot[bot]'
+      && !startsWith(github.head_ref, 'changeset-release/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # Biome is all this job runs, so no lifecycle scripts.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      # Biome exits non-zero when errors it cannot fix remain. Those are the author's to fix,
+      # and CI's lint step reports them, so the fixes it could make are still committed.
+      - name: Apply safe fixes
+        run: pnpm exec biome check --write . || true
+
+      # These paths feed the bundle-size fingerprint (tools/size/sdk-fingerprint.mjs), which
+      # hashes their bytes. Reformatting them, even without changing behaviour, makes
+      # tools/size/size-report.json stale and fails `pnpm build:web`; react/src also holds
+      # cookieyes.css, which critical.css is generated from. Their fixes are left to the
+      # author, who regenerates both. Tests are excluded from the fingerprint, so they are
+      # still fixed. Restoring only the changed files, rather than naming the paths to
+      # `git restore`, keeps this step green on a pull request that deletes one of them.
+      - name: Leave size-measured code untouched
+        run: |
+          git diff --name-only -z -- \
+            sdk/core/src sdk/react/src sdk/nextjs/src sdk/devtools/src \
+            sdk/core/rollup.config.mjs sdk/react/rollup.config.mjs \
+            sdk/nextjs/rollup.config.mjs sdk/devtools/rollup.config.mjs \
+            rollup.shared.mjs \
+            ':(exclude,glob)**/__tests__/**' \
+            ':(exclude,glob)**/*.test.ts' \
+            ':(exclude,glob)**/*.test.tsx' \
+            | xargs -0 -r git restore --
+
+      # fail-fast is off so a fix does not cancel the other workflows on the same commit,
+      # including the one that adds a changeset to dependency updates.
+      - uses: autofix-ci/action@v1
+        with:
+          fail-fast: false
+          commit-message: "style: apply automated formatting and lint fixes"

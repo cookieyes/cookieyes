@@ -161,6 +161,20 @@ The agent does the typing; you own the result. Read the whole diff, run the chec
 sure the PR describes what changed and why. If an agent keeps making a mistake these files don't
 cover, fix the files in the same PR — that's how the rules improve.
 
+## Commits
+
+Keep commits granular and meaningful: each one is a single change that makes sense on its
+own and leaves the build passing. We value what a change does, not how many commits it takes.
+
+- **One change per commit.** A fix, a feature, a refactor or a docs update each get their
+  own commit. A regenerated file goes in the same commit as the source that produced it.
+- **Every commit does something.** No empty commits, and no commits that only undo or
+  patch the one before. Squash those into the commit they fix before you open the PR.
+- **Small PRs where the work is naturally small.** A vendor integration, a locale or a docs
+  page is a complete change on its own and can go in its own PR.
+- Messages follow [Conventional Commits](https://www.conventionalcommits.org):
+  `type(scope): summary`, with the summary at most 72 characters.
+
 ## Pull request workflow
 
 1. Fork the repo and create a feature branch off `main`.
@@ -170,6 +184,10 @@ cover, fix the files in the same PR — that's how the rules improve.
    semver bump, and write a short, user-facing summary. Commit the generated file in
    `.changeset/`.
 5. Open a PR against `main`. CI must be green and at least one maintainer must approve.
+   The autofix.ci bot may push a `style:` commit with Biome's formatting and safe lint
+   fixes; pull before you push again. It does not touch `sdk/{core,react,nextjs,devtools}/src`
+   or the Rollup configs, because any change there needs the size report regenerated, so
+   run `pnpm lint:fix` yourself for those. Errors Biome cannot fix are always left to you.
    A bot comments with the PR's effect on bundle and package size, and a PR that grows
    core or the React layer past the per-change limit cannot merge. If the growth is
    deliberate, write `Size override: <reason>` in the PR description and ask a
