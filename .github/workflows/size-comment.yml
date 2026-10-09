@@ -29,7 +29,7 @@ jobs:
       - name: Download the size comment
         id: download
         continue-on-error: true
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: size-comment
           path: size-comment
