@@ -160,11 +160,23 @@ export function createLibConfig({
   ];
 
   if (dtsBuild) {
+    // Every package is "type": "module", so TypeScript reads a `.d.ts` as ESM. Giving the
+    // `require` condition that same file told CommonJS consumers the package was ESM
+    // ("Masquerading as ESM" in attw). The `.d.cts` copy is read as CommonJS, and its
+    // chunks are `.d.cts` too, so a CommonJS lookup never crosses into an ESM file.
     configs.push({
       input: entries,
       external: isExternal,
       plugins: [dts()],
-      output: { dir: "dist", format: "es", entryFileNames: "[name].d.ts" },
+      output: [
+        { dir: "dist", format: "es", entryFileNames: "[name].d.ts" },
+        {
+          dir: "dist",
+          format: "es",
+          entryFileNames: "[name].d.cts",
+          chunkFileNames: "[name]-[hash].d.cts",
+        },
+      ],
     });
   }
 

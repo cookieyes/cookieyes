@@ -32,19 +32,34 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./server": {
-      "types": "./dist/server.d.ts",
-      "import": "./dist/server.js",
-      "require": "./dist/server.cjs"
+      "import": {
+        "types": "./dist/server.d.ts",
+        "default": "./dist/server.js"
+      },
+      "require": {
+        "types": "./dist/server.d.cts",
+        "default": "./dist/server.cjs"
+      }
     },
     "./styles-route": {
-      "types": "./dist/styles-route.d.ts",
-      "import": "./dist/styles-route.js",
-      "require": "./dist/styles-route.cjs"
+      "import": {
+        "types": "./dist/styles-route.d.ts",
+        "default": "./dist/styles-route.js"
+      },
+      "require": {
+        "types": "./dist/styles-route.d.cts",
+        "default": "./dist/styles-route.cjs"
+      }
     },
     "./styles.css": "./dist/styles.css",
     "./critical.css": "./dist/critical.css"
