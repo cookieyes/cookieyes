@@ -89,7 +89,7 @@ jobs:
       # evidence for what grew, and re-running the job to find out is worse.
       - name: Upload size report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: size-report
           path: tools/size/size-report.json
@@ -105,7 +105,7 @@ jobs:
 
       - name: Upload size comment
         if: always() && github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: size-comment
           path: ${{ runner.temp }}/size-comment/

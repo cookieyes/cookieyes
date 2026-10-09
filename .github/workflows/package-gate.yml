@@ -55,7 +55,7 @@ jobs:
         run: pnpm --filter @cookieyes/react exec vitest run src/__tests__/a11y.test.tsx
 
       - name: Upload tarballs
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: package-gate-tarballs
           path: ${{ runner.temp }}/package-gate/tarballs/
@@ -65,7 +65,7 @@ jobs:
       # tarball's sha256, and any failure. Kept with every run, including releases.
       - name: Upload contents report
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: package-gate-report
           path: ${{ runner.temp }}/package-gate/report.json
