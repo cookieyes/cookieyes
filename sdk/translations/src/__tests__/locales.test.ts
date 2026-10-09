@@ -110,9 +110,8 @@ describe("catalog", () => {
       pkg.exports[`./${code}`],
       `add "./${code}" to "exports" in sdk/translations/package.json`,
     ).toEqual({
-      types: `./dist/${code}.d.ts`,
-      import: `./dist/${code}.js`,
-      require: `./dist/${code}.cjs`,
+      import: { types: `./dist/${code}.d.ts`, default: `./dist/${code}.js` },
+      require: { types: `./dist/${code}.d.cts`, default: `./dist/${code}.cjs` },
     });
   });
 

@@ -30,9 +30,15 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/stub.d.ts",
+      "types": {
+        "import": "./dist/stub.d.ts",
+        "require": "./dist/stub.d.cts"
+      },
       "development": {
-        "types": "./dist/index.d.ts",
+        "types": {
+          "import": "./dist/index.d.ts",
+          "require": "./dist/index.d.cts"
+        },
         "import": "./dist/index.js",
         "require": "./dist/index.cjs"
       },
@@ -49,6 +55,10 @@
   "types": "./dist/stub.d.ts",
   "files": [
     "dist",
+    "src",
+    "!src/**/__tests__",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
     "LICENSE",
     "README.md"
   ],

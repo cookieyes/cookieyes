@@ -26,38 +26,72 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./en": {
-      "types": "./dist/en.d.ts",
-      "import": "./dist/en.js",
-      "require": "./dist/en.cjs"
+      "import": {
+        "types": "./dist/en.d.ts",
+        "default": "./dist/en.js"
+      },
+      "require": {
+        "types": "./dist/en.d.cts",
+        "default": "./dist/en.cjs"
+      }
     },
     "./es": {
-      "types": "./dist/es.d.ts",
-      "import": "./dist/es.js",
-      "require": "./dist/es.cjs"
+      "import": {
+        "types": "./dist/es.d.ts",
+        "default": "./dist/es.js"
+      },
+      "require": {
+        "types": "./dist/es.d.cts",
+        "default": "./dist/es.cjs"
+      }
     },
     "./fr": {
-      "types": "./dist/fr.d.ts",
-      "import": "./dist/fr.js",
-      "require": "./dist/fr.cjs"
+      "import": {
+        "types": "./dist/fr.d.ts",
+        "default": "./dist/fr.js"
+      },
+      "require": {
+        "types": "./dist/fr.d.cts",
+        "default": "./dist/fr.cjs"
+      }
     },
     "./de": {
-      "types": "./dist/de.d.ts",
-      "import": "./dist/de.js",
-      "require": "./dist/de.cjs"
+      "import": {
+        "types": "./dist/de.d.ts",
+        "default": "./dist/de.js"
+      },
+      "require": {
+        "types": "./dist/de.d.cts",
+        "default": "./dist/de.cjs"
+      }
     },
     "./it": {
-      "types": "./dist/it.d.ts",
-      "import": "./dist/it.js",
-      "require": "./dist/it.cjs"
+      "import": {
+        "types": "./dist/it.d.ts",
+        "default": "./dist/it.js"
+      },
+      "require": {
+        "types": "./dist/it.d.cts",
+        "default": "./dist/it.cjs"
+      }
     }
   },
   "files": [
     "dist",
+    "src",
+    "!src/**/__tests__",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx",
     "LICENSE",
     "README.md"
   ],

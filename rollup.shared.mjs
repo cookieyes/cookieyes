@@ -116,6 +116,12 @@ export function createLibConfig({
 
   const banner = shebang ? `${shebang}\n` : undefined;
 
+  // The maps point at `../src/*.ts`, which each package publishes (its `files`), so they
+  // leave the source out. Embedded, it was copied into every map of both the ESM and the
+  // CJS build: about 290 KB of core's 375 KB of maps. Debuggers and stack traces read
+  // the same lines from the published `src/` instead.
+  const sourcemapExcludeSources = true;
+
   const outputs = [];
   if (formats.includes("esm")) {
     outputs.push({
@@ -125,6 +131,7 @@ export function createLibConfig({
       chunkFileNames: "[name]-[hash].js",
       ...(preserveModules ? { preserveModules: true, preserveModulesRoot: "src" } : {}),
       sourcemap,
+      sourcemapExcludeSources,
       banner,
     });
   }
@@ -135,6 +142,7 @@ export function createLibConfig({
       entryFileNames: "[name].cjs",
       chunkFileNames: "[name]-[hash].cjs",
       sourcemap,
+      sourcemapExcludeSources,
       exports: "named",
       banner,
     });
@@ -160,11 +168,23 @@ export function createLibConfig({
   ];
 
   if (dtsBuild) {
+    // Every package is "type": "module", so TypeScript reads a `.d.ts` as ESM. Giving the
+    // `require` condition that same file told CommonJS consumers the package was ESM
+    // ("Masquerading as ESM" in attw). The `.d.cts` copy is read as CommonJS, and its
+    // chunks are `.d.cts` too, so a CommonJS lookup never crosses into an ESM file.
     configs.push({
       input: entries,
       external: isExternal,
       plugins: [dts()],
-      output: { dir: "dist", format: "es", entryFileNames: "[name].d.ts" },
+      output: [
+        { dir: "dist", format: "es", entryFileNames: "[name].d.ts" },
+        {
+          dir: "dist",
+          format: "es",
+          entryFileNames: "[name].d.cts",
+          chunkFileNames: "[name]-[hash].d.cts",
+        },
+      ],
     });
   }
 
