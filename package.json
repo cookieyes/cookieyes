@@ -47,11 +47,13 @@
     "peer-matrix:test": "vitest run matrix/scripts/__tests__"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@biomejs/biome": "^2.5.4",
     "@changesets/cli": "^2.31.1",
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^1.0.0",
+    "publint": "^0.3.25",
     "rollup": "^4.62.2",
     "rollup-plugin-dts": "^6.4.1",
     "rollup-plugin-esbuild": "^6.2.1",
