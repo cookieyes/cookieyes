@@ -191,7 +191,9 @@ decision worth keeping goes in `contributing/design/` as a note anyone may read.
   `scripts`, `cli`, `translations`, `test`, `web`, `size`, `matrix`. Subject at most 72
   characters. Keep the body short, ideally a few short bullet points on what changed and why,
   wrapped at 72. No Co-Authored-By or other AI attribution lines in commits or PRs.
-- One logical change per commit. A regenerated file goes in the commit that changed its source.
+- Commits are granular and meaningful: one logical change each, no empty commits, and no
+  commits that only patch the previous one (squash those). A regenerated file goes in the
+  commit that changed its source.
 - Every user-facing change has a changeset (`write-changeset` guide). `@cookieyes/web` is private
   and never appears in one.
 

@@ -161,6 +161,20 @@ The agent does the typing; you own the result. Read the whole diff, run the chec
 sure the PR describes what changed and why. If an agent keeps making a mistake these files don't
 cover, fix the files in the same PR — that's how the rules improve.
 
+## Commits
+
+Keep commits granular and meaningful: each one is a single change that makes sense on its
+own and leaves the build passing. We value what a change does, not how many commits it takes.
+
+- **One change per commit.** A fix, a feature, a refactor or a docs update each get their
+  own commit. A regenerated file goes in the same commit as the source that produced it.
+- **Every commit does something.** No empty commits, and no commits that only undo or
+  patch the one before. Squash those into the commit they fix before you open the PR.
+- **Small PRs where the work is naturally small.** A vendor integration, a locale or a docs
+  page is a complete change on its own and can go in its own PR.
+- Messages follow [Conventional Commits](https://www.conventionalcommits.org):
+  `type(scope): summary`, with the summary at most 72 characters.
+
 ## Pull request workflow
 
 1. Fork the repo and create a feature branch off `main`.
@@ -170,11 +184,57 @@ cover, fix the files in the same PR — that's how the rules improve.
    semver bump, and write a short, user-facing summary. Commit the generated file in
    `.changeset/`.
 5. Open a PR against `main`. CI must be green and at least one maintainer must approve.
+   The autofix.ci bot may push a `style:` commit with Biome's formatting and safe lint
+   fixes; pull before you push again. It does not touch `sdk/{core,react,nextjs,devtools}/src`
+   or the Rollup configs, because any change there needs the size report regenerated, so
+   run `pnpm lint:fix` yourself for those. Errors Biome cannot fix are always left to you.
    A bot comments with the PR's effect on bundle and package size, and a PR that grows
    core or the React layer past the per-change limit cannot merge. If the growth is
    deliberate, write `Size override: <reason>` in the PR description and ask a
    maintainer to add the `size-override` label. [`tools/size/README.md`](./tools/size/README.md)
    has the limits.
+
+## Dependency release age
+
+pnpm installs no third-party version until it has been on npm for 72 hours
+(`minimumReleaseAge` in `pnpm-workspace.yaml`). A compromised release then has to survive three
+days of public scrutiny before it can reach this repo. `@cookieyes/*` packages are excluded, so
+our own releases install at once. Dependabot waits the same three days before proposing a
+version (`cooldown` in `.github/dependabot.yml`), so its weekly PRs install cleanly.
+
+If `pnpm add` or `pnpm update` fails with `ERR_PNPM_NO_MATCHING_VERSION` and the message says the
+version "was released at" a recent date, the version you asked for is too new. Pick an older one
+or wait.
+
+To pin a known vulnerability out of the tree, use a range-scoped override in the `pnpm.overrides`
+field of the root `package.json`. It rewrites only the vulnerable versions and leaves the rest of
+the tree alone:
+
+```json
+"postcss@<8.5.14": "^8.5.14"
+```
+
+### Emergency bypass
+
+A security fix published two hours ago is blocked too. Dependabot security updates ignore the
+cooldown, so their PRs fail until the fix is 72 hours old. When a fix cannot wait:
+
+1. **Who:** a member of `@cookieyes/sdk-maintainers` opens the PR, and a second maintainer
+   approves it. Nobody bypasses alone.
+2. **How:** add the exact version, never a range or a bare name, to `minimumReleaseAgeExclude` in
+   `pnpm-workspace.yaml`, then run `pnpm install` and commit the lockfile with it:
+
+   ```yaml
+   minimumReleaseAgeExclude:
+     - "@cookieyes/*"
+     - "postcss@8.5.24"
+   ```
+
+3. **What to record:** in the PR description, the advisory (CVE or GHSA link), why the fix cannot
+   wait 72 hours, and a check that the new version comes from the package's usual maintainers
+   and repository.
+4. **Afterwards:** once the version is 72 hours old, remove the entry in a follow-up PR, so the
+   exclude list holds only `@cookieyes/*`.
 
 ## Releases
 
