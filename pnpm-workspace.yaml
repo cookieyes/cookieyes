@@ -1,3 +1,10 @@
 packages:
   - "sdk/*"
   - "apps/*"
+
+# A compromised release is usually caught and pulled within hours, so no third-party
+# version is installed until it is 72 hours old. Our own packages are trusted at once.
+# CONTRIBUTING.md ("Dependency release age") explains the emergency bypass.
+minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  - "@cookieyes/*"

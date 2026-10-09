@@ -176,6 +176,48 @@ cover, fix the files in the same PR — that's how the rules improve.
    maintainer to add the `size-override` label. [`tools/size/README.md`](./tools/size/README.md)
    has the limits.
 
+## Dependency release age
+
+pnpm installs no third-party version until it has been on npm for 72 hours
+(`minimumReleaseAge` in `pnpm-workspace.yaml`). A compromised release then has to survive three
+days of public scrutiny before it can reach this repo. `@cookieyes/*` packages are excluded, so
+our own releases install at once. Dependabot waits the same three days before proposing a
+version (`cooldown` in `.github/dependabot.yml`), so its weekly PRs install cleanly.
+
+If `pnpm add` or `pnpm update` fails with `ERR_PNPM_NO_MATCHING_VERSION` and the message says the
+version "was released at" a recent date, the version you asked for is too new. Pick an older one
+or wait.
+
+To pin a known vulnerability out of the tree, use a range-scoped override in the `pnpm.overrides`
+field of the root `package.json`. It rewrites only the vulnerable versions and leaves the rest of
+the tree alone:
+
+```json
+"postcss@<8.5.14": "^8.5.14"
+```
+
+### Emergency bypass
+
+A security fix published two hours ago is blocked too. Dependabot security updates ignore the
+cooldown, so their PRs fail until the fix is 72 hours old. When a fix cannot wait:
+
+1. **Who:** a member of `@cookieyes/sdk-maintainers` opens the PR, and a second maintainer
+   approves it. Nobody bypasses alone.
+2. **How:** add the exact version, never a range or a bare name, to `minimumReleaseAgeExclude` in
+   `pnpm-workspace.yaml`, then run `pnpm install` and commit the lockfile with it:
+
+   ```yaml
+   minimumReleaseAgeExclude:
+     - "@cookieyes/*"
+     - "postcss@8.5.24"
+   ```
+
+3. **What to record:** in the PR description, the advisory (CVE or GHSA link), why the fix cannot
+   wait 72 hours, and a check that the new version comes from the package's usual maintainers
+   and repository.
+4. **Afterwards:** once the version is 72 hours old, remove the entry in a follow-up PR, so the
+   exclude list holds only `@cookieyes/*`.
+
 ## Releases
 
 Releases are automated with [Changesets](https://github.com/changesets/changesets):
