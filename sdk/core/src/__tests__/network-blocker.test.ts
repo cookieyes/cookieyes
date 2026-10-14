@@ -74,6 +74,47 @@ describe("installNetworkBlocker", () => {
     );
   });
 
+  it("blocks a host written with one or more trailing dots, in any case", async () => {
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
+
+    for (const url of [
+      "https://www.google-analytics.com./collect",
+      "https://www.google-analytics.com../collect",
+      "https://google-analytics.com./collect",
+      "https://WWW.Google-Analytics.COM./collect",
+    ]) {
+      await expect(window.fetch(url)).rejects.toThrow(/Blocked by consent/);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("matches a rule domain written with a trailing dot or in upper case", async () => {
+    installNetworkBlocker(
+      {
+        rules: [{ id: "ga", domain: "Google-Analytics.COM.", category: "analytics" }],
+        logBlockedRequests: false,
+      },
+      () => false,
+    );
+
+    await expect(window.fetch("https://www.google-analytics.com/collect")).rejects.toThrow(
+      /Blocked by consent/,
+    );
+    await expect(window.fetch("https://www.google-analytics.com./collect")).rejects.toThrow(
+      /Blocked by consent/,
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not block a host that only contains the domain as a label prefix", async () => {
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
+
+    await window.fetch("https://google-analytics.com.example.test/collect");
+    await window.fetch("https://google-analytics.com.example.test./collect");
+    await window.fetch("https://notgoogle-analytics.com/collect");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it("does not block other domains", async () => {
     const consents: Record<string, boolean> = { analytics: false };
     installNetworkBlocker(
@@ -239,6 +280,18 @@ describe("installNetworkBlocker — XMLHttpRequest", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 
+  it("aborts an XHR to a denied host written with a trailing dot", () => {
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
+
+    const xhr = new XMLHttpRequest();
+    const abortSpy = vi.spyOn(xhr, "abort").mockImplementation(() => undefined);
+    xhr.open("POST", "https://www.google-analytics.com./collect");
+    xhr.send("payload");
+
+    expect(abortSpy).toHaveBeenCalledOnce();
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
   it("lets a consented XHR through to the original send", () => {
     installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => true);
 
@@ -269,6 +322,14 @@ describe("installNetworkBlocker — navigator.sendBeacon", () => {
 
     // Reports success to the caller, but nothing actually reaches the origin.
     expect(result).toBe(true);
+    expect(beaconMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks sendBeacon to a denied host written with a trailing dot", () => {
+    installNetworkBlocker({ rules: [ruleGA], logBlockedRequests: false }, () => false);
+
+    navigator.sendBeacon("https://www.google-analytics.com./collect", "payload");
+
     expect(beaconMock).not.toHaveBeenCalled();
   });
 
