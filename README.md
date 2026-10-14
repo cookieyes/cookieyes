@@ -26,6 +26,7 @@ Open-source cookie consent SDK for developers. Build consent banners and manage 
 | [`@cookieyes/translations`](./sdk/translations) | Curated, per-locale translation catalog | [![npm](https://img.shields.io/npm/v/@cookieyes/translations)](https://www.npmjs.com/package/@cookieyes/translations) |
 | [`@cookieyes/cli`](./sdk/cli) | Scaffolder — wire the SDK into an existing app | [![npm](https://img.shields.io/npm/v/@cookieyes/cli)](https://www.npmjs.com/package/@cookieyes/cli) |
 | [`@cookieyes/test`](./sdk/test) | Headless test double (+ `/react`) — unit-test consent code with no browser | [![npm](https://img.shields.io/npm/v/@cookieyes/test)](https://www.npmjs.com/package/@cookieyes/test) |
+| [`@cookieyes/devtools`](./sdk/devtools) | In-page debugging panel for React and Next.js, absent from production bundles | [![npm](https://img.shields.io/npm/v/@cookieyes/devtools)](https://www.npmjs.com/package/@cookieyes/devtools) |
 
 ## Architecture
 
@@ -150,6 +151,7 @@ sdk/
   translations/  @cookieyes/translations per-locale catalog
   cli/           @cookieyes/cli          scaffolder
   test/          @cookieyes/test         headless test double (+ /react)
+  devtools/      @cookieyes/devtools     in-page debugging panel
 ```
 
 ## Local development
