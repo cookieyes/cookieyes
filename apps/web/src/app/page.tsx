@@ -21,7 +21,7 @@ import { WhatItDoes } from "./sections/WhatItDoes";
 import { WorksWithYourStack } from "./sections/WorksWithYourStack";
 
 export const metadata: Metadata = pageMetadata({
-  title: "React Cookie Consent SDK for React & Next.js | CookieYes",
+  title: "Open-Source Cookie Consent SDK for React & Next.js | CookieYes",
   absoluteTitle: true,
   description:
     "Open-source cookie consent SDK for React and Next.js. Manage consent in code, control when third-party tools load, and keep everything in your frontend.",
