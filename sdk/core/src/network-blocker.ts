@@ -62,12 +62,15 @@ function findBlockingRule(
   } catch {
     return null;
   }
-  const host = parsed.hostname.toLowerCase();
+  // A trailing dot names the same DNS host (`example.com.` is `example.com`), and
+  // `URL` keeps it in `hostname`. Compared as plain strings it let any script
+  // reach a denied domain by appending a dot, so both sides drop it first.
+  const host = parsed.hostname.toLowerCase().replace(/\.+$/, "");
   const path = parsed.pathname + parsed.search;
   const upperMethod = method.toUpperCase();
 
   for (const rule of rules) {
-    const ruleHost = rule.domain.toLowerCase();
+    const ruleHost = rule.domain.toLowerCase().replace(/\.+$/, "");
     if (host !== ruleHost && !host.endsWith("." + ruleHost)) continue;
     if (rule.pathIncludes && !path.includes(rule.pathIncludes)) continue;
     if (rule.methods && !rule.methods.map((m) => m.toUpperCase()).includes(upperMethod)) {
