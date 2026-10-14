@@ -1,5 +1,12 @@
 # @cookieyes/scripts
 
+## 0.2.8
+
+### Patch Changes
+
+- Updated dependencies [6378e32]
+  - @cookieyes/core@0.11.2
+
 ## 0.2.7
 
 ### Patch Changes
