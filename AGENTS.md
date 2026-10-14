@@ -19,8 +19,8 @@ Task guides live in `.agents/skills/<name>/SKILL.md`. Read the matching one befo
 Public, MIT-licensed monorepo (pnpm workspaces + Turborepo). Node 20 or newer, pnpm 10. The
 README has the full layout. In short: `sdk/*` are the published packages (`core` is the engine
 with zero runtime dependencies; `react` and `nextjs` are wiring only; plus `scripts`,
-`translations`, `cli` and `test`), `apps/web` is developers.cookieyes.com (docs source in
-`apps/web/content/shared`, rules in `apps/web/AGENTS.md`), `tools/size` measures bundles,
+`translations`, `cli`, `test` and `devtools`), `apps/web` is developers.cookieyes.com (docs
+source in `apps/web/content/shared`, rules in `apps/web/AGENTS.md`), `tools/size` measures bundles,
 `matrix` checks peer compatibility, `contributing/design` holds design notes for contributors
 (`docs/` is for SDK users). `skills/` holds the guides for the AI tools of people using the SDK;
 `.agents/skills/` holds the ones for contributors (`.agents/README.md` explains both).
