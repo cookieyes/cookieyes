@@ -40,8 +40,18 @@ import type {
   ReloadNoticeState,
   ScriptEntry,
 } from "./types.js";
+import { CORE_VERSION } from "./version.js";
 
 export function createConsentManager(config: ConsentConfig): ConsentManager {
+  // Lets public crawlers count the sites that run the SDK, whether or not a
+  // banner shows: every setup creates a manager, not every page renders a
+  // banner. The version is the only value. Wappalyzer and HTTP Archive rules
+  // match this exact name and shape, and no test here would notice a rename.
+  if (typeof window !== "undefined") {
+    (window as Window & { CookieYesSDK?: { version: string } }).CookieYesSDK = {
+      version: CORE_VERSION,
+    };
+  }
   const listeners = new Set<(state: ConsentSnapshot) => void>();
   // Only when there is somewhere to send records (self-hosted mode).
   const records = config.backend || config.apiUrl ? createRecordQueue(config) : undefined;

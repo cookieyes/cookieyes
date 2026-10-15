@@ -34,6 +34,16 @@ describe("createCookieYes() builder validation", () => {
   });
 });
 
+describe("initCookieYes() SDK identifier", () => {
+  it("sets window.CookieYesSDK, so React setups are counted like core ones", () => {
+    delete (window as Window & { CookieYesSDK?: unknown }).CookieYesSDK;
+    initCookieYes({ mode: "cookie-only", regulation: "DEFAULT" });
+    expect((window as Window & { CookieYesSDK?: unknown }).CookieYesSDK).toEqual({
+      version: expect.any(String),
+    });
+  });
+});
+
 describe("getCookieYes() / resetCookieYes()", () => {
   it("throws before any runtime is mounted", () => {
     expect(() => getCookieYes()).toThrow(/No runtime is registered/);

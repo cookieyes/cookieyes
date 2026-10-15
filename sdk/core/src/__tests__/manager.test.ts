@@ -23,6 +23,45 @@ beforeEach(() => {
   });
 });
 
+describe("createConsentManager SDK identifier", () => {
+  type IdWindow = Window & { CookieYesSDK?: unknown };
+  afterEach(() => {
+    delete (window as IdWindow).CookieYesSDK;
+  });
+
+  it("sets window.CookieYesSDK to the version alone for a first-time visitor", () => {
+    createConsentManager({ regulation: "GDPR" });
+    expect((window as IdWindow).CookieYesSDK).toEqual({ version: expect.any(String) });
+  });
+
+  it("sets it when the visitor has already decided and no banner shows", () => {
+    document.cookie = `cookieyes-consent=${encodeURIComponent(
+      "consentid:abc,consent:yes,action:yes,necessary:yes,functional:no,analytics:yes,performance:no,advertisement:no,lastRenewedDate:1",
+    )}`;
+    const mgr = createConsentManager({ regulation: "GDPR" });
+    expect(mgr.hasActed).toBe(true);
+    expect((window as IdWindow).CookieYesSDK).toEqual({ version: expect.any(String) });
+  });
+
+  it("sets it under every regulation, including where no banner is required", () => {
+    for (const regulation of ["DEFAULT", "CCPA", "GDPR"] as const) {
+      delete (window as IdWindow).CookieYesSDK;
+      createConsentManager({ regulation });
+      expect((window as IdWindow).CookieYesSDK).toEqual({ version: expect.any(String) });
+    }
+  });
+
+  it("does nothing during server rendering, where there is no window", () => {
+    vi.stubGlobal("window", undefined);
+    try {
+      expect(() => createConsentManager({ regulation: "GDPR" })).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect((window as IdWindow).CookieYesSDK).toBeUndefined();
+  });
+});
+
 describe("createConsentManager", () => {
   it("creates a manager with DEFAULT regulation when no cookie exists", () => {
     const mgr = createConsentManager({ regulation: "DEFAULT" });
