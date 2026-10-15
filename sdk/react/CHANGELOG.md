@@ -1,5 +1,12 @@
 # @cookieyes/react
 
+## 0.13.3
+
+### Patch Changes
+
+- Updated dependencies [1e7e84a]
+  - @cookieyes/core@0.12.0
+
 ## 0.13.2
 
 ### Patch Changes
