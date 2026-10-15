@@ -11,14 +11,14 @@
     "next": "16.3.0",
     "react": "19.2.8"
   },
-  "measuredAt": "2026-10-15T07:16:51.770Z",
+  "measuredAt": "2026-10-15T09:07:14.345Z",
   "node": "v24.6.0",
   "versions": {
     "@cookieyes/core": "0.11.2",
     "@cookieyes/react": "0.13.2",
     "@cookieyes/nextjs": "0.8.2"
   },
-  "sdkFingerprint": "a51b66212b9db5f1",
+  "sdkFingerprint": "ced476056421af0a",
   "apps": {
     "baseline": {
       "label": "empty Next.js app (control)",
@@ -737,14 +737,14 @@
   },
   "tarballs": {
     "@cookieyes/core": {
-      "packed": 144228,
-      "unpacked": 496365,
+      "packed": 144226,
+      "unpacked": 496360,
       "install": {
         "packages": [
           "@cookieyes/core"
         ],
-        "packed": 144228,
-        "unpacked": 496365
+        "packed": 144226,
+        "unpacked": 496360
       }
     },
     "@cookieyes/react": {
@@ -755,8 +755,8 @@
           "@cookieyes/react",
           "@cookieyes/core"
         ],
-        "packed": 295135,
-        "unpacked": 1009519
+        "packed": 295133,
+        "unpacked": 1009514
       }
     },
     "@cookieyes/nextjs": {
@@ -769,8 +769,8 @@
           "@cookieyes/react",
           "@cookieyes/scripts"
         ],
-        "packed": 379938,
-        "unpacked": 1353748
+        "packed": 379936,
+        "unpacked": 1353743
       }
     }
   }
