@@ -64,6 +64,14 @@ Or call `useConsentActions().reset()` from a button you show only in development
 
 **See the banner from any location.** Set `regulation: "GDPR"` while developing instead of relying on `region` detection.
 
+**Check which version a page runs.** In the console:
+
+```js title="Console"
+window.CookieYesSDK; // { version: "x.y.z" }
+```
+
+The SDK sets this in the browser on every page where it starts, whether or not the banner shows, so public technology scanners can recognise the SDK. It holds the `@cookieyes/core` version and nothing else.
+
 **Trigger the reload notice.** Accept the category, reload so the tool starts, then withdraw it. Rejecting on a first visit never shows it, because nothing was running.
 
 ## Next steps
