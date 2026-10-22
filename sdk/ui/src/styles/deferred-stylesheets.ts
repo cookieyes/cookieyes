@@ -1,6 +1,6 @@
 /**
- * Switch any deferred SDK stylesheet — `<link rel="stylesheet" media="print"
- * data-cy-full>` — to `media="all"`. The `print` media is how it was fetched
+ * Switch any deferred SDK stylesheet (`<link rel="stylesheet" media="print"
+ * data-cy-full>`) to `media="all"`. The `print` media is how it was fetched
  * without blocking first paint; by the time a banner mounts, first paint is
  * long past, so applying it costs nothing. If the sheet has not finished
  * downloading yet, flipping `media` early is still correct: the browser applies

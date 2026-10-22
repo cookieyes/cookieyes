@@ -1,7 +1,7 @@
 {
   "name": "@cookieyes/ui",
   "version": "0.0.0",
-  "description": "Framework-free banner layer for the CookieYes consent SDK — styles, theme tokens, markup and accessibility behaviour",
+  "description": "Framework-free banner layer for the CookieYes consent SDK: styles, theme tokens, markup and accessibility behaviour",
   "keywords": [
     "cookie consent",
     "GDPR",

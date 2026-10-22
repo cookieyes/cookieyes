@@ -6,7 +6,7 @@ import { activateDeferredStylesheets } from "../styles/deferred-stylesheets.js";
  * The Next.js adapter's `<CookieYesStyles />` emits the full stylesheet as
  * `<link rel="stylesheet" media="print" data-cy-full>` so the browser fetches
  * it without blocking first paint. Something has to switch it on afterwards,
- * and that something is every banner's mount — not an inline `onload` handler,
+ * and that something is every banner's mount, not an inline `onload` handler,
  * which a strict `script-src` would block. These tests pin that contract; each
  * adapter's tests pin that its mount calls it, and the Next.js tests pin the markup.
  */

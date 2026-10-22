@@ -119,7 +119,7 @@ const DEFAULT_APPS = [
   {
     dir: "with-vanilla",
     key: "vanilla",
-    label: "@cookieyes/vanilla — banner + recall, dialogs on demand, no framework of its own",
+    label: "@cookieyes/vanilla: banner + recall, dialogs on demand, no framework of its own",
   },
   {
     dir: "with-nextjs-devtools",

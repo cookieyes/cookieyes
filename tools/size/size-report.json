@@ -11,14 +11,14 @@
     "next": "16.3.0",
     "react": "19.2.8"
   },
-  "measuredAt": "2026-10-22T15:44:54.156Z",
+  "measuredAt": "2026-10-22T16:03:41.321Z",
   "node": "v24.6.0",
   "versions": {
     "@cookieyes/core": "0.12.0",
     "@cookieyes/react": "0.13.3",
     "@cookieyes/nextjs": "0.8.3"
   },
-  "sdkFingerprint": "d5a2ee106a98de74",
+  "sdkFingerprint": "3f78c5f3649636d2",
   "apps": {
     "baseline": {
       "label": "empty Next.js app (control)",
@@ -537,7 +537,7 @@
       }
     },
     "vanilla": {
-      "label": "@cookieyes/vanilla — banner + recall, dialogs on demand, no framework of its own",
+      "label": "@cookieyes/vanilla: banner + recall, dialogs on demand, no framework of its own",
       "fixture": "tools/size/fixtures/with-vanilla",
       "initial": {
         "raw": 600934,
