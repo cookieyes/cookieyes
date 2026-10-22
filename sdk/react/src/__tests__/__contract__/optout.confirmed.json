@@ -1,0 +1,389 @@
+{
+  "checkedOnOpen": false,
+  "dom": [
+    {
+      "tag": "div",
+      "attrs": {
+        "id": "cookieyes-portal-root"
+      }
+    },
+    {
+      "tag": "span",
+      "attrs": {
+        "aria-live": "assertive",
+        "style": "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap;"
+      }
+    },
+    {
+      "tag": "div",
+      "attrs": {
+        "aria-labelledby": "id-1",
+        "aria-modal": "true",
+        "class": "cy-dialog-overlay",
+        "data-cy-part": "optout",
+        "role": "dialog",
+        "tabindex": "-1"
+      },
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "cy-dialog cy-optout-dialog"
+          },
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "cy-dialog-header"
+              },
+              "children": [
+                {
+                  "tag": "h2",
+                  "attrs": {
+                    "class": "cy-dialog-title",
+                    "data-cy-part": "title",
+                    "id": "id-1"
+                  },
+                  "children": ["Opt-out Preferences"]
+                },
+                {
+                  "tag": "button",
+                  "attrs": {
+                    "aria-label": "Close",
+                    "class": "cy-dialog-close",
+                    "data-cy-part": "close",
+                    "type": "button"
+                  },
+                  "children": [
+                    {
+                      "tag": "svg",
+                      "attrs": {
+                        "aria-hidden": "true",
+                        "fill": "none",
+                        "height": "10",
+                        "viewBox": "0 0 10 10",
+                        "width": "10",
+                        "xmlns": "http://www.w3.org/2000/svg"
+                      },
+                      "children": [
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "stroke": "currentColor",
+                            "stroke-linecap": "round",
+                            "stroke-width": "1.5"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "cy-dialog-body"
+              },
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-dialog-content-intro"
+                  },
+                  "children": [
+                    {
+                      "tag": "p",
+                      "attrs": {
+                        "class": "cy-dialog-desc",
+                        "data-cy-part": "message"
+                      },
+                      "children": [
+                        "We use third-party cookies that help us analyse how you use this website, store your preferences, and provide the content and advertisements that are relevant to you. However, you can opt out of these cookies by checking \"Do Not Sell or Share My Personal Information\" and clicking the \"Save My Preferences\" button. Once you opt out, you can opt in again at any time by unchecking \"Do Not Sell or Share My Personal Information\" and clicking the \"Save My Preferences\" button."
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "hr",
+                  "attrs": {
+                    "class": "cy-separator"
+                  }
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-optout-checkbox-wrapper"
+                  },
+                  "children": [
+                    {
+                      "tag": "input",
+                      "attrs": {
+                        "class": "cy-optout-checkbox",
+                        "disabled": "",
+                        "id": "cy-ccpa-optout",
+                        "type": "checkbox"
+                      }
+                    },
+                    {
+                      "tag": "label",
+                      "attrs": {
+                        "class": "cy-optout-checkbox-label",
+                        "for": "cy-ccpa-optout"
+                      },
+                      "children": ["Do Not Sell or Share My Personal Information"]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "cy-optout-footer"
+              },
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-optout-action-area"
+                  },
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "class": "cy-optout-success",
+                        "role": "status",
+                        "tabindex": "-1"
+                      },
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "cy-optout-success-inner"
+                          },
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "cy-optout-success-row"
+                              },
+                              "children": [
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "aria-hidden": "true",
+                                    "class": "cy-optout-success-icon"
+                                  },
+                                  "children": [
+                                    {
+                                      "tag": "svg",
+                                      "attrs": {
+                                        "fill": "none",
+                                        "height": "20",
+                                        "viewBox": "0 0 20 20",
+                                        "width": "20",
+                                        "xmlns": "http://www.w3.org/2000/svg"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "path",
+                                          "attrs": {
+                                            "d": "(path data)",
+                                            "stroke": "currentColor",
+                                            "stroke-linecap": "round",
+                                            "stroke-linejoin": "round",
+                                            "stroke-width": "1.5"
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "class": "cy-optout-success-text"
+                                  },
+                                  "children": [
+                                    "Your opt-out preference has been honored.",
+                                    {
+                                      "tag": "span",
+                                      "attrs": {
+                                        "style": "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap;"
+                                      },
+                                      "children": ["Banner closes automatically in 10 seconds..."]
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "aria-hidden": "true",
+                                "class": "cy-optout-success-subtext-wrapper"
+                              },
+                              "children": [
+                                {
+                                  "tag": "p",
+                                  "attrs": {
+                                    "class": "cy-optout-success-subtext"
+                                  },
+                                  "children": [
+                                    "Banner closes automatically in",
+                                    {
+                                      "tag": "span",
+                                      "attrs": {
+                                        "class": "cy-optout-countdown"
+                                      },
+                                      "children": ["10"]
+                                    },
+                                    "seconds..."
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-optout-powered-by"
+                  },
+                  "children": [
+                    {
+                      "tag": "a",
+                      "attrs": {
+                        "aria-label": "Powered by CookieYes (opens in new tab)",
+                        "class": "cy-branding",
+                        "href": "https://www.cookieyes.com",
+                        "rel": "noopener noreferrer",
+                        "target": "_blank"
+                      },
+                      "children": [
+                        "Powered by",
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "fill": "none",
+                            "height": "13",
+                            "viewBox": "0 0 78 13",
+                            "width": "78",
+                            "xmlns": "http://www.w3.org/2000/svg"
+                          },
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "focusOnConfirm": "div.cy-optout-success",
+  "countdown": {
+    "at0s": "10",
+    "at3s": "7"
+  },
+  "open": {
+    "at9999ms": true,
+    "at10s": false
+  },
+  "focusAfterClose": "button[data-cy-part=\"recall\"]"
+}

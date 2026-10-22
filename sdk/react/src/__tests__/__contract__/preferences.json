@@ -1,0 +1,826 @@
+{
+  "dom": [
+    {
+      "tag": "div",
+      "attrs": {
+        "id": "cookieyes-portal-root"
+      }
+    },
+    {
+      "tag": "span",
+      "attrs": {
+        "aria-live": "assertive",
+        "style": "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap;"
+      }
+    },
+    {
+      "tag": "div",
+      "attrs": {
+        "aria-labelledby": "id-1",
+        "aria-modal": "true",
+        "class": "cy-dialog-overlay",
+        "data-cy-part": "overlay",
+        "role": "dialog",
+        "tabindex": "-1"
+      },
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "cy-dialog",
+            "data-cy-part": "dialog"
+          },
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "cy-dialog-header"
+              },
+              "children": [
+                {
+                  "tag": "h2",
+                  "attrs": {
+                    "class": "cy-dialog-title",
+                    "data-cy-part": "title",
+                    "id": "id-1"
+                  },
+                  "children": ["Customise Consent Preferences"]
+                },
+                {
+                  "tag": "button",
+                  "attrs": {
+                    "aria-label": "Close preferences",
+                    "class": "cy-dialog-close",
+                    "data-cy-part": "close",
+                    "type": "button"
+                  },
+                  "children": [
+                    {
+                      "tag": "svg",
+                      "attrs": {
+                        "aria-hidden": "true",
+                        "fill": "none",
+                        "height": "12",
+                        "viewBox": "0 0 12 12",
+                        "width": "12",
+                        "xmlns": "http://www.w3.org/2000/svg"
+                      },
+                      "children": [
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "stroke": "currentColor",
+                            "stroke-linecap": "round",
+                            "stroke-width": "1.8"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "cy-dialog-body"
+              },
+              "children": [
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-dialog-content-intro"
+                  },
+                  "children": [
+                    {
+                      "tag": "p",
+                      "attrs": {
+                        "class": "cy-dialog-desc",
+                        "data-cy-part": "intro"
+                      },
+                      "children": [
+                        "We use cookies to help you navigate efficiently and perform certain functions. You will find detailed information about all cookies under each consent category below."
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-accordion-wrapper",
+                    "role": "list"
+                  },
+                  "children": [
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "role": "listitem"
+                      },
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "cy-accordion",
+                            "data-cy-part": "category"
+                          },
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "cy-accordion-item"
+                              },
+                              "children": [
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "class": "cy-accordion-header-wrapper"
+                                  },
+                                  "children": [
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "span",
+                                          "attrs": {
+                                            "class": "cy-accordion-btn",
+                                            "data-cy-part": "category-label"
+                                          },
+                                          "children": ["Necessary"]
+                                        },
+                                        {
+                                          "tag": "span",
+                                          "attrs": {
+                                            "class": "cy-always-active"
+                                          },
+                                          "children": ["Always Active"]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header-des"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "p",
+                                          "attrs": {
+                                            "data-cy-part": "category-description"
+                                          },
+                                          "children": [
+                                            "Necessary cookies are required to enable the basic features of this site, such as providing secure log-in or adjusting your consent preferences. These cookies do not store any personally identifiable data."
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "role": "listitem"
+                      },
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "cy-accordion",
+                            "data-cy-part": "category"
+                          },
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "cy-accordion-item"
+                              },
+                              "children": [
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "class": "cy-accordion-header-wrapper"
+                                  },
+                                  "children": [
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "span",
+                                          "attrs": {
+                                            "class": "cy-accordion-btn",
+                                            "data-cy-part": "category-label"
+                                          },
+                                          "children": ["Functional"]
+                                        },
+                                        {
+                                          "tag": "label",
+                                          "attrs": {
+                                            "class": "cy-toggle",
+                                            "data-cy-part": "toggle",
+                                            "data-cy-state": "off"
+                                          },
+                                          "children": [
+                                            {
+                                              "tag": "input",
+                                              "attrs": {
+                                                "aria-checked": "false",
+                                                "aria-label": "Functional",
+                                                "role": "switch",
+                                                "type": "checkbox"
+                                              }
+                                            },
+                                            {
+                                              "tag": "span",
+                                              "attrs": {
+                                                "aria-hidden": "true",
+                                                "class": "cy-toggle-track"
+                                              },
+                                              "children": [
+                                                {
+                                                  "tag": "span",
+                                                  "attrs": {
+                                                    "class": "cy-toggle-thumb"
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header-des"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "p",
+                                          "attrs": {
+                                            "data-cy-part": "category-description"
+                                          },
+                                          "children": [
+                                            "Functional cookies help perform certain functionalities like sharing the content of the website on social media platforms, collecting feedback, and other third-party features."
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "role": "listitem"
+                      },
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "cy-accordion",
+                            "data-cy-part": "category"
+                          },
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "cy-accordion-item"
+                              },
+                              "children": [
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "class": "cy-accordion-header-wrapper"
+                                  },
+                                  "children": [
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "span",
+                                          "attrs": {
+                                            "class": "cy-accordion-btn",
+                                            "data-cy-part": "category-label"
+                                          },
+                                          "children": ["Analytics"]
+                                        },
+                                        {
+                                          "tag": "label",
+                                          "attrs": {
+                                            "class": "cy-toggle",
+                                            "data-cy-part": "toggle",
+                                            "data-cy-state": "off"
+                                          },
+                                          "children": [
+                                            {
+                                              "tag": "input",
+                                              "attrs": {
+                                                "aria-checked": "false",
+                                                "aria-label": "Analytics",
+                                                "role": "switch",
+                                                "type": "checkbox"
+                                              }
+                                            },
+                                            {
+                                              "tag": "span",
+                                              "attrs": {
+                                                "aria-hidden": "true",
+                                                "class": "cy-toggle-track"
+                                              },
+                                              "children": [
+                                                {
+                                                  "tag": "span",
+                                                  "attrs": {
+                                                    "class": "cy-toggle-thumb"
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header-des"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "p",
+                                          "attrs": {
+                                            "data-cy-part": "category-description"
+                                          },
+                                          "children": [
+                                            "Analytical cookies are used to understand how visitors interact with the website. These cookies help provide information on metrics such as the number of visitors, bounce rate, traffic source, etc."
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "role": "listitem"
+                      },
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "cy-accordion",
+                            "data-cy-part": "category"
+                          },
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "cy-accordion-item"
+                              },
+                              "children": [
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "class": "cy-accordion-header-wrapper"
+                                  },
+                                  "children": [
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "span",
+                                          "attrs": {
+                                            "class": "cy-accordion-btn",
+                                            "data-cy-part": "category-label"
+                                          },
+                                          "children": ["Performance"]
+                                        },
+                                        {
+                                          "tag": "label",
+                                          "attrs": {
+                                            "class": "cy-toggle",
+                                            "data-cy-part": "toggle",
+                                            "data-cy-state": "off"
+                                          },
+                                          "children": [
+                                            {
+                                              "tag": "input",
+                                              "attrs": {
+                                                "aria-checked": "false",
+                                                "aria-label": "Performance",
+                                                "role": "switch",
+                                                "type": "checkbox"
+                                              }
+                                            },
+                                            {
+                                              "tag": "span",
+                                              "attrs": {
+                                                "aria-hidden": "true",
+                                                "class": "cy-toggle-track"
+                                              },
+                                              "children": [
+                                                {
+                                                  "tag": "span",
+                                                  "attrs": {
+                                                    "class": "cy-toggle-thumb"
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header-des"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "p",
+                                          "attrs": {
+                                            "data-cy-part": "category-description"
+                                          },
+                                          "children": [
+                                            "Performance cookies are used to understand and analyse the key performance indexes of the website which helps in delivering a better user experience for the visitors."
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tag": "div",
+                      "attrs": {
+                        "role": "listitem"
+                      },
+                      "children": [
+                        {
+                          "tag": "div",
+                          "attrs": {
+                            "class": "cy-accordion",
+                            "data-cy-part": "category"
+                          },
+                          "children": [
+                            {
+                              "tag": "div",
+                              "attrs": {
+                                "class": "cy-accordion-item"
+                              },
+                              "children": [
+                                {
+                                  "tag": "div",
+                                  "attrs": {
+                                    "class": "cy-accordion-header-wrapper"
+                                  },
+                                  "children": [
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "span",
+                                          "attrs": {
+                                            "class": "cy-accordion-btn",
+                                            "data-cy-part": "category-label"
+                                          },
+                                          "children": ["Advertisement"]
+                                        },
+                                        {
+                                          "tag": "label",
+                                          "attrs": {
+                                            "class": "cy-toggle",
+                                            "data-cy-part": "toggle",
+                                            "data-cy-state": "off"
+                                          },
+                                          "children": [
+                                            {
+                                              "tag": "input",
+                                              "attrs": {
+                                                "aria-checked": "false",
+                                                "aria-label": "Advertisement",
+                                                "role": "switch",
+                                                "type": "checkbox"
+                                              }
+                                            },
+                                            {
+                                              "tag": "span",
+                                              "attrs": {
+                                                "aria-hidden": "true",
+                                                "class": "cy-toggle-track"
+                                              },
+                                              "children": [
+                                                {
+                                                  "tag": "span",
+                                                  "attrs": {
+                                                    "class": "cy-toggle-thumb"
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "tag": "div",
+                                      "attrs": {
+                                        "class": "cy-accordion-header-des"
+                                      },
+                                      "children": [
+                                        {
+                                          "tag": "p",
+                                          "attrs": {
+                                            "data-cy-part": "category-description"
+                                          },
+                                          "children": [
+                                            "Advertisement cookies are used to provide visitors with customised advertisements based on the pages you visited previously and to analyse the effectiveness of the ad campaigns."
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "tag": "div",
+              "attrs": {
+                "class": "cy-dialog-footer"
+              },
+              "children": [
+                {
+                  "tag": "span",
+                  "attrs": {
+                    "aria-hidden": "true",
+                    "class": "cy-dialog-footer-shadow"
+                  }
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-dialog-footer-actions"
+                  },
+                  "children": [
+                    {
+                      "tag": "button",
+                      "attrs": {
+                        "class": "cy-btn cy-btn-primary",
+                        "data-cy-part": "reject-all",
+                        "type": "button"
+                      },
+                      "children": ["Reject All"]
+                    },
+                    {
+                      "tag": "button",
+                      "attrs": {
+                        "class": "cy-btn cy-btn-primary",
+                        "data-cy-part": "save",
+                        "type": "button"
+                      },
+                      "children": ["Save My Preferences"]
+                    },
+                    {
+                      "tag": "button",
+                      "attrs": {
+                        "class": "cy-btn cy-btn-primary",
+                        "data-cy-part": "accept-all",
+                        "type": "button"
+                      },
+                      "children": ["Accept All"]
+                    }
+                  ]
+                },
+                {
+                  "tag": "a",
+                  "attrs": {
+                    "aria-label": "Powered by CookieYes (opens in new tab)",
+                    "class": "cy-branding",
+                    "data-cy-part": "branding",
+                    "href": "https://www.cookieyes.com",
+                    "rel": "noopener noreferrer",
+                    "target": "_blank"
+                  },
+                  "children": [
+                    "Powered by",
+                    {
+                      "tag": "svg",
+                      "attrs": {
+                        "aria-hidden": "true",
+                        "fill": "none",
+                        "height": "13",
+                        "viewBox": "0 0 78 13",
+                        "width": "78",
+                        "xmlns": "http://www.w3.org/2000/svg"
+                      },
+                      "children": [
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        },
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "fill": "currentColor"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "toggles": {
+    "onOpen": [
+      {
+        "label": "Necessary",
+        "state": "always-active"
+      },
+      {
+        "label": "Functional",
+        "state": "off"
+      },
+      {
+        "label": "Analytics",
+        "state": "off"
+      },
+      {
+        "label": "Performance",
+        "state": "off"
+      },
+      {
+        "label": "Advertisement",
+        "state": "off"
+      }
+    ],
+    "afterSwitchingFirst": [
+      {
+        "label": "Necessary",
+        "state": "always-active"
+      },
+      {
+        "label": "Functional",
+        "state": "on"
+      },
+      {
+        "label": "Analytics",
+        "state": "off"
+      },
+      {
+        "label": "Performance",
+        "state": "off"
+      },
+      {
+        "label": "Advertisement",
+        "state": "off"
+      }
+    ]
+  },
+  "keyboard": {
+    "focusOnOpen": "div[data-cy-part=\"overlay\"]",
+    "tabOrder": [
+      "button[data-cy-part=\"close\"]",
+      "input[role=\"switch\"]",
+      "input[role=\"switch\"]",
+      "input[role=\"switch\"]",
+      "input[role=\"switch\"]",
+      "button[data-cy-part=\"reject-all\"]",
+      "button[data-cy-part=\"save\"]",
+      "button[data-cy-part=\"accept-all\"]",
+      "a[data-cy-part=\"branding\"]"
+    ],
+    "trapEdges": {
+      "tabFromPage": "button[data-cy-part=\"close\"]",
+      "shiftTabFromPage": "a[data-cy-part=\"branding\"]",
+      "tabFromLast": "button[data-cy-part=\"close\"]",
+      "shiftTabFromFirst": "a[data-cy-part=\"branding\"]"
+    },
+    "openAfterEscape": false,
+    "focusAfterEscape": "button[data-cy-part=\"customise\"]"
+  }
+}

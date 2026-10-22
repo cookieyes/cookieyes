@@ -1,0 +1,86 @@
+{
+  "dom": [
+    {
+      "tag": "div",
+      "attrs": {
+        "id": "cookieyes-portal-root"
+      },
+      "children": [
+        {
+          "tag": "button",
+          "attrs": {
+            "aria-haspopup": "dialog",
+            "aria-label": "Consent Preferences",
+            "class": "cy-widget",
+            "data-cy-part": "recall",
+            "data-pos": "bottom-left",
+            "data-tooltip": "Consent Preferences",
+            "type": "button"
+          },
+          "children": [
+            {
+              "tag": "svg",
+              "attrs": {
+                "aria-hidden": "true",
+                "fill": "none",
+                "height": "30",
+                "viewBox": "0 0 36 36",
+                "width": "30",
+                "xmlns": "http://www.w3.org/2000/svg"
+              },
+              "children": [
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "clip-rule": "evenodd",
+                    "d": "(path data)",
+                    "fill": "white",
+                    "fill-rule": "evenodd"
+                  }
+                },
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "(path data)",
+                    "fill": "white"
+                  }
+                },
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "(path data)",
+                    "fill": "white"
+                  }
+                },
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "(path data)",
+                    "fill": "white"
+                  }
+                },
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "(path data)",
+                    "fill": "white"
+                  }
+                },
+                {
+                  "tag": "path",
+                  "attrs": {
+                    "d": "(path data)",
+                    "fill": "white"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "opens": "preferences",
+  "focusOnOpen": "div[data-cy-part=\"overlay\"]",
+  "focusAfterEscape": "button[data-cy-part=\"recall\"]"
+}
