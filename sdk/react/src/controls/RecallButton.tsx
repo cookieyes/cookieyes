@@ -39,7 +39,6 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
       aria-haspopup="dialog"
       className={className ?? "cy-widget"}
       data-cy-part={CY_PART.recall.root}
-      data-pos="bottom-left"
       data-tooltip={t.recallButtonLabel}
       onClick={chain(onClick, onActivate)}
       {...rest}

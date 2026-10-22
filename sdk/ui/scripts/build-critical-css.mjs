@@ -24,6 +24,7 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "style
 const SELECTORS = [
   ":root",
   "@media (prefers-color-scheme: dark)",
+  ".cy-sr-only",
   ".cy-banner-wrap",
   ".cy-banner",
   ".cy-banner[data-leaving]",

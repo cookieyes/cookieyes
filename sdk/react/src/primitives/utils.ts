@@ -1,24 +1,7 @@
 "use client";
 
 import { bodyPortalRoot, closeOnEscape, focusDialog, trapFocus } from "@cookieyes/ui";
-import {
-  type CSSProperties,
-  type Ref,
-  type RefObject,
-  type SyntheticEvent,
-  useEffect,
-  useState,
-} from "react";
-
-/** Hidden on screen, still read by screen readers. Inline, so it works without our stylesheet. */
-export const VISUALLY_HIDDEN: CSSProperties = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  overflow: "hidden",
-  clip: "rect(0,0,0,0)",
-  whiteSpace: "nowrap",
-};
+import { type Ref, type RefObject, type SyntheticEvent, useEffect, useState } from "react";
 
 /** Point every ref at the same node. */
 export function composeRefs<T>(...refs: Array<Ref<T> | undefined>): (node: T | null) => void {

@@ -4,7 +4,7 @@
       "tag": "span",
       "attrs": {
         "aria-live": "assertive",
-        "style": "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap"
+        "class": "cy-sr-only"
       }
     },
     {
@@ -250,7 +250,7 @@
       "tag": "span",
       "attrs": {
         "aria-live": "assertive",
-        "style": "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap"
+        "class": "cy-sr-only"
       }
     },
     {

@@ -123,6 +123,14 @@
   display: inline-block;
   vertical-align: middle;
 }
+.cy-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
 .cy-banner-wrap {
   /* Pure logical grouping — generates no box (display: contents), so the only
      measurable banner element is the visible .cy-banner card below. Inheritable

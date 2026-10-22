@@ -134,7 +134,8 @@ describe("critical.css is a byte-identical subset of cookieyes.css", () => {
     // they stay byte-identical to the full sheet, and the extra selectors are
     // inert on a page that only has a banner. What must not appear is a rule
     // that exists *solely* to style a deferred component.
-    const bannerish = /cy-banner|cy-btn|cy-branding|cy-fade|^:root$|^@media/;
+    // `.cy-sr-only` hides the banner's announcer, which is in the first paint.
+    const bannerish = /cy-banner|cy-btn|cy-branding|cy-fade|cy-sr-only|^:root$|^@media/;
     for (const rule of criticalBlocks) {
       expect(
         bannerish.test(rule.selector),

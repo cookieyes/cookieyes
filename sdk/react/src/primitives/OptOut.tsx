@@ -27,14 +27,7 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { renderAction } from "./Slot.js";
-import {
-  chain,
-  composeRefs,
-  useAutoFocusDialog,
-  useEscapeKey,
-  useFocusTrap,
-  VISUALLY_HIDDEN,
-} from "./utils.js";
+import { chain, composeRefs, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -176,6 +169,7 @@ const Checkbox = forwardRef<HTMLInputElement, InputProps>(function OptOutCheckbo
     <input
       ref={ref}
       type="checkbox"
+      data-cy-part={CY_PART.optOut.checkbox}
       checked={optOut}
       disabled={disabled ?? saved}
       onChange={(e) => {
@@ -193,7 +187,7 @@ const CheckboxLabel = forwardRef<HTMLLabelElement, LabelProps>(function OptOutCh
 ) {
   const t = useTranslations();
   return (
-    <label ref={ref} {...props}>
+    <label ref={ref} data-cy-part={CY_PART.optOut.checkboxLabel} {...props}>
       {children ?? t.doNotSell}
     </label>
   );
@@ -205,7 +199,11 @@ const Cancel = forwardRef<HTMLButtonElement, ActionProps>(function OptOutCancel(
 ) {
   const { hideOptOut } = useConsentActions();
   const t = useTranslations();
-  const behavior = { onClick: chain(onClick, hideOptOut), ...rest };
+  const behavior = {
+    "data-cy-part": CY_PART.optOut.cancel,
+    onClick: chain(onClick, hideOptOut),
+    ...rest,
+  };
   return renderAction(asChild, ref, behavior, children, t.optOut.cancel);
 });
 
@@ -258,7 +256,13 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
   if (!saved) return null;
   const countdown = t.optOut.successCountdown.split("{seconds}");
   return (
-    <div ref={composeRefs(innerRef, ref)} role="status" tabIndex={-1} {...props}>
+    <div
+      ref={composeRefs(innerRef, ref)}
+      data-cy-part={CY_PART.optOut.confirmation}
+      role="status"
+      tabIndex={-1}
+      {...props}
+    >
       <div className="cy-optout-success-inner">
         <div className="cy-optout-success-row">
           <div className="cy-optout-success-icon" aria-hidden="true">
@@ -270,7 +274,7 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
                 as the confirmation so both are read together. The visible one below
                 ticks every second, and `role="status"` would re-announce each tick, so
                 it is hidden from them instead. */}
-            <span style={VISUALLY_HIDDEN}>
+            <span className="cy-sr-only">
               {" " + countdown.join(`${OPT_OUT_COUNTDOWN_SECONDS}`)}
             </span>
           </div>
@@ -288,7 +292,7 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
 });
 
 const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function OptOutBranding(props, ref) {
-  return <BrandingLink ref={ref} {...props} />;
+  return <BrandingLink ref={ref} data-cy-part={CY_PART.optOut.branding} {...props} />;
 });
 
 export const OptOut = {

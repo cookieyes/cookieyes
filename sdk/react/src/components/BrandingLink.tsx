@@ -1,5 +1,6 @@
 "use client";
 
+import { splitPoweredBy } from "@cookieyes/ui";
 import { type ComponentPropsWithoutRef, forwardRef } from "react";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { CookieYesLogo } from "./icons.js";
@@ -8,6 +9,7 @@ import { CookieYesLogo } from "./icons.js";
 export const BrandingLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutRef<"a">>(
   function BrandingLink({ children, ...props }, ref) {
     const t = useTranslations();
+    const [before, after] = splitPoweredBy(t.poweredBy);
     return (
       <a
         ref={ref}
@@ -20,7 +22,9 @@ export const BrandingLink = forwardRef<HTMLAnchorElement, ComponentPropsWithoutR
       >
         {children ?? (
           <>
-            Powered by <CookieYesLogo />
+            {before}
+            <CookieYesLogo />
+            {after}
           </>
         )}
       </a>

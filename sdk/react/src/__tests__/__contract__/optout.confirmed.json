@@ -11,7 +11,7 @@
       "tag": "span",
       "attrs": {
         "aria-live": "assertive",
-        "style": "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap;"
+        "class": "cy-sr-only"
       }
     },
     {
@@ -121,8 +121,9 @@
                       "tag": "input",
                       "attrs": {
                         "class": "cy-optout-checkbox",
+                        "data-cy-part": "checkbox",
                         "disabled": "",
-                        "id": "cy-ccpa-optout",
+                        "id": "id-2",
                         "type": "checkbox"
                       }
                     },
@@ -130,7 +131,8 @@
                       "tag": "label",
                       "attrs": {
                         "class": "cy-optout-checkbox-label",
-                        "for": "cy-ccpa-optout"
+                        "data-cy-part": "checkbox-label",
+                        "for": "id-2"
                       },
                       "children": ["Do Not Sell or Share My Personal Information"]
                     }
@@ -154,6 +156,7 @@
                       "tag": "div",
                       "attrs": {
                         "class": "cy-optout-success",
+                        "data-cy-part": "confirmation",
                         "role": "status",
                         "tabindex": "-1"
                       },
@@ -211,7 +214,7 @@
                                     {
                                       "tag": "span",
                                       "attrs": {
-                                        "style": "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap;"
+                                        "class": "cy-sr-only"
                                       },
                                       "children": ["Banner closes automatically in 10 seconds..."]
                                     }
@@ -262,6 +265,7 @@
                       "attrs": {
                         "aria-label": "Powered by CookieYes (opens in new tab)",
                         "class": "cy-branding",
+                        "data-cy-part": "branding",
                         "href": "https://www.cookieyes.com",
                         "rel": "noopener noreferrer",
                         "target": "_blank"
@@ -376,7 +380,7 @@
       ]
     }
   ],
-  "focusOnConfirm": "div.cy-optout-success",
+  "focusOnConfirm": "div[data-cy-part=\"confirmation\"]",
   "countdown": {
     "at0s": "10",
     "at3s": "7"

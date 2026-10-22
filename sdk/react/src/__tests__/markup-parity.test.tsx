@@ -145,7 +145,7 @@ describe("markup parity with @cookieyes/ui", () => {
       optOut({
         translations: rt.translations,
         titleId,
-        checkboxId: "cy-ccpa-optout",
+        checkboxId: checkbox().id,
         optedOut: checkbox().checked,
         confirmation,
       });

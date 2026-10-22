@@ -6,7 +6,7 @@ import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { Banner } from "../primitives/Banner.js";
-import { useFocusTrap, VISUALLY_HIDDEN } from "../primitives/utils.js";
+import { useFocusTrap } from "../primitives/utils.js";
 
 /** Every styleable part of the banner — keys for {@link CookieBannerProps.classNames}. */
 export type BannerPart = keyof typeof CY_PART.banner;
@@ -59,7 +59,7 @@ export function CookieBanner({ className, style, classNames, styles }: CookieBan
     <>
       {/* A consent prompt is important enough to justify aria-live="assertive"
           over "polite" — it's more consistently announced by assistive tech. */}
-      <span aria-live="assertive" style={VISUALLY_HIDDEN}>
+      <span aria-live="assertive" className="cy-sr-only">
         {announcement}
       </span>
       {/* The wrapper is `display: contents` (not a style target), so suppress

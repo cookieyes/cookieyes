@@ -232,7 +232,7 @@
       "tag": "span",
       "attrs": {
         "aria-live": "assertive",
-        "style": "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap;"
+        "class": "cy-sr-only"
       },
       "children": ["We value your privacy"]
     }

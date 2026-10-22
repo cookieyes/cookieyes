@@ -29,6 +29,7 @@
               "tag": "button",
               "attrs": {
                 "class": "cy-btn cy-btn-primary cy-reload-notice-reload",
+                "data-cy-part": "reload",
                 "type": "button"
               },
               "children": ["Reload page"]
@@ -49,7 +50,7 @@
   ],
   "keyboard": {
     "focusOnShow": "page",
-    "tabOrder": ["button.cy-reload-notice-reload", "button[data-cy-part=\"reload-dismiss\"]"]
+    "tabOrder": ["button[data-cy-part=\"reload\"]", "button[data-cy-part=\"reload-dismiss\"]"]
   },
   "shownAfterDismiss": false
 }

@@ -10,7 +10,7 @@
       "tag": "span",
       "attrs": {
         "aria-live": "assertive",
-        "style": "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); white-space: nowrap;"
+        "class": "cy-sr-only"
       }
     },
     {
@@ -120,7 +120,8 @@
                       "tag": "input",
                       "attrs": {
                         "class": "cy-optout-checkbox",
-                        "id": "cy-ccpa-optout",
+                        "data-cy-part": "checkbox",
+                        "id": "id-2",
                         "type": "checkbox"
                       }
                     },
@@ -128,7 +129,8 @@
                       "tag": "label",
                       "attrs": {
                         "class": "cy-optout-checkbox-label",
-                        "for": "cy-ccpa-optout"
+                        "data-cy-part": "checkbox-label",
+                        "for": "id-2"
                       },
                       "children": ["Do Not Sell or Share My Personal Information"]
                     }
@@ -158,6 +160,7 @@
                           "tag": "button",
                           "attrs": {
                             "class": "cy-btn cy-btn-cancel",
+                            "data-cy-part": "cancel",
                             "type": "button"
                           },
                           "children": ["Cancel"]
@@ -186,6 +189,7 @@
                       "attrs": {
                         "aria-label": "Powered by CookieYes (opens in new tab)",
                         "class": "cy-branding",
+                        "data-cy-part": "branding",
                         "href": "https://www.cookieyes.com",
                         "rel": "noopener noreferrer",
                         "target": "_blank"
@@ -304,16 +308,16 @@
     "focusOnOpen": "div[data-cy-part=\"optout\"]",
     "tabOrder": [
       "button[data-cy-part=\"close\"]",
-      "input.cy-optout-checkbox",
-      "button.cy-btn-cancel",
+      "input[data-cy-part=\"checkbox\"]",
+      "button[data-cy-part=\"cancel\"]",
       "button[data-cy-part=\"confirm\"]",
-      "a.cy-branding"
+      "a[data-cy-part=\"branding\"]"
     ],
     "trapEdges": {
       "tabFromPage": "button[data-cy-part=\"close\"]",
-      "shiftTabFromPage": "a.cy-branding",
+      "shiftTabFromPage": "a[data-cy-part=\"branding\"]",
       "tabFromLast": "button[data-cy-part=\"close\"]",
-      "shiftTabFromFirst": "a.cy-branding"
+      "shiftTabFromFirst": "a[data-cy-part=\"branding\"]"
     },
     "openAfterEscape": false,
     "focusAfterEscape": "button[data-cy-part=\"do-not-sell\"]"

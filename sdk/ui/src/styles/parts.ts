@@ -39,8 +39,13 @@ export const CY_PART = {
     root: "optout",
     title: "title",
     message: "message",
+    checkbox: "checkbox",
+    checkboxLabel: "checkbox-label",
+    cancel: "cancel",
     confirm: "confirm",
+    confirmation: "confirmation",
     close: "close",
+    branding: "branding",
   },
   recall: {
     root: "recall",
@@ -48,6 +53,7 @@ export const CY_PART = {
   reloadNotice: {
     root: "reload-notice",
     message: "reload-message",
+    reload: "reload",
     dismiss: "reload-dismiss",
   },
 } as const;

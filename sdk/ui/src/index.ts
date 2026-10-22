@@ -27,6 +27,7 @@ export {
 } from "./markup/components.js";
 export { cookieYesLogo, crossIcon, revisitIcon, successIcon } from "./markup/icons.js";
 export { renderToDom, renderToString, type UiChild, type UiNode } from "./markup/node.js";
+export { splitPoweredBy } from "./markup/powered-by.js";
 export { type CategoryTextSources, categoryText } from "./state/category-text.js";
 export {
   initialOptOutState,

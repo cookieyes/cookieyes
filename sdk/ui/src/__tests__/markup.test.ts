@@ -9,6 +9,7 @@ import {
   reloadNotice,
 } from "../markup/components.js";
 import { renderToString } from "../markup/node.js";
+import { splitPoweredBy } from "../markup/powered-by.js";
 
 // Runs in Node with no DOM: the markup has to render on a server.
 
@@ -36,6 +37,22 @@ describe("renderToString", () => {
 
   it("renders a list of nodes in order", () => {
     expect(renderToString([{ tag: "b", children: ["1"] }, "2"])).toBe("<b>1</b>2");
+  });
+});
+
+describe("splitPoweredBy", () => {
+  it("splits the translated phrase around the brand name the logo shows", () => {
+    expect(splitPoweredBy("Powered by CookieYes")).toEqual(["Powered by", ""]);
+    expect(splitPoweredBy("CookieYes 提供")).toEqual(["", "提供"]);
+    expect(splitPoweredBy("Powered by us")).toEqual(["Powered by us", ""]);
+  });
+
+  it("keeps the brand name out of the visible text and inline styles out of the HTML", () => {
+    const html = renderToString(
+      banner({ translations: defaultTranslations, regulation: "GDPR", titleId: "t" }),
+    );
+    expect(html).toContain(">Powered by<svg");
+    expect(html).not.toContain("style=");
   });
 });
 

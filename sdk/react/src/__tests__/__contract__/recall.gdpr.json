@@ -13,7 +13,6 @@
             "aria-label": "Consent Preferences",
             "class": "cy-widget",
             "data-cy-part": "recall",
-            "data-pos": "bottom-left",
             "data-tooltip": "Consent Preferences",
             "type": "button"
           },

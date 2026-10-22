@@ -3,6 +3,7 @@ import { OPT_OUT_COUNTDOWN_SECONDS } from "../state/opt-out.js";
 import { CY_PART, CY_STATE } from "../styles/parts.js";
 import { cookieYesLogo, crossIcon, revisitIcon, successIcon } from "./icons.js";
 import type { UiChild, UiNode } from "./node.js";
+import { splitPoweredBy } from "./powered-by.js";
 
 // The markup of every CookieYes component, as data. React renders the same
 // trees from JSX, and a test in `@cookieyes/react` renders both for every
@@ -19,15 +20,9 @@ function el(
   return { tag, attrs: clean, children };
 }
 
-/**
- * Hidden on screen and still read by screen readers. Inline, so it works
- * before the stylesheet arrives.
- */
-const VISUALLY_HIDDEN =
-  "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap";
-
 /** The "Powered by CookieYes" link in the banner and both dialogs. */
-function branding(t: TranslationMap, part: string | undefined): UiNode {
+function branding(t: TranslationMap, part: string): UiNode {
+  const [before, after] = splitPoweredBy(t.poweredBy);
   return el(
     "a",
     {
@@ -38,7 +33,7 @@ function branding(t: TranslationMap, part: string | undefined): UiNode {
       class: "cy-branding",
       "data-cy-part": part,
     },
-    ["Powered by", cookieYesLogo()],
+    [before, cookieYesLogo(), after].filter((c) => c !== ""),
   );
 }
 
@@ -60,7 +55,7 @@ export type BannerModel = {
  * screen reader already tracks is announced reliably, a newly inserted one is not.
  */
 export function bannerAnnouncer(text = ""): UiNode {
-  return el("span", { "aria-live": "assertive", style: VISUALLY_HIDDEN }, text ? [text] : []);
+  return el("span", { "aria-live": "assertive", class: "cy-sr-only" }, text ? [text] : []);
 }
 
 /** The consent banner. Under CCPA it offers "Do Not Sell" instead of accept and reject. */
@@ -250,29 +245,38 @@ export type OptOutModel = {
 
 function confirmation(t: TranslationMap, secondsLeft: number): UiNode {
   const countdown = t.optOut.successCountdown.split("{seconds}");
-  return el("div", { class: "cy-optout-success", role: "status", tabindex: "-1" }, [
-    el("div", { class: "cy-optout-success-inner" }, [
-      el("div", { class: "cy-optout-success-row" }, [
-        el("div", { class: "cy-optout-success-icon", "aria-hidden": "true" }, [successIcon()]),
-        el("div", { class: "cy-optout-success-text" }, [
-          t.optOut.successText,
-          // Read once, together with the confirmation. The visible countdown below
-          // ticks every second and is hidden from screen readers, or the status
-          // region would announce every tick.
-          el("span", { style: VISUALLY_HIDDEN }, [
-            ` ${countdown.join(`${OPT_OUT_COUNTDOWN_SECONDS}`)}`,
+  return el(
+    "div",
+    {
+      class: "cy-optout-success",
+      "data-cy-part": CY_PART.optOut.confirmation,
+      role: "status",
+      tabindex: "-1",
+    },
+    [
+      el("div", { class: "cy-optout-success-inner" }, [
+        el("div", { class: "cy-optout-success-row" }, [
+          el("div", { class: "cy-optout-success-icon", "aria-hidden": "true" }, [successIcon()]),
+          el("div", { class: "cy-optout-success-text" }, [
+            t.optOut.successText,
+            // Read once, together with the confirmation. The visible countdown below
+            // ticks every second and is hidden from screen readers, or the status
+            // region would announce every tick.
+            el("span", { class: "cy-sr-only" }, [
+              ` ${countdown.join(`${OPT_OUT_COUNTDOWN_SECONDS}`)}`,
+            ]),
+          ]),
+        ]),
+        el("div", { class: "cy-optout-success-subtext-wrapper", "aria-hidden": "true" }, [
+          el("p", { class: "cy-optout-success-subtext" }, [
+            countdown[0] ?? "",
+            el("span", { class: "cy-optout-countdown" }, [`${secondsLeft}`]),
+            countdown[1] ?? "",
           ]),
         ]),
       ]),
-      el("div", { class: "cy-optout-success-subtext-wrapper", "aria-hidden": "true" }, [
-        el("p", { class: "cy-optout-success-subtext" }, [
-          countdown[0] ?? "",
-          el("span", { class: "cy-optout-countdown" }, [`${secondsLeft}`]),
-          countdown[1] ?? "",
-        ]),
-      ]),
-    ]),
-  ]);
+    ],
+  );
 }
 
 /** The CCPA opt-out dialog: one "Do Not Sell" checkbox, then a confirmation. */
@@ -290,6 +294,7 @@ export function optOut({
       type: "checkbox",
       id: checkboxId,
       class: "cy-optout-checkbox",
+      "data-cy-part": P.checkbox,
       ...(confirmed ? { disabled: "" } : {}),
     },
     props: { checked: optedOut },
@@ -322,7 +327,15 @@ export function optOut({
           el("hr", { class: "cy-separator" }),
           el("div", { class: "cy-optout-checkbox-wrapper" }, [
             checkbox,
-            el("label", { for: checkboxId, class: "cy-optout-checkbox-label" }, [t.doNotSell]),
+            el(
+              "label",
+              {
+                for: checkboxId,
+                class: "cy-optout-checkbox-label",
+                "data-cy-part": P.checkboxLabel,
+              },
+              [t.doNotSell],
+            ),
           ]),
         ]),
         el("div", { class: "cy-optout-footer" }, [
@@ -330,13 +343,15 @@ export function optOut({
             confirmed
               ? confirmation(t, confirmed.secondsLeft)
               : el("div", { class: "cy-optout-btn-wrapper" }, [
-                  button({ class: "cy-btn cy-btn-cancel" }, [t.optOut.cancel]),
+                  button({ class: "cy-btn cy-btn-cancel", "data-cy-part": P.cancel }, [
+                    t.optOut.cancel,
+                  ]),
                   button({ class: "cy-btn cy-btn-confirm", "data-cy-part": P.confirm }, [
                     t.savePreferences,
                   ]),
                 ]),
           ]),
-          el("div", { class: "cy-optout-powered-by" }, [branding(t, undefined)]),
+          el("div", { class: "cy-optout-powered-by" }, [branding(t, P.branding)]),
         ]),
       ]),
     ],
@@ -354,7 +369,7 @@ export function reloadNotice(t: TranslationMap): UiNode {
       t.reloadNotice.message,
     ]),
     el("div", { class: "cy-reload-notice-actions" }, [
-      button({ class: "cy-btn cy-btn-primary cy-reload-notice-reload" }, [
+      button({ class: "cy-btn cy-btn-primary cy-reload-notice-reload", "data-cy-part": P.reload }, [
         t.reloadNotice.reloadButton,
       ]),
       button(
@@ -373,7 +388,6 @@ export function recallButton(t: TranslationMap): UiNode {
       "aria-haspopup": "dialog",
       class: "cy-widget",
       "data-cy-part": CY_PART.recall.root,
-      "data-pos": "bottom-left",
       "data-tooltip": t.recallButtonLabel,
     },
     [revisitIcon()],

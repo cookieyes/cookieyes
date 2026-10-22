@@ -39,6 +39,7 @@ describe("@cookieyes/ui public exports", () => {
     "renderToDom",
     "renderToString",
     "revisitIcon",
+    "splitPoweredBy",
     "startOptOutCountdown",
     "successIcon",
     "trapFocus",

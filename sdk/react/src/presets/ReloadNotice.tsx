@@ -39,6 +39,7 @@ export function ReloadNotice() {
         <button
           type="button"
           className="cy-btn cy-btn-primary cy-reload-notice-reload"
+          data-cy-part={CY_PART.reloadNotice.reload}
           onClick={() => {
             if (typeof window !== "undefined") window.location.reload();
           }}

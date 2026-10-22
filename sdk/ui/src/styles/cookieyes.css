@@ -179,6 +179,20 @@
   vertical-align: middle;
 }
 
+/* ── Screen-reader-only text ─────────────────────────────────────── */
+/* The banner's announcer and the opt-out countdown sentence. A class, not an
+   inline style attribute: the announcer is in the server-rendered HTML, and a
+   strict `style-src` policy blocks style attributes there, which left the
+   announcement visible on the page. */
+.cy-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 /* ── Banner wrapper ──────────────────────────────────────────────── */
 .cy-banner-wrap {
   /* Pure logical grouping — generates no box (display: contents), so the only
