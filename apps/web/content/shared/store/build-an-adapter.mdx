@@ -1,0 +1,97 @@
+---
+title: Build an adapter
+description: Draw the CookieYes banner natively in another framework from @cookieyes/ui, and prove it matches with the shared conformance suite.
+frameworks: [core]
+---
+
+Every CookieYes banner, whatever draws it, shares one layer: `@cookieyes/ui`. It holds the stylesheet, the theme tokens, the markup of each component and the keyboard, focus and screen-reader behaviour. An adapter for a new framework draws that markup with the framework's own components and attaches that behaviour; it writes no CSS and decides no consent. `@cookieyes/react` and `@cookieyes/vanilla` are both built this way, and both pass the same test suite.
+
+If you only need the banner on a page, you do not need this: use [`@cookieyes/vanilla`](/docs/getting-started/vanilla).
+
+## What lives where
+
+| Package | Owns | An adapter |
+| --- | --- | --- |
+| `@cookieyes/core` | Every consent decision: what is granted, what loads, what is stored | Calls it, never reimplements it |
+| `@cookieyes/ui` | Markup, styles, tokens, focus and keyboard behaviour, the rules for when each component shows | Draws its markup and attaches its behaviour |
+| Your adapter | Drawing elements the framework's way, server rendering, the framework's API | Is this part |
+
+## Draw the markup
+
+Each component is a function that returns its markup as data: elements, `data-cy-part` and `data-cy-state` names, roles and ARIA attributes. Draw that tree with your framework's own templates, or render it directly:
+
+```ts title="src/banner-markup.ts"
+import { defaultTranslations } from "@cookieyes/core";
+import { banner, renderToDom, renderToString } from "@cookieyes/ui";
+
+const markup = banner({
+  translations: defaultTranslations,
+  regulation: "GDPR",
+  titleId: "my-banner-title",
+});
+
+// On a server, or at build time:
+export const html = renderToString(markup);
+
+// In a browser:
+export const element = (): Element => renderToDom(markup);
+```
+
+`preferences`, `optOut`, `reloadNotice`, `recallButton` and `bannerAnnouncer` work the same way. Your framework's version must produce the same tree: the conformance suite below compares the two.
+
+## Attach the behaviour
+
+Each behaviour takes the elements it works on and returns a function that removes it, so attach it when a component appears and call the cleanup when it goes:
+
+```ts title="src/dialog-behaviour.ts"
+import { closeOnEscape, focusDialog, rememberOpener, trapFocus } from "@cookieyes/ui";
+
+/** Call from the click that opens the dialog, before the state changes. */
+export function beforeOpen(): void {
+  rememberOpener();
+}
+
+/** Call once the dialog element is on the page; call the result when it closes. */
+export function whileOpen(dialog: HTMLElement, close: () => void): () => void {
+  const undo = [trapFocus(() => dialog), closeOnEscape(close), focusDialog(dialog)];
+  return () => {
+    for (const fn of undo) fn();
+  };
+}
+```
+
+The rules every framework follows are functions too: `isBannerVisible` and `isRecallVisible` decide what shows, `optOutReducer` and `startOptOutCountdown` run the opt-out dialog, `announceBanner` times the screen-reader announcement, and `applyTheme` applies the colour scheme and a custom theme.
+
+## Prove it with the conformance suite
+
+`@cookieyes/test/conformance` checks a banner the way a visitor meets it: every part and attribute against `@cookieyes/ui`'s markup, Tab order and the focus trap, Escape, where focus goes, the announcement, theming, translations and an automated accessibility check. You describe your adapter in a small driver; the suite does the rest.
+
+```ts title="src/conformance.test.ts" check="false"
+import { pressInDocument, runConformance } from "@cookieyes/test/conformance";
+import { describe, it } from "vitest";
+
+runConformance(
+  {
+    name: "my-framework",
+    mount: (config) => mountMyBanner(config),
+    unmount: () => unmountMyBanner(),
+    setLanguage: (tag) => switchLanguage(tag),
+    click: async (element) => (element as HTMLElement).click(),
+    press: pressInDocument,
+  },
+  { describe, it },
+);
+```
+
+Run it in jsdom on every change, and in a real browser for real key presses. An adapter is ready when it passes in both.
+
+## Good to know
+
+- Import the stylesheet from `@cookieyes/ui/styles.css`, and ship it under your own package's path too, as the React and vanilla packages do: under pnpm a site that installs only your package cannot import `@cookieyes/ui` directly.
+- Keep the part names and the markup. Sites style the banner by part name, and a stylesheet written for one framework must restyle every other.
+- Render the banner first in `<body>` (`bodyPortalRoot()`), so it is the first stop for a keyboard user.
+
+## Next steps
+
+- [Banner with no framework](/docs/getting-started/vanilla): the simplest adapter, as a reference
+- [Using the store](/docs/store/using-the-store): the consent state an adapter reads

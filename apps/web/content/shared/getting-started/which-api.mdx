@@ -1,8 +1,24 @@
 ---
 title: "Which API should I use?"
 description: "Presets, primitives or hooks: pick the layer that fits, and the one hook for each job."
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
+
+<Framework when="core">
+
+With no framework, there are two packages, and a third path if you are writing a framework adapter:
+
+| You want | Use |
+| --- | --- |
+| The ready-made banner, dialogs and recall button on any page | [`@cookieyes/vanilla`](/docs/getting-started/vanilla) |
+| A banner of your own, drawn from the consent state | [`@cookieyes/core`](/docs/store/build-your-own-ui) |
+| A native banner for a framework that has no CookieYes adapter yet | [`@cookieyes/ui`](/docs/store/build-an-adapter), checked by the shared conformance suite |
+
+Start with `@cookieyes/vanilla`: it is the same banner as the React one, with the same styling and translations.
+
+</Framework>
+
+<Framework when="nextjs react">
 
 Most apps need only `CookieBanner` and `CookiePreferences`, styled with a `theme`. Read on if the defaults do not fit your design, or you need consent somewhere other than the banner.
 
@@ -52,6 +68,7 @@ export function ConsentStatus() {
 | Call the runtime from an event handler or a plain module | [`getCookieYes()`](/docs/hooks/low-level-hooks#module-level-registry) |
 | Read a returning visitor's consent on the server | [`getServerConsent()`](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server) |
 | Use consent with no React at all | [`consentStore`](/docs/store/using-the-store) from `@cookieyes/core` |
+| Put the banner on a page with no framework | [`@cookieyes/vanilla`](/docs/getting-started/vanilla) |
 
 ## Gate on committed values
 
@@ -75,3 +92,5 @@ You wanted [Custom CSS](/docs/styling/custom-css) or the primitives. The presets
 - [useConsent](/docs/hooks/use-consent) and [useConsentActions](/docs/hooks/use-consent-actions): the two hooks in full
 - [Banner primitives](/docs/headless/banner): the banner and dialogs with your own markup
 - [Integrations](/docs/integrations): Google Analytics, Meta Pixel and other tags, loaded only after consent
+
+</Framework>

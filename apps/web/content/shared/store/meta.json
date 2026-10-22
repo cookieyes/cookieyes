@@ -2,7 +2,8 @@
   "title": "The consent store",
   "pages": [
     "using-the-store",
-    "build-your-own-ui"
+    "build-your-own-ui",
+    "build-an-adapter"
   ],
   "defaultOpen": true,
   "collapsible": false

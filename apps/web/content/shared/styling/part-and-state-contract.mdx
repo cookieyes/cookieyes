@@ -1,8 +1,14 @@
 ---
 title: Parts
 description: Every data-cy-part name the SDK renders, for CSS and for tests.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
+
+<Framework when="core">
+
+This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-started/vanilla). `@cookieyes/core` alone draws nothing, so there is nothing for it to style.
+
+</Framework>
 
 ## What it is
 
@@ -72,8 +78,19 @@ Five names appear on more than one surface: `title`, `close`, `accept-all`, `rej
 
 ## Good to know
 
+<Framework when="nextjs react">
+
 - `data-cy-state` exists on the switch only, set by `CookiePreferences`. If you build the dialog from primitives, set it yourself from the `checked` value.
-- The part names are exported as constants, `CY_PART` and `CY_STATE`, so a test can write `CY_PART.banner.acceptAll` instead of a string.
+
+</Framework>
+
+<Framework when="core">
+
+- `data-cy-state` exists on the switch only.
+
+</Framework>
+
+- The part names are exported as constants, `CY_PART` and `CY_STATE` (from `@cookieyes/react`, and from `@cookieyes/ui` for every framework), so a test can write `CY_PART.banner.acceptAll` instead of a string.
 - Two more selectors are stable: `#cookieyes-portal-root`, the container the banner and recall button render into, and `[data-cky-banner]`, the visible banner card. The dialogs exist in the page only while open.
 - The `cy-*` class names are stable too, but prefer parts. `.cy-frame-placeholder` is the exception: the `GatedFrame` placeholder has no part.
 

@@ -1,8 +1,14 @@
 ---
 title: Accessibility
 description: What the components guarantee for keyboard, focus and screen-reader users, and what is still yours to check.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
+
+<Framework when="core">
+
+This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-started/vanilla), which behaves exactly like the React components it describes: both pass the same conformance suite, in jsdom and in a real browser. `@cookieyes/core` alone draws nothing.
+
+</Framework>
 
 This page covers keyboard use, focus, screen-reader labels and reduced motion for the ready-made components. It describes specific behaviours, not a blanket "WCAG compliant" claim. Everything here is written so you can hand it to an accessibility reviewer.
 
@@ -19,7 +25,7 @@ This page covers keyboard use, focus, screen-reader labels and reduced motion fo
 
 Two behaviours apply to all of it:
 
-- **Focus returns to the button that opened a dialog**, whether it closed by Save, Cancel or Escape, and even when that button was replaced in the meantime. This works for your own triggers too, as long as you open the dialog with [`useConsentActions()`](/docs/hooks/use-consent-actions).
+- **Focus returns to the button that opened a dialog**, whether it closed by Save, Cancel or Escape, and even when that button was replaced in the meantime. This works for your own triggers too, as long as you open the dialog through the SDK: [`useConsentActions()`](/docs/hooks/use-consent-actions) in React, `openPreferences()` or `openOptOut()` in `@cookieyes/vanilla`.
 - **After the banner is answered or closed, focus moves to the recall button**, so the visitor is never left nowhere. The banner's close button hides it for this page view without saving anything; it comes back on the next page load. Customise, Do Not Sell and the recall button are marked as opening a dialog (`aria-haspopup="dialog"`).
 - **Every label comes from the translation map**, so a German site announces its dialogs in German. See [Translations](/docs/translations).
 

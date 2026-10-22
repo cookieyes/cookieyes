@@ -1,18 +1,26 @@
 ---
 title: Colour scheme
 description: Show the consent banner and dialogs in light or dark colours, or follow the visitor's device setting, with the colorScheme option.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
+
+<Framework when="core">
+
+This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-started/vanilla). `@cookieyes/core` alone draws nothing, so there is nothing for it to style.
+
+</Framework>
 
 ## What it does
 
-`colorScheme` in `initCookieYes()` chooses the light or the dark set of colours for every CookieYes surface.
+`colorScheme` in the configuration chooses the light or the dark set of colours for every CookieYes surface.
 
 | Value | Behaviour |
 | --- | --- |
 | `"system"` | Default. Follows the device setting, and updates live when the visitor changes it |
 | `"light"` | Always light |
 | `"dark"` | Always dark |
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-manager.tsx"
 "use client";
@@ -24,6 +32,21 @@ initCookieYes({
   colorScheme: "light",
 });
 ```
+
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { start } from "@cookieyes/vanilla";
+
+start({
+  mode: "cookie-only",
+  colorScheme: "light",
+});
+```
+
+</Framework>
 
 A light-only site should set `"light"`: with the default, a visitor whose device is in dark mode gets a dark banner on your light page.
 

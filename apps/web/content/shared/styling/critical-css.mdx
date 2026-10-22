@@ -1,8 +1,14 @@
 ---
 title: Critical CSS
 description: Paint the banner on the first frame by inlining its rules in the HTML.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
+
+<Framework when="core">
+
+This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-started/vanilla). `@cookieyes/core` alone draws nothing, so there is nothing for it to style.
+
+</Framework>
 
 ## What it does
 
@@ -12,8 +18,8 @@ This is an optimisation. If your first-paint numbers are fine, skip it.
 
 | File | Contents | Size |
 | --- | --- | --- |
-| `styles.css` | Everything: banner, dialogs, toggles, recall button, reload notice | about 3.7 KB gzipped |
-| `critical.css` | Only what the banner needs to paint | about 1.6 KB gzipped |
+| `styles.css` | Everything: banner, dialogs, toggles, recall button, reload notice | about 3.8 KB gzipped |
+| `critical.css` | Only what the banner needs to paint | about 1.8 KB gzipped |
 
 Always load `styles.css` too. `critical.css` alone leaves the preferences dialog unstyled.
 
@@ -49,6 +55,12 @@ Then remove `import "@cookieyes/nextjs/styles.css"` from `consent-manager.tsx`; 
 <Framework when="react">
 
 Copy the contents of `@cookieyes/react/critical.css` into a `<style>` in your HTML `<head>`, and load `styles.css` without blocking, for example with `<link rel="preload" as="style" onload="this.rel='stylesheet'">`. Then remove `import "@cookieyes/react/styles.css"` from `consent-manager.tsx`; otherwise the stylesheet is back on the critical path.
+
+</Framework>
+
+<Framework when="core">
+
+Copy the contents of `@cookieyes/vanilla/critical.css` into a `<style>` in your HTML `<head>` and keep the `styles.css` import. To have the banner itself in the first frame, not only its styles, put the output of `renderShell(config)` at the start of `<body>`: see [Banner with no framework](/docs/getting-started/vanilla#show-the-banner-before-any-script-runs).
 
 </Framework>
 
