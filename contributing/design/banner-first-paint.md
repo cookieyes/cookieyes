@@ -41,19 +41,47 @@ These run in the ordinary `pnpm test` job — no browser needed.
 
 | Invariant | Guard |
 |---|---|
-| Every `var(--cy-*)` in the stylesheet has a declaration | `react/src/__tests__/styles-parity.test.ts` — **this is the test that would have caught `8a9ea78`** |
+| Every `var(--cy-*)` in the stylesheet has a declaration | `ui/src/__tests__/styles-parity.test.ts` — **this is the test that would have caught `8a9ea78`** |
 | The `:root` defaults match `computeThemeVars` exactly | same file |
-| The entry animation mutates opacity only — no `transform`, no layout properties | `react/src/__tests__/banner-footprint.test.ts` |
+| The entry animation mutates opacity only — no `transform`, no layout properties | `ui/src/__tests__/banner-footprint.test.ts` |
 | The entry animation is ≤ 0.2s | same file |
 | A re-parented banner does not re-run the entry animation | same file (`data-cy-entered`) |
 | The banner card is `position: fixed`, out of flow, footprint capped | same file |
-| `critical.css` is byte-identical to the full sheet, ≤ 2 KB gzipped | `react/src/__tests__/critical-css.test.ts` |
-| Minifying the shipped CSS changes no declaration | `react/src/__tests__/minify-css.test.ts` |
+| `critical.css` is byte-identical to the full sheet, ≤ 2 KB gzipped | `ui/src/__tests__/critical-css.test.ts` |
+| Minifying the shipped CSS changes no declaration | `ui/src/__tests__/minify-css.test.ts` |
 | The banner is present in server-rendered HTML | `react/src/__tests__/ssr-first-paint.test.tsx` |
 | A returning visitor's HTML contains no banner | `react/src/__tests__/ssr-returning-visitor.test.tsx` |
 | The consent decision is committed and broadcast before any side effect runs | `core/src/__tests__/persist-ordering.test.ts` |
 | A throwing third-party tag cannot strand the banner or block mounting | same file |
 | `readServerConsent` agrees with the client about the same cookie | `core/src/__tests__/server-consent.test.ts` |
+| The server-rendered banner carries no inline `style` attribute, so a strict `style-src` cannot strip its screen-reader styling | `react/src/__tests__/ssr-first-paint.test.tsx` |
+
+Two checks now run in a real browser, in the CI job `conformance` (`pnpm test:browser`):
+
+| Invariant | Guard |
+|---|---|
+| Every adapter's banner has the same parts, focus, keyboard and announcement as React's | `@cookieyes/test/conformance`, run by `test/src/__tests__/conformance-react.browser.test.tsx` and `vanilla/src/__tests__/conformance.browser.test.ts` |
+| The vanilla first-paint snippet (`renderShell` plus `critical.css`) is styled, fixed and visible with no script running | `vanilla/src/__tests__/first-paint.browser.test.ts` |
+
+## Without a server: `@cookieyes/vanilla`
+
+A page with no server render cannot put the banner in its HTML for the right visitor, so vanilla
+promises less, and says so:
+
+- **With the first-paint snippet** (`renderShell(config)` at the start of `<body>`, `critical.css`
+  inlined in `<head>`), the banner is styled and visible at first paint, out of flow, with no
+  script. When `start` runs it replaces the shell in the same task, marked `data-cy-entered`, so
+  it does not fade in a second time.
+- **On a server**, `renderShell(config, { cookieHeader })` returns nothing for a visitor whose
+  cookie records a decision, so a returning visitor's HTML has no banner, as with React.
+- **On a static page**, a returning visitor sees the shell until `start` removes it. There is no
+  way around that without reading the cookie before paint, which needs either a server or an
+  inline script; the docs say so rather than hide it.
+- **Without the snippet**, the banner appears when `start` runs, out of flow, so it still causes
+  no layout shift.
+
+What this does not measure: first contentful paint and the time to a visible banner on a throttled
+device. Those need the kind of local harness described below.
 
 ## What these cannot tell you
 
@@ -96,7 +124,7 @@ Assume you can break first paint without any test failing. The cheap checks to r
 
 And treat these as tripwires in review:
 
-- adding a `--cy-*` token to `styles/tokens.ts` without adding it to the stylesheet's `:root` block
+- adding a `--cy-*` token to `ui/src/styles/tokens.ts` without adding it to the stylesheet's `:root` block
   (or vice versa) — the parity test catches this, so do not "fix" that test by loosening it
 - adding a rule the banner needs to paint without adding it to `critical.css`
   (`pnpm --filter @cookieyes/ui build:critical-css` regenerates it)

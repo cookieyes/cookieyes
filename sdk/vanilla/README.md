@@ -41,7 +41,7 @@ from `@cookieyes/core`, for reading consent and listening to changes.
 | `openPreferences()` | Opens the preferences dialog, for a "Cookie settings" link of your own. Focus returns to the link when it closes. |
 | `openOptOut()` | Opens the CCPA opt-out dialog, for a "Do Not Sell" link of your own. |
 | `destroy()` | Removes every element and listener `start` added, and the runtime. |
-| `renderShell(config)` | The banner as HTML, for showing it before any script runs (below). |
+| `renderShell(config, request?)` | The banner as HTML, for showing it before any script runs (below). |
 
 ```js
 import { openPreferences } from "@cookieyes/vanilla";
@@ -63,10 +63,20 @@ put the banner's HTML and the small first-paint stylesheet in the page itself:
    on your server with the same `config` you pass to `start`.
 
 When `start` runs, it takes that banner over in the same task, with no flash and no second
-entry animation. For a visitor who has already decided, it removes it.
+entry animation.
 
-`renderShell` uses the configured `regulation` and the starting language of `i18n`: a static page
-cannot know a visitor's region.
+On a server, pass the request's cookies, and a visitor who has already decided gets no banner in
+the HTML at all:
+
+```js
+const shell = renderShell(config, { cookieHeader: request.headers.get("cookie") ?? "" });
+```
+
+On a static page there is no request to read, so a returning visitor sees the banner until `start`
+removes it.
+
+`renderShell` uses the configured `regulation` and the starting language of `i18n`: a page
+rendered ahead of time cannot know a visitor's region.
 
 ## Styling and text
 

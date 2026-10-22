@@ -211,6 +211,15 @@ describe("renderShell", () => {
     expect(document.querySelector(".cy-banner-wrap")?.hasAttribute("data-cy-entered")).toBe(true);
   });
 
+  it("is empty on a server for a visitor whose cookie records a decision", () => {
+    start(GDPR);
+    (document.querySelector('[data-cy-part="accept-all"]') as HTMLElement).click();
+    const cookieHeader = document.cookie;
+    destroy();
+    expect(renderShell(GDPR, { cookieHeader })).toBe("");
+    expect(renderShell(GDPR, { cookieHeader: "other=1" })).toContain("data-cky-banner");
+  });
+
   it("is removed for a visitor who has already decided", () => {
     start(GDPR);
     (document.querySelector('[data-cy-part="accept-all"]') as HTMLElement).click();

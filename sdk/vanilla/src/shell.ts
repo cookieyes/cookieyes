@@ -1,4 +1,9 @@
-import { _normalizeConfig, type CookieYesConfig, resolveTranslations } from "@cookieyes/core";
+import {
+  _normalizeConfig,
+  type CookieYesConfig,
+  readServerConsent,
+  resolveTranslations,
+} from "@cookieyes/core";
 import { banner, bannerAnnouncer, renderToString, type UiNode } from "@cookieyes/ui";
 
 function marked(node: UiNode): UiNode {
@@ -15,10 +20,25 @@ function marked(node: UiNode): UiNode {
  * configured `regulation`'s: a static page cannot know a visitor's region.
  * Works on a server or at build time, with no browser.
  *
- * @example renderShell({ mode: "cookie-only", regulation: "GDPR" })
+ * On a server, pass the request's `Cookie` header: for a visitor who has
+ * already decided it returns an empty string, so their page never shows the
+ * banner at all. A static page cannot do this, and shows the banner until
+ * `start` removes it.
+ *
+ * @example renderShell(config, { cookieHeader: request.headers.get("cookie") ?? "" })
  */
-export function renderShell(config: CookieYesConfig): string {
+export function renderShell(
+  config: CookieYesConfig,
+  request?: { cookieHeader?: string | undefined },
+): string {
   const options = _normalizeConfig(config);
+  if (request?.cookieHeader) {
+    const decided = readServerConsent(request.cookieHeader, {
+      regulation: options.regulation,
+      categories: options.categories,
+    });
+    if (decided) return "";
+  }
   return renderToString([
     marked(bannerAnnouncer()),
     marked(
