@@ -336,6 +336,44 @@ it works with Testing Library, a custom renderer, or none at all. Use `jsdom` or
 `react` and `@cookieyes/react` are **optional** peers: the main entry never imports
 either, so nothing changes for consumers who don't use React.
 
+## Conformance suite for framework adapters
+
+`@cookieyes/test/conformance` checks that a banner behaves like every other CookieYes banner,
+whatever drew it. It knows nothing about React or any other framework: it reads parts, states,
+roles and focus, and acts through a small driver you write for your adapter.
+
+```ts
+import { pressInDocument, runConformance } from "@cookieyes/test/conformance";
+import { describe, it } from "vitest";
+
+runConformance(
+  {
+    name: "my-adapter",
+    mount: (config) => startMyBanner(config), // every component on the page
+    unmount: () => stopMyBanner(), // remove it all and reset the SDK
+    setLanguage: (tag) => switchLanguage(tag),
+    click: async (el) => (el as HTMLElement).click(),
+    press: pressInDocument, // in jsdom; use real key events in a browser
+  },
+  { describe, it },
+);
+```
+
+It checks, for the banner, the preferences dialog, the opt-out dialog, the reload notice and the
+recall button:
+
+- every element, part, state and accessible attribute, against the markup in `@cookieyes/ui`
+- Tab order and the focus trap, Escape, and where focus goes when a dialog opens and closes
+- the screen-reader announcement of the banner
+- a custom theme and an explicit colour scheme
+- switching language, including the spoken labels
+- an automated accessibility check with `axe-core`
+- the first HTML, when the driver provides `serverHtml`
+
+It needs `@cookieyes/ui` and `axe-core` installed; both are optional peers of this package, so
+nothing changes for anyone not running the suite. Run it in jsdom for speed and in a real browser
+(for example Vitest's browser mode) for real key presses: the React adapter does both.
+
 ## Fidelity & limitations
 
 Read this table before trusting a passing test. "Exact" means the real engine ran.
@@ -362,6 +400,7 @@ Read this table before trusting a passing test. "Exact" means the real engine ra
 | Network blocker | **Not simulated** | Needs `window` to patch `fetch`/XHR |
 | A shimmed `document` exists during the test | **Caveat** | Only `document.cookie` is defined. Code that feature-detects `document` may take a browser path — use jsdom if that matters to you |
 | React component rendering | **Needs jsdom** | Use `@cookieyes/test/react`; React cannot render without a DOM |
+| Conformance suite | **Needs a DOM** | In jsdom, focus moves on Tab only through `pressInDocument`; a real browser is the full check. Colour contrast is not measured: check it by eye against your theme |
 
 For the browser-side items, the honest answer is a real browser: use Playwright or
 Cypress. This package is for the logic.

@@ -47,6 +47,16 @@
         "types": "./dist/react.d.cts",
         "default": "./dist/react.cjs"
       }
+    },
+    "./conformance": {
+      "import": {
+        "types": "./dist/conformance.d.ts",
+        "default": "./dist/conformance.js"
+      },
+      "require": {
+        "types": "./dist/conformance.d.cts",
+        "default": "./dist/conformance.cjs"
+      }
     }
   },
   "main": "./dist/index.cjs",
@@ -73,22 +83,29 @@
     "dev": "rollup -c -w",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "test:browser": "vitest run --config vitest.browser.config.ts"
   },
   "peerDependencies": {
     "@cookieyes/core": ">=0.3.0 <1.0.0",
     "@cookieyes/react": ">=0.4.0 <1.0.0",
+    "@cookieyes/ui": ">=0.0.0 <1.0.0",
+    "axe-core": ">=4.0.0",
     "react": ">=18.0.0"
   },
   "devDependencies": {
     "@cookieyes/core": "workspace:*",
     "@cookieyes/react": "workspace:*",
+    "@cookieyes/ui": "workspace:*",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vitest/browser-playwright": "4.1.10",
     "@vitest/coverage-v8": "^4.1.10",
+    "axe-core": "^4.12.1",
     "jsdom": "^29.1.1",
+    "playwright": "^1.61.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "typescript": "^6.0.3",
@@ -96,6 +113,12 @@
   },
   "peerDependenciesMeta": {
     "@cookieyes/react": {
+      "optional": true
+    },
+    "@cookieyes/ui": {
+      "optional": true
+    },
+    "axe-core": {
       "optional": true
     },
     "react": {
