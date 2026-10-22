@@ -29,6 +29,10 @@ visitor has agreed to.
 | `CY_PART`, `CY_STATE` | The names of every styleable part and state |
 | `computeThemeVars`, `loadThemeRuntime` | What each `theme` setting turns into, and the on-demand code that applies a custom theme |
 | `activateDeferredStylesheets`, `warnOnStyleCspViolations` | First-paint and Content Security Policy helpers |
+| `trapFocus`, `closeOnEscape`, `rememberOpener`, `focusDialog`, `focusRecallAfterBanner`, `bodyPortalRoot` | Keyboard and focus behaviour. Each takes the elements it works on and returns a function that undoes it. |
+| `announceBanner`, `ANNOUNCE_DELAY_MS` | When and how the banner is announced to screen readers |
+| `applyTheme`, `watchPrefersDark` | Apply the colour scheme and a custom theme to a component |
+| `isBannerVisible`, `isRecallVisible`, `optOutReducer`, `startOptOutCountdown`, `categoryText` | The rules every framework follows: when each component shows, how the opt-out dialog moves from open to confirmed to closed, and which text a category shows |
 
 ## Draw the banner on a server
 
@@ -45,6 +49,20 @@ const html = renderToString([
 This is the same markup `@cookieyes/react` renders on the server. A test in that package compares
 the two for every state and fails on any difference, so a banner drawn from this package looks and
 reads exactly like the React one.
+
+## Attach behaviour to your own elements
+
+```ts
+import { closeOnEscape, focusDialog, trapFocus } from "@cookieyes/ui";
+
+// When your dialog appears:
+const release = [trapFocus(() => dialogEl), closeOnEscape(close), focusDialog(dialogEl)];
+// When it goes away:
+for (const undo of release) undo();
+```
+
+Reduced motion needs no code: the stylesheet turns the entry animation off under
+`prefers-reduced-motion: reduce`.
 
 ## Rules this package keeps
 

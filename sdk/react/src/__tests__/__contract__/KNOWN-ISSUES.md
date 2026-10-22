@@ -24,6 +24,11 @@ of copying them, and so nobody reads them as intended behaviour.
    confirmation message and the branding link in the opt-out dialog, and the
    Reload button in the reload notice. They can only be reached through
    `.cy-*` class names.
+5. **The opt-out dialog reads "already opted out" from the `analytics`
+   category alone** (`initialOptOutState` in `@cookieyes/ui`). With a custom
+   taxonomy that has no `analytics` category, the box always opens ticked. What
+   should count as opted out is a consent question for `@cookieyes/core`, so it
+   is recorded here rather than changed in the UI layer.
 
 ## React-only details, not part of the shared contract
 

@@ -1,14 +1,12 @@
 "use client";
 
-import { CY_PART } from "@cookieyes/ui";
+import { announceBanner, CY_PART } from "@cookieyes/ui";
 import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { Banner } from "../primitives/Banner.js";
 import { useFocusTrap, VISUALLY_HIDDEN } from "../primitives/utils.js";
-
-const ANNOUNCE_DELAY_MS = 700;
 
 /** Every styleable part of the banner — keys for {@link CookieBannerProps.classNames}. */
 export type BannerPart = keyof typeof CY_PART.banner;
@@ -44,29 +42,17 @@ export function CookieBanner({ className, style, classNames, styles }: CookieBan
   const cardRef = useRef<HTMLDivElement | null>(null);
   useFocusTrap(visible, cardRef);
 
-  // Rendered outside <Banner.Root> (unconditionally, not tied to the
-  // banner's own mount/hide cycle) and populated after a real delay, not
-  // just React's next tick — both matter:
-  //
-  // - On first page load, this component itself is mounting for the first
-  //   time regardless of where the span lives, so "already in the DOM"
-  //   alone doesn't fix the very first appearance. What actually helps
-  //   there is the delay: screen readers are typically still announcing
-  //   the page navigation itself right after load, and a live-region
-  //   update fired within that window commonly gets dropped rather than
-  //   queued. A few hundred ms of headroom avoids competing with it.
-  // - On later appearances (e.g. after "reset consent" while the banner
-  //   was already hidden), keeping the region outside the conditional
-  //   mount means it's a change to an element the AT has tracked all
-  //   along, not a freshly-inserted one — the reliable case either way.
+  // Rendered outside <Banner.Root>, unconditionally, so a later appearance
+  // (e.g. after "reset consent") is a change to an element assistive tech has
+  // tracked all along rather than a freshly inserted one. The delay is
+  // `announceBanner`'s; see `@cookieyes/ui` for why it is needed.
   const [announcement, setAnnouncement] = useState("");
   useEffect(() => {
     if (!visible) {
       setAnnouncement("");
       return;
     }
-    const id = setTimeout(() => setAnnouncement(t.bannerTitle), ANNOUNCE_DELAY_MS);
-    return () => clearTimeout(id);
+    return announceBanner(t.bannerTitle, setAnnouncement);
   }, [visible, t.bannerTitle]);
 
   return (

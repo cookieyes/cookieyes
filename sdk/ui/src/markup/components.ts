@@ -1,4 +1,5 @@
 import type { Regulation, TranslationMap } from "@cookieyes/core";
+import { OPT_OUT_COUNTDOWN_SECONDS } from "../state/opt-out.js";
 import { CY_PART, CY_STATE } from "../styles/parts.js";
 import { cookieYesLogo, crossIcon, revisitIcon, successIcon } from "./icons.js";
 import type { UiChild, UiNode } from "./node.js";
@@ -234,9 +235,6 @@ export function preferences({ translations: t, titleId, categories }: Preference
     ],
   );
 }
-
-/** How long the opt-out confirmation stays before the dialog closes itself. */
-export const OPT_OUT_COUNTDOWN_SECONDS = 10;
 
 /** What the opt-out dialog needs to know to draw itself. */
 export type OptOutModel = {
