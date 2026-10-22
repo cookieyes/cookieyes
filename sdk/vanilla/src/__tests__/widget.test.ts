@@ -68,6 +68,16 @@ describe("start", () => {
     expect(labels.map((l) => l.textContent)).toEqual(["Essential", "Marketing"]);
   });
 
+  it("loads a language on demand and redraws every text in it", async () => {
+    const loadLanguage = vi.fn(async () => ({ bannerTitle: "Nous respectons votre vie privée" }));
+    const runtime = start({ ...GDPR, i18n: { loadLanguage } });
+    await runtime.consentStore.setLanguage("fr");
+    expect(loadLanguage).toHaveBeenCalledWith("fr");
+    expect(document.querySelector('[data-cy-part="title"]')?.textContent).toBe(
+      "Nous respectons votre vie privée",
+    );
+  });
+
   it("inserts translations as text, never as markup", () => {
     start({
       ...GDPR,
