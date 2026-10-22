@@ -33,10 +33,12 @@ updated in the same change.
 
 ## React-only details, not part of the shared contract
 
-- **`data-cy-entered` on `.cy-banner-wrap`.** React draws the banner in place
-  first and then moves it under `<body>`; the attribute stops the entry
-  animation from playing twice (`primitives/Banner.tsx`). A framework that
-  draws the banner in its final place once does not need it.
+- **`data-cy-entered` on `.cy-banner-wrap`.** It stops the entry animation
+  from playing a second time for a banner that was already on screen. React
+  sets it when it moves its server-rendered banner under `<body>`
+  (`primitives/Banner.tsx`); `@cookieyes/vanilla` sets it when it takes over a
+  first-paint banner from `renderShell`. A banner drawn once, in place, does
+  not carry it.
 - **The `#cookieyes-portal-root` element** is how React moves the banner and
   the recall button to the start of `<body>`. Another framework may place them
   there directly, as long as they are first in the Tab order.

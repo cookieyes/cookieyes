@@ -1,15 +1,11 @@
 import { defaultTranslations } from "@cookieyes/core";
 import { describe, expect, it } from "vitest";
-import {
-  banner,
-  bannerAnnouncer,
-  optOut,
-  preferences,
-  recallButton,
-  reloadNotice,
-} from "../markup/components.js";
+import { banner, bannerAnnouncer } from "../markup/banner.js";
 import { renderToString } from "../markup/node.js";
+import { recallButton, reloadNotice } from "../markup/notices.js";
+import { optOut } from "../markup/opt-out.js";
 import { splitPoweredBy } from "../markup/powered-by.js";
+import { preferences } from "../markup/preferences.js";
 
 // Runs in Node with no DOM: the markup has to render on a server.
 

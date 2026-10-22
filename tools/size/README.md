@@ -31,6 +31,7 @@ one component that mounts the SDK:
 | `with-core` | `core` | `getOrCreateConsentRuntime()`, no UI |
 | `with-react-banner` | `banner` | `<CookieBanner />` alone |
 | `with-react` | `interface` | `<CookieBanner />` + `<CookiePreferences />` + `<RecallButton />` |
+| `with-vanilla` | `vanilla` | `@cookieyes/vanilla`'s `start()`: banner and recall button, dialogs on first open |
 
 `baseline`, `with-core` and `with-react` mirror consentbench's own `baseline`,
 `with-cookieyes-core` and `with-cookieyes-react` apps, so our figures are

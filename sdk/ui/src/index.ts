@@ -13,21 +13,12 @@ export {
   trapFocus,
 } from "./behaviour/focus.js";
 export { applyTheme, watchPrefersDark } from "./behaviour/theme.js";
-export {
-  type BannerModel,
-  banner,
-  bannerAnnouncer,
-  type CategoryModel,
-  type OptOutModel,
-  optOut,
-  type PreferencesModel,
-  preferences,
-  recallButton,
-  reloadNotice,
-} from "./markup/components.js";
-export { cookieYesLogo, crossIcon, revisitIcon, successIcon } from "./markup/icons.js";
+export { type BannerModel, banner, bannerAnnouncer } from "./markup/banner.js";
 export { renderToDom, renderToString, type UiChild, type UiNode } from "./markup/node.js";
+export { recallButton, reloadNotice } from "./markup/notices.js";
+export { type OptOutModel, optOut } from "./markup/opt-out.js";
 export { splitPoweredBy } from "./markup/powered-by.js";
+export { type CategoryModel, type PreferencesModel, preferences } from "./markup/preferences.js";
 export { type CategoryTextSources, categoryText } from "./state/category-text.js";
 export {
   initialOptOutState,

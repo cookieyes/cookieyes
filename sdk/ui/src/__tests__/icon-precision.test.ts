@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -21,7 +21,11 @@ import { describe, expect, it } from "vitest";
  * cause and says what to do about it.
  */
 describe("inline SVG coordinate precision", () => {
-  const source = readFileSync(join(process.cwd(), "src/markup/icons.ts"), "utf8");
+  const markup = join(process.cwd(), "src/markup");
+  const source = readdirSync(markup)
+    .filter((name) => name.endsWith(".ts"))
+    .map((name) => readFileSync(join(markup, name), "utf8"))
+    .join("\n");
 
   /** Two decimals on a mark this size is already below one device pixel. */
   const MAX_DECIMALS = 2;

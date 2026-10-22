@@ -32,3 +32,18 @@ describe("warnOnStyleCspViolations", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 });
+
+describe("warnOnStyleCspViolations cleanup", () => {
+  it("stops listening once the returned cleanup runs", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    // Earlier tests in this file leave their listeners attached, so count the
+    // difference this one cleanup makes.
+    const stop = warnOnStyleCspViolations();
+    dispatchViolation("style-src");
+    const attached = warn.mock.calls.length;
+    warn.mockClear();
+    stop();
+    dispatchViolation("style-src");
+    expect(warn.mock.calls.length).toBe(attached - 1);
+  });
+});

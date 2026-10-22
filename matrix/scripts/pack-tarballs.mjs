@@ -32,6 +32,9 @@ const PACKAGES = [
   { name: "@cookieyes/ui", dir: join(repoRoot, "sdk", "ui") },
   { name: "@cookieyes/react", dir: join(repoRoot, "sdk", "react") },
   { name: "@cookieyes/nextjs", dir: join(repoRoot, "sdk", "nextjs") },
+  // Packed so tools/size's with-vanilla fixture installs it from a tarball like
+  // every other fixture; the matrix's own example app does not use it.
+  { name: "@cookieyes/vanilla", dir: join(repoRoot, "sdk", "vanilla") },
   { name: "@cookieyes/test", dir: join(repoRoot, "sdk", "test") },
   // Not imported by the example app, but @cookieyes/nextjs depends on it, so it
   // must be packed and pinned like the rest — otherwise pnpm resolves that one

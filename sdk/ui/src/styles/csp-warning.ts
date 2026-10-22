@@ -8,9 +8,9 @@ const DOCS_URL =
 // safety net for anything else on the page: a customer's own inline
 // styles, a third-party script, or (if we ever regress) our own code
 // reintroducing inline styling — surfacing it instead of failing silently.
-export function warnOnStyleCspViolations(): void {
-  if (typeof document === "undefined") return;
-  document.addEventListener("securitypolicyviolation", (e) => {
+export function warnOnStyleCspViolations(): () => void {
+  if (typeof document === "undefined") return () => undefined;
+  const onViolation = (e: SecurityPolicyViolationEvent) => {
     if (!e.violatedDirective.startsWith("style-src")) return;
     console.warn(
       `[cookieyes] A style was blocked by your Content-Security-Policy (${e.violatedDirective}). ` +
@@ -18,5 +18,8 @@ export function warnOnStyleCspViolations(): void {
         `unrelated to this SDK — check your own inline styles or third-party scripts. ` +
         `See ${DOCS_URL} for the exact policy this SDK needs.`,
     );
-  });
+  };
+  document.addEventListener("securitypolicyviolation", onViolation);
+  // Returned so a banner that can be shut down leaves no listener behind.
+  return () => document.removeEventListener("securitypolicyviolation", onViolation);
 }
