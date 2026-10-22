@@ -8,7 +8,7 @@
  * script is what makes it true by construction instead of by hand.
  *
  * Run it whenever a banner rule changes in cookieyes.css:
- *   pnpm --filter @cookieyes/react build:critical-css
+ *   pnpm --filter @cookieyes/ui build:critical-css
  *
  * To include a new rule, add its selector to SELECTORS below. The script fails if
  * a listed selector no longer exists, so a rename can't silently drop a rule from
@@ -109,7 +109,7 @@ if (missing.length > 0) {
 
 const header = `/* ── CookieYes — paint-critical banner CSS ─────────────────────────── */
 /* GENERATED — do not edit. Run:                                            */
-/*   pnpm --filter @cookieyes/react build:critical-css                       */
+/*   pnpm --filter @cookieyes/ui build:critical-css                       */
 /*                                                                          */
 /* An exact SUBSET of cookieyes.css: only the rules needed to paint the      */
 /* consent banner correctly. Everything else — the preferences dialog, the   */

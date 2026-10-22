@@ -1,6 +1,6 @@
 /* ── CookieYes — paint-critical banner CSS ─────────────────────────── */
 /* GENERATED — do not edit. Run:                                            */
-/*   pnpm --filter @cookieyes/react build:critical-css                       */
+/*   pnpm --filter @cookieyes/ui build:critical-css                       */
 /*                                                                          */
 /* An exact SUBSET of cookieyes.css: only the rules needed to paint the      */
 /* consent banner correctly. Everything else — the preferences dialog, the   */

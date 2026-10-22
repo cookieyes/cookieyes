@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Extracts the structural facts of the 12 `ThemeVars` tokens — their names (TS
-// compiler API against `sdk/react/src/styles/tokens.ts`), their light/dark
+// compiler API against `sdk/ui/src/styles/tokens.ts`), their light/dark
 // defaults, every selector that consumes them, and the alias relationships
-// between them (both parsed from `sdk/react/src/styles/cookieyes.css`) — joins
+// between them (both parsed from `sdk/ui/src/styles/cookieyes.css`) — joins
 // them against the hand-maintained sidecar (`css-variables.sidecar.ts`), and
 // writes ONE in-memory dataset to TWO files in the same run:
 //   - `.generated/css-variables-reference.json` for the MDX render components
@@ -24,7 +24,7 @@
 // consumers outside `:root` — the literal regression guard for the
 // `--cy-primary-hover` bug this ticket's SDK half fixes. That guard is
 // deliberately NOT implemented here. `apps/web` and the SDK's
-// `.cy-btn-primary:hover` fix (sdk/react/src/styles/cookieyes.css) are being
+// `.cy-btn-primary:hover` fix (sdk/ui/src/styles/cookieyes.css) are being
 // implemented concurrently by two different agents; until the SDK's fix
 // lands, `--cy-primary-hover` genuinely has zero consumers, and enforcing the
 // guard here would make this script fail on a checkout that hasn't yet picked
@@ -58,8 +58,8 @@ import { loadTsSidecarModule } from "./lib/ts-sidecar.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const webRoot = join(here, "..");
 const repoRoot = join(webRoot, "..", "..");
-const tokensFile = join(repoRoot, "sdk", "react", "src", "styles", "tokens.ts");
-const cssFile = join(repoRoot, "sdk", "react", "src", "styles", "cookieyes.css");
+const tokensFile = join(repoRoot, "sdk", "ui", "src", "styles", "tokens.ts");
+const cssFile = join(repoRoot, "sdk", "ui", "src", "styles", "cookieyes.css");
 const outDir = join(webRoot, ".generated");
 const outFile = join(outDir, "css-variables-reference.json");
 const publicOutDir = join(webRoot, "public", "design-tokens");

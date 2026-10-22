@@ -94,7 +94,7 @@ function relativeLuminance(hex: string): number | null {
  * returns `null` if either input isn't a 3- or 6-digit hex colour, rather than
  * risk a wrong ratio for a colour syntax it can't evaluate.
  *
- * Internal to this package by design — not part of `@cookieyes/react`'s
+ * Internal to this package by design — not part of `@cookieyes/ui`'s
  * public barrel (`index.ts`). Consumed by `contrast-warning.ts`.
  */
 export function contrastRatio(a: string, b: string): number | null {

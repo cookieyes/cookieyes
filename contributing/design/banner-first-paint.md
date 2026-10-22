@@ -99,7 +99,7 @@ And treat these as tripwires in review:
 - adding a `--cy-*` token to `styles/tokens.ts` without adding it to the stylesheet's `:root` block
   (or vice versa) — the parity test catches this, so do not "fix" that test by loosening it
 - adding a rule the banner needs to paint without adding it to `critical.css`
-  (`pnpm --filter @cookieyes/react build:critical-css` regenerates it)
+  (`pnpm --filter @cookieyes/ui build:critical-css` regenerates it)
 - reintroducing a `transform` in the entry animation, or lengthening it
 - adding anything to `persist()` **before** `notify()` in `core/src/manager.ts`
 - making a client effect responsible for something the server render needs

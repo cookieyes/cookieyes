@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,7 +38,11 @@ export class IdNames {
   }
 }
 
-function attrsOf(el: Element, ids: IdNames): Record<string, string> | undefined {
+function attrsOf(
+  el: Element,
+  ids: IdNames,
+  keepPaths: boolean,
+): Record<string, string> | undefined {
   const names = el.getAttributeNames().sort();
   if (names.length === 0) return undefined;
   const out: Record<string, string> = {};
@@ -49,7 +54,7 @@ function attrsOf(el: Element, ids: IdNames): Record<string, string> | undefined 
         .split(/\s+/)
         .map((v) => ids.name(v))
         .join(" ");
-    else if (name === "d") out[name] = "(path data)";
+    else if (name === "d" && !keepPaths) out[name] = "(path data)";
     else out[name] = value;
   }
   return out;
@@ -58,9 +63,10 @@ function attrsOf(el: Element, ids: IdNames): Record<string, string> | undefined 
 /**
  * Records a DOM subtree as plain data. Text is whitespace-collapsed and empty
  * text is dropped, so the recording changes only when what a visitor or a
- * stylesheet can observe changes.
+ * stylesheet can observe changes. Icon path data is masked unless `keepPaths`
+ * is set, which the React-against-`ui` comparison uses to check icons too.
  */
-export function serialize(node: Node, ids: IdNames): ContractChild | null {
+export function serialize(node: Node, ids: IdNames, keepPaths = false): ContractChild | null {
   if (node.nodeType === Node.TEXT_NODE) {
     const text = (node.textContent ?? "").replace(/\s+/g, " ").trim();
     return text ? text : null;
@@ -68,17 +74,17 @@ export function serialize(node: Node, ids: IdNames): ContractChild | null {
   if (node.nodeType !== Node.ELEMENT_NODE) return null;
   const el = node as Element;
   const out: ContractNode = { tag: el.tagName.toLowerCase() };
-  const attrs = attrsOf(el, ids);
+  const attrs = attrsOf(el, ids, keepPaths);
   if (attrs) out.attrs = attrs;
-  const children = serializeChildren(el, ids);
+  const children = serializeChildren(el, ids, keepPaths);
   if (children.length > 0) out.children = children;
   return out;
 }
 
-function serializeChildren(parent: Node, ids: IdNames): ContractChild[] {
+function serializeChildren(parent: Node, ids: IdNames, keepPaths = false): ContractChild[] {
   const out: ContractChild[] = [];
   for (const child of Array.from(parent.childNodes)) {
-    const s = serialize(child, ids);
+    const s = serialize(child, ids, keepPaths);
     if (s !== null) out.push(s);
   }
   return out;

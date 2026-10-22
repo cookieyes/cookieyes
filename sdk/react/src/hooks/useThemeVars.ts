@@ -1,9 +1,9 @@
 "use client";
 
 import type { ThemeConfig } from "@cookieyes/core";
+import { loadThemeRuntime } from "@cookieyes/ui";
 import { type RefObject, useEffect, useState } from "react";
 import type { ColorSchemePref } from "../runtime.js";
-import { loadThemeRuntime } from "../styles/load-theme-runtime.js";
 
 /**
  * Attribute written on each component container when the resolved colour
@@ -26,7 +26,7 @@ const SCHEME_ATTR = "data-cy-scheme";
  * for both colour schemes and its `@media` block already tracks the device
  * preference. That is the common case, and it now costs no JavaScript beyond
  * this hook: `computeThemeVars` and the WCAG maths behind it live in
- * `styles/theme-runtime.ts` and are fetched only when a `theme` is actually
+ * `@cookieyes/ui`'s theme runtime and are fetched only when a `theme` is actually
  * configured.
  */
 export function useThemeVars(

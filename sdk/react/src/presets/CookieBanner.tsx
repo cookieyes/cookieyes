@@ -1,12 +1,12 @@
 "use client";
 
+import { CY_PART } from "@cookieyes/ui";
 import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
 import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { Banner } from "../primitives/Banner.js";
 import { useFocusTrap, VISUALLY_HIDDEN } from "../primitives/utils.js";
-import { CY_PART } from "../styles/parts.js";
 
 const ANNOUNCE_DELAY_MS = 700;
 

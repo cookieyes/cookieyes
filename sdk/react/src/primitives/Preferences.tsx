@@ -1,6 +1,7 @@
 "use client";
 
 import type { ConsentCategory } from "@cookieyes/core";
+import { CY_PART } from "@cookieyes/ui";
 import {
   type ComponentPropsWithoutRef,
   createContext,
@@ -20,7 +21,6 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { _tryGetCookieYes } from "../runtime.js";
-import { CY_PART } from "../styles/parts.js";
 import { renderAction } from "./Slot.js";
 import { chain, composeRefs, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 

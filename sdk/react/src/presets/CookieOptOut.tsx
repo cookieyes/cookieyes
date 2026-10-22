@@ -1,8 +1,8 @@
 "use client";
 
+import type { CY_PART } from "@cookieyes/ui";
 import type { CSSProperties } from "react";
 import { OptOut } from "../primitives/OptOut.js";
-import type { CY_PART } from "../styles/parts.js";
 
 /** Every styleable part of the opt-out dialog — keys for {@link CookieOptOutProps.classNames}. */
 export type OptOutPart = keyof typeof CY_PART.optOut;

@@ -64,8 +64,8 @@ jobs:
       - name: Leave size-measured code untouched
         run: |
           git diff --name-only -z -- \
-            sdk/core/src sdk/react/src sdk/nextjs/src sdk/devtools/src \
-            sdk/core/rollup.config.mjs sdk/react/rollup.config.mjs \
+            sdk/core/src sdk/ui/src sdk/react/src sdk/nextjs/src sdk/devtools/src \
+            sdk/core/rollup.config.mjs sdk/ui/rollup.config.mjs sdk/react/rollup.config.mjs \
             sdk/nextjs/rollup.config.mjs sdk/devtools/rollup.config.mjs \
             rollup.shared.mjs \
             ':(exclude,glob)**/__tests__/**' \

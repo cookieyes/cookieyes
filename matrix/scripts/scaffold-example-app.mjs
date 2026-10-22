@@ -55,6 +55,7 @@ export function renderPackageJson(packageJsonText, { tarballs, versions }) {
   const replacements = {
     __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
     __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
+    __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
     __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
     __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
     __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,

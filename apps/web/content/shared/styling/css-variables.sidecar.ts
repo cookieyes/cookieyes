@@ -8,8 +8,8 @@ import type {
  *
  * `scripts/generate-css-variables-reference.mjs` extracts the *structural*
  * facts (default light/dark values, every consuming selector, alias
- * relationships) from `sdk/react/src/styles/tokens.ts` and
- * `sdk/react/src/styles/cookieyes.css`, and joins them against this file by
+ * relationships) from `sdk/ui/src/styles/tokens.ts` and
+ * `sdk/ui/src/styles/cookieyes.css`, and joins them against this file by
  * `name`. The generator fails the build if a token here has no match in the
  * extraction (stale entry) or if the extraction finds a token with no entry
  * here (undocumented token). See ai-context/designs/css-variables-reference.md §2.3.

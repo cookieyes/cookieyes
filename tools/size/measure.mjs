@@ -421,7 +421,7 @@ function installFixture(appDir, name, tarballs) {
   // `pnpm build` just produced. Everything above is a proxy for this; this is
   // the invariant. Without it, `file:` resolution caching silently measured a
   // previous run's code and reported a real change as a 0-byte saving.
-  for (const pkg of ["core", "react", "nextjs", "scripts", "devtools"]) {
+  for (const pkg of ["core", "ui", "react", "nextjs", "scripts", "devtools"]) {
     const built = join(REPO, "sdk", pkg, "dist", "index.js");
     const installed = join(appDir, "node_modules", "@cookieyes", pkg, "dist", "index.js");
     if (!existsSync(installed) || !existsSync(built)) continue;
@@ -563,7 +563,7 @@ if (doBuild) {
   // at that path is different. Putting the content hash in the path makes the
   // specifier change whenever the code does.
   const stamp = createHash("sha256");
-  for (const pkg of ["core", "react", "nextjs", "scripts", "test", "devtools"]) {
+  for (const pkg of ["core", "ui", "react", "nextjs", "scripts", "test", "devtools"]) {
     const dist = join(REPO, "sdk", pkg, "dist", "index.js");
     if (existsSync(dist)) stamp.update(readFileSync(dist));
   }

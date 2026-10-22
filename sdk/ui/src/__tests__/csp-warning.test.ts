@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { warnOnStyleCspViolations } from "../styles/csp-warning.js";
 

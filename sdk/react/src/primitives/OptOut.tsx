@@ -1,5 +1,6 @@
 "use client";
 
+import { CY_PART } from "@cookieyes/ui";
 import {
   type ComponentPropsWithoutRef,
   createContext,
@@ -12,14 +13,13 @@ import {
   useState,
 } from "react";
 import { BrandingLink } from "../components/BrandingLink.js";
-import { CrossIcon } from "../components/icons.js";
+import { CrossIcon, SuccessIcon } from "../components/icons.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { CY_PART } from "../styles/parts.js";
 import { renderAction } from "./Slot.js";
 import {
   chain,
@@ -263,21 +263,7 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
       <div className="cy-optout-success-inner">
         <div className="cy-optout-success-row">
           <div className="cy-optout-success-icon" aria-hidden="true">
-            <svg
-              fill="none"
-              height="20"
-              viewBox="0 0 20 20"
-              width="20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18.3333 9.23355V10.0002C18.3323 11.7972 17.7504 13.5458 16.6744 14.9851C15.5984 16.4244 14.086 17.4773 12.3628 17.9868C10.6395 18.4963 8.79768 18.4351 7.11202 17.8124C5.42636 17.1896 3.98717 16.0386 3.00909 14.5311C2.03101 13.0236 1.56645 11.2403 1.68469 9.44714C1.80293 7.65402 2.49763 5.94715 3.66519 4.58111C4.83275 3.21506 6.41061 2.26303 8.16345 1.867C9.91629 1.47097 11.7502 1.65216 13.3916 2.38355M18.3333 3.33355L9.99996 11.6752L7.49996 9.17521"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.5"
-              />
-            </svg>
+            <SuccessIcon />
           </div>
           <div className="cy-optout-success-text">
             {t.optOut.successText}

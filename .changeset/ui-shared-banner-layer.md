@@ -1,0 +1,12 @@
+---
+"@cookieyes/ui": minor
+"@cookieyes/react": patch
+---
+
+The banner's stylesheet, theme tokens and markup now live in one framework-free package, `@cookieyes/ui`, so every framework draws the same banner.
+
+**New: `@cookieyes/ui`.** It holds `styles.css` and `critical.css`, the `--cy-*` theme tokens, the `CY_PART` and `CY_STATE` styling hooks, and the markup of the banner, the preferences dialog, the opt-out dialog, the reload notice and the recall button as plain data. `renderToString` turns that markup into HTML for a server or a static page, and `renderToDom` turns it into elements in a browser. Text is always escaped or inserted as text, never as HTML. It is the base for framework adapters; React and Next.js users do not need to install it.
+
+**`@cookieyes/react` is built on it, with nothing to change on your side.** `@cookieyes/react/styles.css`, `@cookieyes/react/critical.css`, `CY_PART`, `CY_STATE` and every component render exactly as before; a test compares React's output with `@cookieyes/ui`'s markup for every state and fails on any difference. The only visible change is the tick in the opt-out confirmation, whose coordinates are now rounded to two decimals like the other icons, a difference smaller than one pixel.
+
+Measured with `pnpm size`: client JavaScript is unchanged within 5 bytes for every measured app.

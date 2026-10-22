@@ -1,4 +1,5 @@
 import { _clearStopHandlers, type ThemeConfig } from "@cookieyes/core";
+import { computeThemeVars } from "@cookieyes/ui";
 import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -9,7 +10,6 @@ import { CookieOptOut } from "../presets/CookieOptOut.js";
 import { CookiePreferences } from "../presets/CookiePreferences.js";
 import { ReloadNotice } from "../presets/ReloadNotice.js";
 import { type CookieYesRuntime, createCookieYes, initCookieYes } from "../runtime.js";
-import { computeThemeVars } from "../styles/tokens.js";
 import {
   expectContract,
   IdNames,

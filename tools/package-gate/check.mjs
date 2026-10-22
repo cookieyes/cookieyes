@@ -47,6 +47,7 @@ const outDir = resolve(outArg === -1 ? join(tmpdir(), "cookieyes-package-gate") 
 
 /** Class prefix each stylesheet must contain. A package not listed ships no CSS. */
 const CSS_PREFIX = {
+  "@cookieyes/ui": ".cy-",
   "@cookieyes/react": ".cy-",
   "@cookieyes/nextjs": ".cy-",
   "@cookieyes/devtools": ".cyd-",

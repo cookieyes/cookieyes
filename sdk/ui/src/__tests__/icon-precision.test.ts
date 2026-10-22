@@ -21,12 +21,12 @@ import { describe, expect, it } from "vitest";
  * cause and says what to do about it.
  */
 describe("inline SVG coordinate precision", () => {
-  const source = readFileSync(join(process.cwd(), "src/components/icons.tsx"), "utf8");
+  const source = readFileSync(join(process.cwd(), "src/markup/icons.ts"), "utf8");
 
   /** Two decimals on a mark this size is already below one device pixel. */
   const MAX_DECIMALS = 2;
 
-  const paths = [...source.matchAll(/d="([^"]+)"/g)]
+  const paths = [...source.matchAll(/d: "([^"]+)"/g)]
     .map((match) => match[1])
     .filter((path): path is string => path !== undefined);
 
@@ -57,6 +57,6 @@ describe("inline SVG coordinate precision", () => {
   it("keeps the wordmark's viewBox, so the precision argument still holds", () => {
     // The 2-decimal limit is justified by the mark being 78 units wide and
     // rendered at 78px. A much larger viewBox would need that revisited.
-    expect(source).toContain('viewBox="0 0 78 13"');
+    expect(source).toContain('viewBox: "0 0 78 13"');
   });
 });
