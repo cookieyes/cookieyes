@@ -57,6 +57,7 @@ const ENABLED_FILES = [
   "styling/css-variables.mdx",
   "styling/critical-css.mdx",
   "integrations/google-consent-mode.mdx",
+  "integrations/ahrefs-analytics.mdx",
   "integrations/ga4.mdx",
   "integrations/google-tag-manager.mdx",
   "integrations/google-ads.mdx",
