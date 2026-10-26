@@ -21,7 +21,7 @@ You need it only if you register a tool as "needs a reload" (below). The ready-m
 Then mark the tool that cannot be stopped, once, **before** `initCookieYes()`. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors:
 
 ```ts title="app/consent-manager.tsx"
-import { registerStopHandler } from "@cookieyes/core";
+import { registerStopHandler } from "@cookieyes/react";
 
 registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
 ```
