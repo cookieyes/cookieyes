@@ -38,7 +38,7 @@
     "In Next.js, call initCookieYes() in a file that starts with \"use client\" and render it from the root layout, which stays a Server Component.",
     "Use mode: \"cookie-only\" (no backend) or mode: \"self-hosted\" with an apiUrl. mode: \"offline\" is deprecated; write \"cookie-only\".",
     "Set regulation to \"GDPR\" (opt-in) or \"CCPA\" (opt-out).",
-    "Load third-party tools with presets from @cookieyes/scripts (ga4, googleTagManager, googleAds, metaPixel, clarity, posthog, segment, ahrefsAnalytics, customScript) in the integrations option. builtInIntegrations is deprecated.",
+    "Load third-party tools with presets from @cookieyes/scripts (ga4, googleTagManager, googleAds, metaPixel, clarity, posthog, segment, ahrefsAnalytics, hotjar, customScript) in the integrations option. builtInIntegrations is deprecated.",
     "Remove vendor snippets pasted into the HTML by hand; the integration adds the script itself.",
     "For GA4, GTM or Google Ads add the Consent Mode default: <GoogleConsentMode /> from @cookieyes/nextjs/server in Next.js, bootstrapGoogleConsentMode() from @cookieyes/scripts elsewhere.",
     "Google presets default to consentMode: \"advanced\", which loads the tag at once and relies on Consent Mode. Pass consentMode: \"basic\" when nothing may reach Google before the visitor accepts.",

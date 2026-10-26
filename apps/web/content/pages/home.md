@@ -27,7 +27,7 @@ Feature-complete consent, with the control surface a serious project needs.
 
 ## One consent layer for your stack
 
-Use consent from your app to control when analytics, ads, and other third-party tools can load. Ready-made integrations: Google Analytics 4, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment and Ahrefs Web Analytics. A held script never loads until the visitor says yes. See https://developers.cookieyes.com/docs/nextjs/integrations.
+Use consent from your app to control when analytics, ads, and other third-party tools can load. Ready-made integrations: Google Analytics 4, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment, Ahrefs Web Analytics and Hotjar. A held script never loads until the visitor says yes. See https://developers.cookieyes.com/docs/nextjs/integrations.
 
 ## You own the record
 

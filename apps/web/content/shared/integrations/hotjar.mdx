@@ -1,0 +1,162 @@
+---
+title: Hotjar
+description: Load Hotjar only after analytics consent, and delete its cookies when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`hotjar()` loads Hotjar after the visitor grants the analytics category. Before that, nothing is loaded and nothing is stored, not even in memory. When consent is withdrawn, it deletes Hotjar's cookies, storage and widgets, and Hotjar stops on the next page load.
+
+It loads the classic Hotjar tracking code, `static.hotjar.com/c/hotjar-<siteId>.js`. Hotjar accounts are moving to Contentsquare. If your account gives you a Contentsquare tag instead, this integration does not manage it.
+
+## Set it up
+
+Install the integrations package and add `hotjar()` to the `initCookieYes()` call you already have. The site ID is the `hjid` value in the snippet Hotjar gives you:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { hotjar } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [hotjar({ siteId: 1234567, reloadOnRevoke: true })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { hotjar } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [hotjar({ siteId: 1234567, reloadOnRevoke: true })],
+});
+```
+
+</Framework>
+
+<Callout type="warn" title="Recommended: set reloadOnRevoke: true">
+Hotjar has no stop command. After consent is withdrawn, it keeps recording until the page reloads. `reloadOnRevoke: true` reloads the page at once, so recording stops when the visitor says no.
+</Callout>
+
+To let the visitor choose when to reload instead, mark Hotjar as needing a reload **before** `initCookieYes()`. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors:
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes, registerStopHandler } from "@cookieyes/react";
+import { hotjar } from "@cookieyes/scripts";
+
+registerStopHandler({ id: "hotjar", category: "analytics", needsReload: true });
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [hotjar({ siteId: 1234567 })],
+});
+```
+
+Then render [`<ReloadNotice />`](/docs/components/reload-notice). It appears when a visitor withdraws analytics after Hotjar ran.
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes, registerStopHandler } from "@cookieyes/core";
+import { hotjar } from "@cookieyes/scripts";
+
+registerStopHandler({ id: "hotjar", category: "analytics", needsReload: true });
+
+const { consentManager } = initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [hotjar({ siteId: 1234567 })],
+});
+```
+
+Then show your own message while `consentManager.reloadNotice.required` is `true`.
+
+</Framework>
+
+Moving from `builtInIntegrations: [{ vendor: "hotjar" }]`? That showed the reload notice on withdrawal. Add the line above to keep it.
+
+Remove the Hotjar snippet from your page. The integration adds the script itself.
+
+Send events and user details through these functions. They do nothing before consent or after withdrawal, and never throw:
+
+```ts
+import { hotjarEvent, hotjarIdentify } from "@cookieyes/scripts";
+
+hotjarEvent("signup");
+hotjarIdentify("user_123", { plan: "pro" });
+```
+
+Calls made before consent are dropped, not kept for later. In development, the first dropped call logs one console message.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `siteId` | required | The `hjid` value from your Hotjar snippet |
+| `reloadOnRevoke` | `false` | Reload the page when consent is withdrawn, so recording stops at once |
+| `snippetVersion` | `6` | The `hjsv` value from your Hotjar snippet |
+| `scriptUrl` | `https://static.hotjar.com/c/hotjar-<siteId>.js?sv=<snippetVersion>` | Load Hotjar's script from another URL |
+| `category` | `"analytics"` | The category the visitor must grant |
+| `id` | `"hotjar"` | Only needed when you run more than one site |
+
+## Good to know
+
+- **Without `reloadOnRevoke`, withdrawal is not immediate.** The cookies, storage and widgets go at once, but recording continues until the next page load. In a single-page app, Hotjar can also set its `_hjSession_<siteId>` cookie again on the next route change.
+- **Accepting again on the same page continues the session in memory.** No second copy is loaded. A new session starts on the next page load.
+- **Tell visitors about recordings.** "Analytics" sounds like page counts, but Hotjar records clicks, mouse movement and scrolling. Mention this in your analytics category description, for example: "We record how you use this site, such as clicks and scrolling, to improve it."
+- **Hide sensitive content.** Add `data-hj-suppress` to any element whose text, images or video must stay out of recordings. Hotjar's site settings also control which typing is recorded.
+- **Withdrawal does not delete past recordings.** They stay in Hotjar. Delete them in your Hotjar account, one by one or in bulk.
+- **Do Not Track and Global Privacy Control.** Hotjar honours the browser's Do Not Track setting by itself, but not Global Privacy Control. CookieYes applies Global Privacy Control to CCPA visitors, who start with analytics off, so Hotjar does not load for them.
+- **One script, all features.** Declining analytics also turns off Hotjar's surveys and feedback widgets.
+- **Session recording is higher risk than page counts.** Some European regulators treat it that way. Check your own obligations; this page is not legal advice.
+- **Contentsquare tag.** Some Hotjar accounts also load a Contentsquare tag through Hotjar's script. Its cookies are not deleted by this integration.
+
+## Check it works
+
+Open your site in a private window and watch the Network tab and the cookies:
+
+1. Before a decision: no request to `hotjar.com`, and no cookie starting with `_hj`.
+2. Accept: Hotjar loads, and `_hjSession_<siteId>` and `_hjSessionUser_<siteId>` appear.
+3. Withdraw consent in the preferences dialog: the `_hj` cookies are gone. With `reloadOnRevoke: true`, the page reloads.
+4. After a reload: no request to `hotjar.com`.
+
+<Framework when="nextjs react">
+
+The [devtools panel](/docs/devtools) shows the integration as `active`, and `removed` after a withdrawal.
+
+</Framework>
+
+## Common mistakes
+
+**Hotjar loads before the visitor accepts.**
+The Hotjar snippet is still in your page. Remove it.
+
+**`hj is not defined` in the console.**
+Your code calls `hj()` before consent. Use `hotjarEvent()` and `hotjarIdentify()` instead.
+
+**Page views are counted twice in a single-page app.**
+Hotjar tracks URL changes by itself. Call `hotjarStateChange()` only if you switched Hotjar's URL tracking to manual.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration
