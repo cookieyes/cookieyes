@@ -47,6 +47,7 @@ already use.
 | `posthog(config)` / `posthogSync(config)` | PostHog (`posthog-js`) — we load it, or sync consent with yours. |
 | `clarity(config)` | Microsoft Clarity (session recording + heatmaps), consent-gated. |
 | `ahrefsAnalytics(config)` | Ahrefs Web Analytics (cookie-free), consent-gated. |
+| `hotjar(config)` | Hotjar (session recording, heatmaps, surveys), consent-gated. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -385,6 +386,43 @@ ahrefsAnalytics({
 - **Testing:** Ahrefs sends nothing from `localhost` or from automated browsers. Test
   on a real domain.
 
+### `hotjar(config)`
+
+Hotjar (session recording, heatmaps, surveys), consent-gated.
+
+```ts
+hotjar({
+  siteId: 1234567,         // required: the hjid value from the Hotjar snippet
+  reloadOnRevoke: true,    // optional, recommended: reload on withdrawal (default false)
+  snippetVersion: 6,       // optional: the hjsv value (default 6)
+  scriptUrl: "https://example.com/hotjar.js", // optional: load Hotjar's script from elsewhere
+  category: "analytics",   // optional: the category that gates it (default "analytics")
+  id: "hotjar",            // optional: only needed if you run more than one
+});
+```
+
+- **`onRevoke: "remove"`**: nothing loads, and nothing is queued, until consent
+  (`load: "afterConsent"`). On withdrawal we delete every `_hj*` cookie (including
+  on the parent domain), Hotjar's storage keys, its widgets and its script tags.
+- **Hotjar has no stop command.** Tested live: it keeps recording after its cookies,
+  storage and tags are gone, and `hj.optOut` does not stop it either. Only a page
+  load does. **Set `reloadOnRevoke: true`** to reload at once; otherwise recording
+  stops on the next page load, and in a single-page app Hotjar may set its
+  `_hjSession_<siteId>` cookie again before then.
+- **Reload notice instead:** call `registerStopHandler({ id: "hotjar", category:
+  "analytics", needsReload: true })` **before** `initCookieYes()` (it reads the list once,
+  at start) and render `<ReloadNotice />`. The deprecated
+  `builtInIntegrations: [{ vendor: "hotjar" }]` did this for you.
+- **Classic tracking code only:** it loads `static.hotjar.com/c/hotjar-<siteId>.js`.
+  A Contentsquare tag, which some accounts now use, is not managed.
+- `window.hj` is kept on withdrawal: deleting it makes Hotjar's running loop throw on
+  every tick. A re-grant on the same page does not load a second copy.
+- **Send calls** with `hotjarEvent(name)`, `hotjarIdentify(userId, attributes)` and
+  `hotjarStateChange(url)`. Before consent or after withdrawal they do nothing (one
+  console message in development). Calls before consent are dropped, never replayed.
+- Hotjar tracks single-page-app URL changes itself; `hotjarStateChange` is only for
+  sites that switched Hotjar's URL tracking to manual.
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -498,6 +536,7 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **PostHog** | `window.posthog` | Guard **before the first grant in `"stop"` mode** (`remove` — absent until consent): `safeCall("posthog", "capture", …)`. In `"anonymous"` mode it's present from load. |
 | **Clarity** | `window.clarity` | Guard **before the first grant** — `afterConsent`, so it's absent until consent: `window.clarity?.("event", …)`. After that it persists (`silence` keeps it) and keeps sending cookie-free even while denied. |
 | **Ahrefs** | `window.AhrefsAnalytics` | Guard **before the first grant**: `safeCall("AhrefsAnalytics", "sendEvent", …)`. After that it persists (`silence` keeps it) and drops every event while denied. |
+| **Hotjar** | `window.hj` | Use `hotjarEvent()` / `hotjarIdentify()`: they drop calls before consent and after withdrawal. `window.hj` stays on the page after a withdrawal, so a direct call would still reach Hotjar until the next page load. |
 
 ### Testing your integration
 
