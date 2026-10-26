@@ -8,7 +8,7 @@ frameworks: [nextjs, react]
 
 Some third-party tools cannot be switched off once they are running. When a visitor withdraws consent for such a tool, this notice appears with a **Reload** and a **Dismiss** button. It never reloads on its own; the visitor decides.
 
-You need it only if you register a tool as "needs a reload" (below). The [integrations](/docs/integrations) never show it.
+You need it only if you register a tool as "needs a reload" (below). The ready-made [integrations](/docs/integrations) stop their tools themselves. Hotjar is the exception; its page shows how to register it.
 
 ## Add it
 
@@ -48,5 +48,5 @@ That tool's own stop function threw an error, so CookieYes fell back to asking f
 
 ## Next steps
 
-- [Integrations](/docs/integrations): ready-made integrations; only Hotjar's needs this
+- [Integrations](/docs/integrations): ready-made integrations; only Hotjar needs this
 - [GatedScript](/docs/components/gated-script): load a script only after consent

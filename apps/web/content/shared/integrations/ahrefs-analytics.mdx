@@ -93,9 +93,7 @@ Your proxy forwards `scriptUrl` to `https://analytics.ahrefs.com/analytics.js` a
 
 ### Loading without consent
 
-Ahrefs sets no cookies and stores nothing in the browser. Some site owners conclude that it needs no consent. Others note that it still reads details from the browser (screen size, language, referrer) and that Ahrefs uses the visitor's IP address, in a daily salted hash, to count unique visitors. Rules on reading information from a device can apply without cookies, and regulators do not all agree on where cookie-free analytics falls.
-
-So the default waits for consent, like any other analytics tool. If your own legal advice concludes that consent is not needed on your site, set `requireConsent: false`. This is your decision, not a CookieYes recommendation:
+Ahrefs sets no cookies, but it still reads the browser and hashes the visitor's IP address, so the default waits for consent like any other analytics tool. If your own legal advice says consent is not needed on your site, set `requireConsent: false`. This is your decision, not a CookieYes recommendation:
 
 ```ts
 import { ahrefsAnalytics } from "@cookieyes/scripts";

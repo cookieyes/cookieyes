@@ -115,20 +115,16 @@ Calls made before consent are dropped, not kept for later. In development, the f
 | `reloadOnRevoke` | `false` | Reload the page when consent is withdrawn, so recording stops at once |
 | `snippetVersion` | `6` | The `hjsv` value from your Hotjar snippet |
 | `scriptUrl` | `https://static.hotjar.com/c/hotjar-<siteId>.js?sv=<snippetVersion>` | Load Hotjar's script from another URL |
-| `category` | `"analytics"` | The category the visitor must grant |
+| `category` | `"analytics"` | The category the visitor must grant. Session recording is more sensitive than ordinary analytics, so consider a category of its own |
 | `id` | `"hotjar"` | Only needed when you run more than one site |
 
 ## Good to know
 
 - **Without `reloadOnRevoke`, withdrawal is not immediate.** The cookies, storage and widgets go at once, but recording continues until the next page load. In a single-page app, Hotjar can also set its `_hjSession_<siteId>` cookie again on the next route change.
 - **Accepting again on the same page continues the session in memory.** No second copy is loaded. A new session starts on the next page load.
-- **Tell visitors about recordings.** "Analytics" sounds like page counts, but Hotjar records clicks, mouse movement and scrolling. Mention this in your analytics category description, for example: "We record how you use this site, such as clicks and scrolling, to improve it."
-- **Hide sensitive content.** Add `data-hj-suppress` to any element whose text, images or video must stay out of recordings. Hotjar's site settings also control which typing is recorded.
-- **Withdrawal does not delete past recordings.** They stay in Hotjar. Delete them in your Hotjar account, one by one or in bulk.
-- **Do Not Track and Global Privacy Control.** Hotjar honours the browser's Do Not Track setting by itself, but not Global Privacy Control. CookieYes applies Global Privacy Control to CCPA visitors, who start with analytics off, so Hotjar does not load for them.
-- **One script, all features.** Declining analytics also turns off Hotjar's surveys and feedback widgets.
-- **Session recording is higher risk than page counts.** Some European regulators treat it that way. Check your own obligations; this page is not legal advice.
-- **Contentsquare tag.** Some Hotjar accounts also load a Contentsquare tag through Hotjar's script. Its cookies are not deleted by this integration.
+- **Tell visitors about recordings.** "Analytics" sounds like page counts, but Hotjar records clicks, mouse movement and scrolling. Say so in your analytics category description.
+- **Hide sensitive content.** Add `data-hj-suppress` to any element whose text, images or video must stay out of recordings.
+- **Global Privacy Control.** For CCPA visitors whose browser sends it, every non-required category starts off, so Hotjar does not load until they opt in. Hotjar honours Do Not Track by itself.
 
 ## Check it works
 
