@@ -1,3 +1,4 @@
+export { type AhrefsAnalyticsConfig, ahrefsAnalytics } from "./ahrefs.js";
 export { type ClarityConfig, clarity } from "./clarity.js";
 export { type CustomScriptConfig, customScript } from "./custom-script.js";
 export {

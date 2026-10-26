@@ -317,6 +317,7 @@
     "dist/index.js",
     "dist/index.js.map",
     "package.json",
+    "src/ahrefs.ts",
     "src/clarity.ts",
     "src/cookies.ts",
     "src/custom-script.ts",

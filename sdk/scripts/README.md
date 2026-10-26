@@ -46,6 +46,7 @@ already use.
 | `ga4()` / `googleAds()` / `googleTagManager()` | Google via Consent Mode (GA4, Ads, GTM). |
 | `posthog(config)` / `posthogSync(config)` | PostHog (`posthog-js`) — we load it, or sync consent with yours. |
 | `clarity(config)` | Microsoft Clarity (session recording + heatmaps), consent-gated. |
+| `ahrefsAnalytics(config)` | Ahrefs Web Analytics (cookie-free), consent-gated. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -352,6 +353,38 @@ clarity({
 - **Verify:** load the page (nothing should load pre-consent), Accept → `_clck`/`_clsk`
   appear, Reject → they're gone but Clarity keeps sending cookie-free.
 
+### `ahrefsAnalytics(config)`
+
+Ahrefs Web Analytics (cookie-free page views and events), consent-gated.
+
+```ts
+ahrefsAnalytics({
+  key: "abc123xyz",        // required: the data-key value from the Ahrefs snippet
+  scriptUrl: "https://example.com/stats/analytics.js", // optional: your own proxy
+  apiUrl: "https://example.com/stats/event",           // optional: default /api/event on the scriptUrl origin
+  requireConsent: true,    // optional: false loads at once and ignores consent (your legal call)
+  category: "analytics",   // optional: the category that gates it (default "analytics")
+  id: "ahrefs",            // optional: only needed if you run more than one
+});
+```
+
+- **`onRevoke: "silence"`**: nothing loads until consent (`load: "afterConsent"`).
+  Ahrefs has no stop command, and removing its tag does not stop its link, form and
+  page-view listeners. But it reads `data-key` from its tag before every event and
+  drops the event when the key is missing. So on withdrawal we remove the key, and
+  nothing more is sent; on re-grant we put it back. No reload.
+- **Cookie-free**: Ahrefs sets no cookies and uses no browser storage, so there is
+  nothing to delete.
+- **Proxy:** forward `/api/event` (or your `apiUrl`) and `/api/error` on the
+  `scriptUrl` domain to the same paths on `analytics.ahrefs.com`.
+- **`requireConsent: false`** loads Ahrefs straight away (`load: "immediately"`,
+  `onRevoke: "keep"`). Whether cookie-free analytics needs consent is disputed, so
+  this is for sites whose own legal advice says it does not.
+- **Send events** with `safeCall("AhrefsAnalytics", "sendEvent", "signup")`: the
+  global is absent before consent.
+- **Testing:** Ahrefs sends nothing from `localhost` or from automated browsers. Test
+  on a real domain.
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -464,6 +497,7 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **Google** | `window.gtag` | **Safe** — `gtag` pushes to the `dataLayer`, which persists, so a direct call never throws. |
 | **PostHog** | `window.posthog` | Guard **before the first grant in `"stop"` mode** (`remove` — absent until consent): `safeCall("posthog", "capture", …)`. In `"anonymous"` mode it's present from load. |
 | **Clarity** | `window.clarity` | Guard **before the first grant** — `afterConsent`, so it's absent until consent: `window.clarity?.("event", …)`. After that it persists (`silence` keeps it) and keeps sending cookie-free even while denied. |
+| **Ahrefs** | `window.AhrefsAnalytics` | Guard **before the first grant**: `safeCall("AhrefsAnalytics", "sendEvent", …)`. After that it persists (`silence` keeps it) and drops every event while denied. |
 
 ### Testing your integration
 
