@@ -59,6 +59,8 @@ describe("createVendorLookup", () => {
 describe("VENDORS", () => {
   const CATEGORIES = ["necessary", "functional", "analytics", "performance", "advertisement"];
   const PRESETS = [
+    "ahrefsAnalytics",
+    "hotjar",
     "ga4",
     "googleAds",
     "googleTagManager",

@@ -145,6 +145,14 @@ export const VENDORS: readonly Vendor[] = [
     category: A,
     hosts: ["hotjar.com", "hotjar.io"],
     cookies: ["_hj*"],
+    preset: "hotjar({ siteId: 1234567, reloadOnRevoke: true })",
+  },
+  {
+    id: "ahrefs",
+    name: "Ahrefs Web Analytics",
+    category: A,
+    hosts: ["analytics.ahrefs.com"],
+    preset: 'ahrefsAnalytics({ key: "…" })',
   },
   {
     id: "posthog",

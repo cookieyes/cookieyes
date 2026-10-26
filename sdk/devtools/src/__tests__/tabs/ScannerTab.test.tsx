@@ -68,7 +68,7 @@ describe("ScannerTab", () => {
     await user.click(rows()[0] as HTMLElement);
     const detail = part("scanner-detail");
     expect(detail.textContent).toContain("possible pre-consent load");
-    expect(detail.querySelector("pre")?.textContent).toContain("customScript({");
+    expect(detail.querySelector("pre")?.textContent).toContain("hotjar({");
   });
 
   it("does not flag a script the SDK registered and injected after consent", async () => {
@@ -126,7 +126,7 @@ describe("ScannerTab", () => {
     await waitFor(() => expect(rows()).toHaveLength(1));
     await user.click(rows()[0] as HTMLElement);
     await user.click(part("scanner-copy"));
-    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("customScript({"));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("hotjar({"));
     await waitFor(() => expect(part("scanner-copy").textContent).toContain("Copied"));
   });
 
