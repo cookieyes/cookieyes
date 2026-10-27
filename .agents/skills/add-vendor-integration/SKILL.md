@@ -74,18 +74,21 @@ Run `pnpm --filter @cookieyes/scripts test`.
   Every other integration has both; a page without them looks unfinished. Logos live in
   `apps/web/public/figma-logos/`; check that folder first, and add an SVG only if its licence
   allows redistribution. If no logo can be used, say so in the PR.
-- Keep the page about the length of `microsoft-clarity.mdx`. "Good to know" holds the two or
-  three facts that save a support ticket. Vendor admin tasks (deleting old recordings, account
+- Keep the page close to the length of `microsoft-clarity.mdx`; go longer only for what the
+  vendor itself needs explained, such as a reload or a proxy. "Good to know" holds the few
+  facts that save a support ticket. Vendor admin tasks (deleting old recordings, account
   settings) and legal commentary get one sentence or none.
 - Say exactly what the code does for consent defaults. GDPR is opt-in, CCPA is opt-out, and
-  Global Privacy Control only changes the start state for CCPA visitors whose browser sends it.
+  Global Privacy Control only changes the start state for CCPA visitors whose browser sends it,
+  and only while `region.honorGpc` is not `false`.
   Read `sdk/core/src/manager.ts` before writing any sentence about this.
 - Behaviour you rely on from the vendor's own script (what stops it, what it drops, which
   cookies it sets) is recorded in `contributing/design/vendor-runtime-behaviour.md` with the date
   it was checked. The docs page states the behaviour; the note holds the evidence.
 - Add a row to the table and a section in `sdk/scripts/README.md`, matching the existing ones.
 - Other places list the integrations by name. Find them all with
-  `grep -rli clarity apps/web/content apps/web/src sdk/*/README.md` and add yours to each list.
+  `grep -rli clarity apps/web/content apps/web/src sdk/*/README.md sdk/devtools/src` and add
+  yours to each list. In `sdk/devtools/src/scanner/vendors.ts`, give the vendor its `preset`.
 - Regenerate: `pnpm --filter @cookieyes/web generate:framework-docs`, then `pnpm build` and
   `pnpm build:web`.
 - Open the page in a browser as each framework's reader, on desktop and at 390px wide. Nothing
