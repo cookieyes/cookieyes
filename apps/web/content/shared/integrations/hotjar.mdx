@@ -124,7 +124,8 @@ Calls made before consent are dropped, not kept for later. In development, the f
 - **Accepting again on the same page continues the session in memory.** No second copy is loaded. A new session starts on the next page load.
 - **Tell visitors about recordings.** "Analytics" sounds like page counts, but Hotjar records clicks, mouse movement and scrolling. Say so in your analytics category description.
 - **Hide sensitive content.** Add `data-hj-suppress` to any element whose text, images or video must stay out of recordings.
-- **Global Privacy Control.** For CCPA visitors whose browser sends it, every non-required category starts off, so Hotjar does not load until they opt in. Hotjar honours Do Not Track by itself.
+- **Global Privacy Control.** For CCPA visitors whose browser sends it, every non-required category starts off, so Hotjar does not load until they opt in. That is the default; `region.honorGpc: false` turns it off. Hotjar honours Do Not Track by itself.
+- **Contentsquare tag.** Some Hotjar accounts also load a Contentsquare tag through Hotjar's script. Its cookies are not deleted on withdrawal.
 
 ## Check it works
 
