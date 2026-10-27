@@ -44,7 +44,7 @@ export function GET() {
         type: "text/markdown",
         url: `${SITE_URL}/.well-known/agent-skills/gate-third-party-scripts/SKILL.md`,
         description:
-          "Skill for loading Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment or any script only after the visitor consents, using the @cookieyes/scripts integrations and Google Consent Mode v2.",
+          "Skill for loading Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment, Ahrefs Web Analytics, Hotjar or any script only after the visitor consents, using the @cookieyes/scripts integrations and Google Consent Mode v2.",
         representativeQueries: [
           "load Google Analytics only after cookie consent in Next.js",
           "Google Consent Mode v2 with a React consent banner",

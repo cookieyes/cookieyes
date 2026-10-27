@@ -73,7 +73,9 @@ the length with the neighbouring pages; if yours is much longer, cut it or split
 ## 5. Language
 
 Plain English, short sentences, active voice, sentence-case headings. No em dashes. No
-marketing. No history of how the feature came to be. No internal references.
+marketing. No history of how the feature came to be. No internal references. Legal questions
+get one sentence and a pointer to the reader's own advice, never a discussion: the page is not
+legal advice, and a paragraph about regulators is the essay the reader runs away from.
 
 ## 6. Check
 
@@ -85,6 +87,10 @@ grep -rn "—" apps/web/content/shared                    # must print nothing
 ```
 
 If you renamed a heading, grep `content/shared` for links to its old anchor.
+
+Then open the page in a browser as each framework's reader, on desktop and at 390px wide.
+Nothing may overflow the content column; tables and code blocks scroll inside their own box.
+If the page has a sidebar icon or an index card, both match the neighbouring pages.
 
 ## 7. Finish
 

@@ -1,3 +1,4 @@
+export { type AhrefsAnalyticsConfig, ahrefsAnalytics } from "./ahrefs.js";
 export { type ClarityConfig, clarity } from "./clarity.js";
 export { type CustomScriptConfig, customScript } from "./custom-script.js";
 export {
@@ -12,6 +13,13 @@ export {
   googleConsentModeSnippet,
   googleTagManager,
 } from "./google.js";
+export {
+  type HotjarConfig,
+  hotjar,
+  hotjarEvent,
+  hotjarIdentify,
+  hotjarStateChange,
+} from "./hotjar.js";
 export { type MetaPixelConfig, metaPixel } from "./meta.js";
 export {
   type PostHogConfig,

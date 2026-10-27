@@ -1,0 +1,139 @@
+---
+title: Ahrefs Web Analytics
+description: Load Ahrefs Web Analytics only after analytics consent, and stop it sending when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`ahrefsAnalytics()` loads Ahrefs Web Analytics after the visitor grants the analytics category. When consent is withdrawn, Ahrefs stops sending page views and events straight away, with no reload. Ahrefs sets no cookies, so there is nothing to delete.
+
+## Set it up
+
+Install the integrations package and add `ahrefsAnalytics()` to the `initCookieYes()` call you already have. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
+});
+```
+
+</Framework>
+
+Remove the Ahrefs snippet from your page. The integration adds the script itself.
+
+Send custom events through `safeCall()`. `window.AhrefsAnalytics` does not exist before consent, so a direct call would throw. `safeCall()` does nothing in that case:
+
+```ts
+import { safeCall } from "@cookieyes/scripts";
+
+safeCall("AhrefsAnalytics", "sendEvent", "signup");
+safeCall("AhrefsAnalytics", "sendEvent", "signup", { props: { plan: "pro" } });
+```
+
+This differs from Google tags. `gtag()` is always safe to call, because Google holds events until consent through Consent Mode. Ahrefs has no consent mode: before consent it is not on the page, and after withdrawal it drops every event.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `key` | required | The `data-key` value from your Ahrefs snippet |
+| `scriptUrl` | `"https://analytics.ahrefs.com/analytics.js"` | Load the script from your own domain instead. See [Serve it from your own domain](#serve-it-from-your-own-domain) |
+| `apiUrl` | `/api/event` on the origin of `scriptUrl` | Where Ahrefs sends events. Set it when your proxy uses a different path |
+| `requireConsent` | `true` | `false` loads Ahrefs straight away and ignores consent. See [Loading without consent](#loading-without-consent) |
+| `category` | `"analytics"` | The category the visitor must grant |
+| `id` | `"ahrefs"` | Only needed when you run more than one project |
+
+## Good to know
+
+- **Withdrawal keeps the script but stops all sending.** Ahrefs has no stop command, and removing its script does not stop it. The integration removes the key from the script tag instead. Ahrefs reads the key before every page view, link click, form submit and custom event, and drops the event without it. Each dropped event logs `Ignoring Event: missing data-key` in the console.
+- **Single-page apps are covered.** Ahrefs counts client-side navigation itself. You do not need to send page views on route changes.
+- **Ahrefs ignores local and automated visits.** It sends nothing from `localhost`, `127.0.0.1` or a `file:` page, or from a browser driven by automation tools. Test on a real domain.
+
+### Serve it from your own domain
+
+Ad blockers often block requests to known analytics domains. Proxy Ahrefs through your own domain and set `scriptUrl`:
+
+```ts
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+
+ahrefsAnalytics({
+  key: "abc123xyz",
+  scriptUrl: "https://example.com/stats/analytics.js",
+  apiUrl: "https://example.com/stats/event",
+});
+```
+
+Your proxy forwards `scriptUrl` to `https://analytics.ahrefs.com/analytics.js` and `apiUrl` to `https://analytics.ahrefs.com/api/event`. Without `apiUrl`, Ahrefs sends events to `/api/event` on the domain that served the script. It also sends its own error reports to `/api/error` on that domain, so forward that path to `https://analytics.ahrefs.com/api/error` too. This lowers the number of blocked visits but does not bring it to zero: blockers that look at more than the domain name can still catch it.
+
+### Loading without consent
+
+Ahrefs sets no cookies, but it still reads the browser and hashes the visitor's IP address, so the default waits for consent like any other analytics tool. If your own legal advice says consent is not needed on your site, set `requireConsent: false`. This is your decision, not a CookieYes recommendation:
+
+```ts
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+
+ahrefsAnalytics({ key: "abc123xyz", requireConsent: false });
+```
+
+<Framework when="nextjs react">
+
+The [devtools](/docs/devtools) Scanner then lists Ahrefs as a possible pre-consent load. That is expected: you chose it.
+
+</Framework>
+
+## Check it works
+
+Open your site on its real domain in a private window, and watch the Network tab:
+
+1. Before a decision: no request to `analytics.ahrefs.com` (or your proxy).
+2. Accept: `analytics.js` loads, then a `pageview` request to `/api/event`.
+3. Withdraw consent in the preferences dialog, then click around: no new `/api/event` requests.
+4. Accept again: requests start again, with no reload.
+
+<Framework when="nextjs react">
+
+The [devtools panel](/docs/devtools) shows the integration as `active` or `silenced`.
+
+</Framework>
+
+## Common mistakes
+
+**Ahrefs tracks before the visitor accepts.**
+The Ahrefs snippet is still in your page. Remove it. Ahrefs also refuses to start twice, so the integration's copy then does nothing.
+
+**No data in Ahrefs during testing.**
+You are testing on `localhost` or in an automated browser. Ahrefs drops those visits on purpose.
+
+**`Cannot read properties of undefined (reading 'sendEvent')` in the console.**
+The call ran before consent. Use `safeCall()` as shown above.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration
