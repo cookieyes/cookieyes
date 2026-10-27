@@ -125,7 +125,7 @@ Calls made before consent are dropped, not kept for later. In development, the f
 - **Tell visitors about recordings.** "Analytics" sounds like page counts, but Hotjar records clicks, mouse movement and scrolling. Say so in your analytics category description.
 - **Hide sensitive content.** Add `data-hj-suppress` to any element whose text, images or video must stay out of recordings.
 - **Global Privacy Control.** For CCPA visitors whose browser sends it, every non-required category starts off, so Hotjar does not load until they opt in. That is the default; `region.honorGpc: false` turns it off. Hotjar honours Do Not Track by itself.
-- **Contentsquare tag.** Some Hotjar accounts also load a Contentsquare tag through Hotjar's script. Its cookies are not deleted on withdrawal.
+- **Contentsquare tag.** If your Hotjar account has moved to Contentsquare, Hotjar's script can also load a Contentsquare tag. This integration does not manage that tag.
 
 ## Check it works
 
