@@ -638,7 +638,7 @@
    declined once for status badges).
 
    Scoped to #nd-sidebar, same as the "Changelog sidebar" block above, and NOT by
-   href alone: index.mdx's own Card grid links to these same seven hrefs from the
+   href alone: index.mdx's own Card grid links to these same hrefs from the
    page content, so a bare a[href=...] selector would double-paint an icon into
    every card too — the card grid is explicitly out of scope (design doc §2.3).
    Desktop rail only, matching that precedent; #nd-sidebar-mobile is a separate
@@ -646,10 +646,12 @@
 
    Techniques are matched per asset to what index.mdx's own Card icons already use
    for these same files (design doc §2.4):
-     - flat mask + brand hex   : ga4, google-tag-manager
-     - flat mask + currentColor: google-ads, segment (no brand hex exists for these)
+     - flat mask + brand hex   : ga4, google-tag-manager, hotjar
+     - flat mask + currentColor: google-ads, segment (no brand hex for these)
      - positioned background   : meta-pixel (not a flat silhouette)
      - content: url(...)       : posthog, microsoft-clarity (multi-colour marks)
+     - one image per theme     : ahrefs-analytics (the designer supplied a light and a
+                                 dark mark; see .cy-logo-ahrefs below)
 
    Brand hexes are fixed in both themes, never a --cy-doc-* token — the same rule
    SidebarControls.tsx documents for its framework logos: "a brand mark that flips
@@ -663,9 +665,11 @@
    first flex child. That is 3px over the gap/tight (8px) role — flagged in design
    doc §2.6 rather than patched, since the rule is shared by every sidebar row. */
 
+#nd-sidebar a[href$="/integrations/ahrefs-analytics"]::before,
 #nd-sidebar a[href$="/integrations/ga4"]::before,
 #nd-sidebar a[href$="/integrations/google-tag-manager"]::before,
 #nd-sidebar a[href$="/integrations/google-ads"]::before,
+#nd-sidebar a[href$="/integrations/hotjar"]::before,
 #nd-sidebar a[href$="/integrations/meta-pixel"]::before,
 #nd-sidebar a[href$="/integrations/microsoft-clarity"]::before,
 #nd-sidebar a[href$="/integrations/posthog"]::before,
@@ -689,11 +693,17 @@
   mask: url(/figma-logos/google-tag-manager.svg) center / contain no-repeat;
 }
 
+#nd-sidebar a[href$="/integrations/hotjar"]::before {
+  background-color: #ff3c00;
+  -webkit-mask: url(/figma-logos/hotjar.svg) center / contain no-repeat;
+  mask: url(/figma-logos/hotjar.svg) center / contain no-repeat;
+}
+
 #nd-sidebar a[href$="/integrations/microsoft-clarity"]::before {
   content: url(/figma-logos/microsoft-clarity.svg);
 }
 
-/* No brand hex exists for these two — the mock's #sbInt doesn't list them at all.
+/* No brand hex exists for these two: the mock's #sbInt doesn't list them at all.
    Reuses currentColor exactly as index.mdx's Card icons already do for the same
    vendors, so the icon tracks the link's own ink (--cy-doc-tx, or
    --cy-doc-nav-fg when active) rather than a colour invented here. */
@@ -707,6 +717,19 @@
   background-color: currentColor;
   -webkit-mask: url(/figma-logos/segment.svg) center / contain no-repeat;
   mask: url(/figma-logos/segment.svg) center / contain no-repeat;
+}
+
+/* Ahrefs is the one mark with an image per theme, as the designer supplied it: a dark
+   tile for light pages, and a white mark on transparent for dark pages. The card
+   in index.mdx uses the same class, so both swap together. */
+.cy-logo-ahrefs,
+#nd-sidebar a[href$="/integrations/ahrefs-analytics"]::before {
+  background: url(/figma-logos/ahrefs-light.png) center / contain no-repeat;
+}
+
+.dark .cy-logo-ahrefs,
+.dark #nd-sidebar a[href$="/integrations/ahrefs-analytics"]::before {
+  background-image: url(/figma-logos/ahrefs-dark.png);
 }
 
 /* meta-infinity.png is not a flat silhouette — a mask would show a blank shape.

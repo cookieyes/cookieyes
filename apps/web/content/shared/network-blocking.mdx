@@ -83,7 +83,7 @@ Blocked requests are logged to the console. Set `logBlockedRequests: false` to s
 
 ## Starter rules for common vendors
 
-Two example rules for tools that have no [integration](/docs/integrations) of their own. Tools that have one (Google Analytics, Google Tag Manager, Meta Pixel, PostHog, Segment, Microsoft Clarity) normally need no rule: the integration loads them only after consent. Write a rule for one of them only when its snippet is hard-coded in a page you cannot edit.
+Two example rules for tools that have no [integration](/docs/integrations) of their own. Tools that have one (Google Analytics, Google Tag Manager, Meta Pixel, PostHog, Segment, Microsoft Clarity, Ahrefs Web Analytics, Hotjar) normally need no rule: the integration loads them only after consent. Write a rule for one of them only when its snippet is hard-coded in a page you cannot edit.
 
 | Vendor | Rule |
 | --- | --- |
@@ -108,4 +108,4 @@ The blocker cannot stop script tags. Gate the script itself instead, as describe
 ## Next steps
 
 - [Configuration → networkBlocker](/docs/getting-started/configuration#networkblocker): the option reference
-- [Integrations](/docs/integrations): tools that stop cleanly without any blocking
+- [Integrations](/docs/integrations): tools loaded only after consent, without any blocking

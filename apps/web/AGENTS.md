@@ -33,7 +33,9 @@ else. The root `AGENTS.md` still applies here.
 - Accurate. Every option, default, prop, export and behaviour you write must exist in `sdk/*/src`.
   Read the source first. Quote the default the code applies, not the one you expect.
 - Follow the neighbouring page's structure. Integrations use: lead paragraph, "Set it up",
-  "Options", "Good to know", "Common mistakes", "Next steps". Do not invent a new template.
+  "Options", "Good to know", "Check it works" (a short numbered list of what to watch in the
+  browser; leave it out if it adds nothing), "Common mistakes", "Next steps". Do not invent a
+  new template.
 - Code examples match the README and the CLI templates (`sdk/cli/src/commands/init.ts`) where
   one exists. Keep them in sync when either changes.
 - Plain English. Short sentences. Active voice. Sentence-case headings.

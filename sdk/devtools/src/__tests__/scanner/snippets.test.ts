@@ -26,7 +26,7 @@ describe("snippetFor", () => {
   });
 
   it("suggests customScript for a script with no preset", () => {
-    const url = "https://static.hotjar.com/c/hotjar-1.js";
+    const url = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
     const s = snippet({ kind: "script", label: url, url });
     expect(s?.code).toContain("customScript({");
     expect(s?.code).toContain(`src: "${url}"`);
