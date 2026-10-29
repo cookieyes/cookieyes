@@ -77,7 +77,9 @@ An example of what your server receives:
   "decidedAt": "2026-09-28T10:01:21.638Z",
   "taxonomyHash": "2fbx48",
   "action": "reject_all",
-  "source": "banner"
+  "source": "banner",
+  "sdkVersion": "0.12.0",
+  "gpc": false
 }
 ```
 
@@ -86,13 +88,15 @@ An example of what your server receives:
 | `recordId` | This decision's id. The same decision always has the same id, so store each one once |
 | `consentId` | The visitor. It stays the same until their consent is reset |
 | `categories` | Each category, and whether it is granted |
-| `regulation` | `GDPR` or `CCPA` |
+| `regulation` | `GDPR`, `CCPA`, or `DEFAULT` when no regulation was set |
 | `domain` | The site the decision was made on |
 | `region` | The visitor's detected region, like `US-CA`. Sent only with region detection |
 | `decidedAt` | When the visitor decided, in UTC. Not when the record was sent |
 | `taxonomyHash` | A fingerprint of your category list. It changes when you add, remove or rename a category, so you can tell which list a decision was made against |
 | `action` | What the visitor did: `accept_all`, `reject_all`, `accept_selected` or `save` |
 | `source` | Where: `banner`, `preferences`, `optout`, or `api` for a call from your own code |
+| `sdkVersion` | The version of `@cookieyes/core` that sent the record |
+| `gpc` | Whether the visitor's browser sent the Global Privacy Control signal when they decided |
 
 ## When your server is down
 

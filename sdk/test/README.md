@@ -393,6 +393,8 @@ Read this table before trusting a passing test. "Exact" means the real engine ra
 | Unknown category id | **Stricter** | Throws here; production silently ignores. Deliberate. |
 | Seeded `lastRenewed` | **Fixed to `1`** | Keeps seeded snapshots deterministic. Core never branches on it. |
 | `payload.domain` | **`"unknown"`** | Core reads `window.location.hostname`; there is no `window` in a node test. With `googleConsentMode: true` a shimmed window is in place, so it reports `cookieyes-test.local` instead |
+| `payload.gpc` | **`false`** | Core reads `navigator.globalPrivacyControl`, which Node does not set. Stub `navigator` to test the `true` case |
+| `payload.sdkVersion` | **Core's version** | `0.0.0-dev` when core is linked from source (a `workspace:*` link), the published version otherwise |
 | Backend POST | **Captured, not sent** | Assert with `backendCalls()`. No `fetch` is called, and none needs stubbing |
 | Script injection | **Registry only** | Nothing is injected without a `document.head` |
 | `reloadOnRevoke` | **Not simulated** | No `window`, so no reload |

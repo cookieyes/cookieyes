@@ -302,8 +302,9 @@ export type ConsentAction = "accept_all" | "reject_all" | "accept_selected" | "s
  * Customers building a TypeScript backend can import this type to get
  * full type safety on their request handler.
  *
- * `recordId`, `decidedAt`, `taxonomyHash`, `source` and `action` are always sent;
- * they are optional here only because records saved by older SDK versions lack them.
+ * `recordId`, `decidedAt`, `taxonomyHash`, `source`, `action`, `sdkVersion` and `gpc`
+ * are always sent; they are optional here only because records saved by older SDK
+ * versions lack them.
  */
 export type ConsentPayload = {
   /**
@@ -323,6 +324,10 @@ export type ConsentPayload = {
   action?: ConsentAction | undefined;
   /** Detected region when geo-detection is on (e.g. "US-CA"); omitted otherwise. */
   region?: string | undefined;
+  /** Version of `@cookieyes/core` that built the record; `0.0.0-dev` means unknown. */
+  sdkVersion?: string | undefined;
+  /** Whether the browser sent the Global Privacy Control signal when the visitor decided. */
+  gpc?: boolean | undefined;
 };
 
 /**
