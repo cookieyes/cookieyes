@@ -2,6 +2,11 @@
 
 import type { SVGProps } from "react";
 
+// The same icons as `@cookieyes/ui`'s markup data, written as JSX. Drawing
+// them from that data instead cost 160 bytes of gzip in the React layer for a
+// converter; `markup-parity.test.tsx` compares every path with `ui`'s instead,
+// so the two cannot drift.
+
 /** The "X" on a close button: two lines corner to corner in a `size`-pixel square. */
 export function CrossIcon({ size, strokeWidth = 1.5 }: { size: number; strokeWidth?: number }) {
   const end = size - 1;
@@ -109,6 +114,21 @@ export function RevisitIcon(props: SVGProps<SVGSVGElement>) {
         fill="white"
       />
       <path d="M19.94 25.79H16.47V29.24H19.94V25.79Z" fill="white" />
+    </svg>
+  );
+}
+
+/** The tick beside the opt-out confirmation. */
+export function SuccessIcon() {
+  return (
+    <svg fill="none" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M18.33 9.23V10C18.33 11.8 17.75 13.55 16.67 14.99C15.6 16.42 14.09 17.48 12.36 17.99C10.64 18.5 8.8 18.44 7.11 17.81C5.43 17.19 3.99 16.04 3.01 14.53C2.03 13.02 1.57 11.24 1.68 9.45C1.8 7.65 2.5 5.95 3.67 4.58C4.83 3.22 6.41 2.26 8.16 1.87C9.92 1.47 11.75 1.65 13.39 2.38M18.33 3.33L10 11.68L7.5 9.18"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
     </svg>
   );
 }

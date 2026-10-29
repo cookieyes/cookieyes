@@ -2,8 +2,10 @@
   "title": "Getting Started",
   "pages": [
     "installation",
+    "vanilla",
     "configuration",
-    "self-hosted"
+    "self-hosted",
+    "which-api"
   ],
   "defaultOpen": true,
   "collapsible": false

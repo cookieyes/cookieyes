@@ -1,8 +1,8 @@
 "use client";
 
 import type { ConsentCategory, ConsentSource } from "@cookieyes/core";
+import { rememberOpener } from "@cookieyes/ui";
 import { useMemo } from "react";
-import { rememberFocusBeforeDialog } from "../primitives/utils.js";
 import { _tryGetCookieYes } from "../runtime.js";
 
 export type ConsentActions = {
@@ -55,12 +55,12 @@ export function useConsentActions(source?: ConsentSource): ConsentActions {
       updateCategory: (category, value) => runtime.manager.updateCategory(category, value),
       reset: () => runtime.manager.resetConsent(),
       showPreferences: () => {
-        rememberFocusBeforeDialog();
+        rememberOpener();
         runtime.manager.showPreferences();
       },
       hidePreferences: () => runtime.manager.hidePreferences(),
       showOptOut: () => {
-        rememberFocusBeforeDialog();
+        rememberOpener();
         runtime.showOptOut();
       },
       hideOptOut: () => runtime.hideOptOut(),

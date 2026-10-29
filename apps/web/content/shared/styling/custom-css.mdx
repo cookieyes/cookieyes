@@ -1,8 +1,14 @@
 ---
 title: Custom CSS
 description: Change the width, spacing or any single element with a CSS rule on its part name.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
+
+<Framework when="core">
+
+This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-started/vanilla). `@cookieyes/core` alone draws nothing, so there is nothing for it to style.
+
+</Framework>
 
 ## What it does
 
@@ -37,6 +43,15 @@ import "./consent.css";
 
 ```tsx title="src/consent-manager.tsx" check="false"
 import "@cookieyes/react/styles.css";
+import "./consent.css";
+```
+
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/consent.ts" check="false"
+import "@cookieyes/vanilla/styles.css";
 import "./consent.css";
 ```
 

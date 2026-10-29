@@ -1,0 +1,56 @@
+{
+  "renderedBeforeRevoke": false,
+  "dom": [
+    {
+      "tag": "div",
+      "attrs": {
+        "class": "cy-reload-notice",
+        "data-cy-part": "reload-notice",
+        "role": "alert"
+      },
+      "children": [
+        {
+          "tag": "span",
+          "attrs": {
+            "class": "cy-reload-notice-text",
+            "data-cy-part": "reload-message"
+          },
+          "children": [
+            "Some tracking on this page can only be fully stopped by reloading. Reload to apply your change, or dismiss to keep browsing."
+          ]
+        },
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "cy-reload-notice-actions"
+          },
+          "children": [
+            {
+              "tag": "button",
+              "attrs": {
+                "class": "cy-btn cy-btn-primary cy-reload-notice-reload",
+                "data-cy-part": "reload",
+                "type": "button"
+              },
+              "children": ["Reload page"]
+            },
+            {
+              "tag": "button",
+              "attrs": {
+                "class": "cy-btn cy-btn-outline cy-reload-notice-dismiss",
+                "data-cy-part": "reload-dismiss",
+                "type": "button"
+              },
+              "children": ["Dismiss"]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "keyboard": {
+    "focusOnShow": "page",
+    "tabOrder": ["button[data-cy-part=\"reload\"]", "button[data-cy-part=\"reload-dismiss\"]"]
+  },
+  "shownAfterDismiss": false
+}

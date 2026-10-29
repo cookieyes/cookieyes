@@ -1,0 +1,261 @@
+{
+  "dom": [
+    {
+      "tag": "div",
+      "attrs": {
+        "id": "cookieyes-portal-root"
+      },
+      "children": [
+        {
+          "tag": "div",
+          "attrs": {
+            "class": "cy-banner-wrap",
+            "data-cy-entered": ""
+          },
+          "children": [
+            {
+              "tag": "div",
+              "attrs": {
+                "aria-labelledby": "id-1",
+                "aria-modal": "true",
+                "class": "cy-banner",
+                "data-cky-banner": "",
+                "data-cy-part": "banner",
+                "role": "dialog"
+              },
+              "children": [
+                {
+                  "tag": "button",
+                  "attrs": {
+                    "aria-label": "Close",
+                    "class": "cy-banner-close",
+                    "data-cy-part": "close",
+                    "type": "button"
+                  },
+                  "children": [
+                    {
+                      "tag": "svg",
+                      "attrs": {
+                        "aria-hidden": "true",
+                        "fill": "none",
+                        "height": "9",
+                        "viewBox": "0 0 9 9",
+                        "width": "9",
+                        "xmlns": "http://www.w3.org/2000/svg"
+                      },
+                      "children": [
+                        {
+                          "tag": "path",
+                          "attrs": {
+                            "d": "(path data)",
+                            "stroke": "currentColor",
+                            "stroke-linecap": "round",
+                            "stroke-width": "1.5"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-banner-text"
+                  },
+                  "children": [
+                    {
+                      "tag": "h2",
+                      "attrs": {
+                        "class": "cy-banner-title",
+                        "data-cy-part": "title",
+                        "id": "id-1"
+                      },
+                      "children": ["We value your privacy"]
+                    },
+                    {
+                      "tag": "p",
+                      "attrs": {
+                        "class": "cy-banner-description",
+                        "data-cy-part": "description"
+                      },
+                      "children": [
+                        "This website or its third-party tools process personal data. You can opt out of the sale of your personal information by clicking on the “Do Not Sell or Share My Personal Information” button."
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-banner-actions",
+                    "data-cy-part": "actions"
+                  },
+                  "children": [
+                    {
+                      "tag": "button",
+                      "attrs": {
+                        "aria-haspopup": "dialog",
+                        "class": "cy-btn cy-btn-do-not-sell",
+                        "data-cy-part": "do-not-sell",
+                        "type": "button"
+                      },
+                      "children": ["Do Not Sell or Share My Personal Information"]
+                    }
+                  ]
+                },
+                {
+                  "tag": "div",
+                  "attrs": {
+                    "class": "cy-banner-footer cy-banner-footer--ccpa"
+                  },
+                  "children": [
+                    {
+                      "tag": "a",
+                      "attrs": {
+                        "aria-label": "Powered by CookieYes (opens in new tab)",
+                        "class": "cy-branding",
+                        "data-cy-part": "branding",
+                        "href": "https://www.cookieyes.com",
+                        "rel": "noopener noreferrer",
+                        "target": "_blank"
+                      },
+                      "children": [
+                        "Powered by",
+                        {
+                          "tag": "svg",
+                          "attrs": {
+                            "aria-hidden": "true",
+                            "fill": "none",
+                            "height": "13",
+                            "viewBox": "0 0 78 13",
+                            "width": "78",
+                            "xmlns": "http://www.w3.org/2000/svg"
+                          },
+                          "children": [
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            },
+                            {
+                              "tag": "path",
+                              "attrs": {
+                                "d": "(path data)",
+                                "fill": "currentColor"
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "span",
+      "attrs": {
+        "aria-live": "assertive",
+        "class": "cy-sr-only"
+      },
+      "children": ["We value your privacy"]
+    }
+  ],
+  "announcement": {
+    "politeness": "assertive",
+    "onShow": "",
+    "at699ms": "",
+    "at700ms": "We value your privacy"
+  },
+  "keyboard": {
+    "focusOnShow": "page",
+    "tabOrder": [
+      "button[data-cy-part=\"close\"]",
+      "button[data-cy-part=\"do-not-sell\"]",
+      "a[data-cy-part=\"branding\"]"
+    ],
+    "trapEdges": {
+      "tabFromPage": "button[data-cy-part=\"close\"]",
+      "shiftTabFromPage": "a[data-cy-part=\"branding\"]",
+      "tabFromLast": "button[data-cy-part=\"close\"]",
+      "shiftTabFromFirst": "a[data-cy-part=\"branding\"]"
+    },
+    "visibleAfterEscape": true
+  }
+}

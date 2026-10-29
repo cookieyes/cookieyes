@@ -21,6 +21,7 @@
     "build": "turbo run build --filter='./sdk/*'",
     "dev": "turbo run dev --filter='./sdk/*'",
     "test": "turbo run test --filter='./sdk/*' --filter=@cookieyes/web",
+    "test:browser": "turbo run test:browser --filter='./sdk/*'",
     "typecheck": "turbo run typecheck --filter='./sdk/*'",
     "dev:web": "pnpm --filter @cookieyes/web dev",
     "build:web": "turbo run build --filter=@cookieyes/web",

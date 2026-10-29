@@ -43,7 +43,8 @@ describe("<CookieYesStyles /> markup", () => {
     expect(html.match(/<link/g)).toHaveLength(1);
     expect(html).toContain('rel="stylesheet"');
     // `print` is what keeps it off the critical path; the attribute is how
-    // `_activateDeferredStylesheets` in @cookieyes/react finds it to flip.
+    // `activateDeferredStylesheets` (from @cookieyes/ui, run when the React
+    // runtime mounts) finds it to flip.
     expect(html).toContain('media="print"');
     expect(html).toContain(`${DEFERRED_STYLESHEET_ATTR}=""`);
     // Cache-busting by content, so an immutable Cache-Control is safe.

@@ -1,8 +1,8 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import type { CY_PART } from "@cookieyes/ui";
+import { type CSSProperties, useId } from "react";
 import { OptOut } from "../primitives/OptOut.js";
-import type { CY_PART } from "../styles/parts.js";
 
 /** Every styleable part of the opt-out dialog — keys for {@link CookieOptOutProps.classNames}. */
 export type OptOutPart = keyof typeof CY_PART.optOut;
@@ -26,6 +26,8 @@ export function CookieOptOut({ className, style, classNames, styles }: CookieOpt
     className: [base, classNames?.[key]].filter(Boolean).join(" ") || undefined,
     style: styles?.[key],
   });
+  // Generated, so two opt-out dialogs on one page never share an id.
+  const checkboxId = useId();
 
   return (
     <OptOut.Root className="cy-dialog-overlay">
@@ -46,21 +48,24 @@ export function CookieOptOut({ className, style, classNames, styles }: CookieOpt
           </div>
           <hr className="cy-separator" />
           <div className="cy-optout-checkbox-wrapper">
-            <OptOut.Checkbox id="cy-ccpa-optout" className="cy-optout-checkbox" />
-            <OptOut.CheckboxLabel htmlFor="cy-ccpa-optout" className="cy-optout-checkbox-label" />
+            <OptOut.Checkbox id={checkboxId} {...part("checkbox", "cy-optout-checkbox")} />
+            <OptOut.CheckboxLabel
+              htmlFor={checkboxId}
+              {...part("checkboxLabel", "cy-optout-checkbox-label")}
+            />
           </div>
         </div>
 
         <div className="cy-optout-footer">
           <div className="cy-optout-action-area">
             <OptOut.Buttons className="cy-optout-btn-wrapper">
-              <OptOut.Cancel className="cy-btn cy-btn-cancel" />
+              <OptOut.Cancel {...part("cancel", "cy-btn cy-btn-cancel")} />
               <OptOut.Save {...part("confirm", "cy-btn cy-btn-confirm")} />
             </OptOut.Buttons>
-            <OptOut.Success className="cy-optout-success" />
+            <OptOut.Success {...part("confirmation", "cy-optout-success")} />
           </div>
           <div className="cy-optout-powered-by">
-            <OptOut.Branding className="cy-branding" />
+            <OptOut.Branding {...part("branding", "cy-branding")} />
           </div>
         </div>
       </div>

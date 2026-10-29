@@ -1,0 +1,5 @@
+{
+  "open": false,
+  "confirmationShown": false,
+  "focusAfterClose": "button[data-cy-part=\"recall\"]"
+}

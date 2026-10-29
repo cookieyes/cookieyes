@@ -23,6 +23,16 @@ describe("SSR first-byte paint", () => {
     expect(html).toContain("Accept All");
   });
 
+  // A strict `style-src` policy blocks style attributes in server HTML, which
+  // once left the announcer's text visible on the page.
+  it("renders no inline style attribute, so a strict style-src policy needs no exception", () => {
+    for (const regulation of ["GDPR", "CCPA"] as const) {
+      mountOffline(regulation);
+      expect(renderToStaticMarkup(<CookieBanner />)).not.toContain("style=");
+      teardown();
+    }
+  });
+
   it("renders the CCPA variant on the server", () => {
     mountOffline("CCPA");
     const html = renderToStaticMarkup(<CookieBanner />);

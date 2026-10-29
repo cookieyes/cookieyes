@@ -1,0 +1,106 @@
+---
+title: Banner with no framework
+description: Add the full CookieYes banner, dialogs and recall button to any page with @cookieyes/vanilla, no framework needed.
+frameworks: [core]
+---
+
+`@cookieyes/vanilla` puts the complete CookieYes banner on any page: the banner, the preferences and opt-out dialogs, the reload notice and the recall button. Use it on a site with no framework, or with a framework that has no CookieYes adapter yet, such as Vue, Svelte or Angular.
+
+This is the open-source SDK, not the CookieYes platform script: you configure it in code, it needs no CookieYes account, and it never talks to CookieYes servers. If you manage your banner in the CookieYes app, use the script tag the app gives you instead.
+
+## 1. Install
+
+```npm
+npm install @cookieyes/vanilla
+```
+
+This is the only package you install.
+
+## 2. Start it
+
+```ts title="src/consent.ts"
+import { start } from "@cookieyes/vanilla";
+import "@cookieyes/vanilla/styles.css";
+
+export const cookieyes = start({
+  mode: "cookie-only", // no backend needed
+  regulation: "GDPR", // "GDPR" | "CCPA"
+});
+```
+
+Import this file once, from your page's entry script. `start` takes the same configuration as `initCookieYes` in every other CookieYes package, so [Configuration](/docs/getting-started/configuration) applies as written. It returns the consent runtime: read and react to consent with `cookieyes.consentStore`, as in [Using the store](/docs/store/using-the-store).
+
+The stylesheet import is required. Without it the banner renders as plain text, with no error to tell you why.
+
+## 3. Check it is working
+
+1. Open the page in a private window. The banner appears in the bottom-left corner.
+2. Press Tab once: focus lands on the banner's Close button.
+3. Click **Customise**: the preferences dialog opens. Press Escape: it closes and focus returns to **Customise**.
+4. Click **Accept All**: the banner closes and the recall button appears in the bottom-left corner.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `start(config)` | Starts the SDK and puts the banner on the page. Calling it again replaces the banner |
+| `openPreferences()` | Opens the preferences dialog, for a "Cookie settings" link of your own. Focus returns to the link when it closes |
+| `openOptOut()` | Opens the CCPA opt-out dialog, for a "Do Not Sell" link of your own |
+| `destroy()` | Removes every element and listener `start` added, and the runtime |
+| `renderShell(config, request?)` | The banner as HTML, for showing it before any script runs |
+
+```ts title="src/footer.ts"
+import { openPreferences } from "@cookieyes/vanilla";
+
+document.querySelector("#cookie-settings")?.addEventListener("click", (event) => {
+  event.preventDefault();
+  openPreferences();
+});
+```
+
+## Show the banner before any script runs
+
+The banner normally appears once your script has run. To have it on screen at first paint:
+
+1. Inline the contents of `@cookieyes/vanilla/critical.css` in a `<style>` in `<head>`, and keep the `styles.css` import.
+2. Put the output of `renderShell(config)` at the start of `<body>`, generated at build time or on your server, with the same configuration you pass to `start`.
+
+```ts title="scripts/banner-shell.ts"
+import { renderShell } from "@cookieyes/vanilla";
+
+const shell = renderShell({ mode: "cookie-only", regulation: "GDPR" });
+// Write `shell` into your HTML template, right after <body>.
+```
+
+When `start` runs it takes that banner over in the same task: no flash, no second entry animation.
+
+On a server, pass the request's cookies and a visitor who has already decided gets no banner in the HTML at all:
+
+```ts title="server.ts" check="false"
+const shell = renderShell(config, { cookieHeader: request.headers.get("cookie") ?? "" });
+```
+
+A static page has no request to read, so a returning visitor sees the banner until `start` removes it. If you send a `Content-Security-Policy`, the inline `<style>` needs its hash in `style-src`; see [CSP](/docs/styling/csp).
+
+## Good to know
+
+- Styling, themes, part names and translations are the same as in every other CookieYes package. A stylesheet written for the React banner restyles this one unchanged. See [Styling](/docs/styling/overview).
+- The preferences and opt-out dialogs load the first time a visitor opens one, so a visitor who only sees the banner never downloads them.
+- `renderShell` uses the configured `regulation` and the starting language of `i18n`: a page rendered ahead of time cannot know a visitor's region.
+
+## Common mistakes
+
+**The banner renders as unstyled text.**
+The `styles.css` import is missing.
+
+**Nothing appears on the page.**
+The file that calls `start` is never imported. Import it from your entry script.
+
+**A "Cookie settings" link does nothing.**
+It runs before `start`. Call `openPreferences()` from a click handler, after `start` has run.
+
+## Next steps
+
+- [Configuration](/docs/getting-started/configuration): every option `start` accepts
+- [Styling](/docs/styling/overview): match the banner to your brand
+- [Integrations](/docs/integrations): load tags only after consent

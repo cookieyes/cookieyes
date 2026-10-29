@@ -1,6 +1,7 @@
 "use client";
 
 import type { ConsentCategory } from "@cookieyes/core";
+import { CY_PART, categoryText } from "@cookieyes/ui";
 import {
   type ComponentPropsWithoutRef,
   createContext,
@@ -20,7 +21,6 @@ import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { _tryGetCookieYes } from "../runtime.js";
-import { CY_PART } from "../styles/parts.js";
 import { renderAction } from "./Slot.js";
 import { chain, composeRefs, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
@@ -181,14 +181,11 @@ const Category = forwardRef<
   // A required category is always on and can't be toggled.
   const checked = required ? true : snapshot.categories[category] === true;
 
-  // Text precedence: the active language's translation (if the customer gave
-  // one) → the category's config label → the built-in English default → the id.
-  // `getCategoryText` is the customer's own translation, kept apart from the
-  // English defaults so it can win over the config label without English masking it.
-  const translated = _tryGetCookieYes()?.getCategoryText(category);
-  const fallback = t.categories[category];
-  const label = translated?.label ?? def?.label ?? fallback?.label ?? category;
-  const description = translated?.description ?? def?.description ?? fallback?.description ?? "";
+  const { label, description } = categoryText(category, {
+    translated: _tryGetCookieYes()?.getCategoryText(category),
+    configured: def,
+    defaults: t.categories[category],
+  });
 
   return (
     <div ref={ref} data-cy-part={CY_PART.dialog.category} {...props}>

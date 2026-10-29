@@ -32,6 +32,8 @@
     "@cookieyes/react": "workspace:*",
     "@cookieyes/scripts": "workspace:*",
     "@cookieyes/test": "workspace:*",
+    "@cookieyes/ui": "workspace:*",
+    "@cookieyes/vanilla": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",

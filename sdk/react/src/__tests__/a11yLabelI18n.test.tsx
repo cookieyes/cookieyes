@@ -149,4 +149,21 @@ describe("accessible labels are translatable", () => {
     expect(document.body.textContent).toContain("Einstellungen verwalten");
     expect(document.body.textContent).not.toContain("Manage Preferences");
   });
+
+  // The visible half of the "Powered by" link was typed in English in the
+  // component, even though its accessible name was already translated.
+  it('shows the "Powered by" words from translations, around the logo', () => {
+    initCookieYes({
+      mode: "cookie-only",
+      i18n: { messages: { de: { poweredBy: "Bereitgestellt von CookieYes" } } },
+    });
+    act(() => getCookieYes().manager.showPreferences());
+    render(<CookiePreferences />);
+    act(() => {
+      void getCookieYes().setLanguage("de");
+    });
+    const link = document.querySelector('[data-cy-part="branding"]');
+    expect(link?.textContent).toBe("Bereitgestellt von");
+    expect(link?.querySelector("svg")).not.toBeNull();
+  });
 });
