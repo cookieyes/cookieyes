@@ -1,0 +1,124 @@
+---
+title: Store consent records on your server
+description: Run @cookieyes/backend in your own app and keep every consent decision as proof, in about fifteen minutes.
+frameworks: [nextjs, react, core]
+---
+
+`@cookieyes/backend` receives the record the SDK sends for each consent decision and stores it once, in your own database. Use it when you need to show later what a visitor agreed to, or to answer a request to see or delete their data.
+
+## Do you need this?
+
+- **Most sites don't.** In `mode: "cookie-only"` the choice lives in the visitor's cookie, nothing is sent anywhere, and nothing here changes that.
+- **Self-host when you need records** on your own infrastructure: proof of consent, audits, data subject requests.
+- The backend is never on the path to the banner. The SDK sends a record only after the visitor decides, so the banner shows just as fast.
+
+## 1. Install
+
+```npm
+npm install @cookieyes/backend
+```
+
+## 2. Create the backend
+
+One instance, with the path you will mount it at, the origins of your site, and a database. SQLite needs no setup and is built into Node 22.5 and later; use [Postgres](/docs/self-host/databases) in production.
+
+```ts title="lib/consent-backend.ts" group="quickstart"
+import { DatabaseSync } from "node:sqlite";
+import { createConsentBackend } from "@cookieyes/backend";
+import { sqliteStore } from "@cookieyes/backend/sqlite";
+
+export const backend = createConsentBackend({
+  basePath: "/api/consent",
+  trustedOrigins: ["http://localhost:3000"],
+  database: sqliteStore(new DatabaseSync("./consent.db")),
+});
+
+// The migrate command below reads the backend from this export.
+export default backend;
+```
+
+## 3. Mount it
+
+The backend is one web-standard handler: it takes a `Request` and returns a `Response`.
+
+<Framework when="nextjs">
+
+A catch-all route sends every method under `/api/consent` to it:
+
+```ts title="app/api/consent/[[...path]]/route.ts" group="quickstart"
+import { backend } from "../../../../lib/consent-backend";
+
+export const { GET, POST, DELETE, OPTIONS } = backend.routes;
+```
+
+</Framework>
+
+<Framework when="react core">
+
+Your site needs a server for it. With Hono:
+
+```ts title="server/index.ts" group="quickstart"
+import { type Context, Hono } from "hono";
+import { backend } from "../lib/consent-backend";
+
+const app = new Hono();
+const consent = (c: Context) => backend.handler(c.req.raw);
+app.all("/api/consent", consent);
+app.all("/api/consent/*", consent);
+
+export default app;
+```
+
+</Framework>
+
+Express, Fastify, Bun, Deno and Cloudflare Workers: [Mount the backend](/docs/self-host/mounting).
+
+## 4. Create the table
+
+See what will change, then apply it:
+
+```bash
+npx cookieyes-backend migrate --config ./lib/consent-backend.ts
+npx cookieyes-backend migrate --config ./lib/consent-backend.ts --apply
+```
+
+A `.ts` config needs a Node version that runs TypeScript (22.18 or later). On a platform with nowhere to run a command, call `await backend.migrate()` from your code instead.
+
+## 5. Point the SDK at it
+
+```ts check="false"
+initCookieYes({
+  mode: "self-hosted",
+  apiUrl: "/api/consent",
+});
+```
+
+## Check it works
+
+1. Open `http://localhost:3000/api/consent/status`. It answers `"status": "ok"`, the server time, and the region and language it sees for you.
+2. Load your site and click **Accept all**. In the browser's Network tab, a `POST` to `/api/consent` answers `201`.
+3. Open `/api/consent/docs` for the endpoints, and see [what was stored](/docs/self-host/what-gets-stored).
+
+## Before you go live
+
+- Use [Postgres](/docs/self-host/databases), or keep the SQLite file on storage that outlives a deploy.
+- Set `trustedOrigins` to your production origin.
+- Add `apiKeys` to use the [owner routes](/docs/self-host/data-requests), and [schedule pruning](/docs/self-host/retention).
+- Go through the [security checklist](/docs/self-host/security).
+
+## Common mistakes
+
+**`/status` answers 503 with `"schema": "pending"`.**
+The table does not exist yet. Run the migration in step 4.
+
+**The save answers 403.**
+The page's origin is not in `trustedOrigins`. It must match exactly, scheme and port included: `http://localhost:3000`, not `localhost:3000`.
+
+**Records never arrive and the console shows a CORS error.**
+The route does not send `OPTIONS` to the backend. Export `OPTIONS` too, or route every method to the handler.
+
+## Next steps
+
+- [Mount the backend](/docs/self-host/mounting) in another framework
+- [What gets stored, and why](/docs/self-host/what-gets-stored)
+- [API reference](/docs/self-host/api-reference)

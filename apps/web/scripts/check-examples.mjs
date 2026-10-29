@@ -33,6 +33,13 @@ const ENABLED_FILES = [
   "getting-started/self-hosted.mdx",
   "getting-started/which-api.mdx",
   "getting-started/vanilla.mdx",
+  "self-host/quickstart.mdx",
+  "self-host/databases.mdx",
+  "self-host/mounting.mdx",
+  "self-host/retention.mdx",
+  "self-host/data-requests.mdx",
+  "self-host/api-reference.mdx",
+  "self-host/compatible-backends.mdx",
   "store/using-the-store.mdx",
   "store/build-your-own-ui.mdx",
   "store/build-an-adapter.mdx",
@@ -264,6 +271,8 @@ function checkVariant(relFile, variant, source, baseTsconfigPath) {
     // The test-runner stub carries just enough of a signature that destructured
     // fixtures (`{ page }`) are contextually typed rather than implicitly `any`,
     // which `strict` would otherwise reject.
+    // The Self-host pages mount `@cookieyes/backend` in the reader's own server and
+    // database client; those, and the Bun and Deno globals, are stubbed the same way.
     writeFileSync(
       join(groupDir, "reader-tooling.d.ts"),
       [
@@ -274,6 +283,25 @@ function checkVariant(relFile, variant, source, baseTsconfigPath) {
         "  export const test: (name: string, fn: (fixtures: Fixtures) => unknown) => void;",
         "  export const expect: (actual: unknown) => Record<string, any>;",
         "}",
+        'declare module "pg";',
+        'declare module "postgres";',
+        'declare module "@neondatabase/serverless";',
+        'declare module "better-sqlite3";',
+        'declare module "express";',
+        'declare module "fastify" {',
+        "  export type FastifyRequest = any;",
+        "  export type FastifyReply = any;",
+        "  const Fastify: any;",
+        "  export default Fastify;",
+        "}",
+        'declare module "hono" {',
+        "  export type Context = any;",
+        "  export const Hono: any;",
+        "}",
+        'declare module "bun:sqlite";',
+        'declare module "vitest";',
+        "declare const Bun: { serve(options: { fetch: (request: Request) => Promise<Response> }): unknown };",
+        "declare const Deno: { serve(handler: (request: Request) => Promise<Response>): unknown };",
         "",
       ].join("\n"),
     );

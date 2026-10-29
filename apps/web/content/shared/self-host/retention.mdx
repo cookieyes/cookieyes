@@ -1,0 +1,83 @@
+---
+title: Retention
+description: Delete consent records after a period you choose, from a cron job, a scheduled function or the command line.
+frameworks: [nextjs, react, core]
+---
+
+Keeping consent records forever is its own compliance problem. The backend deletes records older than `retentionMonths` whenever you run `prune`, and logs how many it removed.
+
+## The period
+
+```ts check="false"
+createConsentBackend({ /* … */ retentionMonths: 24 });
+```
+
+The default is 24 months: long enough to answer a question about a decision after the consent cookie, which lasts a year, has expired and been renewed. The minimum is 12, the cookie's lifetime, so a visitor's current decision is never deleted while their cookie still holds it.
+
+The age is counted from `received_at`, your server's clock, so a visitor's device clock cannot keep a record longer or shorter.
+
+## Run it
+
+Any one of these:
+
+```bash
+npx cookieyes-backend prune --config ./lib/consent-backend.ts
+curl -X POST https://shop.example.com/api/consent/prune -H "Authorization: Bearer $CONSENT_OWNER_KEY"
+```
+
+```ts check="false"
+const deleted = await backend.prune();
+```
+
+## Schedule it
+
+<Framework when="nextjs">
+
+### Vercel
+
+Vercel Cron calls a `GET` route with your `CRON_SECRET`. Add one that prunes:
+
+```ts title="app/api/cron/prune/route.ts"
+import { backend } from "@/lib/consent-backend";
+
+export async function GET(request: Request) {
+  if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response(null, { status: 401 });
+  }
+  return Response.json({ deleted: await backend.prune() });
+}
+```
+
+```json title="vercel.json"
+{ "crons": [{ "path": "/api/cron/prune", "schedule": "0 3 * * *" }] }
+```
+
+</Framework>
+
+### Cloudflare Workers
+
+Add a `scheduled` handler next to `fetch` in [your Worker](/docs/self-host/mounting#cloudflare-workers), creating the backend the same way, and `crons = ["0 3 * * *"]` under `[triggers]` in your Wrangler config:
+
+```ts check="false"
+async scheduled(_event, env, ctx) {
+  backend ??= createConsentBackend({ /* as in fetch */ database: d1Store(env.DB) });
+  ctx.waitUntil(backend.prune());
+},
+```
+
+### A plain server
+
+```bash
+# crontab -e: every day at 03:00
+0 3 * * * cd /srv/shop && npx cookieyes-backend prune --config ./lib/consent-backend.ts
+```
+
+## Check it works
+
+1. Run `prune` once by hand. It prints `Removed N records.`
+2. In your logs, each run writes `Pruned N records received before <date>.`
+
+## Next steps
+
+- [What gets stored, and why](/docs/self-host/what-gets-stored)
+- [Answer a request to see or delete data](/docs/self-host/data-requests)

@@ -3,6 +3,7 @@
   "root": true,
   "pages": [
     "getting-started",
+    "self-host",
     "components",
     "headless",
     "hooks",

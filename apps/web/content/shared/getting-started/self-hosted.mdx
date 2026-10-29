@@ -19,7 +19,9 @@ Each decision is sent as one `POST` with a JSON body. If you set `apiKey`, it go
 
 ## Receive it
 
-Any server works. Store the record, then reply with a `2xx` status.
+The quickest way is `@cookieyes/backend`: it stores each record once in your own database, and handles retries, validation, deletion requests and retention for you. See [Store consent records on your server](/docs/self-host/quickstart).
+
+Or write your own: any server works. Store the record, then reply with a `2xx` status.
 
 <Framework when="nextjs">
 
@@ -136,6 +138,7 @@ Add your `apiUrl` origin to `connect-src`.
 
 ## Next steps
 
+- [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
 - [Configuration](/docs/getting-started/configuration): every other option of `initCookieYes()`
 
 <Framework when="nextjs react">

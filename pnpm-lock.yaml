@@ -81,6 +81,9 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
     devDependencies:
+      '@cookieyes/backend':
+        specifier: workspace:*
+        version: link:../../sdk/backend
       '@cookieyes/core':
         specifier: workspace:*
         version: link:../../sdk/core

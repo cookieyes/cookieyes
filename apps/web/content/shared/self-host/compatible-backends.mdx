@@ -1,0 +1,54 @@
+---
+title: Build a compatible backend
+description: Write a consent backend in any language, prove it keeps the contract with the conformance suite, and get it listed.
+frameworks: [nextjs, react, core]
+---
+
+The SDK does not care what receives its records, only that the server keeps the contract: the same routes, the same rules for storing a record once, validating it and trusting origins. `@cookieyes/backend` is the reference implementation. A server in PHP, Go, Python or anything else that passes the conformance suite is compatible.
+
+## The contract
+
+The contract is an OpenAPI document: [`sdk/backend/openapi.json`](https://github.com/cookieyes/cookieyes/blob/main/sdk/backend/openapi.json) in the repository, and `/openapi.json` on any running backend. Its version is the contract version. The [API reference](/docs/self-host/api-reference) shows it as tables.
+
+The rules a test can't read from the document:
+
+- Store a record once per `recordId`. The same body again answers 200; a different body under a known `recordId` answers 409 and keeps the first.
+- Two copies arriving at the same moment still leave one row. Let the database's unique key decide, not a read before the write.
+- Ignore fields you don't know, never store them. Refuse a body over 4 KB.
+- Answer a browser on an untrusted origin with 403, and never send it `Access-Control-Allow-Origin`.
+- Every error is `{ "error": { "code", "message" } }`.
+
+## Run the conformance suite
+
+The suite is in `@cookieyes/test` and talks HTTP only, so it checks a server in any language. Run it from Vitest or Jest against your running server:
+
+```ts title="backend.conformance.test.ts"
+import { runBackendConformance } from "@cookieyes/test/backend";
+import { describe, it } from "vitest";
+
+runBackendConformance(
+  {
+    url: "http://localhost:8080/api/consent",
+    trustedOrigin: "http://localhost:3000",
+    apiKey: process.env.CONSENT_OWNER_KEY,
+  },
+  { describe, it },
+);
+```
+
+Without `apiKey`, the checks of the owner routes are skipped. Set `readBack: false` if your server has no read route. The suite checks contract version `BACKEND_CONTRACT_VERSION`; a server that passes can say which version it conforms to.
+
+## Compatible backends
+
+| Backend | Language | Contract |
+| --- | --- | --- |
+| [`@cookieyes/backend`](https://github.com/cookieyes/cookieyes/tree/main/sdk/backend) | TypeScript | 1 |
+
+## Get listed
+
+Open an issue with the **Compatible backend** template on [GitHub](https://github.com/cookieyes/cookieyes/issues/new/choose). A backend is listed when it passes the suite, is open source, and is maintained.
+
+## Next steps
+
+- [API reference](/docs/self-host/api-reference)
+- [What gets stored, and why](/docs/self-host/what-gets-stored)

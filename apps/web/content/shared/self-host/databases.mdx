@@ -1,0 +1,89 @@
+---
+title: Databases
+description: Connect @cookieyes/backend to Postgres, SQLite or Cloudflare D1 through the client you already use, and run its migrations.
+frameworks: [nextjs, react, core]
+---
+
+The backend talks to your database through a client you already have, so it adds no driver of its own and runs wherever your client runs. Pass a store as `database`.
+
+## Postgres
+
+`postgresStore()` takes any client with a `query(text, params)` method. With `pg`:
+
+```ts title="lib/consent-backend.ts"
+import { createConsentBackend } from "@cookieyes/backend";
+import { postgresStore } from "@cookieyes/backend/postgres";
+import { Pool } from "pg";
+
+export const backend = createConsentBackend({
+  basePath: "/api/consent",
+  trustedOrigins: ["https://shop.example.com"],
+  database: postgresStore(new Pool({ connectionString: process.env.DATABASE_URL })),
+});
+```
+
+Other clients work the same way:
+
+```ts title="lib/database.ts"
+import { postgresStore } from "@cookieyes/backend/postgres";
+import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
+
+// Neon's serverless driver, which also runs at the edge.
+const neonSql = neon(process.env.DATABASE_URL ?? "");
+export const onNeon = postgresStore({ query: (text, params) => neonSql.query(text, params) });
+
+// postgres.js
+const sql = postgres(process.env.DATABASE_URL ?? "");
+export const onPostgresJs = postgresStore({ query: (text, params) => sql.unsafe(text, params) });
+```
+
+Create one client per process and reuse it, so requests share its connections.
+
+## SQLite
+
+`sqliteStore()` takes `node:sqlite`, `better-sqlite3` or `bun:sqlite`. It needs SQLite 3.35 or later, which all three bundle.
+
+```ts title="lib/database.ts"
+import { DatabaseSync } from "node:sqlite";
+import { sqliteStore } from "@cookieyes/backend/sqlite";
+
+export const database = sqliteStore(new DatabaseSync("./data/consent.db"));
+```
+
+Keep the file on storage that outlives a deploy. A serverless function's file system is thrown away, and the records with it.
+
+## Cloudflare D1
+
+`d1Store()` takes a D1 binding. See [Cloudflare Workers](/docs/self-host/mounting#cloudflare-workers) for the whole Worker.
+
+## In memory
+
+`memoryStore()` from `@cookieyes/backend/memory` keeps records in the process. It is for tests and demos: records are lost on restart, and each instance has its own.
+
+## Migrations
+
+The backend creates two tables: `cookieyes_consent_records` and `cookieyes_migrations`, which records the migrations already applied. A migration only adds; upgrading the package never asks you to change the schema by hand.
+
+```bash
+npx cookieyes-backend migrate --config ./lib/consent-backend.ts           # shows what would run
+npx cookieyes-backend migrate --config ./lib/consent-backend.ts --apply   # runs it
+```
+
+`--config` names a module that exports your backend, as its default export or as `backend`. You can also migrate from code, for example in a deploy step:
+
+```ts check="false"
+const report = await backend.migrate({ dryRun: true }); // { applied: [], pending: ["0001_consent_records"] }
+await backend.migrate();
+```
+
+Each statement is safe to run twice, so a migration that stopped halfway, or two instances migrating at once, finish cleanly on the next run.
+
+## Another database
+
+A store is an object with seven methods (`ConsentStore`). The [conformance suite](/docs/self-host/compatible-backends) proves a new one behaves like the built-in ones.
+
+## Next steps
+
+- [Mount the backend](/docs/self-host/mounting)
+- [Keep records for the right time](/docs/self-host/retention)
