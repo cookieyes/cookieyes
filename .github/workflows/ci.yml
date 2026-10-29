@@ -114,3 +114,40 @@ jobs:
 
       - name: Conformance in Chromium
         run: pnpm test:browser
+
+  backend-postgres:
+    name: Consent backend on real Postgres
+    # `pnpm test` above runs the backend's store tests on memory, PGlite and SQLite.
+    # PGlite answers one query at a time, so only a real server shows two copies of a
+    # record racing each other (contributing/design/consent-backend.md).
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: cookieyes
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Backend tests on Postgres
+        env:
+          COOKIEYES_TEST_PG_URL: postgres://postgres:cookieyes@127.0.0.1:5432/postgres
+        run: pnpm --filter @cookieyes/backend test
