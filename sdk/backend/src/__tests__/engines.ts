@@ -54,6 +54,10 @@ export const ENGINES: Engine[] = [
     name: "pglite",
     start: async () => {
       const db = new PGlite();
+      // PGlite boots on first use, not when constructed. Waiting here keeps the slow
+      // WebAssembly start inside start()'s long timeout instead of the first test's
+      // hook, which is what timed out in CI.
+      await db.waitReady;
       return {
         fresh: async () => {
           await db.query(DROP);
