@@ -374,6 +374,39 @@ It needs `@cookieyes/ui` and `axe-core` installed; both are optional peers of th
 nothing changes for anyone not running the suite. Run it in jsdom for speed and in a real browser
 (for example Vitest's browser mode) for real key presses: the React adapter does both.
 
+## Conformance suite for consent backends
+
+`@cookieyes/test/backend` checks that a server keeps the contract the SDK's self-hosted mode
+relies on. It talks HTTP only, so it checks a backend written in any language;
+`@cookieyes/backend` is the reference and passes it.
+
+```ts
+import { runBackendConformance } from "@cookieyes/test/backend";
+import { describe, it } from "vitest";
+
+runBackendConformance(
+  {
+    url: "http://localhost:8080/api/consent", // the backend, base path included
+    trustedOrigin: "http://localhost:3000", // an origin it trusts
+    apiKey: process.env.CONSENT_OWNER_KEY, // optional: also checks the owner routes
+  },
+  { describe, it },
+);
+```
+
+It checks that:
+
+- a record sent ten times, or five times at the same moment, is stored once
+- a different decision under a stored `recordId` is refused with 409
+- bodies are validated (400, 413, 415, 422), and unknown fields accepted but not stored
+- only trusted origins get in, and a preflight allows what the SDK sends
+- `/status`, `/openapi.json` and the read route answer, without the IP address
+- with `apiKey`: lookup, CSV export, delete and prune work, and need the key
+
+It checks contract version `BACKEND_CONTRACT_VERSION`. Pass `fetch` to call a backend in the same
+process, and `readBack: false` for a backend without the read route. With a persistent database,
+records it saves without `apiKey` stay there; with it, the suite deletes what it saved.
+
 ## Fidelity & limitations
 
 Read this table before trusting a passing test. "Exact" means the real engine ran.
