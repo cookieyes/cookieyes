@@ -1,5 +1,27 @@
 # @cookieyes/scripts
 
+## 0.3.0
+
+### Minor Changes
+
+- 5a09e7a: Ahrefs Web Analytics now loads only after analytics consent, with one line of configuration.
+
+  **New: `ahrefsAnalytics({ key })`.** Pass the `data-key` value from your Ahrefs snippet, and remove that snippet from your page. Nothing loads until the visitor grants `analytics`. When consent is withdrawn, Ahrefs stops sending page views, link clicks, form submits and custom events at once, with no reload, and starts again on re-grant.
+
+  **Your own domain.** `scriptUrl` and `apiUrl` load the script and send events through a proxy on your domain, so fewer visits are lost to ad blockers.
+
+  **Loading without consent.** `requireConsent: false` loads Ahrefs straight away and ignores consent. Use it only if your own legal advice says cookie-free analytics needs no consent on your site. The default waits for consent.
+
+  Send events with `safeCall("AhrefsAnalytics", "sendEvent", "signup")`, which does nothing before consent.
+
+- 4d1deaa: Hotjar now loads only after analytics consent, and its cookies are deleted when consent is withdrawn.
+
+  **New: `hotjar({ siteId })`.** Pass the `hjid` value from your Hotjar snippet, and remove that snippet from your page. Nothing loads, and nothing is queued, until the visitor grants `analytics`. On withdrawal, every `_hj*` cookie, Hotjar's storage and its widgets are removed.
+
+  **Recommended: `reloadOnRevoke: true`.** Hotjar has no stop command, so it keeps recording until the page reloads, even after consent is withdrawn. This option reloads the page at once. It is off by default; without it, Hotjar stops on the next page load.
+
+  **New: `hotjarEvent()`, `hotjarIdentify()` and `hotjarStateChange()`.** They send to Hotjar only while consent is granted. Calls made before consent are dropped, not sent later.
+
 ## 0.2.9
 
 ### Patch Changes
