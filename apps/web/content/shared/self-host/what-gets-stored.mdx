@@ -1,0 +1,47 @@
+---
+title: What gets stored, and why
+description: Every field of a stored consent record, what it proves, and what is deliberately left out. A page to send to your legal team.
+frameworks: [nextjs, react, core]
+---
+
+Each consent decision becomes one row: who decided (by a random id), when, what they saw, what they chose, and where. Nothing about what the visitor was browsing is stored. This page lists every field so you can check it against your own privacy notice.
+
+## One row per decision
+
+| Column | What it shows |
+| --- | --- |
+| Visitor | `consent_id`, a random id kept in the visitor's consent cookie. It is not derived from anything about the visitor. |
+| When | `decided_at`, by the visitor's clock, and `received_at`, by your server's. Keeping both shows a record that was delayed, retried or replayed. |
+| What they saw | `taxonomy_hash`, a fingerprint of the categories shown, plus `regulation`, `sdk_version` and `domain`. |
+| What they chose | `granted` and `denied`, the category ids, and `action`: accept all, reject all, accept selected, or save. |
+| Where | `source`: the banner, the preferences dialog, the opt-out dialog, or your own code. |
+| Signals | `gpc`: whether the browser sent Global Privacy Control. `region`: the region the SDK detected, when region detection is on. |
+
+A visitor who changes their mind adds a row; earlier rows are kept, so the history is complete. The visitor's current choice is their latest row.
+
+## Every stored column
+
+<BackendFieldsTable of="record" />
+
+## Deliberately not stored
+
+- **The IP address**, unless you turn on `ipAddress`. Then it is truncated to its network (the last part of an IPv4 address, or all but the first three groups of IPv6, removed) or replaced by a keyed hash. A raw address is never an option.
+- **Page URLs, referrers, user agents and cookies.** The record is about the consent, not the browsing.
+- **Fields the backend does not know.** A newer SDK may send more; they are dropped, never stored.
+
+Server logs say what happened ("deleted 2 records"), never who it happened to: no consent id, no payload, no address.
+
+## What the SDK sends
+
+<BackendFieldsTable of="payload" />
+
+## Good to know
+
+- `decided_at` comes from the visitor's device and can be wrong if its clock is. `received_at` is your server's and is what [retention](/docs/self-host/retention) counts from.
+- The same decision sent twice is stored once: its `record_id` is the key. A different decision under a known `record_id` is refused and the first one kept.
+- Whether a record is enough for your obligations is a question for your own legal advice.
+
+## Next steps
+
+- [Answer a request to see or delete data](/docs/self-host/data-requests)
+- [Keep records for the right time](/docs/self-host/retention)

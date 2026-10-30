@@ -1,5 +1,6 @@
 import type { TypeNode } from "fumadocs-ui/components/type-table";
 import type { MergedOption } from "@/lib/config-reference-types";
+import { inlineCode } from "./inline-code";
 
 /**
  * Turns one generated `MergedOption` into a `TypeTable` `TypeNode`. Only the description
@@ -14,7 +15,7 @@ export function toTypeNode(option: MergedOption): TypeNode {
     required: option.required,
     default: option.default ?? undefined,
     deprecated: option.deprecatedReplacement !== undefined,
-    description: option.description,
+    description: inlineCode(option.description),
   };
 }
 

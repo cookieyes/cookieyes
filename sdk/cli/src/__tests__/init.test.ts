@@ -116,7 +116,7 @@ describe("runInit — Next.js (cookie-only, GDPR)", () => {
 });
 
 describe("runInit — React (self-hosted, CCPA, locales, skip install)", () => {
-  it("emits the backend chain, opt-out component, locale imports and skips install", async () => {
+  it("emits apiUrl, opt-out component, locale imports and skips install", async () => {
     h.select
       .mockResolvedValueOnce("react")
       .mockResolvedValueOnce("self-hosted")
@@ -129,7 +129,9 @@ describe("runInit — React (self-hosted, CCPA, locales, skip install)", () => {
     await runInit();
 
     const writes = writtenContents();
-    expect(writes.some((w) => w.includes("backend: {"))).toBe(true);
+    expect(writes.some((w) => w.includes('apiUrl: "https://api.example.com/consent",'))).toBe(true);
+    // A hand-written adapter is what lost failed records; the SDK's sender retries them.
+    expect(writes.some((w) => w.includes("persist("))).toBe(false);
     expect(writes.some((w) => w.includes("initCookieYes({"))).toBe(true);
     expect(writes.some((w) => w.includes("<CookieOptOut />"))).toBe(true);
     expect(writes.some((w) => w.includes('from "@cookieyes/translations/es"'))).toBe(true);

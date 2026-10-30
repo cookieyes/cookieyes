@@ -42,16 +42,11 @@ function buildConfigLiteral(opts: OptionInputs, indent: string): string {
   const lines: string[] = ["{"];
   lines.push(`${inner}mode: "${opts.mode}",`);
 
+  // `apiUrl`, not a hand-written `backend.persist`: the one this emitted never
+  // threw on a non-2xx response, so the SDK took every failed record as stored
+  // and never retried it. The SDK's own sender checks the status and retries.
   if (opts.mode === "self-hosted" && opts.backendURL) {
-    lines.push(`${inner}backend: {`);
-    lines.push(`${inner}  async persist(payload) {`);
-    lines.push(`${inner}    await fetch("${opts.backendURL}", {`);
-    lines.push(`${inner}      method: "POST",`);
-    lines.push(`${inner}      headers: { "Content-Type": "application/json" },`);
-    lines.push(`${inner}      body: JSON.stringify(payload),`);
-    lines.push(`${inner}    });`);
-    lines.push(`${inner}  },`);
-    lines.push(`${inner}},`);
+    lines.push(`${inner}apiUrl: ${JSON.stringify(opts.backendURL)},`);
   }
 
   lines.push(`${inner}regulation: "${opts.regulation}",`);

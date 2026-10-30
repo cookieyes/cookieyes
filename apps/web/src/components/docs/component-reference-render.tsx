@@ -1,5 +1,6 @@
 import type { TypeNode } from "fumadocs-ui/components/type-table";
 import type { MergedComponentOption } from "@/lib/component-reference-types";
+import { inlineCode } from "./inline-code";
 
 /**
  * Turns one generated `MergedComponentOption` into a `TypeTable` `TypeNode`.
@@ -17,9 +18,9 @@ export function toComponentTypeNode(option: MergedComponentOption): TypeNode {
     default: option.default ?? undefined,
     description: (
       <>
-        <p>{option.description}</p>
+        <p>{inlineCode(option.description)}</p>
         <p>
-          <strong>If omitted:</strong> {option.ifOmitted}
+          <strong>If omitted:</strong> {inlineCode(option.ifOmitted)}
         </p>
       </>
     ),

@@ -1,0 +1,78 @@
+---
+title: Data subject requests
+description: Show a visitor every consent record you hold about them, or delete them all, with one call each.
+frameworks: [nextjs, react, core]
+---
+
+When someone asks to see or delete their data, the backend answers with one call. Both routes need an owner key, so set `apiKeys` first.
+
+## Set an owner key
+
+```ts check="false"
+createConsentBackend({
+  // …
+  apiKeys: [process.env.CONSENT_OWNER_KEY],
+});
+```
+
+Generate a key of at least 32 characters, for example with `openssl rand -hex 32`, and keep it on the server. Never use it as the SDK's `apiKey`: that one is visible to anyone who opens your page.
+
+## Find the visitor's id
+
+Records are filed under the visitor's `consentId`, a random id in their consent cookie. To let visitors quote it, show it on your privacy page or in your account settings:
+
+<Framework when="nextjs react">
+
+```tsx title="app/your-consent-id.tsx"
+"use client";
+import { useConsent } from "@cookieyes/react";
+
+export function YourConsentId() {
+  const { consentId } = useConsent();
+  return (
+    <p>
+      Your consent id: <code>{consentId}</code>
+    </p>
+  );
+}
+```
+
+</Framework>
+
+<Framework when="core">
+
+```ts check="false"
+const id = runtime.consentStore.getState().consentId; // runtime: what initCookieYes() returned
+```
+
+</Framework>
+
+A visitor who resets their consent, or uses another browser, gets a new id. Ask for every id they can find.
+
+## See their records
+
+```bash
+curl https://shop.example.com/api/consent/consents/VISITOR_ID \
+  -H "Authorization: Bearer $CONSENT_OWNER_KEY"
+```
+
+The answer is `{ "records": [...] }`, oldest first. Add `?format=csv` for a spreadsheet with one row per decision.
+
+## Delete their records
+
+```bash
+curl -X DELETE https://shop.example.com/api/consent/consents/VISITOR_ID \
+  -H "Authorization: Bearer $CONSENT_OWNER_KEY"
+```
+
+The answer is `{ "deleted": 3 }`. The rows are deleted, not flagged; reading them again returns none. The choice in the visitor's own browser is untouched; they can change it with the recall button.
+
+## Good to know
+
+- Without `apiKeys`, both routes always answer 401.
+- A record that arrives after the delete, from a retry still waiting in the visitor's browser, is stored again. Delete once more after a week if that matters to you: the SDK retries for at most 7 days.
+
+## Next steps
+
+- [What gets stored, and why](/docs/self-host/what-gets-stored)
+- [Security checklist](/docs/self-host/security)

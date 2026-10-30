@@ -15,3 +15,4 @@ short and factual, and remember the repository is public: no internal references
 | [package-gate.md](./package-gate.md) | The checks on the packed tarballs before publish: what they cover, how each was proven to catch its failure, and what they do not cover |
 | [vendor-runtime-behaviour.md](./vendor-runtime-behaviour.md) | Vendor behaviour the Ahrefs and Hotjar integrations rely on, when it was last checked, and how to re-check it |
 | [devtools-instrumentation.md](./devtools-instrumentation.md) | The dev-only queue the SDK reports to: absent in production, every injected script reported as managed, and why grants are timed from the save entry |
+| [consent-backend.md](./consent-backend.md) | The self-hosted consent server: one row per decision under concurrent retries, a contract that cannot drift from the SDK, minimal data by default, and retention that cannot undercut the cookie |

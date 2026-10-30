@@ -53,3 +53,15 @@ describe("@cookieyes/test/conformance public exports", () => {
     expect(Object.keys(entry).sort()).toEqual(["pressInDocument", "runConformance"]);
   }, 30_000);
 });
+
+/** Guards the suite every consent backend runs. */
+describe("@cookieyes/test/backend public exports", () => {
+  it("exports exactly the documented surface", async () => {
+    const entry = await import("../backend.js");
+    expect(Object.keys(entry).sort()).toEqual([
+      "BACKEND_CONTRACT_VERSION",
+      "runBackendConformance",
+    ]);
+    expect(entry.BACKEND_CONTRACT_VERSION).toBe(1);
+  });
+});

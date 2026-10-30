@@ -10,7 +10,7 @@ Use this when someone wants a cookie consent banner in a Next.js, React or plain
 ## Decide two things first
 
 1. **Regulation**: `"GDPR"` (opt-in, most sites) or `"CCPA"` (California-style opt-out). It applies to every visitor, so pick the strictest law your visitors fall under. To choose per visitor by country, set the `region` option instead (see the configuration docs); a manual `regulation` always wins over `region`. Under `"CCPA"` in React or Next.js, also render `<CookieOptOut />` next to `<CookieBanner />`: the Do Not Sell button opens it.
-2. **Mode**: `"cookie-only"` (default, no backend) or `"self-hosted"` with an `apiUrl`, only if a server-side record of each consent is required.
+2. **Mode**: `"cookie-only"` (default, no backend) or `"self-hosted"` with an `apiUrl`, only if a server-side record of each consent is required; `@cookieyes/backend` is a ready-made server that receives those records.
 
 ## Fastest path: the CLI
 

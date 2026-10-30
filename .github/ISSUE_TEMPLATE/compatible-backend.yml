@@ -1,0 +1,55 @@
+name: 🗄️ List a compatible backend
+description: Add a consent backend that passes the conformance suite to the list on the docs site
+title: "[backend] "
+labels: ["lane:docs", "compatible-backend"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A backend is listed on [Build a compatible backend](https://developers.cookieyes.com/docs/nextjs/self-host/compatible-backends) when it passes the conformance suite in `@cookieyes/test/backend`, is open source, and is maintained.
+
+  - type: input
+    id: repository
+    attributes:
+      label: Repository
+      description: Where the source lives. It must be public, with an open source license.
+      placeholder: "https://github.com/you/cookieyes-backend-php"
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: Language and framework
+      placeholder: "PHP 8.3, Laravel"
+    validations:
+      required: true
+
+  - type: input
+    id: contract
+    attributes:
+      label: Contract version
+      description: The `BACKEND_CONTRACT_VERSION` of the suite it passes.
+      placeholder: "1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proof
+    attributes:
+      label: Conformance run
+      description: A link to a CI run of the suite against the backend, or its output pasted here. Include the owner-route checks (run with `apiKey`).
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: Every check in the suite passes, with `apiKey` set.
+          required: true
+        - label: It stores no raw IP address by default.
+          required: true
+        - label: I will keep it working with the contract version above, or ask for it to be removed.
+          required: true

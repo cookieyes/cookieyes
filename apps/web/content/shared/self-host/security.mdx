@@ -1,0 +1,36 @@
+---
+title: Security checklist
+description: What @cookieyes/backend does to stay safe as a public endpoint, and what is left for you to do.
+frameworks: [nextjs, react, core]
+---
+
+The save route has to be public: visitors' browsers call it. These defaults keep it from becoming a way into your database or a way to flood it.
+
+## Done for you
+
+- **Only your origins.** A browser on an origin not in `trustedOrigins` gets 403, and its preflight is refused.
+- **Validated before storage.** Every body is checked against the contract. Malformed JSON is refused with 400, a wrong field with 422, anything not sent as JSON with 415.
+- **Small bodies only.** Over 4 KB is refused with 413, even when the request does not declare its size.
+- **Rate limited.** 10 saves a minute per visitor and 120 requests a minute per client address, answered with 429 and `Retry-After`.
+- **Owner routes closed.** Lookup, export, delete and prune need an owner key, and answer 401 when no key is configured. Keys are compared in constant time.
+- **No raw IP addresses.** None are stored unless you turn on `ipAddress`, and then only truncated or hashed.
+- **Quiet logs.** Logs never contain a consent id, a payload or an address, and errors never show database details to the caller.
+- **A leaked key is reported.** If a browser ever sends one of your owner keys, the backend logs a warning telling you to replace it.
+
+## For you to do
+
+- [ ] Serve the backend over HTTPS only.
+- [ ] Keep `DATABASE_URL`, owner keys and the IP hashing secret in server-side environment variables, never in client code.
+- [ ] Give the database user only the access the backend needs, and back the database up.
+- [ ] Run more than one instance? Pass a shared `rateLimit.limiter`, such as one backed by Redis or Cloudflare KV. The default counts in one process only.
+- [ ] Behind a proxy, make sure the header in `ipAddress.headers` is set by your proxy, not passed through from the visitor.
+- [ ] [Schedule pruning](/docs/self-host/retention).
+
+## Good to know
+
+The SDK's `apiKey` is not a secret: it is sent from the browser. Use it to tell your own traffic apart if you like, but never as an owner key.
+
+## Next steps
+
+- [API reference](/docs/self-host/api-reference)
+- [Data subject requests](/docs/self-host/data-requests)
