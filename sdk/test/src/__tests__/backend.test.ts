@@ -105,4 +105,11 @@ describe("runBackendConformance", () => {
     }
     expect(calls).toEqual(["https://shop.example/api/consent/openapi.json"]);
   });
+
+  it("reads the URL when a check runs, so a server can start after registration", async () => {
+    const late: BackendTarget = { ...target(), url: "" };
+    const checks = collect(late);
+    late.url = "https://shop.example/api/consent/";
+    await expect(checks.get("serves its OpenAPI document")?.()).resolves.toBeUndefined();
+  });
 });
