@@ -80,7 +80,10 @@ export function runBackendConformance(
   target: BackendTarget,
   { describe, it }: ConformanceRunner,
 ): void {
-  const base = target.url.replace(/\/+$/, "");
+  // A loop, not `/\/+$/`, which takes quadratic time on a long run of slashes.
+  let end = target.url.length;
+  while (end > 0 && target.url[end - 1] === "/") end--;
+  const base = target.url.slice(0, end);
   const untrusted = target.untrustedOrigin ?? "https://untrusted.invalid";
 
   const send = (path: string, init: RequestInit = {}): Promise<Response> => {
