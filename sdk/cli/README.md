@@ -78,6 +78,32 @@ bunx @cookieyes/cli init     # bun
 | `-v`, `--version` | Print the CLI version and exit. |
 | `-h`, `--help` | Print usage and the command list. |
 
+### Run without questions
+
+Each `init` flag answers one question, which is then skipped. `--yes` takes the default for
+every question left. Use them in scripts, CI and AI coding tools, where there is no terminal to
+answer in: without one, `init` stops with exit code 1 and names the flag it needs, instead of
+waiting.
+
+```bash
+npx @cookieyes/cli init --yes                                   # all defaults
+npx @cookieyes/cli init --yes --api-url /api/consent --no-install
+npx @cookieyes/cli init --framework react --regulation CCPA --locales es,fr --install
+```
+
+| Flag | Values | Default with `--yes` |
+|------|--------|----------------------|
+| `--framework` | `nextjs`, `react`, `vanilla` | the detected framework, else `nextjs` |
+| `--mode` | `cookie-only`, `self-hosted` | `cookie-only` |
+| `--api-url` | a URL or a path such as `/api/consent`; implies `self-hosted` | none: `self-hosted` with `--yes` needs it |
+| `--regulation` | `GDPR`, `CCPA` | `GDPR` |
+| `--color-scheme` | `light`, `dark` | `light` |
+| `--locales` | a comma-separated list of `es`, `fr`, `de`; `""` for none | none |
+| `--install`, `--no-install` | | `--install` |
+| `-y`, `--yes` | | |
+
+Values go after a space or an `=`. An unknown flag or value stops the CLI with exit code 1.
+
 ## What to expect
 
 `init` is interactive. It asks a short series of questions, then reports every file it creates

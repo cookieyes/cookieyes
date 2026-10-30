@@ -20,6 +20,10 @@ In an existing Next.js or React project, run:
 npx @cookieyes/cli init
 ```
 
+Without a terminal to answer in, pass the answers as flags, or it stops and names the flag it
+needs: `npx @cookieyes/cli init --yes --regulation GDPR` (add `--api-url /api/consent` for
+self-hosted, `--no-install` to skip installing; `--help` lists all).
+
 It detects the framework, asks for backend mode, regulation, colour scheme and extra languages, installs the package and writes `components/consent-manager/provider.tsx` and `index.tsx`, then adds `<CookieYesRoot />` to the layout or entry file. If it prints "Manual step needed", paste the printed lines where it says.
 
 ## Manual setup

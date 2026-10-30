@@ -1,8 +1,29 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes consent banner, styled by @cookieyes/ui" width="820">
+  </picture>
+</p>
+
 <h1 align="center">@cookieyes/ui</h1>
 
 <p align="center"><strong>The framework-free banner layer of the CookieYes SDK.</strong></p>
 
 <p align="center">The stylesheet, theme tokens, markup and accessibility behaviour that every CookieYes banner shares, whatever draws it.</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cookieyes/ui"><img src="https://img.shields.io/npm/v/@cookieyes/ui" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@cookieyes/ui"><img src="https://img.shields.io/npm/dw/@cookieyes/ui" alt="npm downloads"></a>
+  <a href="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml"><img src="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@cookieyes/ui" alt="license"></a>
+</p>
+
+<p align="center">
+  <a href="#who-this-is-for">Who this is for</a> ·
+  <a href="#what-is-in-it">What is in it</a> ·
+  <a href="#draw-the-banner-on-a-server">Server markup</a> ·
+  <a href="https://developers.cookieyes.com">Docs</a>
+</p>
 
 ---
 
