@@ -399,6 +399,20 @@ describe("status, documents and routing", () => {
     expect(page).toContain("<code>api</code>");
   });
 
+  it("ignores trailing slashes on the request path and on basePath", async () => {
+    const { call } = setup({ basePath: "/api/consent///" });
+    expect((await call(new Request(`${BASE}/status///`))).status).toBe(200);
+  });
+
+  it("answers a path with a long run of slashes in linear time", async () => {
+    const { call } = setup();
+    // Quadratic trimming took seconds on this; the test timeout would catch a return.
+    const path = `${BASE}/status${"/".repeat(100_000)}x`;
+    const started = Date.now();
+    expect((await call(new Request(path))).status).toBe(404);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+
   it("answers 405 with Allow for a wrong method, and 404 outside its routes", async () => {
     const { call } = setup();
     const cases: [string, string, number, string | null][] = [

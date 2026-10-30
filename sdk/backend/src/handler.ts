@@ -118,6 +118,15 @@ function matchesOrigin(origin: string, allowed: readonly Origin[]): boolean {
   );
 }
 
+// A loop, not `/\/+$/`: the request path is the visitor's, and with the end anchor a
+// backtracking engine retries from every slash, so a long run of them took quadratic
+// time (flagged by CodeQL).
+function dropTrailingSlashes(path: string): string {
+  let end = path.length;
+  while (end > 0 && path[end - 1] === "/") end--;
+  return path.slice(0, end);
+}
+
 // Compares every character whatever the input, so timing does not reveal a prefix.
 function safeEqual(a: string, b: string): boolean {
   let diff = a.length ^ b.length;
@@ -194,7 +203,7 @@ export function createConsentBackend(options: ConsentBackendOptions): ConsentBac
     throw new TypeError("[cookieyes-backend] trustedOrigins: pass the origins of your site.");
   }
   const origins = options.trustedOrigins.map(parseOrigin);
-  const basePath = (options.basePath ?? "").replace(/\/+$/, "");
+  const basePath = dropTrailingSlashes(options.basePath ?? "");
   if (basePath && !basePath.startsWith("/")) {
     throw new TypeError(`[cookieyes-backend] basePath: "${basePath}" must start with "/".`);
   }
@@ -395,7 +404,7 @@ export function createConsentBackend(options: ConsentBackendOptions): ConsentBac
     if (url.pathname !== basePath && !url.pathname.startsWith(`${basePath}/`)) {
       return fail(404, "not_found", "No such route.");
     }
-    const path = url.pathname.slice(basePath.length).replace(/\/+$/, "") || "/";
+    const path = dropTrailingSlashes(url.pathname.slice(basePath.length)) || "/";
     const method = request.method.toUpperCase();
     const origin = request.headers.get("origin");
     const cors = corsHeaders(origin);
