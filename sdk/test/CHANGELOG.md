@@ -1,5 +1,27 @@
 # @cookieyes/test
 
+## 0.2.0
+
+### Minor Changes
+
+- 8cd6058: New: `@cookieyes/test/backend`, a conformance suite that proves a consent server keeps the contract the SDK's self-hosted mode relies on, whatever language it is written in.
+
+  **`runBackendConformance(target, { describe, it })`.** Point it at a running server's URL and an origin it trusts. It checks that a record sent ten times, or five times at once, is stored once; that a different decision under a stored id is refused; that bodies are validated and size-limited; that only trusted origins get in; and that `/status`, `/openapi.json` and the read route answer. With an owner key it also checks lookup, CSV export, delete and prune, and deletes every record it saved. `BACKEND_CONTRACT_VERSION` names the contract version it checks.
+
+  The fidelity table now covers the two new consent record fields: `payload.gpc` is `false` in Node unless `navigator` is stubbed, and `payload.sdkVersion` is `0.0.0-dev` when core is linked from source.
+
+- a97e5e7: New: `@cookieyes/test/conformance`, one test suite that proves a banner behaves like every other CookieYes banner, whatever framework drew it.
+
+  **`runConformance(driver, { describe, it })`.** You describe your adapter in a small driver (mount, unmount, click, press a key, switch language) and the suite checks the banner, the preferences dialog, the opt-out dialog, the reload notice and the recall button: every element, part, state and accessible attribute against `@cookieyes/ui`'s markup, Tab order and the focus trap, Escape, where focus goes, the screen-reader announcement, theming, translations, an automated `axe-core` check, and the first HTML when the driver provides `serverHtml`. `pressInDocument` moves focus on Tab the way a browser does, for drivers that run in jsdom.
+
+  `@cookieyes/ui` and `axe-core` are new optional peer dependencies, needed only for this entry point. Nothing changes for the existing entry points.
+
+### Patch Changes
+
+- d76ea07: The conformance suite's accessibility check no longer times out on a busy machine.
+
+  **Fixed: the axe-core check could fail on time, not on a problem.** Auditing the banner and the preferences dialog in jsdom took just over the test runner's 5 second default on loaded CI runners. That check now allows 30 seconds; what it checks is unchanged.
+
 ## 0.1.3
 
 ### Patch Changes

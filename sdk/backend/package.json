@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/backend",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Self-hosted consent server for the CookieYes SDK: stores each consent decision once, in your own database, as proof of consent",
   "keywords": [
     "cookie consent",

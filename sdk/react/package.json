@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/react",
-  "version": "0.13.3",
+  "version": "0.14.0",
   "description": "React adapter for the CookieYes consent SDK — components and hooks",
   "keywords": [
     "cookie consent",

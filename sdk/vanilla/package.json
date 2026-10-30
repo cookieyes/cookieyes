@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/vanilla",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "The CookieYes consent banner for any web page, with no framework",
   "keywords": [
     "cookie consent",

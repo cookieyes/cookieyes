@@ -1,5 +1,23 @@
 # @cookieyes/core
 
+## 0.13.0
+
+### Minor Changes
+
+- 2aee204: Each consent record now says which SDK build sent it and whether the visitor's browser sent Global Privacy Control, so a stored record carries more of the evidence you need to show what the visitor saw.
+
+  **New: `sdkVersion` and `gpc` in the self-hosted payload.** `sdkVersion` is the version of `@cookieyes/core` that built the record. `gpc` is `true` when `navigator.globalPrivacyControl` was on at the moment of the decision, and `false` otherwise. Both are on `ConsentPayload` and are sent with every record. Neither is part of `recordId`, so a record still waiting in the retry queue from an earlier version keeps its id and is not stored twice.
+
+  Measured with `pnpm size`: `@cookieyes/core` grows by 38 bytes of gzip.
+
+### Patch Changes
+
+- 0708d84: The network blocker compares hosts in linear time, so a host or rule domain ending in a long run of dots can no longer slow it down.
+
+  **Fixed: trailing dots were removed with a regular expression that took quadratic time.** Matching still treats `example.com.` as `example.com`, exactly as before; only how the dots are removed changed.
+
+  Measured with `pnpm size`: no change to `@cookieyes/core`'s bundles.
+
 ## 0.12.0
 
 ### Minor Changes
