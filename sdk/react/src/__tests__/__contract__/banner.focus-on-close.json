@@ -1,0 +1,5 @@
+{
+  "acceptAll": "button[data-cy-part=\"recall\"]",
+  "rejectAll": "button[data-cy-part=\"recall\"]",
+  "close": "button[data-cy-part=\"recall\"]"
+}

@@ -49,6 +49,14 @@ export type NetworkBlockerConfig = {
 
 type ConsentChecker = (category: ConsentCategory) => boolean;
 
+// A loop, not `/\.+$/`: with the end anchor a backtracking engine retries from every
+// dot, so a long run of them took quadratic time (flagged by CodeQL).
+function dropTrailingDots(host: string): string {
+  let end = host.length;
+  while (end > 0 && host[end - 1] === ".") end--;
+  return host.slice(0, end);
+}
+
 function findBlockingRule(
   rules: NetworkBlockerRule[],
   url: string,
@@ -65,12 +73,12 @@ function findBlockingRule(
   // A trailing dot names the same DNS host (`example.com.` is `example.com`), and
   // `URL` keeps it in `hostname`. Compared as plain strings it let any script
   // reach a denied domain by appending a dot, so both sides drop it first.
-  const host = parsed.hostname.toLowerCase().replace(/\.+$/, "");
+  const host = dropTrailingDots(parsed.hostname.toLowerCase());
   const path = parsed.pathname + parsed.search;
   const upperMethod = method.toUpperCase();
 
   for (const rule of rules) {
-    const ruleHost = rule.domain.toLowerCase().replace(/\.+$/, "");
+    const ruleHost = dropTrailingDots(rule.domain.toLowerCase());
     if (host !== ruleHost && !host.endsWith("." + ruleHost)) continue;
     if (rule.pathIncludes && !path.includes(rule.pathIncludes)) continue;
     if (rule.methods && !rule.methods.map((m) => m.toUpperCase()).includes(upperMethod)) {

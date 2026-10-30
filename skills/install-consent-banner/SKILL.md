@@ -10,7 +10,7 @@ Use this when someone wants a cookie consent banner in a Next.js, React or plain
 ## Decide two things first
 
 1. **Regulation**: `"GDPR"` (opt-in, most sites) or `"CCPA"` (California-style opt-out). It applies to every visitor, so pick the strictest law your visitors fall under. To choose per visitor by country, set the `region` option instead (see the configuration docs); a manual `regulation` always wins over `region`. Under `"CCPA"` in React or Next.js, also render `<CookieOptOut />` next to `<CookieBanner />`: the Do Not Sell button opens it.
-2. **Mode**: `"cookie-only"` (default, no backend) or `"self-hosted"` with an `apiUrl`, only if a server-side record of each consent is required.
+2. **Mode**: `"cookie-only"` (default, no backend) or `"self-hosted"` with an `apiUrl`, only if a server-side record of each consent is required; `@cookieyes/backend` is a ready-made server that receives those records.
 
 ## Fastest path: the CLI
 
@@ -80,19 +80,20 @@ Same `consent-manager.tsx` as above without the `"use client"` line, importing f
 ### Plain JavaScript, Vue, Svelte, Angular
 
 ```bash
-npm install @cookieyes/core
+npm install @cookieyes/vanilla
 ```
 
 ```ts title="src/consent.ts"
-import { initCookieYes } from "@cookieyes/core";
+import { start } from "@cookieyes/vanilla";
+import "@cookieyes/vanilla/styles.css";
 
-export const { consentStore, consentManager } = initCookieYes({
+export const cookieyes = start({
   mode: "cookie-only",
   regulation: "GDPR",
 });
 ```
 
-`@cookieyes/core` draws no UI. Render the banner from `consentStore` and call `consentManager` from its buttons: https://developers.cookieyes.com/docs/core/store/build-your-own-ui
+Import this file once from the page's entry script. `start` draws the same banner, dialogs and recall button as the React components and takes the same configuration. Only if the user wants a banner of their own design, use `@cookieyes/core` instead and render it from `consentStore`: https://developers.cookieyes.com/docs/core/store/build-your-own-ui
 
 ## Verify
 

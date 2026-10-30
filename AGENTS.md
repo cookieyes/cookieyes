@@ -18,12 +18,15 @@ Task guides live in `.agents/skills/<name>/SKILL.md`. Read the matching one befo
 
 Public, MIT-licensed monorepo (pnpm workspaces + Turborepo). Node 20 or newer, pnpm 10. The
 README has the full layout. In short: `sdk/*` are the published packages (`core` is the engine
-with zero runtime dependencies; `react` and `nextjs` are wiring only; plus `scripts`,
-`translations`, `cli`, `test` and `devtools`), `apps/web` is developers.cookieyes.com (docs
-source in `apps/web/content/shared`, rules in `apps/web/AGENTS.md`), `tools/size` measures bundles,
-`matrix` checks peer compatibility, `contributing/design` holds design notes for contributors
-(`docs/` is for SDK users). `skills/` holds the guides for the AI tools of people using the SDK;
-`.agents/skills/` holds the ones for contributors (`.agents/README.md` explains both).
+with zero runtime dependencies; `ui` is the framework-free banner layer (styles, tokens,
+markup, behaviour) every adapter draws from; `react`, `nextjs` and `vanilla` are wiring only;
+plus `scripts`, `translations`, `cli`, `test`, `devtools`, and `backend`, the self-hosted
+consent server, which runs on servers only), `apps/web` is
+developers.cookieyes.com (docs source in `apps/web/content/shared`, rules in
+`apps/web/AGENTS.md`), `tools/size` measures bundles, `matrix` checks peer compatibility,
+`contributing/design` holds design notes for contributors (`docs/` is for SDK users). `skills/`
+holds the guides for the AI tools of people using the SDK; `.agents/skills/` holds the ones for
+contributors (`.agents/README.md` explains both).
 
 ## Commands
 
@@ -66,7 +69,7 @@ pnpm package-gate               # check the packed tarballs after pnpm build (co
 - Server and client resolve the same consent state; no hydration mismatch and no banner flash.
   Read `contributing/design/banner-first-paint.md` before touching banner rendering,
   `critical.css` or anything server-rendered.
-- `core`, `react`, `nextjs` and `test` pin their public surface in
+- `core`, `ui`, `react`, `nextjs`, `vanilla` and `test` pin their public surface in
   `src/__tests__/exports.test.ts`. Adding or removing an export anywhere is an API change: update
   that test where it exists, the docs and the changeset.
 - A change to consent behaviour updates `@cookieyes/test` in the same PR, including the
@@ -84,11 +87,11 @@ Things that look safe and are not. Each is recorded in the code; read the commen
   `* { margin: 0 }` beat layered rules and stripped the banner's padding (commit `f0ea2db`). No
   test stops it coming back; do not add it.
 - **`:root` token defaults in `cookieyes.css` must equal `computeThemeVars(undefined, false)` and
-  `DARK_OVERRIDES`** (`sdk/react/src/styles/tokens.ts`, guarded by `styles-parity.test.ts`). They
+  `DARK_OVERRIDES`** (`sdk/ui/src/styles/tokens.ts`, guarded by `styles-parity.test.ts`). They
   drifted silently once. `theme` and `colorScheme` do nothing in `@cookieyes/core` alone.
 - **Lazy modules must stay lazy.** Never statically import or barrel-export `theme-runtime.ts`,
   `integrations-lazy.ts` or the network blocker; Rollup then flattens the `import()` and the bytes
-  return to every consumer's initial download (`sdk/react/src/styles/load-theme-runtime.ts`).
+  return to every consumer's initial download (`sdk/ui/src/styles/load-theme-runtime.ts`).
 - **`process.env.NODE_ENV` is written as that exact literal** at the call site. A `const`, a
   `typeof process` guard or `globalThis.process?.env` stops bundlers from removing dev-only code
   (`sdk/core/src/deprecations.ts`).
@@ -118,15 +121,21 @@ Things that look safe and are not. Each is recorded in the code; read the commen
   by a test.
 - **`CORE_VERSION` is a build-time sentinel**; `0.0.0-dev` means unknown (`sdk/core/src/version.ts`).
   `@cookieyes/test`'s `SUPPORTED_CORE_RANGE` must match its peer range; a test asserts it.
+- **The consent backend stores a record once because the database key decides**, never a read
+  before the write (`sdk/backend/src/sql.ts`). Unknown payload fields are dropped, not refused, or
+  an older backend loses every record from a newer SDK. `PAYLOAD_FIELDS` must list exactly what
+  core sends; `contract.test.ts` builds a real payload to check it, and `openapi.json` is
+  regenerated from the source (`contributing/design/consent-backend.md`).
 - **`tools/size/fixtures/*` stay outside the pnpm workspace.** A workspace link under-measured
   the interface layer by 1.18 KB (`tools/size/README.md`).
 
 ## Bundle size
 
-- `pnpm size` covers `core`, `react` and `nextjs` only (`tools/size/sdk-fingerprint.mjs`). After
-  changing their `src`, their Rollup configs or their `package.json` export fields, run
-  `pnpm build && pnpm size` and commit `tools/size/size-report.json`; `pnpm build:web` and CI fail
-  on a stale one. Other packages never need it, and re-measuring for them only adds noise.
+- `pnpm size` covers `core`, `ui`, `react`, `nextjs` and `vanilla` only
+  (`tools/size/sdk-fingerprint.mjs`). After changing their `src`, their Rollup configs or their
+  `package.json` export fields, run `pnpm build && pnpm size` and commit
+  `tools/size/size-report.json`; `pnpm build:web` and CI fail on a stale one. Other packages never
+  need it, and re-measuring for them only adds noise.
 - Budgets in `tools/size/budgets.json` are ceilings. If a change grows a bundle, first remove the
   growth. If the growth is justified, raise the budget in the same PR with the reason written in
   the file. Never raise a budget to make a red build green.
@@ -163,7 +172,7 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 | Path | Regenerate with | After changing |
 |---|---|---|
 | `apps/web/content/docs/{nextjs,react,core}/**` | `pnpm --filter @cookieyes/web generate:framework-docs` | anything in `apps/web/content/shared` |
-| `sdk/react/src/styles/critical.css` | `pnpm --filter @cookieyes/react build:critical-css` | `cookieyes.css` |
+| `sdk/ui/src/styles/critical.css` | `pnpm --filter @cookieyes/ui build:critical-css` | `cookieyes.css` |
 | `tools/size/size-report.json` | `pnpm build && pnpm size` | `core`, `react` or `nextjs` source |
 | `tools/package-gate/contents.json` | `pnpm build && pnpm package-gate --update` | a file added to or removed from a published package |
 | `PEER-MATRIX` blocks in `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md` | `pnpm --filter @cookieyes/web generate:peer-matrix-readme` | `matrix/matrix-results.json` |
@@ -189,8 +198,8 @@ decision worth keeping goes in `contributing/design/` as a note anyone may read.
 ## Commits, changesets and PRs
 
 - Conventional Commits: `type(scope): summary`. Types in use: `feat`, `fix`, `docs`, `perf`,
-  `refactor`, `test`, `style`, `chore`, `build`. Scopes in use: `core`, `react`, `nextjs`,
-  `scripts`, `cli`, `translations`, `test`, `web`, `size`, `matrix`. Subject at most 72
+  `refactor`, `test`, `style`, `chore`, `build`. Scopes in use: `core`, `ui`, `react`, `nextjs`, `vanilla`,
+  `scripts`, `cli`, `backend`, `translations`, `test`, `web`, `size`, `matrix`. Subject at most 72
   characters. Keep the body short, ideally a few short bullet points on what changed and why,
   wrapped at 72. No Co-Authored-By or other AI attribution lines in commits or PRs.
 - Commits are granular and meaningful: one logical change each, no empty commits, and no
@@ -202,7 +211,7 @@ decision worth keeping goes in `contributing/design/` as a note anyone may read.
 ## Before you say you are done
 
 1. `pnpm lint:fix && pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test`.
-2. Touched `core`, `react` or `nextjs` source? `pnpm size`; commit the report; explain any budget change.
+2. Touched `core`, `ui`, `react`, `nextjs` or `vanilla` source? `pnpm size`; commit the report; explain any budget change.
 3. Touched `cookieyes.css`? Regenerate `critical.css`.
 4. Touched a config option, prop, token or export? Sidecar, docs page, `exports.test.ts`,
    and `skills/` plus the `context7.json` rules if they mention it.

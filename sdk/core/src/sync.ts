@@ -1,4 +1,5 @@
 import { hashString } from "./categories.js";
+import { readGpc } from "./region.js";
 import type {
   ConsentAction,
   ConsentConfig,
@@ -6,6 +7,7 @@ import type {
   ConsentSnapshot,
   ConsentSource,
 } from "./types.js";
+import { CORE_VERSION } from "./version.js";
 
 // Module-scoped, for the dev-only guard below; see deprecations.ts for why.
 declare const process: { env: { NODE_ENV?: string } };
@@ -35,6 +37,10 @@ export function buildConsentPayload(
     decidedAt: new Date(decidedMs).toISOString(),
     taxonomyHash: snapshot.taxonomyHash,
     ...decision,
+    // Left out of the recordId on purpose: records already queued by an older
+    // build must keep their id, or a retry would be stored as a second decision.
+    sdkVersion: CORE_VERSION,
+    gpc: readGpc(),
   };
   if (region) payload.region = region;
   return payload;

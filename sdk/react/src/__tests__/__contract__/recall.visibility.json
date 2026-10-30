@@ -1,0 +1,9 @@
+{
+  "gdpr, no decision yet": false,
+  "gdpr, after a decision": true,
+  "gdpr, banner closed without a decision": true,
+  "gdpr, preferences open": false,
+  "ccpa, no decision yet": false,
+  "ccpa, banner closed without a decision": true,
+  "ccpa, opt-out open": false
+}

@@ -1,0 +1,81 @@
+{
+  "settings": [
+    "primaryColor",
+    "backgroundColor",
+    "textColor",
+    "mutedTextColor",
+    "borderColor",
+    "borderRadius",
+    "fontFamily",
+    "focusColor",
+    "widgetBackgroundColor"
+  ],
+  "drives": {
+    "primaryColor": ["--cy-primary"],
+    "backgroundColor": ["--cy-bg"],
+    "textColor": ["--cy-text"],
+    "mutedTextColor": ["--cy-muted"],
+    "borderColor": ["--cy-border"],
+    "borderRadius": ["--cy-radius"],
+    "fontFamily": ["--cy-font"],
+    "focusColor": ["--cy-focus"],
+    "widgetBackgroundColor": ["--cy-widget-bg"]
+  },
+  "light": {
+    "--cy-primary": "#1863dc",
+    "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+    "--cy-bg": "#ffffff",
+    "--cy-text": "#212121",
+    "--cy-muted": "#6B7280",
+    "--cy-border": "#f4f4f4",
+    "--cy-widget-bg": "#0056a7",
+    "--cy-radius": "6px",
+    "--cy-font": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "--cy-focus": "var(--cy-primary)",
+    "--cy-on-primary": "#ffffff",
+    "--cy-on-widget-bg": "#ffffff"
+  },
+  "dark": {
+    "--cy-primary": "#1863dc",
+    "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+    "--cy-bg": "#161B27",
+    "--cy-text": "#F3F4F6",
+    "--cy-muted": "#9CA3AF",
+    "--cy-border": "#2D3748",
+    "--cy-widget-bg": "#1F6FD1",
+    "--cy-radius": "6px",
+    "--cy-font": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    "--cy-focus": "var(--cy-primary)",
+    "--cy-on-primary": "#ffffff",
+    "--cy-on-widget-bg": "#ffffff"
+  },
+  "changedInDark": ["--cy-bg", "--cy-text", "--cy-muted", "--cy-border", "--cy-widget-bg"],
+  "fullThemeLight": {
+    "--cy-primary": "#7c3aed",
+    "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+    "--cy-bg": "#fefce8",
+    "--cy-text": "#0f172a",
+    "--cy-muted": "#475569",
+    "--cy-border": "#cbd5e1",
+    "--cy-widget-bg": "#065f46",
+    "--cy-radius": "12px",
+    "--cy-font": "Georgia, serif",
+    "--cy-focus": "#f97316",
+    "--cy-on-primary": "#ffffff",
+    "--cy-on-widget-bg": "#ffffff"
+  },
+  "fullThemeDark": {
+    "--cy-primary": "#7c3aed",
+    "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+    "--cy-bg": "#fefce8",
+    "--cy-text": "#0f172a",
+    "--cy-muted": "#475569",
+    "--cy-border": "#cbd5e1",
+    "--cy-widget-bg": "#065f46",
+    "--cy-radius": "12px",
+    "--cy-font": "Georgia, serif",
+    "--cy-focus": "#f97316",
+    "--cy-on-primary": "#ffffff",
+    "--cy-on-widget-bg": "#ffffff"
+  }
+}

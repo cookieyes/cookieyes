@@ -1,6 +1,7 @@
 import type { TypeNode } from "fumadocs-ui/components/type-table";
 import type { CssVariablesReferenceData, TokenEntry } from "@/lib/css-variables-reference-types";
 import cssVariablesReference from "../../../.generated/css-variables-reference.json";
+import { inlineCode } from "./inline-code";
 import { PropsTable } from "./PropsTable";
 
 const data = cssVariablesReference as CssVariablesReferenceData;
@@ -23,7 +24,7 @@ function toTypeNode(token: TokenEntry): TypeNode {
     default: token.defaultLight,
     description: (
       <>
-        <p>{token.description}</p>
+        <p>{inlineCode(token.description)}</p>
         <p>
           <strong>theme key:</strong> {token.configKey ? <code>{token.configKey}</code> : "derived"}
         </p>

@@ -1,6 +1,13 @@
 "use client";
 
 import {
+  CY_PART,
+  initialOptOutState,
+  OPT_OUT_COUNTDOWN_SECONDS,
+  optOutReducer,
+  startOptOutCountdown,
+} from "@cookieyes/ui";
+import {
   type ComponentPropsWithoutRef,
   createContext,
   forwardRef,
@@ -8,27 +15,19 @@ import {
   useContext,
   useEffect,
   useId,
+  useReducer,
   useRef,
-  useState,
 } from "react";
 import { BrandingLink } from "../components/BrandingLink.js";
-import { CrossIcon } from "../components/icons.js";
+import { CrossIcon, SuccessIcon } from "../components/icons.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
 import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { CY_PART } from "../styles/parts.js";
 import { renderAction } from "./Slot.js";
-import {
-  chain,
-  composeRefs,
-  useAutoFocusDialog,
-  useEscapeKey,
-  useFocusTrap,
-  VISUALLY_HIDDEN,
-} from "./utils.js";
+import { chain, composeRefs, useAutoFocusDialog, useEscapeKey, useFocusTrap } from "./utils.js";
 
 type DivProps = ComponentPropsWithoutRef<"div">;
 type ButtonProps = ComponentPropsWithoutRef<"button">;
@@ -41,13 +40,12 @@ type HeadingProps = ComponentPropsWithoutRef<"h2">;
 type LabelProps = ComponentPropsWithoutRef<"label">;
 type InputProps = Omit<ComponentPropsWithoutRef<"input">, "type" | "checked">;
 
-const COUNTDOWN_SECONDS = 10;
-
 type OptOutContextValue = {
   optOut: boolean;
   setOptOut: (v: boolean) => void;
   saved: boolean;
-  setSaved: (v: boolean) => void;
+  /** Records that the opt-out was saved, which shows the confirmation. */
+  setSaved: () => void;
   secondsLeft: number;
   /** Shared so the dialog can be named by its own visible heading. */
   titleId: string;
@@ -72,10 +70,7 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   const { hideOptOut } = useConsentActions();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const titleId = useId();
-  const isCurrentlyOptedOut = snapshot.categories.analytics !== true;
-  const [optOut, setOptOut] = useState(isCurrentlyOptedOut);
-  const [saved, setSaved] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState(COUNTDOWN_SECONDS);
+  const [state, dispatch] = useReducer(optOutReducer, snapshot.categories, initialOptOutState);
   const { theme, colorScheme } = useThemeConfig();
 
   useEscapeKey(open, hideOptOut);
@@ -83,35 +78,32 @@ const Root = forwardRef<HTMLDivElement, DivProps & { children?: ReactNode }>(fun
   useAutoFocusDialog(open, containerRef);
   useThemeVars(containerRef, theme, colorScheme);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resets only when the dialog opens; the categories at that moment are the starting point, later changes are the visitor's own.
   useEffect(() => {
-    if (open) {
-      setOptOut(snapshot.categories.analytics !== true);
-      setSaved(false);
-      setSecondsLeft(COUNTDOWN_SECONDS);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (open) dispatch({ type: "open", categories: snapshot.categories });
   }, [open]);
 
   useEffect(() => {
-    if (!saved) return;
-    let left = COUNTDOWN_SECONDS;
-    setSecondsLeft(left);
-    // Closed from the timer, not inside a state update, so the revisit button is
-    // already on the page when focus is handed back to it.
-    const interval = setInterval(() => {
-      setSecondsLeft(--left);
-      if (!left) {
-        clearInterval(interval);
-        hideOptOut();
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [saved, hideOptOut]);
+    if (!state.confirmed) return;
+    return startOptOutCountdown(
+      (secondsLeft) => dispatch({ type: "tick", secondsLeft }),
+      hideOptOut,
+    );
+  }, [state.confirmed, hideOptOut]);
 
   if (!open) return null;
 
+  const context: OptOutContextValue = {
+    optOut: state.optedOut,
+    setOptOut: (optedOut) => dispatch({ type: "toggle", optedOut }),
+    saved: state.confirmed,
+    setSaved: () => dispatch({ type: "confirm" }),
+    secondsLeft: state.secondsLeft,
+    titleId,
+  };
+
   return (
-    <OptOutContext.Provider value={{ optOut, setOptOut, saved, setSaved, secondsLeft, titleId }}>
+    <OptOutContext.Provider value={context}>
       <div
         ref={composeRefs(containerRef, ref)}
         role="dialog"
@@ -177,6 +169,7 @@ const Checkbox = forwardRef<HTMLInputElement, InputProps>(function OptOutCheckbo
     <input
       ref={ref}
       type="checkbox"
+      data-cy-part={CY_PART.optOut.checkbox}
       checked={optOut}
       disabled={disabled ?? saved}
       onChange={(e) => {
@@ -194,7 +187,7 @@ const CheckboxLabel = forwardRef<HTMLLabelElement, LabelProps>(function OptOutCh
 ) {
   const t = useTranslations();
   return (
-    <label ref={ref} {...props}>
+    <label ref={ref} data-cy-part={CY_PART.optOut.checkboxLabel} {...props}>
       {children ?? t.doNotSell}
     </label>
   );
@@ -206,7 +199,11 @@ const Cancel = forwardRef<HTMLButtonElement, ActionProps>(function OptOutCancel(
 ) {
   const { hideOptOut } = useConsentActions();
   const t = useTranslations();
-  const behavior = { onClick: chain(onClick, hideOptOut), ...rest };
+  const behavior = {
+    "data-cy-part": CY_PART.optOut.cancel,
+    onClick: chain(onClick, hideOptOut),
+    ...rest,
+  };
   return renderAction(asChild, ref, behavior, children, t.optOut.cancel);
 });
 
@@ -224,7 +221,7 @@ const Save = forwardRef<HTMLButtonElement, ActionProps>(function OptOutSave(
     onClick: chain(onClick, () => {
       if (optOut) {
         rejectAll();
-        setSaved(true);
+        setSaved();
       } else {
         acceptAll();
         hideOptOut();
@@ -259,25 +256,17 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
   if (!saved) return null;
   const countdown = t.optOut.successCountdown.split("{seconds}");
   return (
-    <div ref={composeRefs(innerRef, ref)} role="status" tabIndex={-1} {...props}>
+    <div
+      ref={composeRefs(innerRef, ref)}
+      data-cy-part={CY_PART.optOut.confirmation}
+      role="status"
+      tabIndex={-1}
+      {...props}
+    >
       <div className="cy-optout-success-inner">
         <div className="cy-optout-success-row">
           <div className="cy-optout-success-icon" aria-hidden="true">
-            <svg
-              fill="none"
-              height="20"
-              viewBox="0 0 20 20"
-              width="20"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M18.3333 9.23355V10.0002C18.3323 11.7972 17.7504 13.5458 16.6744 14.9851C15.5984 16.4244 14.086 17.4773 12.3628 17.9868C10.6395 18.4963 8.79768 18.4351 7.11202 17.8124C5.42636 17.1896 3.98717 16.0386 3.00909 14.5311C2.03101 13.0236 1.56645 11.2403 1.68469 9.44714C1.80293 7.65402 2.49763 5.94715 3.66519 4.58111C4.83275 3.21506 6.41061 2.26303 8.16345 1.867C9.91629 1.47097 11.7502 1.65216 13.3916 2.38355M18.3333 3.33355L9.99996 11.6752L7.49996 9.17521"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="1.5"
-              />
-            </svg>
+            <SuccessIcon />
           </div>
           <div className="cy-optout-success-text">
             {t.optOut.successText}
@@ -285,7 +274,9 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
                 as the confirmation so both are read together. The visible one below
                 ticks every second, and `role="status"` would re-announce each tick, so
                 it is hidden from them instead. */}
-            <span style={VISUALLY_HIDDEN}>{" " + countdown.join(`${COUNTDOWN_SECONDS}`)}</span>
+            <span className="cy-sr-only">
+              {" " + countdown.join(`${OPT_OUT_COUNTDOWN_SECONDS}`)}
+            </span>
           </div>
         </div>
         <div className="cy-optout-success-subtext-wrapper" aria-hidden="true">
@@ -301,7 +292,7 @@ const Success = forwardRef<HTMLDivElement, DivProps>(function OptOutSuccess(prop
 });
 
 const Branding = forwardRef<HTMLAnchorElement, AnchorProps>(function OptOutBranding(props, ref) {
-  return <BrandingLink ref={ref} {...props} />;
+  return <BrandingLink ref={ref} data-cy-part={CY_PART.optOut.branding} {...props} />;
 });
 
 export const OptOut = {

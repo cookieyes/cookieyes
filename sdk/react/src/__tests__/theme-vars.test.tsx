@@ -1,8 +1,8 @@
+import { computeThemeVars } from "@cookieyes/ui";
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CookieBanner } from "../presets/CookieBanner.js";
 import { initCookieYes } from "../runtime.js";
-import { computeThemeVars } from "../styles/tokens.js";
 import { clearCookie, teardown } from "./test-utils.js";
 
 /**

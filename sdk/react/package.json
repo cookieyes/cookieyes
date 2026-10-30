@@ -64,8 +64,7 @@
     "provenance": true
   },
   "scripts": {
-    "build": "rm -rf dist && rollup -c && node scripts/minify-css.mjs",
-    "build:critical-css": "node scripts/build-critical-css.mjs",
+    "build": "rm -rf dist && rollup -c && node scripts/copy-styles.mjs",
     "dev": "rollup -c -w",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
@@ -76,7 +75,8 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@cookieyes/core": "workspace:*"
+    "@cookieyes/core": "workspace:*",
+    "@cookieyes/ui": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.0",

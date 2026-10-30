@@ -16,5 +16,7 @@ export default mergeConfig(sharedTestConfig, {
   test: {
     environment: "node",
     include: ["src/__tests__/**/*.test.{ts,tsx}"],
+    // The real-browser run has its own config: `vitest.browser.config.ts`.
+    exclude: ["src/__tests__/**/*.browser.test.{ts,tsx}"],
   },
 });

@@ -1,9 +1,9 @@
 "use client";
 
+import { CY_PART, CY_STATE } from "@cookieyes/ui";
 import type { CSSProperties } from "react";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { Preferences } from "../primitives/Preferences.js";
-import { CY_PART, CY_STATE } from "../styles/parts.js";
 
 /** Every styleable part of the preferences dialog — keys for {@link CookiePreferencesProps.classNames}. */
 export type DialogPart = keyof typeof CY_PART.dialog;

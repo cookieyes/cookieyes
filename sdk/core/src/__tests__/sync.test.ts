@@ -39,7 +39,20 @@ describe("buildConsentPayload", () => {
       taxonomyHash: "2fbx48",
       action: "save",
       source: "preferences",
+      sdkVersion: "0.0.0-dev",
+      gpc: false,
     });
+  });
+
+  it("records whether the browser sent Global Privacy Control", () => {
+    vi.stubGlobal("navigator", { ...navigator, globalPrivacyControl: true });
+    expect(buildConsentPayload(snapshot).gpc).toBe(true);
+  });
+
+  it("keeps the recordId independent of the SDK version and GPC", () => {
+    const before = buildConsentPayload(snapshot).recordId;
+    vi.stubGlobal("navigator", { ...navigator, globalPrivacyControl: true });
+    expect(buildConsentPayload(snapshot).recordId).toBe(before);
   });
 
   it("stamps the time of the decision, not the time the record is built", () => {

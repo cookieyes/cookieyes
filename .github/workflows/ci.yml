@@ -82,5 +82,80 @@ jobs:
       - name: Build web app
         run: pnpm build:web
 
+      # @cookieyes/backend's tests run in the backend-postgres job below instead: its
+      # PGlite and SQLite engines made this shared job slow enough that timing-based
+      # tests elsewhere (devtools, the axe conformance check) started timing out.
       - name: Test
-        run: pnpm test
+        run: pnpm turbo run test --filter='./sdk/*' --filter='!@cookieyes/backend' --filter=@cookieyes/web
+
+  conformance:
+    name: Conformance suite in a real browser
+    # Every adapter runs the shared suite in jsdom as part of `pnpm test` above.
+    # This job runs it again in Chromium, where focus moves and keys are pressed
+    # by the browser itself, which jsdom only approximates.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm --filter @cookieyes/test exec playwright install --with-deps chromium
+
+      - name: Build
+        run: pnpm build
+
+      - name: Conformance in Chromium
+        run: pnpm test:browser
+
+  backend-postgres:
+    name: Consent backend on real Postgres (${{ matrix.node-version }})
+    # The backend's whole test suite, kept out of the shared job above: its store tests
+    # on memory, PGlite and SQLite, and on a real Postgres. PGlite answers one query at
+    # a time, so only a real server shows two copies of a record racing each other
+    # (contributing/design/consent-backend.md).
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: cookieyes
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Backend tests on Postgres
+        env:
+          COOKIEYES_TEST_PG_URL: postgres://postgres:cookieyes@127.0.0.1:5432/postgres
+        run: pnpm --filter @cookieyes/backend test

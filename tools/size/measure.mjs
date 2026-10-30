@@ -117,6 +117,11 @@ const DEFAULT_APPS = [
     label: "@cookieyes/nextjs — banner + preferences (mirrors fair-cookieyes)",
   },
   {
+    dir: "with-vanilla",
+    key: "vanilla",
+    label: "@cookieyes/vanilla: banner + recall, dialogs on demand, no framework of its own",
+  },
+  {
     dir: "with-nextjs-devtools",
     key: "devtools",
     label:
@@ -348,7 +353,8 @@ function installFixture(appDir, name, tarballs) {
     .replace("__TARBALL_CORE__", `file:${tarballs["@cookieyes/core"]}`)
     .replace("__TARBALL_REACT__", `file:${tarballs["@cookieyes/react"]}`)
     .replace("__TARBALL_NEXTJS__", `file:${tarballs["@cookieyes/nextjs"]}`)
-    .replace("__TARBALL_DEVTOOLS__", `file:${tarballs["@cookieyes/devtools"]}`);
+    .replace("__TARBALL_DEVTOOLS__", `file:${tarballs["@cookieyes/devtools"]}`)
+    .replace("__TARBALL_VANILLA__", `file:${tarballs["@cookieyes/vanilla"]}`);
   if (resolved.includes("__TARBALL_")) {
     throw new Error(`fixture "${name}" has an unresolved tarball placeholder in package.json`);
   }
@@ -421,7 +427,7 @@ function installFixture(appDir, name, tarballs) {
   // `pnpm build` just produced. Everything above is a proxy for this; this is
   // the invariant. Without it, `file:` resolution caching silently measured a
   // previous run's code and reported a real change as a 0-byte saving.
-  for (const pkg of ["core", "react", "nextjs", "scripts", "devtools"]) {
+  for (const pkg of ["core", "ui", "react", "nextjs", "vanilla", "scripts", "devtools"]) {
     const built = join(REPO, "sdk", pkg, "dist", "index.js");
     const installed = join(appDir, "node_modules", "@cookieyes", pkg, "dist", "index.js");
     if (!existsSync(installed) || !existsSync(built)) continue;
@@ -481,7 +487,13 @@ function build(appDir, name) {
 // ---------------------------------------------------------------------------
 
 /** The packages whose tarballs are reported and held to the growth limit. */
-const TARBALL_PACKAGES = ["@cookieyes/core", "@cookieyes/react", "@cookieyes/nextjs"];
+const TARBALL_PACKAGES = [
+  "@cookieyes/core",
+  "@cookieyes/ui",
+  "@cookieyes/react",
+  "@cookieyes/nextjs",
+  "@cookieyes/vanilla",
+];
 
 /** Bytes of file content inside a `.tgz`, read from the tar headers. */
 function unpackedSize(tgz) {
@@ -563,7 +575,7 @@ if (doBuild) {
   // at that path is different. Putting the content hash in the path makes the
   // specifier change whenever the code does.
   const stamp = createHash("sha256");
-  for (const pkg of ["core", "react", "nextjs", "scripts", "test", "devtools"]) {
+  for (const pkg of ["core", "ui", "react", "nextjs", "vanilla", "scripts", "test", "devtools"]) {
     const dist = join(REPO, "sdk", pkg, "dist", "index.js");
     if (existsSync(dist)) stamp.update(readFileSync(dist));
   }

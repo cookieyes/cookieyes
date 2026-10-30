@@ -1,0 +1,14 @@
+{
+  "title": "Self-host",
+  "pages": [
+    "quickstart",
+    "databases",
+    "mounting",
+    "what-gets-stored",
+    "retention",
+    "data-requests",
+    "security",
+    "api-reference",
+    "compatible-backends"
+  ]
+}

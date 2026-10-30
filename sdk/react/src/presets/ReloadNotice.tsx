@@ -1,11 +1,11 @@
 "use client";
 
+import { CY_PART } from "@cookieyes/ui";
 import { useRef } from "react";
 import { useReloadNotice } from "../hooks/useReloadNotice.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
-import { CY_PART } from "../styles/parts.js";
 
 /**
  * Non-intrusive, dismissible notice shown only when a revoked tool has no clean
@@ -39,6 +39,7 @@ export function ReloadNotice() {
         <button
           type="button"
           className="cy-btn cy-btn-primary cy-reload-notice-reload"
+          data-cy-part={CY_PART.reloadNotice.reload}
           onClick={() => {
             if (typeof window !== "undefined") window.location.reload();
           }}

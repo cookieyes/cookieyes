@@ -1,19 +1,16 @@
 "use client";
 
+import { CY_PART, isRecallVisible } from "@cookieyes/ui";
 import { type ComponentPropsWithoutRef, forwardRef, type ReactNode, useRef } from "react";
 import { createPortal } from "react-dom";
 import { RevisitIcon } from "../components/icons.js";
-import { useBannerVisibility } from "../hooks/useBannerVisibility.js";
 import { useConsent } from "../hooks/useConsent.js";
 import { useConsentActions } from "../hooks/useConsentActions.js";
-import { useOptOutOpen } from "../hooks/useOptOutOpen.js";
-import { usePreferencesOpen } from "../hooks/usePreferencesOpen.js";
 import { useRegulation } from "../hooks/useRegulation.js";
 import { useThemeConfig } from "../hooks/useThemeConfig.js";
 import { useThemeVars } from "../hooks/useThemeVars.js";
 import { useTranslations } from "../hooks/useTranslations.js";
 import { chain, composeRefs, useBodyPortalRoot } from "../primitives/utils.js";
-import { CY_PART } from "../styles/parts.js";
 
 export type RecallButtonProps = ComponentPropsWithoutRef<"button"> & { children?: ReactNode };
 
@@ -21,10 +18,7 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
   { children, onClick, className, ...rest },
   ref,
 ) {
-  const bannerVisible = useBannerVisibility();
   const snapshot = useConsent();
-  const preferencesOpen = usePreferencesOpen();
-  const optOutOpen = useOptOutOpen();
   const regulation = useRegulation();
   const { showPreferences, showOptOut } = useConsentActions();
   const portalRoot = useBodyPortalRoot();
@@ -33,10 +27,7 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
   const t = useTranslations();
   useThemeVars(containerRef, theme, colorScheme);
 
-  if (bannerVisible) return null;
-  if (preferencesOpen || optOutOpen) return null;
-  // A dismissed banner still needs a way back to the choice.
-  if (!snapshot.hasActed && !snapshot.isBannerDismissed && regulation !== "CCPA") return null;
+  if (!isRecallVisible(snapshot, regulation)) return null;
 
   const onActivate = regulation === "CCPA" ? showOptOut : showPreferences;
 
@@ -48,7 +39,6 @@ export const RecallButton = forwardRef<HTMLButtonElement, RecallButtonProps>(fun
       aria-haspopup="dialog"
       className={className ?? "cy-widget"}
       data-cy-part={CY_PART.recall.root}
-      data-pos="bottom-left"
       data-tooltip={t.recallButtonLabel}
       onClick={chain(onClick, onActivate)}
       {...rest}

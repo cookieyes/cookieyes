@@ -70,6 +70,17 @@
       "initial": 14993,
       "total": 17680
     },
+    "vanilla": {
+      "$comment": [
+        "@cookieyes/vanilla's start(): the banner and the recall button, with the",
+        "preferences and opt-out dialogs loaded on first open, so they count in `total`",
+        "and not in `initial`. Measured 13454 / 18909. Like every fixture it is a delta",
+        "over an empty Next.js app, so React is in the control and the figure is",
+        "vanilla's own code: on a page with no framework there is no React to add."
+      ],
+      "initial": 13650,
+      "total": 19150
+    },
     "devtools": {
       "$comment": [
         "Amendment A2 (design doc §0, overrides AD-5's 'equality' rule for this one entry):",

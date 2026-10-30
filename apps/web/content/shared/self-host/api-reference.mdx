@@ -1,0 +1,59 @@
+---
+title: API reference
+description: Every option of createConsentBackend(), every route, and the request body, generated from the source.
+frameworks: [nextjs, react, core]
+---
+
+The tables on this page are generated from `@cookieyes/backend`'s source and its OpenAPI document. A running backend serves the same document at `/openapi.json`, and a readable version at `/docs`.
+
+## createConsentBackend(options)
+
+<BackendOptionsTable />
+
+It returns:
+
+| Property | What it is |
+| --- | --- |
+| `handler` | `(request: Request) => Promise<Response>`. Mount it on every method under `basePath`. |
+| `routes` | `{ GET, POST, DELETE, OPTIONS }`, each the same handler, for frameworks that export one function per method. |
+| `migrate(options?)` | Creates or upgrades the tables. `{ dryRun: true }` only reports what would run. |
+| `prune()` | Deletes records older than `retentionMonths` and resolves to how many. |
+
+## Routes
+
+Paths are relative to `basePath`.
+
+<BackendEndpointsTable />
+
+## Request body
+
+What the SDK sends to the save route. Unknown fields are ignored and never stored.
+
+<BackendFieldsTable of="payload" />
+
+## Errors
+
+Every error answer has the same shape, and never includes database details:
+
+```json title="Example error"
+{ "error": { "code": "invalid_payload", "message": "regulation must be one of GDPR, CCPA, DEFAULT." } }
+```
+
+| Status | `code` | When |
+| --- | --- | --- |
+| 400 | `invalid_json` | The body is not JSON. |
+| 401 | `unauthorized`, `owner_routes_disabled` | The owner key is wrong or missing, or no `apiKeys` are configured. |
+| 403 | `origin_not_allowed` | A browser on an origin not in `trustedOrigins`. |
+| 404 | `not_found` | No such route, or no decision for the visitor. |
+| 405 | `method_not_allowed` | A known route with another method. The `Allow` header lists the right ones. |
+| 409 | `record_conflict` | A different decision under a `recordId` already stored. |
+| 413 | `payload_too_large` | The body is over 4 KB. |
+| 415 | `unsupported_media_type` | The body is not sent as `application/json`. |
+| 422 | `invalid_payload`, `record_id_required` | The body breaks the contract, or comes from an SDK before 0.9.0, which sends no `recordId`. |
+| 429 | `rate_limited` | Too many requests. Wait the seconds in `Retry-After`. |
+| 500 | `internal_error` | The database failed. The cause is in your server log. |
+
+## Next steps
+
+- [Build a compatible backend](/docs/self-host/compatible-backends)
+- [What gets stored, and why](/docs/self-host/what-gets-stored)

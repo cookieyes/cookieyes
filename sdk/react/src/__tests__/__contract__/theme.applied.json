@@ -1,0 +1,94 @@
+{
+  "banner": {
+    "system": null,
+    "light": "light",
+    "dark": "dark",
+    "customTheme": {
+      "scheme": "light",
+      "vars": {
+        "--cy-primary": "#7c3aed",
+        "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+        "--cy-bg": "#fefce8",
+        "--cy-text": "#0f172a",
+        "--cy-muted": "#475569",
+        "--cy-border": "#cbd5e1",
+        "--cy-widget-bg": "#065f46",
+        "--cy-radius": "12px",
+        "--cy-font": "Georgia, serif",
+        "--cy-focus": "#f97316",
+        "--cy-on-primary": "#ffffff",
+        "--cy-on-widget-bg": "#ffffff"
+      }
+    },
+    "element": "div.cy-banner-wrap"
+  },
+  "preferences": {
+    "system": null,
+    "light": "light",
+    "dark": "dark",
+    "customTheme": {
+      "scheme": "light",
+      "vars": {
+        "--cy-primary": "#7c3aed",
+        "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+        "--cy-bg": "#fefce8",
+        "--cy-text": "#0f172a",
+        "--cy-muted": "#475569",
+        "--cy-border": "#cbd5e1",
+        "--cy-widget-bg": "#065f46",
+        "--cy-radius": "12px",
+        "--cy-font": "Georgia, serif",
+        "--cy-focus": "#f97316",
+        "--cy-on-primary": "#ffffff",
+        "--cy-on-widget-bg": "#ffffff"
+      }
+    },
+    "element": "div[data-cy-part=\"overlay\"]"
+  },
+  "optout": {
+    "system": null,
+    "light": "light",
+    "dark": "dark",
+    "customTheme": {
+      "scheme": "light",
+      "vars": {
+        "--cy-primary": "#7c3aed",
+        "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+        "--cy-bg": "#fefce8",
+        "--cy-text": "#0f172a",
+        "--cy-muted": "#475569",
+        "--cy-border": "#cbd5e1",
+        "--cy-widget-bg": "#065f46",
+        "--cy-radius": "12px",
+        "--cy-font": "Georgia, serif",
+        "--cy-focus": "#f97316",
+        "--cy-on-primary": "#ffffff",
+        "--cy-on-widget-bg": "#ffffff"
+      }
+    },
+    "element": "div[data-cy-part=\"optout\"]"
+  },
+  "recall": {
+    "system": null,
+    "light": "light",
+    "dark": "dark",
+    "customTheme": {
+      "scheme": "light",
+      "vars": {
+        "--cy-primary": "#7c3aed",
+        "--cy-primary-hover": "color-mix(in srgb, var(--cy-primary) 85%, black)",
+        "--cy-bg": "#fefce8",
+        "--cy-text": "#0f172a",
+        "--cy-muted": "#475569",
+        "--cy-border": "#cbd5e1",
+        "--cy-widget-bg": "#065f46",
+        "--cy-radius": "12px",
+        "--cy-font": "Georgia, serif",
+        "--cy-focus": "#f97316",
+        "--cy-on-primary": "#ffffff",
+        "--cy-on-widget-bg": "#ffffff"
+      }
+    },
+    "element": "button[data-cy-part=\"recall\"]"
+  }
+}

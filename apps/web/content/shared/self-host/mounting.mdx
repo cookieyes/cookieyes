@@ -1,0 +1,153 @@
+---
+title: Mount the backend
+description: Serve @cookieyes/backend from Next.js, Hono, Express, Fastify, node:http, Bun, Deno or Cloudflare Workers.
+frameworks: [nextjs, react, core]
+---
+
+`backend.handler` takes a web `Request` and returns a `Response`, so any server that speaks them mounts it with no adapter. Send every method under your `basePath` to it: `POST` saves, `GET` reads, `DELETE` deletes and `OPTIONS` answers the browser's CORS check.
+
+Each example imports the backend you created in [the quickstart](/docs/self-host/quickstart):
+
+```ts title="lib/consent-backend.ts" group="mount"
+import { createConsentBackend } from "@cookieyes/backend";
+import { postgresStore } from "@cookieyes/backend/postgres";
+import { Pool } from "pg";
+
+export const backend = createConsentBackend({
+  basePath: "/api/consent",
+  trustedOrigins: ["https://shop.example.com"],
+  database: postgresStore(new Pool({ connectionString: process.env.DATABASE_URL })),
+});
+```
+
+<Framework when="nextjs">
+
+## Next.js
+
+A catch-all route handler. Keep the default Node.js runtime unless your database client runs at the edge.
+
+```ts title="app/api/consent/[[...path]]/route.ts" group="mount"
+import { backend } from "../../../../lib/consent-backend";
+
+export const { GET, POST, DELETE, OPTIONS } = backend.routes;
+```
+
+</Framework>
+
+## Hono
+
+```ts title="server/hono.ts" group="mount"
+import { type Context, Hono } from "hono";
+import { backend } from "../lib/consent-backend";
+
+const app = new Hono();
+const consent = (c: Context) => backend.handler(c.req.raw);
+app.all("/api/consent", consent);
+app.all("/api/consent/*", consent);
+
+export default app;
+```
+
+## Express
+
+`toNodeHandler()` converts Node's request and response. Mount it before any body parser: the backend reads the body itself, to enforce its size limit.
+
+```ts title="server/express.ts" group="mount"
+import { toNodeHandler } from "@cookieyes/backend/node";
+import express from "express";
+import { backend } from "../lib/consent-backend";
+
+const app = express();
+app.use("/api/consent", toNodeHandler(backend.handler));
+app.use(express.json());
+app.listen(3000);
+```
+
+## Fastify
+
+Hand the request over before Fastify parses its body:
+
+```ts title="server/fastify.ts" group="mount"
+import { toNodeHandler } from "@cookieyes/backend/node";
+import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
+import { backend } from "../lib/consent-backend";
+
+const app = Fastify();
+const consent = toNodeHandler(backend.handler);
+app.addHook("onRequest", async (request: FastifyRequest, reply: FastifyReply) => {
+  if (/^\/api\/consent(\/|\?|$)/.test(request.url)) {
+    reply.hijack();
+    await consent(request.raw, reply.raw);
+  }
+});
+app.listen({ port: 3000 });
+```
+
+## node:http
+
+```ts title="server/node.ts" group="mount"
+import { createServer } from "node:http";
+import { toNodeHandler } from "@cookieyes/backend/node";
+import { backend } from "../lib/consent-backend";
+
+createServer(toNodeHandler(backend.handler)).listen(3000);
+```
+
+## Bun and Deno
+
+```ts title="server/bun.ts" group="mount"
+import { backend } from "../lib/consent-backend";
+
+Bun.serve({ fetch: backend.handler });
+```
+
+```ts title="server/deno.ts" group="mount"
+import { backend } from "../lib/consent-backend";
+
+Deno.serve(backend.handler);
+```
+
+## Cloudflare Workers
+
+Create the backend once per Worker instance, with the D1 binding, and migrate on its first request: each statement is safe to run again.
+
+```ts title="src/worker.ts"
+import { type ConsentBackend, createConsentBackend } from "@cookieyes/backend";
+import { type D1Database, d1Store } from "@cookieyes/backend/sqlite";
+
+let backend: ConsentBackend | undefined;
+let ready: Promise<unknown> | undefined;
+
+export default {
+  async fetch(request: Request, env: { DB: D1Database }): Promise<Response> {
+    backend ??= createConsentBackend({
+      basePath: "/api/consent",
+      trustedOrigins: ["https://shop.example.com"],
+      database: d1Store(env.DB),
+    });
+    ready ??= backend.migrate();
+    await ready;
+    return backend.handler(request);
+  },
+};
+```
+
+## A backend on another domain
+
+The SDK can send records to a backend on another origin. List your site in that backend's `trustedOrigins`, set the SDK's `apiUrl` to the full URL, and add the backend's origin to your Content Security Policy's `connect-src`.
+
+## Common mistakes
+
+**Express answers 400 or 413, or the backend sees an empty body.**
+A body parser ran first. Mount the backend before `express.json()`.
+
+**Only `POST` works.**
+The route sends only some methods to the backend. Reads need `GET`, deletion `DELETE`, and a browser on another origin `OPTIONS`.
+
+**Every route answers 404.**
+`basePath` does not match where the handler is mounted. It is the full path the request arrives with, such as `/api/consent`.
+
+## Next steps
+
+- [Databases](/docs/self-host/databases)
+- [Security checklist](/docs/self-host/security)

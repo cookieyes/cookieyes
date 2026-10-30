@@ -1,0 +1,749 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "CookieYes consent backend",
+    "version": "1",
+    "description": "The HTTP contract between the CookieYes SDK and a server that stores consent records. Any server that passes the conformance suite in @cookieyes/test/backend is compatible.",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "paths": {
+    "/": {
+      "post": {
+        "operationId": "saveConsent",
+        "summary": "Save a consent decision",
+        "description": "Stores the decision once per `recordId`. Sending it again is safe and answers 200. Only trusted origins may call it from a browser.",
+        "requestBody": {
+          "required": true,
+          "description": "The decision.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsentPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Already stored; nothing changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The body is not JSON.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request came from an origin that is not trusted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "This `recordId` is already stored with a different decision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "The body is larger than 4096 bytes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "The body is not sent as application/json.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "The body does not match the contract.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests; retry after the Retry-After seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consents/{consentId}/current": {
+      "get": {
+        "operationId": "currentConsent",
+        "summary": "Read a visitor's latest decision",
+        "description": "Public, like the save route, and can be turned off with `readBack: false`. Never includes the IP address.",
+        "parameters": [
+          {
+            "name": "consentId",
+            "in": "path",
+            "required": true,
+            "description": "The visitor's consent id, as in the records the SDK sends.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The latest decision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["record"],
+                  "properties": {
+                    "record": {
+                      "$ref": "#/components/schemas/PublicRecord"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No decision is stored for this visitor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/consents/{consentId}": {
+      "get": {
+        "operationId": "listConsents",
+        "summary": "Every record for one visitor",
+        "description": "For answering a request to see one's data. Send `Accept: text/csv`, or `?format=csv`, for a spreadsheet.",
+        "security": [
+          {
+            "ownerKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "consentId",
+            "in": "path",
+            "required": true,
+            "description": "The visitor's consent id, as in the records the SDK sends.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Oldest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["records"],
+                  "properties": {
+                    "records": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StoredRecord"
+                      }
+                    }
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The owner key is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteConsents",
+        "summary": "Delete every record for one visitor",
+        "description": "Real deletion: nothing is kept or flagged.",
+        "security": [
+          {
+            "ownerKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "consentId",
+            "in": "path",
+            "required": true,
+            "description": "The visitor's consent id, as in the records the SDK sends.",
+            "schema": {
+              "type": "string",
+              "maxLength": 128
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many records were deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The owner key is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prune": {
+      "post": {
+        "operationId": "pruneConsents",
+        "summary": "Delete records older than the retention period",
+        "security": [
+          {
+            "ownerKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How many records were deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Deleted"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The owner key is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "operationId": "status",
+        "summary": "Check the server is live and its database ready",
+        "responses": {
+          "200": {
+            "description": "Ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unreachable or needs migrating.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "operationId": "openapi",
+        "summary": "This document",
+        "responses": {
+          "200": {
+            "description": "The contract."
+          }
+        }
+      }
+    },
+    "/docs": {
+      "get": {
+        "operationId": "docs",
+        "summary": "This document as a web page",
+        "responses": {
+          "200": {
+            "description": "HTML."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ownerKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "One of the `apiKeys` the server is configured with. Never send it from a browser."
+      }
+    },
+    "schemas": {
+      "ConsentPayload": {
+        "type": "object",
+        "description": "One consent decision, as the SDK sends it. At most 4096 bytes. Unknown fields are ignored and never stored.",
+        "required": [
+          "recordId",
+          "consentId",
+          "categories",
+          "regulation",
+          "domain",
+          "decidedAt",
+          "taxonomyHash",
+          "action",
+          "source"
+        ],
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "description": "Id of this decision. The same decision always has the same id, so a retry is stored once.",
+            "x-personal-data": "no",
+            "maxLength": 256
+          },
+          "consentId": {
+            "type": "string",
+            "description": "Random id of the visitor, kept in their consent cookie.",
+            "x-personal-data": "pseudonymous",
+            "maxLength": 128
+          },
+          "categories": {
+            "type": "object",
+            "description": "Each category id, and whether the visitor granted it.",
+            "x-personal-data": "no",
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "regulation": {
+            "type": "string",
+            "description": "The regulation the banner applied.",
+            "x-personal-data": "no",
+            "enum": ["GDPR", "CCPA", "DEFAULT"]
+          },
+          "domain": {
+            "type": "string",
+            "description": "Hostname of the site where the visitor decided.",
+            "x-personal-data": "no",
+            "maxLength": 253
+          },
+          "decidedAt": {
+            "type": "string",
+            "description": "When the visitor decided, in UTC. Not when the record was sent.",
+            "x-personal-data": "no",
+            "format": "date-time"
+          },
+          "taxonomyHash": {
+            "type": "string",
+            "description": "Fingerprint of the category list the visitor was shown.",
+            "x-personal-data": "no",
+            "maxLength": 64
+          },
+          "action": {
+            "type": "string",
+            "description": "What the visitor did.",
+            "x-personal-data": "no",
+            "enum": ["accept_all", "reject_all", "accept_selected", "save"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Where the visitor decided. `api` is a call from the site's own code.",
+            "x-personal-data": "no",
+            "enum": ["banner", "preferences", "optout", "api"]
+          },
+          "region": {
+            "type": "string",
+            "description": "Region the SDK detected, like `US-CA`. Sent only with region detection on.",
+            "x-personal-data": "coarse location",
+            "maxLength": 16
+          },
+          "sdkVersion": {
+            "type": "string",
+            "description": "Version of `@cookieyes/core` that sent the record.",
+            "x-personal-data": "no",
+            "maxLength": 32
+          },
+          "gpc": {
+            "type": "boolean",
+            "description": "Whether the browser sent the Global Privacy Control signal.",
+            "x-personal-data": "no"
+          }
+        }
+      },
+      "StoredRecord": {
+        "type": "object",
+        "required": [
+          "recordId",
+          "consentId",
+          "decidedAt",
+          "receivedAt",
+          "granted",
+          "denied",
+          "regulation",
+          "region",
+          "domain",
+          "taxonomyHash",
+          "action",
+          "source",
+          "sdkVersion",
+          "gpc",
+          "ip"
+        ],
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "description": "Id of the decision.",
+            "x-personal-data": "no"
+          },
+          "consentId": {
+            "type": "string",
+            "description": "Random id of the visitor. Use it to find or delete their records.",
+            "x-personal-data": "pseudonymous"
+          },
+          "decidedAt": {
+            "type": "string",
+            "description": "When the visitor decided, by their device's clock.",
+            "x-personal-data": "no",
+            "format": "date-time"
+          },
+          "receivedAt": {
+            "type": "string",
+            "description": "When the server received the record, by the server's clock.",
+            "x-personal-data": "no",
+            "format": "date-time"
+          },
+          "granted": {
+            "type": "array",
+            "description": "Categories the visitor granted.",
+            "x-personal-data": "no",
+            "items": {
+              "type": "string"
+            }
+          },
+          "denied": {
+            "type": "array",
+            "description": "Categories the visitor denied.",
+            "x-personal-data": "no",
+            "items": {
+              "type": "string"
+            }
+          },
+          "regulation": {
+            "type": "string",
+            "description": "The regulation the banner applied.",
+            "x-personal-data": "no",
+            "enum": ["GDPR", "CCPA", "DEFAULT"]
+          },
+          "region": {
+            "type": ["string", "null"],
+            "description": "Region the SDK detected, when region detection is on.",
+            "x-personal-data": "coarse location"
+          },
+          "domain": {
+            "type": "string",
+            "description": "The site's hostname.",
+            "x-personal-data": "no"
+          },
+          "taxonomyHash": {
+            "type": "string",
+            "description": "Fingerprint of the category list the visitor was shown.",
+            "x-personal-data": "no"
+          },
+          "action": {
+            "type": "string",
+            "description": "What the visitor did.",
+            "x-personal-data": "no",
+            "enum": ["accept_all", "reject_all", "accept_selected", "save"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Where they decided.",
+            "x-personal-data": "no",
+            "enum": ["banner", "preferences", "optout", "api"]
+          },
+          "sdkVersion": {
+            "type": ["string", "null"],
+            "description": "Version of the SDK that sent the record.",
+            "x-personal-data": "no"
+          },
+          "gpc": {
+            "type": ["boolean", "null"],
+            "description": "Whether the browser sent Global Privacy Control.",
+            "x-personal-data": "no"
+          },
+          "ip": {
+            "type": ["string", "null"],
+            "description": "Empty unless you turn on `ipAddress`; then truncated or hashed, never raw.",
+            "x-personal-data": "yes"
+          }
+        }
+      },
+      "PublicRecord": {
+        "type": "object",
+        "required": [
+          "recordId",
+          "consentId",
+          "decidedAt",
+          "receivedAt",
+          "granted",
+          "denied",
+          "regulation",
+          "region",
+          "domain",
+          "taxonomyHash",
+          "action",
+          "source",
+          "sdkVersion",
+          "gpc"
+        ],
+        "properties": {
+          "recordId": {
+            "type": "string",
+            "description": "Id of the decision.",
+            "x-personal-data": "no"
+          },
+          "consentId": {
+            "type": "string",
+            "description": "Random id of the visitor. Use it to find or delete their records.",
+            "x-personal-data": "pseudonymous"
+          },
+          "decidedAt": {
+            "type": "string",
+            "description": "When the visitor decided, by their device's clock.",
+            "x-personal-data": "no",
+            "format": "date-time"
+          },
+          "receivedAt": {
+            "type": "string",
+            "description": "When the server received the record, by the server's clock.",
+            "x-personal-data": "no",
+            "format": "date-time"
+          },
+          "granted": {
+            "type": "array",
+            "description": "Categories the visitor granted.",
+            "x-personal-data": "no",
+            "items": {
+              "type": "string"
+            }
+          },
+          "denied": {
+            "type": "array",
+            "description": "Categories the visitor denied.",
+            "x-personal-data": "no",
+            "items": {
+              "type": "string"
+            }
+          },
+          "regulation": {
+            "type": "string",
+            "description": "The regulation the banner applied.",
+            "x-personal-data": "no",
+            "enum": ["GDPR", "CCPA", "DEFAULT"]
+          },
+          "region": {
+            "type": ["string", "null"],
+            "description": "Region the SDK detected, when region detection is on.",
+            "x-personal-data": "coarse location"
+          },
+          "domain": {
+            "type": "string",
+            "description": "The site's hostname.",
+            "x-personal-data": "no"
+          },
+          "taxonomyHash": {
+            "type": "string",
+            "description": "Fingerprint of the category list the visitor was shown.",
+            "x-personal-data": "no"
+          },
+          "action": {
+            "type": "string",
+            "description": "What the visitor did.",
+            "x-personal-data": "no",
+            "enum": ["accept_all", "reject_all", "accept_selected", "save"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Where they decided.",
+            "x-personal-data": "no",
+            "enum": ["banner", "preferences", "optout", "api"]
+          },
+          "sdkVersion": {
+            "type": ["string", "null"],
+            "description": "Version of the SDK that sent the record.",
+            "x-personal-data": "no"
+          },
+          "gpc": {
+            "type": ["boolean", "null"],
+            "description": "Whether the browser sent Global Privacy Control.",
+            "x-personal-data": "no"
+          }
+        }
+      },
+      "SaveResult": {
+        "type": "object",
+        "required": ["recordId", "result"],
+        "properties": {
+          "recordId": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string",
+            "enum": ["created", "replayed"]
+          }
+        }
+      },
+      "Deleted": {
+        "type": "object",
+        "required": ["deleted"],
+        "properties": {
+          "deleted": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "Status": {
+        "type": "object",
+        "required": ["status", "version", "contract", "time", "database", "schema", "caller"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok", "unavailable"]
+          },
+          "version": {
+            "type": "string"
+          },
+          "contract": {
+            "type": "integer"
+          },
+          "time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "database": {
+            "type": "string",
+            "enum": ["ok", "unreachable"]
+          },
+          "schema": {
+            "type": "string",
+            "enum": ["current", "pending", "unknown"]
+          },
+          "caller": {
+            "type": "object",
+            "properties": {
+              "region": {
+                "type": ["string", "null"]
+              },
+              "language": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

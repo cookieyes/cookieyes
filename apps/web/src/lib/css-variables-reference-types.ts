@@ -9,7 +9,7 @@
  * are what `scripts/generate-css-variables-reference.mjs` writes into
  * `.generated/css-variables-reference.json` after joining every sidecar entry
  * against the structural facts (defaults, consumers, aliases) it extracted from
- * `sdk/react/src/styles/tokens.ts` and `sdk/react/src/styles/cookieyes.css`.
+ * `sdk/ui/src/styles/tokens.ts` and `sdk/ui/src/styles/cookieyes.css`.
  *
  * Importing this file from both the sidecar and the generator means a
  * malformed sidecar entry is a red squiggle in the editor, not just a build

@@ -1,5 +1,6 @@
 import type { CssVariablesReferenceData } from "@/lib/css-variables-reference-types";
 import cssVariablesReference from "../../../.generated/css-variables-reference.json";
+import { inlineCode } from "./inline-code";
 
 const data = cssVariablesReference as CssVariablesReferenceData;
 
@@ -50,7 +51,7 @@ export function HardcodedColorsTable() {
               <td>
                 <code>{entry.overrideSelector}</code>
                 <br />
-                {entry.overrideNote}
+                {inlineCode(entry.overrideNote)}
               </td>
             </tr>
           ))}

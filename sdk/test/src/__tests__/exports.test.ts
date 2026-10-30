@@ -45,3 +45,23 @@ describe("@cookieyes/test/react public exports", () => {
     }
   }, 30_000);
 });
+
+/** Guards the conformance entry point every framework adapter runs. */
+describe("@cookieyes/test/conformance public exports", () => {
+  it("exports exactly the documented surface", async () => {
+    const entry = await import("../conformance.js");
+    expect(Object.keys(entry).sort()).toEqual(["pressInDocument", "runConformance"]);
+  }, 30_000);
+});
+
+/** Guards the suite every consent backend runs. */
+describe("@cookieyes/test/backend public exports", () => {
+  it("exports exactly the documented surface", async () => {
+    const entry = await import("../backend.js");
+    expect(Object.keys(entry).sort()).toEqual([
+      "BACKEND_CONTRACT_VERSION",
+      "runBackendConformance",
+    ]);
+    expect(entry.BACKEND_CONTRACT_VERSION).toBe(1);
+  });
+});

@@ -1,10 +1,18 @@
 ---
 title: Styling
 description: Change the colours, font and layout of the banner and dialogs, and know which tool to use for each.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
 
+<Framework when="core">
+
+This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-started/vanilla). `@cookieyes/core` alone draws nothing, so there is nothing for it to style.
+
+</Framework>
+
 The components look finished out of the box. To make them match your site, pick the smallest tool that does the job:
+
+<Framework when="nextjs react">
 
 | You want to change | Use | Page |
 | --- | --- | --- |
@@ -13,6 +21,22 @@ The components look finished out of the box. To make them match your site, pick 
 | Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
 | The same, with utility classes | `className` and `@apply` | [Tailwind](/docs/styling/tailwind) |
 | The markup itself | Primitives | [Banner primitives](/docs/headless/banner) |
+
+</Framework>
+
+<Framework when="core">
+
+| You want to change | Use | Page |
+| --- | --- | --- |
+| Brand colour, corner radius, font, backgrounds | `theme` in `start()` | [Theme tokens](/docs/styling/theme-tokens) |
+| Light, dark, or follow the device | `colorScheme` in `start()` | [Colour scheme](/docs/styling/color-scheme) |
+| Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
+| The same, with utility classes | `@apply` | [Tailwind](/docs/styling/tailwind) |
+| The markup itself | Your own UI on the store | [Build your own UI](/docs/store/build-your-own-ui) |
+
+The styling is the same in every CookieYes package, so a stylesheet written for the React banner restyles this one unchanged.
+
+</Framework>
 
 Most sites stop at the first row.
 

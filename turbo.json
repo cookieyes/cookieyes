@@ -24,6 +24,10 @@
       "dependsOn": ["^build"],
       "outputs": []
     },
+    "test:browser": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
     "clean": {
       "cache": false
     }

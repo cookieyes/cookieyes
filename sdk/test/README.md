@@ -336,6 +336,77 @@ it works with Testing Library, a custom renderer, or none at all. Use `jsdom` or
 `react` and `@cookieyes/react` are **optional** peers: the main entry never imports
 either, so nothing changes for consumers who don't use React.
 
+## Conformance suite for framework adapters
+
+`@cookieyes/test/conformance` checks that a banner behaves like every other CookieYes banner,
+whatever drew it. It knows nothing about React or any other framework: it reads parts, states,
+roles and focus, and acts through a small driver you write for your adapter.
+
+```ts
+import { pressInDocument, runConformance } from "@cookieyes/test/conformance";
+import { describe, it } from "vitest";
+
+runConformance(
+  {
+    name: "my-adapter",
+    mount: (config) => startMyBanner(config), // every component on the page
+    unmount: () => stopMyBanner(), // remove it all and reset the SDK
+    setLanguage: (tag) => switchLanguage(tag),
+    click: async (el) => (el as HTMLElement).click(),
+    press: pressInDocument, // in jsdom; use real key events in a browser
+  },
+  { describe, it },
+);
+```
+
+It checks, for the banner, the preferences dialog, the opt-out dialog, the reload notice and the
+recall button:
+
+- every element, part, state and accessible attribute, against the markup in `@cookieyes/ui`
+- Tab order and the focus trap, Escape, and where focus goes when a dialog opens and closes
+- the screen-reader announcement of the banner
+- a custom theme and an explicit colour scheme
+- switching language, including the spoken labels
+- an automated accessibility check with `axe-core`
+- the first HTML, when the driver provides `serverHtml`
+
+It needs `@cookieyes/ui` and `axe-core` installed; both are optional peers of this package, so
+nothing changes for anyone not running the suite. Run it in jsdom for speed and in a real browser
+(for example Vitest's browser mode) for real key presses: the React adapter does both.
+
+## Conformance suite for consent backends
+
+`@cookieyes/test/backend` checks that a server keeps the contract the SDK's self-hosted mode
+relies on. It talks HTTP only, so it checks a backend written in any language;
+`@cookieyes/backend` is the reference and passes it.
+
+```ts
+import { runBackendConformance } from "@cookieyes/test/backend";
+import { describe, it } from "vitest";
+
+runBackendConformance(
+  {
+    url: "http://localhost:8080/api/consent", // the backend, base path included
+    trustedOrigin: "http://localhost:3000", // an origin it trusts
+    apiKey: process.env.CONSENT_OWNER_KEY, // optional: also checks the owner routes
+  },
+  { describe, it },
+);
+```
+
+It checks that:
+
+- a record sent ten times, or five times at the same moment, is stored once
+- a different decision under a stored `recordId` is refused with 409
+- bodies are validated (400, 413, 415, 422), and unknown fields accepted but not stored
+- only trusted origins get in, and a preflight allows what the SDK sends
+- `/status`, `/openapi.json` and the read route answer, without the IP address
+- with `apiKey`: lookup, CSV export, delete and prune work, and need the key
+
+It checks contract version `BACKEND_CONTRACT_VERSION`. Pass `fetch` to call a backend in the same
+process, and `readBack: false` for a backend without the read route. With a persistent database,
+records it saves without `apiKey` stay there; with it, the suite deletes what it saved.
+
 ## Fidelity & limitations
 
 Read this table before trusting a passing test. "Exact" means the real engine ran.
@@ -355,6 +426,8 @@ Read this table before trusting a passing test. "Exact" means the real engine ra
 | Unknown category id | **Stricter** | Throws here; production silently ignores. Deliberate. |
 | Seeded `lastRenewed` | **Fixed to `1`** | Keeps seeded snapshots deterministic. Core never branches on it. |
 | `payload.domain` | **`"unknown"`** | Core reads `window.location.hostname`; there is no `window` in a node test. With `googleConsentMode: true` a shimmed window is in place, so it reports `cookieyes-test.local` instead |
+| `payload.gpc` | **`false`** | Core reads `navigator.globalPrivacyControl`, which Node does not set. Stub `navigator` to test the `true` case |
+| `payload.sdkVersion` | **Core's version** | `0.0.0-dev` when core is linked from source (a `workspace:*` link), the published version otherwise |
 | Backend POST | **Captured, not sent** | Assert with `backendCalls()`. No `fetch` is called, and none needs stubbing |
 | Script injection | **Registry only** | Nothing is injected without a `document.head` |
 | `reloadOnRevoke` | **Not simulated** | No `window`, so no reload |
@@ -362,6 +435,7 @@ Read this table before trusting a passing test. "Exact" means the real engine ra
 | Network blocker | **Not simulated** | Needs `window` to patch `fetch`/XHR |
 | A shimmed `document` exists during the test | **Caveat** | Only `document.cookie` is defined. Code that feature-detects `document` may take a browser path — use jsdom if that matters to you |
 | React component rendering | **Needs jsdom** | Use `@cookieyes/test/react`; React cannot render without a DOM |
+| Conformance suite | **Needs a DOM** | In jsdom, focus moves on Tab only through `pressInDocument`; a real browser is the full check. Colour contrast is not measured: check it by eye against your theme |
 
 For the browser-side items, the honest answer is a real browser: use Playwright or
 Cypress. This package is for the logic.

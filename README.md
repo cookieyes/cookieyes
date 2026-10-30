@@ -20,10 +20,13 @@ Open-source cookie consent SDK for developers. Build consent banners and manage 
 | Package | Description | Version |
 |---------|-------------|---------|
 | [`@cookieyes/core`](./sdk/core) | Headless consent engine — zero UI, zero deps | [![npm](https://img.shields.io/npm/v/@cookieyes/core)](https://www.npmjs.com/package/@cookieyes/core) |
+| [`@cookieyes/ui`](./sdk/ui) | Framework-free banner layer: styles, tokens, markup and accessibility behaviour every adapter shares | [![npm](https://img.shields.io/npm/v/@cookieyes/ui)](https://www.npmjs.com/package/@cookieyes/ui) |
 | [`@cookieyes/react`](./sdk/react) | React adapter — components and hooks | [![npm](https://img.shields.io/npm/v/@cookieyes/react)](https://www.npmjs.com/package/@cookieyes/react) |
+| [`@cookieyes/vanilla`](./sdk/vanilla) | The banner for any page with no framework | [![npm](https://img.shields.io/npm/v/@cookieyes/vanilla)](https://www.npmjs.com/package/@cookieyes/vanilla) |
 | [`@cookieyes/scripts`](./sdk/scripts) | Ready-made, consent-gated third-party integrations (Segment, custom scripts, …) | [![npm](https://img.shields.io/npm/v/@cookieyes/scripts)](https://www.npmjs.com/package/@cookieyes/scripts) |
 | [`@cookieyes/nextjs`](./sdk/nextjs) | Next.js App Router adapter | [![npm](https://img.shields.io/npm/v/@cookieyes/nextjs)](https://www.npmjs.com/package/@cookieyes/nextjs) |
 | [`@cookieyes/translations`](./sdk/translations) | Curated, per-locale translation catalog | [![npm](https://img.shields.io/npm/v/@cookieyes/translations)](https://www.npmjs.com/package/@cookieyes/translations) |
+| [`@cookieyes/backend`](./sdk/backend) | Self-hosted consent server: stores each consent record once, in your own database | [![npm](https://img.shields.io/npm/v/@cookieyes/backend)](https://www.npmjs.com/package/@cookieyes/backend) |
 | [`@cookieyes/cli`](./sdk/cli) | Scaffolder — wire the SDK into an existing app | [![npm](https://img.shields.io/npm/v/@cookieyes/cli)](https://www.npmjs.com/package/@cookieyes/cli) |
 | [`@cookieyes/test`](./sdk/test) | Headless test double (+ `/react`) — unit-test consent code with no browser | [![npm](https://img.shields.io/npm/v/@cookieyes/test)](https://www.npmjs.com/package/@cookieyes/test) |
 | [`@cookieyes/devtools`](./sdk/devtools) | In-page debugging panel for React and Next.js, absent from production bundles | [![npm](https://img.shields.io/npm/v/@cookieyes/devtools)](https://www.npmjs.com/package/@cookieyes/devtools) |
@@ -145,12 +148,15 @@ npx @cookieyes/cli init
 ```
 sdk/
   core/          @cookieyes/core         headless engine
+  ui/            @cookieyes/ui           framework-free banner layer
   react/         @cookieyes/react        React components + hooks
+  vanilla/       @cookieyes/vanilla      banner with no framework
   scripts/       @cookieyes/scripts      consent-gated third-party integrations
   nextjs/        @cookieyes/nextjs       Next.js App Router adapter
   translations/  @cookieyes/translations per-locale catalog
+  backend/       @cookieyes/backend      self-hosted consent server
   cli/           @cookieyes/cli          scaffolder
-  test/          @cookieyes/test         headless test double (+ /react)
+  test/          @cookieyes/test         headless test double (+ /react, /conformance, /backend)
   devtools/      @cookieyes/devtools     in-page debugging panel
 ```
 

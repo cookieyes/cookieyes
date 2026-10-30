@@ -35,7 +35,9 @@ function part(name: string): HTMLElement {
   return document.querySelector(`[data-cyd-part="${name}"]`) as HTMLElement;
 }
 
-describe("RegionTab", () => {
+// A longer timeout, not a weaker check: these tests type into the region combobox a
+// key at a time, and on a busy CI runner two of them took just over the 5 s default.
+describe("RegionTab", { timeout: 20_000 }, () => {
   // Test 20 (design §9)
   it("shows the real decision when unforced", async () => {
     initCookieYes({

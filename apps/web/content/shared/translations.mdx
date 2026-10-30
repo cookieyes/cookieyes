@@ -1,14 +1,22 @@
 ---
 title: Translations
 description: Show the banner and dialogs in your visitors' language, or change any text.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
 
-Every text the SDK shows comes from one translation map, in English by default. You can swap in a shipped language, write your own, or change a single string. All of it goes through the `i18n` option of `initCookieYes()`.
+Every text the SDK shows comes from one translation map, in English by default. You can swap in a shipped language, write your own, or change a single string. All of it goes through the `i18n` option of the configuration.
+
+<Framework when="core">
+
+The examples use [`@cookieyes/vanilla`](/docs/getting-started/vanilla). Every text in its banner and dialogs, including the screen-reader labels, comes from this map. The same `i18n` works in `initCookieYes()` from `@cookieyes/core`, for a UI of your own.
+
+</Framework>
 
 ## Use a shipped language
 
 English is built in. Spanish, French, German and Italian ship in `@cookieyes/translations`; import the one you need and pass it in.
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-manager.tsx"
 "use client";
@@ -25,6 +33,25 @@ initCookieYes({
 });
 ```
 
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { fr } from "@cookieyes/translations/fr";
+import { start } from "@cookieyes/vanilla";
+
+start({
+  mode: "cookie-only",
+  i18n: {
+    locale: "fr",
+    messages: { fr },
+  },
+});
+```
+
+</Framework>
+
 | Language | Import |
 | --- | --- |
 | Spanish | `import { es } from "@cookieyes/translations/es"` |
@@ -37,6 +64,8 @@ Import each language from its own path, as above, so only the languages you use 
 ## Change any text
 
 Set only the keys you want to change. Everything else stays English, so one key is enough:
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-manager.tsx"
 "use client";
@@ -59,6 +88,31 @@ initCookieYes({
 });
 ```
 
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { start } from "@cookieyes/vanilla";
+
+start({
+  mode: "cookie-only",
+  i18n: {
+    messages: {
+      en: {
+        bannerTitle: "We value your privacy",
+        acceptAll: "Sounds good",
+        categories: {
+          analytics: { label: "Statistics", description: "Helps us see which pages are useful." },
+        },
+      },
+    },
+  },
+});
+```
+
+</Framework>
+
 The same works for any language: add the key under `messages.fr`, for example, and it replaces that string in French only.
 
 | Text | Key |
@@ -76,6 +130,8 @@ The same works for any language: add the key under `messages.fr`, for example, a
 ## Let visitors switch language
 
 Bundle the languages you offer, then call `setLanguage()` from your own picker. The SDK does not remember the choice between visits; store it yourself and pass it back as `locale`.
+
+<Framework when="nextjs react">
 
 ```tsx title="app/language-picker.tsx"
 "use client";
@@ -102,7 +158,28 @@ export function LanguagePicker() {
 }
 ```
 
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/language-picker.ts"
+import { cookieyes } from "./consent";
+
+const picker = document.querySelector<HTMLSelectElement>("#language");
+
+picker?.addEventListener("change", async () => {
+  await cookieyes.consentStore.setLanguage(picker.value);
+  localStorage.setItem("language", picker.value);
+});
+```
+
+`cookieyes` is the runtime `start()` returned, exported from your consent file as in [Banner with no framework](/docs/getting-started/vanilla). `cookieyes.consentStore.getLanguageInfo()` lists the languages you bundled.
+
+</Framework>
+
 To load a language only when it is chosen, give `i18n` a `loadLanguage` function. The SDK calls it once per language the first time that language is needed:
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-manager.tsx"
 "use client";
@@ -118,6 +195,23 @@ initCookieYes({
 });
 ```
 
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { start } from "@cookieyes/vanilla";
+
+start({
+  mode: "cookie-only",
+  i18n: {
+    loadLanguage: async (tag) => (await import(`@cookieyes/translations/${tag}`))[tag],
+  },
+});
+```
+
+</Framework>
+
 On a site where the URL carries the language, call `setLanguage()` with the tag from the URL and set `detectBrowserLanguage: false`.
 
 ## Good to know
@@ -126,9 +220,21 @@ On a site where the URL carries the language, call `setLanguage()` with the tag 
 
 **Regional tags fall back to the language.** A visitor on `fr-CA` gets your `fr`.
 
+<Framework when="nextjs react">
+
 **Your own components can read the text.** `useTranslations()` returns the active language's map and re-renders when it changes.
 
 **Right-to-left languages.** The ready-made components always render left to right. For Arabic, Hebrew or another right-to-left language, build on the [Banner primitives](/docs/headless/banner) and set `dir={useLanguage().direction}` on your root element.
+
+</Framework>
+
+<Framework when="core">
+
+**Your own code can read the text.** `consentStore.translations` is the active language's map; `consentStore.subscribe()` tells you when it changes.
+
+**Right-to-left languages.** The `@cookieyes/vanilla` banner always renders left to right. For Arabic, Hebrew or another right-to-left language, [build your own UI](/docs/store/build-your-own-ui) and set `dir` from `consentStore.getLanguageInfo().direction`.
+
+</Framework>
 
 ## Common mistakes
 
@@ -147,4 +253,8 @@ It is async, and it warns in the console if the language is not in `messages` an
 ## Next steps
 
 - [Configuration](/docs/getting-started/configuration#i18n): the `i18n` option in the reference table
+<Framework when="nextjs react">
+
 - [Focused hooks](/docs/hooks/focused-hooks): `useTranslations()` and `useLanguage()` in full
+
+</Framework>

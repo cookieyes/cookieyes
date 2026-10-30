@@ -1,12 +1,20 @@
 ---
 title: Theme tokens
 description: Set the brand colour, corner radius and font once; every CookieYes surface follows.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, core]
 ---
+
+<Framework when="core">
+
+This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-started/vanilla). `@cookieyes/core` alone draws nothing, so there is nothing for it to style.
+
+</Framework>
 
 ## What it does
 
-`theme` in `initCookieYes()` sets the colours, radius and font of the banner, both dialogs, the recall button and the reload notice. Each key writes one CSS variable (`--cy-*`) that the stylesheet uses everywhere.
+`theme` in the configuration sets the colours, radius and font of the banner, both dialogs, the recall button and the reload notice. Each key writes one CSS variable (`--cy-*`) that the stylesheet uses everywhere.
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-manager.tsx"
 "use client";
@@ -22,6 +30,25 @@ initCookieYes({
   },
 });
 ```
+
+</Framework>
+
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { start } from "@cookieyes/vanilla";
+
+start({
+  mode: "cookie-only",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+    fontFamily: "'Inter', sans-serif",
+  },
+});
+```
+
+</Framework>
 
 Try the values live in the [Playground](/playground).
 

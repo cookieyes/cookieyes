@@ -86,6 +86,8 @@ export {
  */
 export { blockIframes, type IframeBlockerStore } from "@cookieyes/core/iframes";
 export { registerNetworkBlocker } from "@cookieyes/core/network-blocker";
+// Styling contract — part/state hooks for targeting components in CSS
+export { CY_PART, CY_STATE, type CyPart, type CyState } from "@cookieyes/ui";
 // Provider — supplies the per-request regulation so SSR banners are correct
 export {
   CookieYesProvider,
@@ -115,7 +117,6 @@ export {
   useReloadNotice,
   useTranslations,
 } from "./hooks/index.js";
-
 // Styled presets — drop-in defaults built from the primitives
 export { type BannerPart, CookieBanner, type CookieBannerProps } from "./presets/CookieBanner.js";
 export { CookieOptOut, type CookieOptOutProps, type OptOutPart } from "./presets/CookieOptOut.js";
@@ -151,5 +152,3 @@ export {
   initCookieYes,
   resetCookieYes,
 } from "./runtime.js";
-// Styling contract — part/state hooks for targeting components in CSS
-export { CY_PART, CY_STATE, type CyPart, type CyState } from "./styles/parts.js";

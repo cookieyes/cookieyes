@@ -4,6 +4,7 @@
  * importing. Anything reusable beyond /docs belongs in src/components instead.
  */
 export { ArchArrow, ArchBox, ArchDiagram, ArchRow } from "./ArchDiagram";
+export { BackendEndpointsTable, BackendFieldsTable, BackendOptionsTable } from "./BackendReference";
 export { ChangelogEntry } from "./Changelog";
 export { CompareTable, Mark } from "./CompareTable";
 export { ComponentPropsTable } from "./ComponentPropsTable";

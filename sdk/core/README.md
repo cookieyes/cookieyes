@@ -152,7 +152,9 @@ Each decision is one record, so it can serve as proof of consent:
   "decidedAt": "2026-09-28T10:01:21.638Z", // when the visitor decided, not when it was sent
   "taxonomyHash": "2fbx48",                // the category set the decision was made against
   "action": "accept_all",                  // accept_all | reject_all | accept_selected | save
-  "source": "banner"                       // banner | preferences | optout | api
+  "source": "banner",                      // banner | preferences | optout | api
+  "sdkVersion": "0.12.0",                  // the @cookieyes/core build that sent it
+  "gpc": false                             // whether the browser sent Global Privacy Control
 }
 ```
 
