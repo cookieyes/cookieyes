@@ -82,8 +82,11 @@ jobs:
       - name: Build web app
         run: pnpm build:web
 
+      # @cookieyes/backend's tests run in the backend-postgres job below instead: its
+      # PGlite and SQLite engines made this shared job slow enough that timing-based
+      # tests elsewhere (devtools, the axe conformance check) started timing out.
       - name: Test
-        run: pnpm test
+        run: pnpm turbo run test --filter='./sdk/*' --filter='!@cookieyes/backend' --filter=@cookieyes/web
 
   conformance:
     name: Conformance suite in a real browser
@@ -116,11 +119,16 @@ jobs:
         run: pnpm test:browser
 
   backend-postgres:
-    name: Consent backend on real Postgres
-    # `pnpm test` above runs the backend's store tests on memory, PGlite and SQLite.
-    # PGlite answers one query at a time, so only a real server shows two copies of a
-    # record racing each other (contributing/design/consent-backend.md).
+    name: Consent backend on real Postgres (${{ matrix.node-version }})
+    # The backend's whole test suite, kept out of the shared job above: its store tests
+    # on memory, PGlite and SQLite, and on a real Postgres. PGlite answers one query at
+    # a time, so only a real server shows two copies of a record racing each other
+    # (contributing/design/consent-backend.md).
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
     services:
       postgres:
         image: postgres:16
@@ -135,10 +143,10 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v5
 
-      - name: Setup Node
+      - name: Setup Node ${{ matrix.node-version }}
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - name: Install dependencies
