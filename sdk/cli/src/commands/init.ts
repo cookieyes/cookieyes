@@ -258,10 +258,129 @@ function installHint(pm: PackageManager, pkg: string): string {
   }
 }
 
+function urlProblem(value: string): string | undefined {
+  const v = value.trim();
+  const message = "Enter a valid URL or path (e.g. /api/consent)";
+  if (v.length === 0) return message;
+  if (v.startsWith("/")) return undefined; // allow relative paths
+  try {
+    new URL(v);
+    return undefined;
+  } catch {
+    return message;
+  }
+}
+
+// ─── Flags ────────────────────────────────────────────────────────────────────
+
+/** Answers given on the command line. A prompt whose answer is here is skipped. */
+export type InitFlags = {
+  framework?: Framework | undefined;
+  mode?: OptionInputs["mode"] | undefined;
+  apiUrl?: string | undefined;
+  regulation?: OptionInputs["regulation"] | undefined;
+  colorScheme?: OptionInputs["colorScheme"] | undefined;
+  locales?: Locale[] | undefined;
+  install?: boolean | undefined;
+  /** Take the default for every prompt not answered by another flag. */
+  yes?: boolean | undefined;
+};
+
+function oneOf<T extends string>(flag: string, value: string, allowed: readonly T[]): T {
+  const match = allowed.find((a) => a.toLowerCase() === value.toLowerCase());
+  if (!match) throw new Error(`${flag} must be one of ${allowed.join(", ")}, not "${value}".`);
+  return match;
+}
+
+/**
+ * Reads the `init` flags. Values go after a space or an `=`. Throws on an unknown flag or
+ * value, so a typo fails loudly instead of being asked about or silently defaulted.
+ */
+export function parseInitFlags(args: readonly string[]): InitFlags {
+  const flags: InitFlags = {};
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i] as string;
+    const eq = arg.indexOf("=");
+    const name = eq === -1 ? arg : arg.slice(0, eq);
+    const value = (): string => {
+      if (eq !== -1) return arg.slice(eq + 1);
+      const next = args[i + 1];
+      if (next === undefined || next.startsWith("--")) throw new Error(`${name} needs a value.`);
+      i++;
+      return next;
+    };
+    switch (name) {
+      case "--yes":
+      case "-y":
+        flags.yes = true;
+        break;
+      case "--install":
+        flags.install = true;
+        break;
+      case "--no-install":
+        flags.install = false;
+        break;
+      case "--framework":
+        flags.framework = oneOf(name, value(), ["nextjs", "react", "vanilla"] as const);
+        break;
+      case "--mode":
+        flags.mode = oneOf(name, value(), ["cookie-only", "self-hosted"] as const);
+        break;
+      case "--api-url": {
+        const url = value().trim();
+        const problem = urlProblem(url);
+        if (problem) throw new Error(`--api-url: ${problem}.`);
+        flags.apiUrl = url;
+        break;
+      }
+      case "--regulation":
+        flags.regulation = oneOf(name, value(), ["GDPR", "CCPA"] as const);
+        break;
+      case "--color-scheme":
+        flags.colorScheme = oneOf(name, value(), ["light", "dark"] as const);
+        break;
+      case "--locales": {
+        const list = value()
+          .split(",")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        flags.locales = list.map((l) => oneOf(name, l, ["es", "fr", "de"] as const));
+        break;
+      }
+      default:
+        throw new Error(`Unknown option for init: ${arg}`);
+    }
+  }
+  // An API URL only means something for a self-hosted setup, so it implies one.
+  if (flags.apiUrl !== undefined) {
+    if (flags.mode === "cookie-only") throw new Error("--api-url needs --mode self-hosted.");
+    flags.mode = "self-hosted";
+  }
+  return flags;
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export async function runInit(): Promise<void> {
+export async function runInit(args: readonly string[] = []): Promise<void> {
   const cwd = process.cwd();
+
+  let flags: InitFlags;
+  try {
+    flags = parseInitFlags(args);
+  } catch (error) {
+    cancel(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
+
+  // Without a terminal a prompt waits for input that never comes, so a script or CI job
+  // hung instead of failing. Every answer must then come from a flag or from --yes.
+  const ask = <T>(flag: string, prompt: () => Promise<T | symbol>): Promise<T | symbol> => {
+    if (!process.stdin.isTTY) {
+      cancel(`No terminal to ask in. Pass ${flag}, or --yes to accept the defaults.`);
+      process.exit(1);
+    }
+    return prompt();
+  };
 
   console.log();
   intro(pc.bgBlue(pc.bold(pc.white("  CookieYes  "))));
@@ -270,23 +389,29 @@ export async function runInit(): Promise<void> {
   const pm = detectPackageManager(cwd);
 
   // ── Framework ──────────────────────────────────────────────────────────────
-  const frameworkAnswer = await select({
-    message: "Which framework are you using?",
-    options: [
-      {
-        value: "nextjs" as const,
-        label: "Next.js",
-        ...(detected === "nextjs" ? { hint: "detected" } : {}),
-      },
-      {
-        value: "react" as const,
-        label: "React",
-        hint: detected === "react" ? "detected" : "Vite, CRA, etc.",
-      },
-      { value: "vanilla" as const, label: "Vanilla JS / Other" },
-    ],
-    initialValue: detected ?? ("nextjs" as const),
-  });
+  const frameworkAnswer =
+    flags.framework ??
+    (flags.yes
+      ? (detected ?? "nextjs")
+      : await ask("--framework", () =>
+          select({
+            message: "Which framework are you using?",
+            options: [
+              {
+                value: "nextjs" as const,
+                label: "Next.js",
+                ...(detected === "nextjs" ? { hint: "detected" } : {}),
+              },
+              {
+                value: "react" as const,
+                label: "React",
+                hint: detected === "react" ? "detected" : "Vite, CRA, etc.",
+              },
+              { value: "vanilla" as const, label: "Vanilla JS / Other" },
+            ],
+            initialValue: detected ?? ("nextjs" as const),
+          }),
+        ));
 
   if (isCancel(frameworkAnswer)) {
     cancel("Setup cancelled.");
@@ -295,18 +420,28 @@ export async function runInit(): Promise<void> {
   const framework = frameworkAnswer as Framework;
 
   // ── Mode ───────────────────────────────────────────────────────────────────
-  const modeAnswer = await select({
-    message: "Backend mode?",
-    options: [
-      {
-        value: "cookie-only" as const,
-        label: "Cookie-only",
-        hint: "no backend — stored in a browser cookie",
-      },
-      { value: "self-hosted" as const, label: "Self-hosted", hint: "sync consent to your backend" },
-    ],
-    initialValue: "cookie-only" as const,
-  });
+  const modeAnswer =
+    flags.mode ??
+    (flags.yes
+      ? "cookie-only"
+      : await ask("--mode", () =>
+          select({
+            message: "Backend mode?",
+            options: [
+              {
+                value: "cookie-only" as const,
+                label: "Cookie-only",
+                hint: "no backend — stored in a browser cookie",
+              },
+              {
+                value: "self-hosted" as const,
+                label: "Self-hosted",
+                hint: "sync consent to your backend",
+              },
+            ],
+            initialValue: "cookie-only" as const,
+          }),
+        ));
 
   if (isCancel(modeAnswer)) {
     cancel("Setup cancelled.");
@@ -317,21 +452,20 @@ export async function runInit(): Promise<void> {
   // ── Backend URL (only when self-hosted) ────────────────────────────────────
   let backendURL: string | undefined;
   if (mode === "self-hosted") {
-    const urlAnswer = await text({
-      message: "Backend URL (full POST endpoint)",
-      placeholder: "https://your-backend.example.com/v1/consent",
-      validate(val) {
-        const v = (val ?? "").trim();
-        if (v.length === 0) return "Enter a valid URL or path (e.g. /api/consent)";
-        if (v.startsWith("/")) return undefined; // allow relative paths
-        try {
-          new URL(v);
-          return undefined;
-        } catch {
-          return "Enter a valid URL or path (e.g. /api/consent)";
-        }
-      },
-    });
+    // No default: a guessed URL would send every record to an address that may not exist.
+    if (flags.apiUrl === undefined && flags.yes) {
+      cancel("--mode self-hosted needs --api-url.");
+      process.exit(1);
+    }
+    const urlAnswer =
+      flags.apiUrl ??
+      (await ask("--api-url", () =>
+        text({
+          message: "Backend URL (full POST endpoint)",
+          placeholder: "https://your-backend.example.com/v1/consent",
+          validate: (val) => urlProblem(val ?? ""),
+        }),
+      ));
     if (isCancel(urlAnswer)) {
       cancel("Setup cancelled.");
       process.exit(0);
@@ -340,14 +474,20 @@ export async function runInit(): Promise<void> {
   }
 
   // ── Regulation ─────────────────────────────────────────────────────────────
-  const regulationAnswer = await select({
-    message: "Which privacy regulation applies?",
-    options: [
-      { value: "GDPR" as const, label: "GDPR", hint: "European Union — opt-in" },
-      { value: "CCPA" as const, label: "CCPA", hint: "California / US — opt-out" },
-    ],
-    initialValue: "GDPR" as const,
-  });
+  const regulationAnswer =
+    flags.regulation ??
+    (flags.yes
+      ? "GDPR"
+      : await ask("--regulation", () =>
+          select({
+            message: "Which privacy regulation applies?",
+            options: [
+              { value: "GDPR" as const, label: "GDPR", hint: "European Union — opt-in" },
+              { value: "CCPA" as const, label: "CCPA", hint: "California / US — opt-out" },
+            ],
+            initialValue: "GDPR" as const,
+          }),
+        ));
 
   if (isCancel(regulationAnswer)) {
     cancel("Setup cancelled.");
@@ -356,14 +496,20 @@ export async function runInit(): Promise<void> {
   const regulation = regulationAnswer as "GDPR" | "CCPA";
 
   // ── Color scheme ───────────────────────────────────────────────────────────
-  const colorSchemeAnswer = await select({
-    message: "Color scheme",
-    options: [
-      { value: "light" as const, label: "Light" },
-      { value: "dark" as const, label: "Dark" },
-    ],
-    initialValue: "light" as const,
-  });
+  const colorSchemeAnswer =
+    flags.colorScheme ??
+    (flags.yes
+      ? "light"
+      : await ask("--color-scheme", () =>
+          select({
+            message: "Color scheme",
+            options: [
+              { value: "light" as const, label: "Light" },
+              { value: "dark" as const, label: "Dark" },
+            ],
+            initialValue: "light" as const,
+          }),
+        ));
 
   if (isCancel(colorSchemeAnswer)) {
     cancel("Setup cancelled.");
@@ -372,16 +518,22 @@ export async function runInit(): Promise<void> {
   const colorScheme = colorSchemeAnswer as "light" | "dark";
 
   // ── Extra languages (English is always available) ─────────────────────────
-  const localesAnswer = await multiselect({
-    message: "Extra languages? (space to toggle, English always included)",
-    options: [
-      { value: "es" as const, label: "Spanish (es)" },
-      { value: "fr" as const, label: "French (fr)" },
-      { value: "de" as const, label: "German (de)" },
-    ],
-    required: false,
-    initialValues: [],
-  });
+  const localesAnswer =
+    flags.locales ??
+    (flags.yes
+      ? []
+      : await ask("--locales", () =>
+          multiselect({
+            message: "Extra languages? (space to toggle, English always included)",
+            options: [
+              { value: "es" as const, label: "Spanish (es)" },
+              { value: "fr" as const, label: "French (fr)" },
+              { value: "de" as const, label: "German (de)" },
+            ],
+            required: false,
+            initialValues: [],
+          }),
+        ));
 
   if (isCancel(localesAnswer)) {
     cancel("Setup cancelled.");
@@ -392,10 +544,16 @@ export async function runInit(): Promise<void> {
   // ── Install ────────────────────────────────────────────────────────────────
   const pkg = pkgForFramework(framework);
 
-  const installAnswer = await confirm({
-    message: `Install ${pc.cyan(pkg)} now?`,
-    initialValue: true,
-  });
+  const installAnswer =
+    flags.install ??
+    (flags.yes
+      ? true
+      : await ask("--install or --no-install", () =>
+          confirm({
+            message: `Install ${pc.cyan(pkg)} now?`,
+            initialValue: true,
+          }),
+        ));
 
   if (isCancel(installAnswer)) {
     cancel("Setup cancelled.");

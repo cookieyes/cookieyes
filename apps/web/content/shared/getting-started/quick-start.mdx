@@ -23,6 +23,14 @@ npx @cookieyes/cli init
 5. **Extra languages**: English is always included.
 6. Confirm, and it installs the package.
 
+To skip the questions, in a script, in CI or from an AI coding tool, pass the answers as flags. `--yes` takes the default for any question left:
+
+```npm
+npx @cookieyes/cli init --yes --regulation GDPR --no-install
+```
+
+`npx @cookieyes/cli --help` lists every flag.
+
 ## 3. Start your app
 
 The banner appears at the bottom of the page. Click **Accept All** and reload: it stays away, and a small round button in the corner reopens the preferences dialog.
