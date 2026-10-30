@@ -528,6 +528,9 @@ export function runConformance(
           "preferences",
         );
       }),
+      // axe-core audits every node of the banner and the dialog; in jsdom on a busy CI
+      // runner that alone took just over the 5 s default, for React and vanilla alike.
+      30_000,
     );
 
     if (driver.serverHtml) {
