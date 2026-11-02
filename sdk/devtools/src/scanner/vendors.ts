@@ -198,7 +198,14 @@ export const VENDORS: readonly Vendor[] = [
     hosts: ["fullstory.com"],
     cookies: ["fs_uid", "fs_lua"],
   },
-  { id: "matomo", name: "Matomo", category: A, hosts: ["matomo.cloud"], cookies: ["_pk_"] },
+  {
+    id: "matomo",
+    name: "Matomo",
+    category: A,
+    hosts: ["matomo.cloud"],
+    cookies: ["_pk_"],
+    preset: 'matomoAnalytics({ matomoUrl: "https://…", siteId: 1 })',
+  },
   { id: "plausible", name: "Plausible", category: A, hosts: ["plausible.io"], cookieless: true },
   { id: "fathom", name: "Fathom", category: A, hosts: ["usefathom.com"], cookieless: true },
   {
