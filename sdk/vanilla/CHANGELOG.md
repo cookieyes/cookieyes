@@ -1,5 +1,13 @@
 # @cookieyes/vanilla
 
+## 0.1.1
+
+### Patch Changes
+
+- 43cca63: The npm page of each package now opens with the CookieYes banner image, badges and section links, like the other CookieYes packages. No code changed.
+- Updated dependencies [43cca63]
+  - @cookieyes/ui@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
