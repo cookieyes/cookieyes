@@ -1,0 +1,183 @@
+---
+title: Matomo
+description: Load Matomo only after analytics consent, or count visits without cookies until the visitor decides, and stop at once when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`matomoAnalytics()` loads Matomo after the visitor grants the analytics category. When consent is withdrawn, Matomo stops sending and its cookies are deleted at once, with no page reload. A second mode counts visits without cookies until the visitor decides; see [Consent modes](#consent-modes).
+
+## Set it up
+
+Install the integrations package and add `matomoAnalytics()` to the `initCookieYes()` call you already have. `matomoUrl` is the `u` value in the snippet Matomo gives you, and `siteId` the `setSiteId` value:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { matomoAnalytics } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [matomoAnalytics({ matomoUrl: "https://example.matomo.cloud", siteId: 1 })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { matomoAnalytics } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [matomoAnalytics({ matomoUrl: "https://example.matomo.cloud", siteId: 1 })],
+});
+```
+
+</Framework>
+
+Remove the Matomo snippet from your page, and the consent script from Matomo's CookieYes guide if you added it. The integration adds the script itself.
+
+### Single-page apps
+
+Matomo counts the first page by itself, not the pages your router shows after it. Call `matomoPageView()` on every route change:
+
+<Framework when="nextjs">
+
+```tsx title="app/matomo-page-views.tsx"
+"use client";
+
+import { matomoPageView } from "@cookieyes/scripts";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
+
+export function MatomoPageViews() {
+  const pathname = usePathname();
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false; // the integration counts the first page
+      return;
+    }
+    matomoPageView();
+  }, [pathname]);
+  return null;
+}
+```
+
+Render `<MatomoPageViews />` once in your root layout.
+
+</Framework>
+<Framework when="react">
+
+With React Router:
+
+```tsx title="src/matomo-page-views.tsx" check="false"
+import { matomoPageView } from "@cookieyes/scripts";
+import { useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
+
+export function MatomoPageViews() {
+  const { pathname } = useLocation();
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false; // the integration counts the first page
+      return;
+    }
+    matomoPageView();
+  }, [pathname]);
+  return null;
+}
+```
+
+Render `<MatomoPageViews />` once inside your router.
+
+</Framework>
+<Framework when="core">
+
+```ts
+import { matomoPageView } from "@cookieyes/scripts";
+
+matomoPageView();
+```
+
+</Framework>
+
+### Events
+
+```ts
+import { matomoEvent } from "@cookieyes/scripts";
+
+matomoEvent("signup", "completed");
+```
+
+`matomoEvent()` and `matomoPageView()` do nothing until Matomo is loaded, and never throw. In `"consent"` mode that means until the visitor accepts; calls made before that are dropped, not sent later. For anything else, push to `window._paq` as usual once Matomo is loaded.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `matomoUrl` | required | Your Matomo address, for example `https://example.matomo.cloud` |
+| `siteId` | required | The `setSiteId` value from your Matomo snippet |
+| `consentMode` | `"consent"` | `"consent"` or `"cookieless-first"`. See [Consent modes](#consent-modes) |
+| `scriptUrl` | `<matomoUrl>/matomo.js` | Load the tracker from another URL, for example a renamed copy |
+| `trackerUrl` | `<matomoUrl>/matomo.php` | Send tracking requests to another URL |
+| `category` | `"analytics"` | The category the visitor must grant |
+| `id` | `"matomo"` | Only needed when you run more than one site |
+
+## Consent modes
+
+| | `"consent"` (default) | `"cookieless-first"` |
+| --- | --- | --- |
+| Before a decision | Nothing loads | Visits are counted, no cookies |
+| After accept | Tracking with cookies | Tracking with cookies |
+| After withdrawal | Tracking stops, cookies deleted | Cookies deleted, tracking continues without them |
+
+Cookie-free tracking still sends the visitor's IP address and browser details to Matomo. Whether that needs consent on your site is your decision, not a CookieYes recommendation. The default waits for consent.
+
+## Good to know
+
+- **Accepting again counts the current page.** In `"consent"` mode, a visitor who withdraws and then accepts on the same page gets a fresh page view. Nothing from the time without consent is sent.
+- **Matomo's own consent cookies are cleared.** If your site used Matomo's `rememberConsentGiven` before, as Matomo's CookieYes guide does, visitors may still carry `mtm_consent` or `mtm_consent_removed` cookies. The integration deletes them when it starts, so CookieYes is the only record of consent.
+- **Matomo's cookies** start with `_pk_`: `_pk_id`, `_pk_ses` and a few more.
+
+## Check it works
+
+Open your site in a private window and watch the Network tab and the cookies:
+
+1. Before a decision: no request to your Matomo address, and no cookie starting with `_pk_`. In `"cookieless-first"` mode, requests to `matomo.php` are sent but still no `_pk_` cookie.
+2. Accept: `matomo.js` loads, a request to `matomo.php` follows, and `_pk_id` and `_pk_ses` appear. The visit shows in Matomo under Visitors, Real-time.
+3. Withdraw consent in the preferences dialog: the `_pk_` cookies are gone. Click around: no new request to `matomo.php`. In `"cookieless-first"` mode, requests continue and no `_pk_` cookie comes back.
+4. Accept again: requests start again, with no reload.
+
+<Framework when="nextjs react">
+
+The [devtools panel](/docs/devtools) shows the integration as `active`, or `silenced` while consent is withdrawn.
+
+</Framework>
+
+## Common mistakes
+
+**Matomo tracks before the visitor accepts.**
+The Matomo snippet is still in your page. Remove it.
+
+**Only the first page is counted in a single-page app.**
+Call `matomoPageView()` on route changes, as shown above.
+
+**Events are missing.**
+The calls ran before Matomo loaded. In `"consent"` mode, that is before the visitor accepted; those calls are dropped.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration

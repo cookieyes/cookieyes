@@ -10,6 +10,7 @@
     "google-tag-manager",
     "google-ads",
     "hotjar",
+    "matomo",
     "meta-pixel",
     "microsoft-clarity",
     "posthog",
