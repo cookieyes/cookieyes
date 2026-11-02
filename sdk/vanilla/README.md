@@ -1,8 +1,29 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-dark.svg">
+    <img src="https://raw.githubusercontent.com/cookieyes/cookieyes/main/.github/assets/banner-light.svg" alt="CookieYes consent banner, drawn by @cookieyes/vanilla" width="820">
+  </picture>
+</p>
+
 <h1 align="center">@cookieyes/vanilla</h1>
 
 <p align="center"><strong>The CookieYes consent banner for any web page, with no framework.</strong></p>
 
 <p align="center">The same banner, dialogs and recall button as <code>@cookieyes/react</code>, drawn with plain browser code. For a site with no framework, or one without a CookieYes adapter yet.</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/@cookieyes/vanilla"><img src="https://img.shields.io/npm/v/@cookieyes/vanilla" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@cookieyes/vanilla"><img src="https://img.shields.io/npm/dw/@cookieyes/vanilla" alt="npm downloads"></a>
+  <a href="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml"><img src="https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/@cookieyes/vanilla" alt="license"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#commands">Commands</a> ·
+  <a href="#show-the-banner-before-any-script-runs">First paint</a> ·
+  <a href="https://developers.cookieyes.com">Docs</a>
+</p>
 
 ---
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Hoisted mock handles so the vi.mock factories can reference them.
 const h = vi.hoisted(() => ({
@@ -48,8 +48,8 @@ vi.mock("../utils/detect-layout.js", () => ({
   reactProjectPaths: h.reactProjectPaths,
 }));
 
-import { note } from "@clack/prompts";
-import { runInit } from "../commands/init.js";
+import { cancel, note } from "@clack/prompts";
+import { parseInitFlags, runInit } from "../commands/init.js";
 
 const NEXT_PATHS = {
   providerPath: "/proj/src/components/consent-manager/provider.tsx",
@@ -81,6 +81,7 @@ beforeEach(() => {
   h.installPackage.mockResolvedValue(undefined);
   h.nextProjectPaths.mockReturnValue(NEXT_PATHS);
   h.reactProjectPaths.mockReturnValue(REACT_PATHS);
+  process.stdin.isTTY = true;
 });
 
 describe("runInit — Next.js (cookie-only, GDPR)", () => {
@@ -312,5 +313,136 @@ describe("runInit — patching existing files", () => {
     await runInit();
 
     expect(h.log.info).toHaveBeenCalled();
+  });
+});
+
+describe("parseInitFlags", () => {
+  it("reads every flag, with a space or an = before the value", () => {
+    expect(
+      parseInitFlags([
+        "--framework=react",
+        "--mode",
+        "self-hosted",
+        "--api-url",
+        "/api/consent",
+        "--regulation=ccpa",
+        "--color-scheme",
+        "dark",
+        "--locales",
+        "es, fr",
+        "--no-install",
+        "-y",
+      ]),
+    ).toEqual({
+      framework: "react",
+      mode: "self-hosted",
+      apiUrl: "/api/consent",
+      regulation: "CCPA",
+      colorScheme: "dark",
+      locales: ["es", "fr"],
+      install: false,
+      yes: true,
+    });
+  });
+
+  it("treats an API URL as a self-hosted setup", () => {
+    expect(parseInitFlags(["--api-url=https://api.example.com/consent"]).mode).toBe("self-hosted");
+  });
+
+  it("reads an empty --locales as no extra languages", () => {
+    expect(parseInitFlags(["--locales="]).locales).toEqual([]);
+  });
+
+  it("refuses a typo instead of ignoring it", () => {
+    expect(() => parseInitFlags(["--framwork", "react"])).toThrow(/Unknown option/);
+    expect(() => parseInitFlags(["--framework", "svelte"])).toThrow(/must be one of/);
+    expect(() => parseInitFlags(["--locales", "es,xx"])).toThrow(/must be one of/);
+    expect(() => parseInitFlags(["--api-url", "not a url"])).toThrow(/--api-url/);
+    expect(() => parseInitFlags(["--mode"])).toThrow(/needs a value/);
+    expect(() => parseInitFlags(["--mode", "--yes"])).toThrow(/needs a value/);
+  });
+
+  it("refuses an API URL with a cookie-only setup", () => {
+    expect(() => parseInitFlags(["--mode=cookie-only", "--api-url=/api/consent"])).toThrow(
+      /needs --mode self-hosted/,
+    );
+  });
+});
+
+describe("runInit — flags", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const exit = () =>
+    vi.spyOn(process, "exit").mockImplementation(((code: number) => {
+      throw new Error(`exit ${code}`);
+    }) as never);
+
+  it("asks nothing when every answer is a flag", async () => {
+    await runInit([
+      "--framework=react",
+      "--api-url=https://api.example.com/consent",
+      "--regulation=CCPA",
+      "--color-scheme=dark",
+      "--locales=es",
+      "--no-install",
+    ]);
+    for (const prompt of [h.select, h.text, h.multiselect, h.confirm]) {
+      expect(prompt).not.toHaveBeenCalled();
+    }
+    const writes = writtenContents();
+    expect(writes.some((w) => w.includes('apiUrl: "https://api.example.com/consent",'))).toBe(true);
+    expect(writes.some((w) => w.includes('regulation: "CCPA"'))).toBe(true);
+    expect(writes.some((w) => w.includes('from "@cookieyes/translations/es"'))).toBe(true);
+    expect(h.installPackage).not.toHaveBeenCalled();
+  });
+
+  it("takes the defaults with --yes", async () => {
+    h.detectFramework.mockReturnValue("nextjs" as never);
+    await runInit(["--yes"]);
+    for (const prompt of [h.select, h.text, h.multiselect, h.confirm]) {
+      expect(prompt).not.toHaveBeenCalled();
+    }
+    const writes = writtenContents();
+    expect(writes.some((w) => w.includes('mode: "cookie-only"'))).toBe(true);
+    expect(writes.some((w) => w.includes('regulation: "GDPR"'))).toBe(true);
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/nextjs", "npm", expect.any(String));
+  });
+
+  it("asks only the questions no flag answered", async () => {
+    h.multiselect.mockResolvedValueOnce([]);
+    await runInit([
+      "--framework=vanilla",
+      "--mode=cookie-only",
+      "--regulation=GDPR",
+      "--color-scheme=light",
+      "--install",
+    ]);
+    expect(h.select).not.toHaveBeenCalled();
+    expect(h.multiselect).toHaveBeenCalledTimes(1);
+    expect(h.confirm).not.toHaveBeenCalled();
+  });
+
+  it("fails instead of waiting when there is no terminal to ask in", async () => {
+    process.stdin.isTTY = false as never;
+    exit();
+    await expect(runInit(["--framework=react"])).rejects.toThrow("exit 1");
+    expect(h.select).not.toHaveBeenCalled();
+    expect(cancel).toHaveBeenCalledWith(expect.stringContaining("--mode"));
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it("does not guess a backend URL for --yes with a self-hosted setup", async () => {
+    exit();
+    await expect(runInit(["--yes", "--mode=self-hosted"])).rejects.toThrow("exit 1");
+    expect(cancel).toHaveBeenCalledWith("--mode self-hosted needs --api-url.");
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it("stops on a bad flag before asking anything", async () => {
+    exit();
+    await expect(runInit(["--regulation=LGPD"])).rejects.toThrow("exit 1");
+    expect(h.select).not.toHaveBeenCalled();
   });
 });

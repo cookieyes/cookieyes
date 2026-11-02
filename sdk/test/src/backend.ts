@@ -80,14 +80,15 @@ export function runBackendConformance(
   target: BackendTarget,
   { describe, it }: ConformanceRunner,
 ): void {
-  // A loop, not `/\/+$/`, which takes quadratic time on a long run of slashes.
-  let end = target.url.length;
-  while (end > 0 && target.url[end - 1] === "/") end--;
-  const base = target.url.slice(0, end);
   const untrusted = target.untrustedOrigin ?? "https://untrusted.invalid";
 
+  // The URL is read when a check runs, not here: a server started in `beforeAll` on a
+  // free port only knows its URL after the tests are registered.
   const send = (path: string, init: RequestInit = {}): Promise<Response> => {
-    const request = new Request(`${base}${path}`, init);
+    // A loop, not `/\/+$/`, which takes quadratic time on a long run of slashes.
+    let end = target.url.length;
+    while (end > 0 && target.url[end - 1] === "/") end--;
+    const request = new Request(`${target.url.slice(0, end)}${path}`, init);
     return target.fetch ? target.fetch(request) : fetch(request);
   };
   const post = (body: unknown, headers: Record<string, string> = {}) =>
