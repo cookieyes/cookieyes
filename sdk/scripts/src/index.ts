@@ -20,6 +20,12 @@ export {
   hotjarIdentify,
   hotjarStateChange,
 } from "./hotjar.js";
+export {
+  type MatomoAnalyticsConfig,
+  matomoAnalytics,
+  matomoEvent,
+  matomoPageView,
+} from "./matomo.js";
 export { type MetaPixelConfig, metaPixel } from "./meta.js";
 export {
   type PostHogConfig,

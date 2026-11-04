@@ -1,6 +1,6 @@
 ---
 name: gate-third-party-scripts
-description: "Load Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment, Ahrefs Web Analytics, Hotjar or any script only after the visitor consents, with the @cookieyes/scripts integrations, a custom integration of your own, and Google Consent Mode v2."
+description: "Load Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment, Ahrefs Web Analytics, Hotjar, Matomo or any script only after the visitor consents, with the @cookieyes/scripts integrations, a custom integration of your own, and Google Consent Mode v2."
 ---
 
 # Load third-party tools only after consent
@@ -39,6 +39,7 @@ Remove any vendor snippet that was pasted into the HTML by hand. The integration
 | Segment | `segment({ writeKey })` | source write key | `analytics` |
 | Ahrefs Web Analytics | `ahrefsAnalytics({ key })` | `data-key` from the Ahrefs snippet | `analytics` |
 | Hotjar | `hotjar({ siteId })` | `hjid` from the Hotjar snippet | `analytics` |
+| Matomo | `matomoAnalytics({ matomoUrl, siteId })` | `u` and `setSiteId` from the Matomo snippet | `analytics` |
 | Any other script | `customScript({ id, src, category })` | script URL and a category | as given |
 
 The default categories are `necessary`, `functional`, `analytics`, `performance` and `advertisement`. Pass `category` to any integration to change it.
@@ -126,6 +127,7 @@ export const myVendor: Integration = {
 - Segment: turn Segment's own consent management off; this integration is the gate.
 - Before consent the vendor global does not exist. Guard calls: `window.fbq?.("track", …)`, `window.clarity?.("event", …)`, or `safeCall("analytics", "track", …)` from `@cookieyes/scripts` for Segment and PostHog, `safeCall("AhrefsAnalytics", "sendEvent", …)` for Ahrefs, and `hotjarEvent()` / `hotjarIdentify()` for Hotjar.
 - Hotjar: it has no stop command and keeps recording until the page reloads, so recommend `hotjar({ siteId, reloadOnRevoke: true })`.
+- Matomo: `consentMode: "cookieless-first"` counts visits without cookies before consent; the default `"consent"` loads nothing until then. In a single-page app, call `matomoPageView()` on every route change, or only the first page is counted. Use `matomoEvent()` for events.
 - A custom category must exist in the site's `categories` list, or the integration waits forever; the SDK logs a warning naming it.
 
 ## Verify

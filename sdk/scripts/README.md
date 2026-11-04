@@ -48,6 +48,7 @@ already use.
 | `clarity(config)` | Microsoft Clarity (session recording + heatmaps), consent-gated. |
 | `ahrefsAnalytics(config)` | Ahrefs Web Analytics (cookie-free), consent-gated. |
 | `hotjar(config)` | Hotjar (session recording, heatmaps, surveys), consent-gated. |
+| `matomoAnalytics(config)` | Matomo (web analytics), consent-gated, with a cookie-free mode. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -423,6 +424,40 @@ hotjar({
 - Hotjar tracks single-page-app URL changes itself; `hotjarStateChange` is only for
   sites that switched Hotjar's URL tracking to manual.
 
+### `matomoAnalytics(config)`
+
+Matomo (web analytics), consent-gated, in one of Matomo's two consent models.
+
+```ts
+matomoAnalytics({
+  matomoUrl: "https://example.matomo.cloud", // required: the u value from the Matomo snippet
+  siteId: 1,                       // required: the setSiteId value from the snippet
+  consentMode: "consent",          // optional: "consent" (default) or "cookieless-first"
+  scriptUrl: "https://example.com/stats.js",  // optional: the tracker script (default <matomoUrl>/matomo.js)
+  trackerUrl: "https://example.com/stats.php", // optional: where requests go (default <matomoUrl>/matomo.php)
+  category: "analytics",           // optional: the category that gates it (default "analytics")
+  id: "matomo",                    // optional: only needed if you run more than one
+});
+```
+
+- **`"consent"` mode, `onRevoke: "silence"`:** nothing loads until consent
+  (`load: "afterConsent"`). On withdrawal we push `requireConsent` and `deleteCookies`:
+  Matomo stops sending at once and its `_pk_*` cookies go, no reload. A re-grant on the
+  same page pushes `trackPageView` then `setConsentGiven`; the `trackPageView` first
+  empties the requests Matomo queued while consent was withdrawn, so none of them is sent.
+- **`"cookieless-first"` mode:** Matomo loads for everyone (`load: "immediately"`) with
+  `requireCookieConsent` first, so it counts visits without cookies. Consent pushes
+  `setCookieConsentGiven`; withdrawal pushes `forgetCookieConsentGiven`, which deletes the
+  cookies, and tracking carries on cookie-free. Whether cookie-free tracking needs consent
+  on your site is your legal decision; the default waits for consent.
+- **Matomo's own consent cookies are cleared** when the integration starts (`mtm_consent`,
+  `mtm_consent_removed`, `mtm_cookie_consent`). A visitor may still carry them from an
+  earlier setup such as Matomo's CookieYes guide, and the tracker reads them before every
+  request; CookieYes is the only record of consent.
+- **Single-page apps:** Matomo counts the first page only. Call `matomoPageView()` on each
+  route change. **Send events** with `matomoEvent(category, action, name?, value?)`. Both do
+  nothing until Matomo is loaded, so in `"consent"` mode calls before consent are dropped.
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -537,6 +572,7 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **Clarity** | `window.clarity` | Guard **before the first grant** — `afterConsent`, so it's absent until consent: `window.clarity?.("event", …)`. After that it persists (`silence` keeps it) and keeps sending cookie-free even while denied. |
 | **Ahrefs** | `window.AhrefsAnalytics` | Guard **before the first grant**: `safeCall("AhrefsAnalytics", "sendEvent", …)`. After that it persists (`silence` keeps it) and drops every event while denied. |
 | **Hotjar** | `window.hj` | Use `hotjarEvent()` / `hotjarIdentify()`: they drop calls before consent and after withdrawal. `window.hj` stays on the page after a withdrawal, so a direct call would still reach Hotjar until the next page load. |
+| **Matomo** | `window._paq` | Use `matomoEvent()` / `matomoPageView()`, or guard a direct push: `window._paq?.push(…)`. `_paq` does not exist until the tracker loads (in `"consent"` mode, until consent). After a withdrawal Matomo holds pushed calls in memory and the integration discards them on re-grant. |
 
 ### Testing your integration
 

@@ -61,6 +61,7 @@ describe("VENDORS", () => {
   const PRESETS = [
     "ahrefsAnalytics",
     "hotjar",
+    "matomoAnalytics",
     "ga4",
     "googleAds",
     "googleTagManager",

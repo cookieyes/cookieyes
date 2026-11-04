@@ -1,7 +1,7 @@
 # Vendor behaviour the integrations rely on
 
-Two integrations in `@cookieyes/scripts` stop their vendor on withdrawal through how the vendor's
-script behaves today, not through a documented API. If the vendor changes that behaviour, the
+Three integrations in `@cookieyes/scripts` depend on how the vendor's script behaves today, not
+only on a documented API. If the vendor changes that behaviour, the
 integration keeps passing its tests (they use a stub, not the vendor's script) while the real
 vendor keeps tracking after the visitor said no. Re-check both against the live script before a
 release that touches them, and at least every few months.
@@ -42,3 +42,27 @@ same page after a re-grant: the first copy is still running.
 **How to re-check.** On a site with a Hotjar site ID and recording on, count WebSocket frames to
 `ws.hotjar.com` after running the integration's cleanup. If they stop without errors and do not
 resume, Hotjar has gained a way to stop and the integration can be simplified.
+
+## Matomo (`sdk/scripts/src/matomo.ts`)
+
+The consent commands themselves (`requireConsent`, `setConsentGiven`, `requireCookieConsent`,
+`setCookieConsentGiven`, `forgetCookieConsentGiven`, `deleteCookies`) are documented in Matomo's
+"Tracking & Cookie Consent" guide. Two details are not.
+
+**What we rely on.** While consent is withdrawn (`requireConsent`), `matomo.js` keeps every
+tracking request in an in-memory queue and `setConsentGiven` sends them all. `trackPageView`
+empties that queue before queuing its own request, so the re-grant pushes `trackPageView` first
+and only the fresh page view goes out. Also, the tracker reads its own consent cookies
+(`mtm_consent`, `mtm_consent_removed`, `mtm_cookie_consent`) before every request and they win
+over the pushed commands, so the integration deletes them before the tracker loads.
+
+**Last checked:** November 2026, in `matomo.js` (Matomo 5) and live on a Matomo Cloud site: an
+event pushed while withdrawn was sent on a plain `setConsentGiven`, and not sent when
+`trackPageView` came first. `requireConsent` plus `deleteCookies` removed `_pk_id` and `_pk_ses`
+and set no `mtm_*` cookie.
+
+**How to re-check.** On a page with the tracker loaded and consent given, push `requireConsent`
+and `deleteCookies`, then `trackEvent`, then `trackPageView` and `setConsentGiven`. Only one
+request, the page view, may reach `matomo.php`. If the event is sent too, Matomo stopped clearing
+the queue in `trackPageView`; if the event is not sent even without the `trackPageView`, Matomo
+stopped queuing and the extra push can go.

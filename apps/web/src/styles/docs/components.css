@@ -649,7 +649,7 @@
      - flat mask + brand hex   : ga4, google-tag-manager, hotjar
      - flat mask + currentColor: google-ads, segment (no brand hex for these)
      - positioned background   : meta-pixel (not a flat silhouette)
-     - content: url(...)       : posthog, microsoft-clarity (multi-colour marks)
+     - content: url(...)       : posthog, microsoft-clarity, matomo (multi-colour marks)
      - one image per theme     : ahrefs-analytics (the designer supplied a light and a
                                  dark mark; see .cy-logo-ahrefs below)
 
@@ -670,6 +670,7 @@
 #nd-sidebar a[href$="/integrations/google-tag-manager"]::before,
 #nd-sidebar a[href$="/integrations/google-ads"]::before,
 #nd-sidebar a[href$="/integrations/hotjar"]::before,
+#nd-sidebar a[href$="/integrations/matomo"]::before,
 #nd-sidebar a[href$="/integrations/meta-pixel"]::before,
 #nd-sidebar a[href$="/integrations/microsoft-clarity"]::before,
 #nd-sidebar a[href$="/integrations/posthog"]::before,
@@ -701,6 +702,10 @@
 
 #nd-sidebar a[href$="/integrations/microsoft-clarity"]::before {
   content: url(/figma-logos/microsoft-clarity.svg);
+}
+
+#nd-sidebar a[href$="/integrations/matomo"]::before {
+  content: url(/figma-logos/matomo.svg);
 }
 
 /* No brand hex exists for these two: the mock's #sbInt doesn't list them at all.

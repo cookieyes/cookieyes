@@ -367,6 +367,7 @@
     "src/google.ts",
     "src/hotjar.ts",
     "src/index.ts",
+    "src/matomo.ts",
     "src/meta.ts",
     "src/posthog.ts",
     "src/queue.ts",
