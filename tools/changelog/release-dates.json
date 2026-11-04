@@ -10,6 +10,7 @@
   "@cookieyes/cli@0.3.3": "2026-09-10",
   "@cookieyes/cli@0.3.4": "2026-09-30",
   "@cookieyes/cli@0.3.5": "2026-10-30",
+  "@cookieyes/cli@0.4.0": "2026-11-02",
   "@cookieyes/core@0.1.1": "2026-06-25",
   "@cookieyes/core@0.10.0": "2026-10-07",
   "@cookieyes/core@0.11.0": "2026-10-08",
@@ -48,6 +49,7 @@
   "@cookieyes/nextjs@0.8.3": "2026-10-15",
   "@cookieyes/nextjs@0.8.4": "2026-10-27",
   "@cookieyes/nextjs@0.8.5": "2026-10-30",
+  "@cookieyes/nextjs@0.8.6": "2026-11-02",
   "@cookieyes/react@0.1.0": "2026-06-02",
   "@cookieyes/react@0.10.0": "2026-09-25",
   "@cookieyes/react@0.11.0": "2026-09-30",
@@ -57,6 +59,7 @@
   "@cookieyes/react@0.13.2": "2026-10-14",
   "@cookieyes/react@0.13.3": "2026-10-15",
   "@cookieyes/react@0.14.0": "2026-10-30",
+  "@cookieyes/react@0.14.1": "2026-11-02",
   "@cookieyes/react@0.2.0": "2026-06-25",
   "@cookieyes/react@0.3.0": "2026-07-20",
   "@cookieyes/react@0.4.0": "2026-08-05",
@@ -85,6 +88,7 @@
   "@cookieyes/test@0.1.2": "2026-10-08",
   "@cookieyes/test@0.1.3": "2026-10-09",
   "@cookieyes/test@0.2.0": "2026-10-30",
+  "@cookieyes/test@0.2.1": "2026-11-02",
   "@cookieyes/translations@0.1.0": "2026-06-02",
   "@cookieyes/translations@0.1.1": "2026-06-25",
   "@cookieyes/translations@0.2.0": "2026-07-20",
@@ -94,5 +98,7 @@
   "@cookieyes/translations@0.5.0": "2026-10-07",
   "@cookieyes/translations@0.5.1": "2026-10-09",
   "@cookieyes/ui@0.1.0": "2026-10-30",
-  "@cookieyes/vanilla@0.1.0": "2026-10-30"
+  "@cookieyes/ui@0.1.1": "2026-11-02",
+  "@cookieyes/vanilla@0.1.0": "2026-10-30",
+  "@cookieyes/vanilla@0.1.1": "2026-11-02"
 }
