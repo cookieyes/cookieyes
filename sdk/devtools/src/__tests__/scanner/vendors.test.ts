@@ -70,6 +70,7 @@ describe("VENDORS", () => {
     "clarity",
     "posthog",
     "segment",
+    "tiktokPixel",
   ];
 
   it("has unique ids and a built-in category for every vendor", () => {

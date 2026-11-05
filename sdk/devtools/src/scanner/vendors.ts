@@ -322,8 +322,9 @@ export const VENDORS: readonly Vendor[] = [
     id: "tiktok",
     name: "TikTok Pixel",
     category: AD,
-    hosts: ["analytics.tiktok.com"],
-    cookies: ["_ttp"],
+    hosts: ["analytics.tiktok.com", "analytics-ipv6.tiktokw.us"],
+    cookies: ["_ttp", "_tt_enable_cookie", "ttcsid", "ttclid"],
+    preset: 'tiktokPixel({ pixelId: "…" })',
   },
   {
     id: "x-ads",
