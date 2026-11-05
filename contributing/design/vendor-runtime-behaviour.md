@@ -1,6 +1,6 @@
 # Vendor behaviour the integrations rely on
 
-Three integrations in `@cookieyes/scripts` depend on how the vendor's script behaves today, not
+Four integrations in `@cookieyes/scripts` depend on how the vendor's script behaves today, not
 only on a documented API. If the vendor changes that behaviour, the
 integration keeps passing its tests (they use a stub, not the vendor's script) while the real
 vendor keeps tracking after the visitor said no. Re-check both against the live script before a
@@ -66,3 +66,28 @@ and `deleteCookies`, then `trackEvent`, then `trackPageView` and `setConsentGive
 request, the page view, may reach `matomo.php`. If the event is sent too, Matomo stopped clearing
 the queue in `trackPageView`; if the event is not sent even without the `trackPageView`, Matomo
 stopped queuing and the extra push can go.
+
+## Microsoft Advertising UET (`sdk/scripts/src/microsoft-uet.ts`)
+
+The consent signal (`consent default` / `consent update` with `ad_storage`) and the `_uetmsdns`
+"do not send" cookie are documented by Microsoft. How the tag reads that cookie is not.
+
+**What we rely on.** `bat.js` reads `_uetmsdns` once, when the tag is built, into
+`uetq.uetConfig.msDns`, and every beacon path (image beacons and `sendBeacon`) checks that flag
+before sending. So the cookie alone cannot stop a tag that is already running, and on withdrawal
+the integration also sets the flag itself; a re-grant clears it. The tag also keeps a copy of each
+`_uet*` cookie in localStorage, with a matching `_exp` key, so both are deleted. Loading `bat.js` a
+second time on the same page double-counts every route change (the first copy keeps its history
+hook), which is why withdrawal silences the tag instead of removing it.
+
+**Last checked:** November 2026, in `bat.js` and live on a local page with a placeholder tag id:
+`uetConfig.msDns = true` stopped the page-load, route-change, custom-event and page-hide beacons at
+once; setting the cookie after the tag had started stopped nothing; a second `bat.js` sent two
+page-hide beacons per route change.
+
+**How to re-check.** On a page with the tag loaded and consent given, set
+`window.uetq.uetConfig.msDns = true`, then change the route with `history.pushState` and push a
+custom event. Count the entries for `bat.bing.com/action/` in
+`performance.getEntriesByType("resource")`: none may be added. (Playwright's request event misses
+the image beacons; the performance entries do not.) If beacons still go, the flag was renamed:
+withdrawal then still pushes `update denied` and sets the cookie for the next page load.

@@ -28,6 +28,13 @@ export {
 } from "./matomo.js";
 export { type MetaPixelConfig, metaPixel } from "./meta.js";
 export {
+  type MicrosoftUetConfig,
+  microsoftUet,
+  type UetEventParams,
+  uetEvent,
+  uetPageLoad,
+} from "./microsoft-uet.js";
+export {
   type PostHogConfig,
   type PostHogRegion,
   type PostHogSyncConfig,
