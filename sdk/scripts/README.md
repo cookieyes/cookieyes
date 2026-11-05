@@ -49,6 +49,7 @@ already use.
 | `ahrefsAnalytics(config)` | Ahrefs Web Analytics (cookie-free), consent-gated. |
 | `hotjar(config)` | Hotjar (session recording, heatmaps, surveys), consent-gated. |
 | `matomoAnalytics(config)` | Matomo (web analytics), consent-gated, with a cookie-free mode. |
+| `microsoftUet(config)` | Microsoft Advertising UET (conversion tracking), consent-gated, with Microsoft's consent signal. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -458,6 +459,40 @@ matomoAnalytics({
   route change. **Send events** with `matomoEvent(category, action, name?, value?)`. Both do
   nothing until Matomo is loaded, so in `"consent"` mode calls before consent are dropped.
 
+### `microsoftUet(config)`
+
+Microsoft Advertising UET (`bat.js`), consent-gated, with Microsoft's consent mode signal.
+
+```ts
+microsoftUet({
+  tagId: "12345678",               // required: the ti value from the UET snippet
+  consentMode: "basic",            // optional: "basic" (default) or "advanced"
+  autoSpaTracking: true,           // optional: count route changes as page loads (default true)
+  restrictDataSharing: undefined,  // optional: Microsoft's _uetmsdns cookie in the denied state (default: on for a US opt-out visitor)
+  category: "advertisement",       // optional: the category that gates it (default "advertisement")
+  id: "microsoft-uet",             // optional: only needed if you run more than one
+});
+```
+
+- **`"basic"` mode, `onRevoke: "silence"`:** nothing loads until consent
+  (`load: "afterConsent"`); then `consent default granted` is pushed and the tag built with
+  `enableAutoConsent: false`, so it acts on our signal only. On withdrawal we push
+  `consent update denied`, silence the running tag, set Microsoft's `_uetmsdns` cookie so
+  the next page load sends nothing either, and delete `_uetsid`, `_uetvid` and
+  `_uetmsclkid` with their localStorage copies. No reload. A re-grant reverses that on the
+  same tag: `bat.js` is never loaded twice, because a second copy double-counts.
+- **`"advanced"` mode:** Microsoft's recommended setup. UET loads for everyone
+  (`load: "immediately"`) with `consent default denied`, so Microsoft gets cookieless beacons
+  (`asc=D`) before consent. A grant pushes `update granted`; a withdrawal pushes
+  `update denied` and deletes the cookies, and the tag keeps sending cookieless. Whether that
+  needs consent on your site is your legal decision; the default waits for consent.
+- **US opt-out visitors:** in the denied state the `_uetmsdns` cookie is set for a visitor
+  whose region resolves to CCPA, the way Meta Pixel gets Limited Data Use;
+  `restrictDataSharing` forces it on or off.
+- **Send events** with `uetEvent(name, params)` (UET's own names: `event_category`,
+  `event_label`, `event_value`, `revenue_value`, `currency`) and page loads with
+  `uetPageLoad()` when `autoSpaTracking` is off. Both do nothing until UET is on the page.
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -573,6 +608,7 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **Ahrefs** | `window.AhrefsAnalytics` | Guard **before the first grant**: `safeCall("AhrefsAnalytics", "sendEvent", …)`. After that it persists (`silence` keeps it) and drops every event while denied. |
 | **Hotjar** | `window.hj` | Use `hotjarEvent()` / `hotjarIdentify()`: they drop calls before consent and after withdrawal. `window.hj` stays on the page after a withdrawal, so a direct call would still reach Hotjar until the next page load. |
 | **Matomo** | `window._paq` | Use `matomoEvent()` / `matomoPageView()`, or guard a direct push: `window._paq?.push(…)`. `_paq` does not exist until the tracker loads (in `"consent"` mode, until consent). After a withdrawal Matomo holds pushed calls in memory and the integration discards them on re-grant. |
+| **Microsoft UET** | `window.uetq` | Use `uetEvent()` / `uetPageLoad()`, or guard a direct push: `window.uetq?.push(…)`. In `"basic"` mode `uetq` does not exist until consent, and after a withdrawal the silenced tag drops every push. In `"advanced"` mode a push while denied sends a cookieless beacon. |
 
 ### Testing your integration
 

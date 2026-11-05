@@ -72,6 +72,7 @@ const ENABLED_FILES = [
   "integrations/google-ads.mdx",
   "integrations/hotjar.mdx",
   "integrations/matomo.mdx",
+  "integrations/microsoft-uet.mdx",
   "integrations/meta-pixel.mdx",
   "integrations/microsoft-clarity.mdx",
   "integrations/posthog.mdx",
