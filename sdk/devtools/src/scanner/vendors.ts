@@ -308,7 +308,8 @@ export const VENDORS: readonly Vendor[] = [
     name: "Microsoft Advertising (UET)",
     category: AD,
     hosts: ["bat.bing.com"],
-    cookies: ["_uetsid", "_uetvid", "MUID"],
+    cookies: ["_uetsid", "_uetvid", "_uetmsclkid", "MUID"],
+    preset: 'microsoftUet({ tagId: "…" })',
   },
   {
     id: "linkedin",

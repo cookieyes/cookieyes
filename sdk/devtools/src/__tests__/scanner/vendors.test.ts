@@ -62,6 +62,7 @@ describe("VENDORS", () => {
     "ahrefsAnalytics",
     "hotjar",
     "matomoAnalytics",
+    "microsoftUet",
     "ga4",
     "googleAds",
     "googleTagManager",
