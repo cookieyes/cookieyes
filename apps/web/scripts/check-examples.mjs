@@ -73,6 +73,7 @@ const ENABLED_FILES = [
   "integrations/hotjar.mdx",
   "integrations/matomo.mdx",
   "integrations/microsoft-uet.mdx",
+  "integrations/tiktok-pixel.mdx",
   "integrations/meta-pixel.mdx",
   "integrations/microsoft-clarity.mdx",
   "integrations/posthog.mdx",
