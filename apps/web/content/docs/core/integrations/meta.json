@@ -12,6 +12,7 @@
     "hotjar",
     "matomo",
     "meta-pixel",
+    "microsoft-uet",
     "microsoft-clarity",
     "posthog",
     "segment",

@@ -40,6 +40,7 @@ Remove any vendor snippet that was pasted into the HTML by hand. The integration
 | Ahrefs Web Analytics | `ahrefsAnalytics({ key })` | `data-key` from the Ahrefs snippet | `analytics` |
 | Hotjar | `hotjar({ siteId })` | `hjid` from the Hotjar snippet | `analytics` |
 | Matomo | `matomoAnalytics({ matomoUrl, siteId })` | `u` and `setSiteId` from the Matomo snippet | `analytics` |
+| Microsoft Advertising (UET) | `microsoftUet({ tagId })` | `ti` from the UET snippet | `advertisement` |
 | Any other script | `customScript({ id, src, category })` | script URL and a category | as given |
 
 The default categories are `necessary`, `functional`, `analytics`, `performance` and `advertisement`. Pass `category` to any integration to change it.
@@ -128,6 +129,7 @@ export const myVendor: Integration = {
 - Before consent the vendor global does not exist. Guard calls: `window.fbq?.("track", …)`, `window.clarity?.("event", …)`, or `safeCall("analytics", "track", …)` from `@cookieyes/scripts` for Segment and PostHog, `safeCall("AhrefsAnalytics", "sendEvent", …)` for Ahrefs, and `hotjarEvent()` / `hotjarIdentify()` for Hotjar.
 - Hotjar: it has no stop command and keeps recording until the page reloads, so recommend `hotjar({ siteId, reloadOnRevoke: true })`.
 - Matomo: `consentMode: "cookieless-first"` counts visits without cookies before consent; the default `"consent"` loads nothing until then. In a single-page app, call `matomoPageView()` on every route change, or only the first page is counted. Use `matomoEvent()` for events.
+- Microsoft Advertising: the default `consentMode: "basic"` loads nothing until consent; `"advanced"` loads UET on every page with consent denied and sends cookieless beacons before consent. UET counts route changes itself. Send conversions with `uetEvent("purchase", { revenue_value, currency })`; it does nothing without consent.
 - A custom category must exist in the site's `categories` list, or the integration waits forever; the SDK logs a warning naming it.
 
 ## Verify

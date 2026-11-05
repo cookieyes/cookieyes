@@ -1,0 +1,132 @@
+---
+title: Microsoft Advertising
+description: Load the UET tag only after advertising consent, send Microsoft the consent signal it asks for, and stop at once when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`microsoftUet()` loads Microsoft Advertising's UET tag after the visitor grants the advertising category, and sends Microsoft the consent signal it requires. When consent is withdrawn, the tag goes quiet and its cookies are deleted at once, with no page reload. A second mode loads the tag on every page with consent denied by default; see [Consent modes](#consent-modes).
+
+## Set it up
+
+Install the integrations package and add `microsoftUet()` to the `initCookieYes()` call you already have. `tagId` is the `ti` value in the snippet Microsoft Advertising gives you:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { microsoftUet } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [microsoftUet({ tagId: "12345678" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { microsoftUet } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [microsoftUet({ tagId: "12345678" })],
+});
+```
+
+</Framework>
+
+Remove the UET snippet from your page, and any UET tag in a tag manager. The integration adds the script itself. Keep your existing `window.uetq.push("event", …)` calls, or move them to `uetEvent()` below.
+
+### Single-page apps
+
+UET counts route changes by itself, so there is nothing to add for Next.js or React Router. To report page loads yourself instead, set `autoSpaTracking: false` and call `uetPageLoad()` on every route change. Do not do both, or each page is counted twice.
+
+### Events
+
+```ts
+import { uetEvent } from "@cookieyes/scripts";
+
+uetEvent("purchase", { revenue_value: 49, currency: "EUR" });
+```
+
+`uetEvent()` takes UET's own parameter names: `event_category`, `event_label`, `event_value`, `revenue_value` and `currency`. It does nothing until UET is on the page: in `"basic"` mode that is until the visitor accepts, and nothing after a withdrawal. Those calls are dropped, not sent later. A call made while the script is still loading is kept by UET's own queue and sent once it has loaded.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `tagId` | required | The `ti` value from your UET snippet |
+| `consentMode` | `"basic"` | `"basic"` or `"advanced"`. See [Consent modes](#consent-modes) |
+| `autoSpaTracking` | `true` | Count route changes as page loads. Set `false` to call `uetPageLoad()` yourself |
+| `restrictDataSharing` | unset | Set Microsoft's `_uetmsdns` cookie in the denied state. Unset: on for a US opt-out visitor (CCPA). See [US opt-out visitors](#us-opt-out-visitors) |
+| `category` | `"advertisement"` | The category the visitor must grant |
+| `id` | `"microsoft-uet"` | Only needed when you run more than one tag |
+
+## Consent modes
+
+| | `"basic"` (default) | `"advanced"` |
+| --- | --- | --- |
+| Before a decision | Nothing loads | UET loads and sends beacons with `asc=D`, no cookies |
+| After accept | Tracking with cookies, `asc=G` | Tracking with cookies, `asc=G` |
+| After withdrawal | Tag goes quiet, cookies deleted | Cookies deleted, beacons continue with `asc=D` |
+
+`"advanced"` is the setup Microsoft recommends, for its modelled measurement. Before consent, Microsoft receives a page-load beacon for every page: the page URL and title, the referring page, screen size and language, your tag id and a random id for that page view, with no cookie and no visitor id. Some EU regulators have questioned the same practice for Google tags. Whether it needs consent on your site is your decision, not a CookieYes recommendation. The default waits for consent. In development, picking this mode logs one console note.
+
+### US opt-out visitors
+
+Microsoft's answer for visitors who restrict data sharing is the `_uetmsdns` cookie: with it set to `1`, UET sends nothing. The integration sets it in the denied state for a visitor whose region resolves to CCPA, including through Global Privacy Control, and removes it when they opt in. In `"basic"` mode it is set on every withdrawal anyway. `restrictDataSharing` forces it on or off. Microsoft Advertising also has an account-level Restricted Event Processing setting for the server side. This is a Microsoft feature, not legal advice.
+
+## Good to know
+
+- **UET's cookies.** `_uetsid` (1 day), `_uetvid` (390 days) and `_uetmsclkid` (90 days, set after a click on a Microsoft ad) are first-party cookies on your domain, each with a copy in localStorage. The integration deletes all of them on withdrawal. Microsoft's own cookies on `bing.com` (`MUID`, `MR`, `MSPTC`) are set by Microsoft's servers, so it cannot delete them; in `"basic"` mode no new ones are set after a withdrawal, because no request is made.
+- **Withdrawal stops new tracking.** It does not delete data Microsoft already received, and remarketing lists already built are Microsoft's to manage.
+- **Microsoft Clarity.** A UET tag can have "Enable Microsoft Clarity" ticked, which makes it load Clarity, a session recorder, under advertising consent. Untick it and use the [Microsoft Clarity](/docs/integrations/microsoft-clarity) integration instead, so each tool has its own consent.
+- **EEA, UK and Switzerland.** Microsoft requires a consent signal for these visitors, through consent mode or the TCF, never both. This integration sends consent mode.
+
+## Check it works
+
+Open your site in a private window, filter the Network tab to `bat.bing.com` and watch the cookies. Microsoft's UET Tag Helper browser extension shows the `asc` value of each beacon.
+
+In `"basic"` mode:
+
+1. Before a decision: no request, and no cookie starting with `_uet`.
+2. Accept: `bat.js` loads, beacons carry `asc=G`, and `_uetsid` and `_uetvid` appear.
+3. Withdraw consent in the preferences dialog: the `_uet` cookies are gone. Click around and change route: no new request.
+4. Accept again: beacons again, with no reload.
+
+In `"advanced"` mode: `bat.js` loads and beacons carry `asc=D` before a decision, with no `_uet` cookie. After accept, `asc=G` and the cookies. After withdrawal, the cookies are gone and beacons continue with `asc=D`.
+
+Microsoft checks two things on your site: no Microsoft cookie before the banner is answered, and none after the visitor refuses. In Microsoft Advertising, the UET tag's "Consent signal" column and its "Test your tag" tab show whether the signal arrives.
+
+<Framework when="nextjs react">
+
+The [devtools panel](/docs/devtools) shows the integration as `active`, or `silenced` while consent is withdrawn.
+
+</Framework>
+
+## Common mistakes
+
+**UET tracks before the visitor accepts.**
+The UET snippet, or a UET tag in a tag manager, is still on the page. Remove it.
+
+**Every page is counted twice.**
+`autoSpaTracking` is on and you also call `uetPageLoad()`. Do one or the other.
+
+**Conversions are missing.**
+The `uetEvent()` calls ran before UET loaded. In `"basic"` mode, that is before the visitor accepted; those calls are dropped.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Microsoft Clarity](/docs/integrations/microsoft-clarity): session recording under its own consent
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration
