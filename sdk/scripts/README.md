@@ -50,6 +50,7 @@ already use.
 | `hotjar(config)` | Hotjar (session recording, heatmaps, surveys), consent-gated. |
 | `matomoAnalytics(config)` | Matomo (web analytics), consent-gated, with a cookie-free mode. |
 | `microsoftUet(config)` | Microsoft Advertising UET (conversion tracking), consent-gated, with Microsoft's consent signal. |
+| `tiktokPixel(config)` | TikTok Pixel (conversion tracking), consent-gated, with TikTok's consent calls. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -493,6 +494,38 @@ microsoftUet({
   `event_label`, `event_value`, `revenue_value`, `currency`) and page loads with
   `uetPageLoad()` when `autoSpaTracking` is off. Both do nothing until UET is on the page.
 
+### `tiktokPixel(config)`
+
+TikTok Pixel (`ttq`), consent-gated, with TikTok's own consent calls.
+
+```ts
+tiktokPixel({
+  pixelId: "C1234567890ABCDEFGHI",  // required: the value in ttq.load("…") from Events Manager
+  autoPageView: true,               // optional: send the first page view (default true)
+  trackHistoryChanges: true,        // optional: count route changes as page views (default true)
+  limitedDataUse: undefined,        // optional: TikTok Limited Data Use (default: on for a US opt-out visitor)
+  category: "advertisement",        // optional: the category that gates it (default "advertisement")
+  id: "tiktok-pixel",               // optional: only needed if you run more than one
+});
+```
+
+- **`onRevoke: "silence"`:** nothing loads until consent (`load: "afterConsent"`): no script,
+  no `ttq`, no cookie. On grant `ttq.grantConsent()` and the first page view are queued, then
+  `events.js` loads. On withdrawal we call `ttq.revokeConsent()`, which makes the pixel drop
+  every later page view and event, and `ttq.disableCookie()`, which has TikTok's server expire
+  its third-party `_ttp` as well; then we delete `_ttp`, `_tt_enable_cookie`, `ttcsid`,
+  `ttcsid_<pixelId>` and `ttclid` and the pixel's `tt_*` sessionStorage keys. No reload. A
+  re-grant calls `ttq.grantConsent()` on the same pixel; its cookies come back on the next
+  page load.
+- **US opt-out visitors:** the pixel is loaded with `limited_data_use: true` for a visitor
+  whose region resolves to CCPA, the way Meta Pixel gets Limited Data Use; `limitedDataUse`
+  forces it on or off.
+- **Send events** with `tiktokTrack(event, params, { eventId })` (standard names typed, custom
+  names allowed, `eventId` sent as `event_id`), page views with `tiktokPage()`, and a logged-in
+  visitor's details with `tiktokIdentify({ email, phoneNumber, externalId })`. All three do
+  nothing before consent and while it is withdrawn. The pixel hashes email and phone in the
+  browser; `externalId` is sent as given.
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -609,6 +642,7 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **Hotjar** | `window.hj` | Use `hotjarEvent()` / `hotjarIdentify()`: they drop calls before consent and after withdrawal. `window.hj` stays on the page after a withdrawal, so a direct call would still reach Hotjar until the next page load. |
 | **Matomo** | `window._paq` | Use `matomoEvent()` / `matomoPageView()`, or guard a direct push: `window._paq?.push(…)`. `_paq` does not exist until the tracker loads (in `"consent"` mode, until consent). After a withdrawal Matomo holds pushed calls in memory and the integration discards them on re-grant. |
 | **Microsoft UET** | `window.uetq` | Use `uetEvent()` / `uetPageLoad()`, or guard a direct push: `window.uetq?.push(…)`. In `"basic"` mode `uetq` does not exist until consent, and after a withdrawal the silenced tag drops every push. In `"advanced"` mode a push while denied sends a cookieless beacon. |
+| **TikTok Pixel** | `window.ttq` | Use `tiktokTrack()` / `tiktokPage()` / `tiktokIdentify()`, or guard a direct call: `window.ttq?.track(…)`. `ttq` does not exist until consent. After a withdrawal the pixel drops direct calls too, but a call still makes it write a fresh `ttcsid` cookie, so prefer the helpers, which drop the call first. |
 
 ### Testing your integration
 

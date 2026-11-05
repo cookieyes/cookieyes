@@ -44,3 +44,14 @@ export {
 export { createQueue, flushQueue, type QueueStub } from "./queue.js";
 export { safeCall } from "./safe-call.js";
 export { type SegmentConfig, segment } from "./segment.js";
+export {
+  type TikTokEventParams,
+  type TikTokPixelConfig,
+  type TikTokStandardEvent,
+  type TikTokTrackOptions,
+  type TikTokUser,
+  tiktokIdentify,
+  tiktokPage,
+  tiktokPixel,
+  tiktokTrack,
+} from "./tiktok-pixel.js";

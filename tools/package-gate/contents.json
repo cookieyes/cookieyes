@@ -373,7 +373,8 @@
     "src/posthog.ts",
     "src/queue.ts",
     "src/safe-call.ts",
-    "src/segment.ts"
+    "src/segment.ts",
+    "src/tiktok-pixel.ts"
   ],
   "@cookieyes/test": [
     "LICENSE",
