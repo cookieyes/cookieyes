@@ -42,6 +42,7 @@ Remove any vendor snippet that was pasted into the HTML by hand. The integration
 | Matomo | `matomoAnalytics({ matomoUrl, siteId })` | `u` and `setSiteId` from the Matomo snippet | `analytics` |
 | Microsoft Advertising (UET) | `microsoftUet({ tagId })` | `ti` from the UET snippet | `advertisement` |
 | TikTok Pixel | `tiktokPixel({ pixelId })` | the id in `ttq.load("…")` from Events Manager | `advertisement` |
+| Mixpanel | `mixpanel({ token })` | the project token from `mixpanel.init("…")` | `analytics` |
 | Any other script | `customScript({ id, src, category })` | script URL and a category | as given |
 
 The default categories are `necessary`, `functional`, `analytics`, `performance` and `advertisement`. Pass `category` to any integration to change it.
@@ -132,6 +133,7 @@ export const myVendor: Integration = {
 - Matomo: `consentMode: "cookieless-first"` counts visits without cookies before consent; the default `"consent"` loads nothing until then. In a single-page app, call `matomoPageView()` on every route change, or only the first page is counted. Use `matomoEvent()` for events.
 - Microsoft Advertising: the default `consentMode: "basic"` loads nothing until consent; `"advanced"` loads UET on every page with consent denied and sends cookieless beacons before consent. UET counts route changes itself. Send conversions with `uetEvent("purchase", { revenue_value, currency })`; it does nothing without consent.
 - TikTok Pixel: nothing loads until consent; on withdrawal the pixel is told to stop and its cookies are deleted, with no reload. It counts route changes itself. Send events with `tiktokTrack("CompletePayment", { value, currency })`; it does nothing without consent.
+- Mixpanel: the default `onReject: "stop"` loads nothing until consent; `"silence"` loads it opted out on every page. Withdrawal uses Mixpanel's opt-out and, by default, deletes an identified user's profile (`deleteProfileOnWithdraw`). Send events with `mixpanelTrack("signup", { plan })`; it does nothing without consent.
 - A custom category must exist in the site's `categories` list, or the integration waits forever; the SDK logs a warning naming it.
 
 ## Verify
