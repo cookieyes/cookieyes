@@ -691,7 +691,7 @@ an existing integration, the builder configures the same runtime:
 | `.onConsentReady(fn)` / `.onConsentUpdate(fn)` | Low-level lifecycle callbacks — see [Hooks](#hooks). |
 | `.mount()` | Build and register the runtime. |
 
-**If you use any reload-only integration** (TikTok, LinkedIn, Hotjar, Segment,
+**If you use any reload-only integration** (LinkedIn, Hotjar, Segment,
 or a `customStopHandlers` entry marked `needsReload`), **you must render
 `<ReloadNotice />`** alongside `<CookieBanner />`. It's the prompt shown when a
 tool that was running is revoked and can be fully stopped only by reloading — a

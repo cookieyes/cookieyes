@@ -426,7 +426,7 @@ There are three layers:
 |--------|-------------|-----|
 | **Google Analytics 4 / Tag Manager** | ✅ automatic | Consent Mode v2 broadcast — no `builtInIntegrations` entry needed (see [below](#google-consent-mode-v2)). |
 | **Meta Pixel** | ✅ clean | `fbq('consent', 'revoke')` / `'grant'` |
-| TikTok Pixel | ⚠️ reload | No runtime stop we could confidently verify; modelled as reload-only. |
+| **TikTok Pixel** | ✅ clean | `ttq.revokeConsent()` / `ttq.grantConsent()`, via `tiktokPixel()` in `@cookieyes/scripts` |
 | LinkedIn Insight Tag | ⚠️ reload | No documented runtime opt-out after load. |
 | Hotjar | ⚠️ reload | No documented "stop after load"; gate before load instead. |
 | Segment (analytics.js) | ⚠️ reload | No documented runtime "stop all"; gate `analytics.load()`. |

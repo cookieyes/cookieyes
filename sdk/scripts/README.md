@@ -50,6 +50,8 @@ already use.
 | `hotjar(config)` | Hotjar (session recording, heatmaps, surveys), consent-gated. |
 | `matomoAnalytics(config)` | Matomo (web analytics), consent-gated, with a cookie-free mode. |
 | `microsoftUet(config)` | Microsoft Advertising UET (conversion tracking), consent-gated, with Microsoft's consent signal. |
+| `tiktokPixel(config)` | TikTok Pixel (conversion tracking), consent-gated, with TikTok's consent calls. |
+| `mixpanel(config)` / `mixpanelSync(config)` | Mixpanel (product analytics), consent-gated, with Mixpanel's own opt-in and opt-out. |
 | `customScript(config)` | Gate any third-party `<script>` that has no dedicated preset. |
 | `createQueue()` / `flushQueue()` | The queue/stub pattern most tracking scripts use, so early calls aren't lost. |
 
@@ -493,6 +495,82 @@ microsoftUet({
   `event_label`, `event_value`, `revenue_value`, `currency`) and page loads with
   `uetPageLoad()` when `autoSpaTracking` is off. Both do nothing until UET is on the page.
 
+### `tiktokPixel(config)`
+
+TikTok Pixel (`ttq`), consent-gated, with TikTok's own consent calls.
+
+```ts
+tiktokPixel({
+  pixelId: "C1234567890ABCDEFGHI",  // required: the value in ttq.load("…") from Events Manager
+  autoPageView: true,               // optional: send the first page view (default true)
+  trackHistoryChanges: true,        // optional: count route changes as page views (default true)
+  limitedDataUse: undefined,        // optional: TikTok Limited Data Use (default: on for a US opt-out visitor)
+  category: "advertisement",        // optional: the category that gates it (default "advertisement")
+  id: "tiktok-pixel",               // optional: only needed if you run more than one
+});
+```
+
+- **`onRevoke: "silence"`:** nothing loads until consent (`load: "afterConsent"`): no script,
+  no `ttq`, no cookie. On grant `ttq.grantConsent()` and the first page view are queued, then
+  `events.js` loads. On withdrawal we call `ttq.revokeConsent()`, which makes the pixel drop
+  every later page view and event, and `ttq.disableCookie()`, which has TikTok's server expire
+  its third-party `_ttp` as well; then we delete `_ttp`, `_tt_enable_cookie`, `ttcsid`,
+  `ttcsid_<pixelId>` and `ttclid` and the pixel's `tt_*` sessionStorage keys. No reload. A
+  re-grant calls `ttq.grantConsent()` on the same pixel; its cookies come back on the next
+  page load.
+- **US opt-out visitors:** the pixel is loaded with `limited_data_use: true` for a visitor
+  whose region resolves to CCPA, the way Meta Pixel gets Limited Data Use; `limitedDataUse`
+  forces it on or off.
+- **Send events** with `tiktokTrack(event, params, { eventId })` (standard names typed, custom
+  names allowed, `eventId` sent as `event_id`), page views with `tiktokPage()`, and a logged-in
+  visitor's details with `tiktokIdentify({ email, phoneNumber, externalId })`. All three do
+  nothing before consent and while it is withdrawn. The pixel hashes email and phone in the
+  browser; `externalId` is sent as given.
+
+### `mixpanel(config)` / `mixpanelSync(config)`
+
+Mixpanel (`mixpanel-browser`), consent-gated, with Mixpanel's own opt-in and opt-out.
+
+```ts
+// (a) we load it for you:
+mixpanel({
+  token: "0123456789abcdef0123456789abcdef", // required: 32 hex characters, from Project Settings
+  onReject: "stop",                 // optional: "stop" (default) or "silence"
+  region: "us",                     // optional: "us" (default), "eu" or "in"; sets api_host
+  // apiHost: "https://mp.example.com", // optional: a proxy; overrides region
+  trackPageViews: "url-with-path",  // optional: Mixpanel's track_pageview (default "url-with-path"); false for none
+  deleteProfileOnWithdraw: true,    // optional: Mixpanel's delete_user on withdrawal (default true, irreversible)
+  initOptions: { ignore_dnt: false }, // optional: Mixpanel's own init settings, applied over ours
+  category: "analytics",            // optional: the category that gates it (default "analytics")
+  id: "mixpanel",                   // optional: only needed if you run more than one project
+});
+
+// (b) you already load Mixpanel yourself, opted out:
+mixpanelSync({ deleteProfileOnWithdraw: true });
+```
+
+- **`"stop"` mode (default), `onRevoke: "silence"`:** nothing loads until consent
+  (`load: "afterConsent"`). On withdrawal we stop Mixpanel's batching, call
+  `opt_out_tracking()` (which drops unsent events, deletes its cookie and, with
+  `deleteProfileOnWithdraw`, deletes the identified user's profile), then remove the
+  localStorage record and queues, the tab ids and the `mixpanelBrowserDb` database. The
+  script stays: a second copy counts every page view twice. A re-grant calls `reset()` for a
+  fresh identity, then `opt_in_tracking()`, which sends Mixpanel's `$opt_in` event.
+- **`"silence"` mode:** Mixpanel loads on every page (`load: "immediately"`) with
+  `opt_out_tracking_by_default` and `opt_out_persistence_by_default`, so direct calls and
+  feature flags work before consent. Before a decision its script is downloaded (Mixpanel
+  sees the visitor's IP address), an opt-out marker goes into localStorage and two tab ids
+  into sessionStorage; no cookie. A grant opts in, a withdrawal opts out the same way.
+- **`mixpanelSync()`** injects nothing: it opts in on grant and out on withdrawal, with the
+  same cleanup. Init Mixpanel opted out yourself (`opt_out_tracking_by_default: true`,
+  `opt_out_persistence_by_default: true`), before `initCookieYes` runs.
+- **Send events** with `mixpanelTrack(event, properties)`, and use `mixpanelIdentify()`,
+  `mixpanelPeopleSet()`, `mixpanelRegister()` and `mixpanelReset()` for the rest. All do
+  nothing before consent and while it is withdrawn; a call made while the script loads is
+  kept by Mixpanel's queue.
+- **Do Not Track:** Mixpanel honours it by default, so a DNT visitor is not tracked even
+  after accepting; `initOptions: { ignore_dnt: true }` changes that.
+
 ### `customScript(config)`
 
 Gate any one-off third-party script behind consent.
@@ -609,6 +687,8 @@ Whether you must guard a vendor call depends on what the preset does on revoke:
 | **Hotjar** | `window.hj` | Use `hotjarEvent()` / `hotjarIdentify()`: they drop calls before consent and after withdrawal. `window.hj` stays on the page after a withdrawal, so a direct call would still reach Hotjar until the next page load. |
 | **Matomo** | `window._paq` | Use `matomoEvent()` / `matomoPageView()`, or guard a direct push: `window._paq?.push(…)`. `_paq` does not exist until the tracker loads (in `"consent"` mode, until consent). After a withdrawal Matomo holds pushed calls in memory and the integration discards them on re-grant. |
 | **Microsoft UET** | `window.uetq` | Use `uetEvent()` / `uetPageLoad()`, or guard a direct push: `window.uetq?.push(…)`. In `"basic"` mode `uetq` does not exist until consent, and after a withdrawal the silenced tag drops every push. In `"advanced"` mode a push while denied sends a cookieless beacon. |
+| **TikTok Pixel** | `window.ttq` | Use `tiktokTrack()` / `tiktokPage()` / `tiktokIdentify()`, or guard a direct call: `window.ttq?.track(…)`. `ttq` does not exist until consent. After a withdrawal the pixel drops direct calls too, but a call still makes it write a fresh `ttcsid` cookie, so prefer the helpers, which drop the call first. |
+| **Mixpanel** | `window.mixpanel` | Use `mixpanelTrack()` and the other helpers, or guard a direct call: `window.mixpanel?.track(…)`. In `"stop"` mode `mixpanel` does not exist until consent. After a withdrawal Mixpanel's own opt-out drops direct calls, but `identify()` and `register()` keep their values in memory until a re-grant; the helpers drop those too. |
 
 ### Testing your integration
 
