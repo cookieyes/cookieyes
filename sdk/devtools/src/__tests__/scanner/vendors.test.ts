@@ -71,6 +71,7 @@ describe("VENDORS", () => {
     "posthog",
     "segment",
     "tiktokPixel",
+    "mixpanel",
   ];
 
   it("has unique ids and a built-in category for every vendor", () => {

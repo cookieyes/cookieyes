@@ -26,7 +26,7 @@ describe("snippetFor", () => {
   });
 
   it("suggests customScript for a script with no preset", () => {
-    const url = "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";
+    const url = "https://cdn.amplitude.com/libs/amplitude-8.min.js";
     const s = snippet({ kind: "script", label: url, url });
     expect(s?.code).toContain("customScript({");
     expect(s?.code).toContain(`src: "${url}"`);
@@ -43,10 +43,10 @@ describe("snippetFor", () => {
   it("suggests a network-blocker rule for requests", () => {
     const s = snippet({
       kind: "request",
-      label: "api.mixpanel.com/track",
-      url: "https://api.mixpanel.com/track",
+      label: "api.amplitude.com/httpapi",
+      url: "https://api.amplitude.com/httpapi",
     });
-    expect(s?.code).toContain('domain: "api.mixpanel.com", pathIncludes: "/track"');
+    expect(s?.code).toContain('domain: "api.amplitude.com", pathIncludes: "/httpapi"');
   });
 
   it("offers nothing for cookies or necessary vendors", () => {

@@ -176,6 +176,7 @@ export const VENDORS: readonly Vendor[] = [
     category: A,
     hosts: ["mixpanel.com", "mxpnl.com"],
     cookies: ["mp_"],
+    preset: 'mixpanel({ token: "…" })',
   },
   {
     id: "amplitude",
