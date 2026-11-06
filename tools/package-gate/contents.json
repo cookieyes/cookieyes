@@ -370,6 +370,7 @@
     "src/matomo.ts",
     "src/meta.ts",
     "src/microsoft-uet.ts",
+    "src/mixpanel.ts",
     "src/posthog.ts",
     "src/queue.ts",
     "src/safe-call.ts",

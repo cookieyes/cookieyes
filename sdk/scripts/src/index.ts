@@ -35,6 +35,19 @@ export {
   uetPageLoad,
 } from "./microsoft-uet.js";
 export {
+  type MixpanelConfig,
+  type MixpanelProperties,
+  type MixpanelRegion,
+  type MixpanelSyncConfig,
+  mixpanel,
+  mixpanelIdentify,
+  mixpanelPeopleSet,
+  mixpanelRegister,
+  mixpanelReset,
+  mixpanelSync,
+  mixpanelTrack,
+} from "./mixpanel.js";
+export {
   type PostHogConfig,
   type PostHogRegion,
   type PostHogSyncConfig,
