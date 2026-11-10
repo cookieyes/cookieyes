@@ -1,5 +1,25 @@
 # @cookieyes/devtools
 
+## 0.3.0
+
+### Minor Changes
+
+- f53ca9c: The Scanner now suggests the ready-made integration for Matomo.
+
+  **What changed.** When the Scanner finds Matomo Cloud loading outside the SDK, the suggested fix is now `matomoAnalytics({ matomoUrl, siteId })` from `@cookieyes/scripts`, instead of a generic `customScript()`.
+
+- 36395f9: The Scanner now suggests the ready-made integration for Microsoft Advertising UET.
+
+  **What changed.** When the Scanner finds the UET tag loading outside the SDK, the suggested fix is now `microsoftUet({ tagId })` from `@cookieyes/scripts`, instead of a generic `customScript()`. The `_uetmsclkid` cookie is recognised as Microsoft's too.
+
+- eb1f6e9: The Scanner now suggests the ready-made integration for Mixpanel.
+
+  **What changed.** When the Scanner finds Mixpanel loading outside the SDK, the suggested fix is now `mixpanel({ token })` from `@cookieyes/scripts`, instead of a generic `customScript()`.
+
+- a6d80b2: The Scanner now suggests the ready-made integration for the TikTok Pixel.
+
+  **What changed.** When the Scanner finds the TikTok Pixel loading outside the SDK, the suggested fix is now `tiktokPixel({ pixelId })` from `@cookieyes/scripts`, instead of a generic `customScript()`. The `_tt_enable_cookie`, `ttcsid` and `ttclid` cookies and the `analytics-ipv6.tiktokw.us` host are recognised as TikTok's too.
+
 ## 0.2.0
 
 ### Minor Changes

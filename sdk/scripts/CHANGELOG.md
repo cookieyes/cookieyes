@@ -1,5 +1,37 @@
 # @cookieyes/scripts
 
+## 0.4.0
+
+### Minor Changes
+
+- 5aa1f9a: Matomo now loads only after analytics consent, stops at once when consent is withdrawn, and can count visits without cookies until the visitor decides.
+
+  **New: `matomoAnalytics({ matomoUrl, siteId })`.** Pass the values from your Matomo snippet and remove that snippet from your page. In the default `"consent"` mode nothing loads until the visitor grants `analytics`. On withdrawal Matomo stops sending and its `_pk_*` cookies are deleted, with no page reload; accepting again resumes on the same page.
+
+  **`consentMode: "cookieless-first"`.** Matomo loads for every visitor and counts visits without cookies. Consent only switches cookies on; withdrawal deletes them and tracking continues cookie-free. Cookie-free tracking still sends the visitor's IP address and browser details, so whether it needs consent is your decision.
+
+  **New: `matomoEvent()` and `matomoPageView()`.** They do nothing until Matomo is loaded. Single-page apps call `matomoPageView()` on every route change, because Matomo counts only the first page by itself.
+
+  **Matomo's own consent cookies are cleared.** Visitors who still carry `mtm_consent` or `mtm_consent_removed` from an earlier setup, such as Matomo's CookieYes guide, start from CookieYes's record of consent.
+
+- 4c587b8: New integration: Microsoft Advertising UET, consent-gated, with Microsoft's consent signal.
+
+  **What changed.** `microsoftUet({ tagId })` loads the UET tag after the visitor grants the advertising category, with `consent default granted` pushed before the tag starts. On withdrawal it pushes `consent update denied`, silences the running tag, sets Microsoft's `_uetmsdns` cookie so the next page load sends nothing either, and deletes the `_uet*` cookies and their localStorage copies. No reload, and the tag is never loaded twice. A visitor whose region resolves to CCPA gets the `_uetmsdns` cookie in the denied state, the same way Meta Pixel gets Limited Data Use; `restrictDataSharing` forces it on or off.
+
+  `consentMode: "advanced"` is Microsoft's recommended setup instead: the tag loads on every page with consent denied by default and sends cookieless beacons before any decision. `uetEvent()` sends a custom event and `uetPageLoad()` a page load; both do nothing until UET is on the page.
+
+- 4fba396: New integration: Mixpanel, consent-gated, with Mixpanel's own opt-in and opt-out.
+
+  **What changed.** `mixpanel({ token })` loads Mixpanel after the visitor grants the analytics category: nothing is on the page before that. On withdrawal it stops Mixpanel's batching, calls `opt_out_tracking()`, which drops unsent events and deletes Mixpanel's cookie, and removes the localStorage record and queues, the tab ids and Mixpanel's IndexedDB database. The script stays on the page, because a second copy would count every page view twice; a re-grant calls `reset()` for a fresh identity and then `opt_in_tracking()`. `deleteProfileOnWithdraw` (default `true`, Mixpanel's own) also deletes an identified user's profile on withdrawal. `region` sets the EU or India host, `trackPageViews` defaults to `"url-with-path"` so route changes count, and `initOptions` passes Mixpanel's own settings through.
+
+  `onReject: "silence"` loads Mixpanel opted out on every page instead, for sites whose code calls Mixpanel everywhere or uses its feature flags. `mixpanelSync()` keeps a Mixpanel you load yourself in sync with consent. `mixpanelTrack()`, `mixpanelIdentify()`, `mixpanelPeopleSet()`, `mixpanelRegister()` and `mixpanelReset()` do nothing before consent and while it is withdrawn.
+
+- 3748ed4: New integration: TikTok Pixel, consent-gated, with TikTok's consent signal.
+
+  **What changed.** `tiktokPixel({ pixelId })` loads the TikTok Pixel after the visitor grants the advertising category, with `ttq.grantConsent()` queued before the script loads. Nothing is on the page before that: no script, no `ttq`, no cookie. On withdrawal it calls `ttq.revokeConsent()`, which makes the pixel drop every later page view and event, and `ttq.disableCookie()`, which has TikTok's server expire its third-party `_ttp` cookie, then deletes the pixel's first-party cookies and sessionStorage keys. No reload, and the pixel is never loaded twice. A visitor whose region resolves to CCPA gets the pixel with `limited_data_use: true`, the same way Meta Pixel gets Limited Data Use; `limitedDataUse` forces it on or off.
+
+  `tiktokTrack()`, `tiktokPage()` and `tiktokIdentify()` send events, page views and a logged-in visitor's details; all three do nothing before consent and while it is withdrawn. Standard event names are typed, custom names still work, and `eventId` is sent as `event_id` for de-duplication with the Events API.
+
 ## 0.3.1
 
 ### Patch Changes
