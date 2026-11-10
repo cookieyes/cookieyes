@@ -61,6 +61,8 @@ describe("VENDORS", () => {
   const PRESETS = [
     "ahrefsAnalytics",
     "hotjar",
+    "matomoAnalytics",
+    "microsoftUet",
     "ga4",
     "googleAds",
     "googleTagManager",
@@ -68,6 +70,8 @@ describe("VENDORS", () => {
     "clarity",
     "posthog",
     "segment",
+    "tiktokPixel",
+    "mixpanel",
   ];
 
   it("has unique ids and a built-in category for every vendor", () => {

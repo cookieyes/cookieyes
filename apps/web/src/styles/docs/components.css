@@ -649,9 +649,11 @@
      - flat mask + brand hex   : ga4, google-tag-manager, hotjar
      - flat mask + currentColor: google-ads, segment (no brand hex for these)
      - positioned background   : meta-pixel (not a flat silhouette)
-     - content: url(...)       : posthog, microsoft-clarity (multi-colour marks)
+     - content: url(...)       : posthog, microsoft-clarity, matomo, microsoft-uet (multi-colour marks)
      - one image per theme     : ahrefs-analytics (the designer supplied a light and a
-                                 dark mark; see .cy-logo-ahrefs below)
+                                 dark mark; see .cy-logo-ahrefs below), tiktok-pixel
+                                 (the designer's mark takes the ink colour of the theme)
+                                 and mixpanel (a light and a dark mark again)
 
    Brand hexes are fixed in both themes, never a --cy-doc-* token — the same rule
    SidebarControls.tsx documents for its framework logos: "a brand mark that flips
@@ -670,10 +672,14 @@
 #nd-sidebar a[href$="/integrations/google-tag-manager"]::before,
 #nd-sidebar a[href$="/integrations/google-ads"]::before,
 #nd-sidebar a[href$="/integrations/hotjar"]::before,
+#nd-sidebar a[href$="/integrations/matomo"]::before,
+#nd-sidebar a[href$="/integrations/microsoft-uet"]::before,
 #nd-sidebar a[href$="/integrations/meta-pixel"]::before,
 #nd-sidebar a[href$="/integrations/microsoft-clarity"]::before,
+#nd-sidebar a[href$="/integrations/mixpanel"]::before,
 #nd-sidebar a[href$="/integrations/posthog"]::before,
-#nd-sidebar a[href$="/integrations/segment"]::before {
+#nd-sidebar a[href$="/integrations/segment"]::before,
+#nd-sidebar a[href$="/integrations/tiktok-pixel"]::before {
   content: "";
   display: inline-block;
   width: 18px;
@@ -703,6 +709,13 @@
   content: url(/figma-logos/microsoft-clarity.svg);
 }
 
+#nd-sidebar a[href$="/integrations/matomo"]::before {
+  content: url(/figma-logos/matomo.svg);
+}
+#nd-sidebar a[href$="/integrations/microsoft-uet"]::before {
+  content: url(/figma-logos/microsoft-uet.svg);
+}
+
 /* No brand hex exists for these two: the mock's #sbInt doesn't list them at all.
    Reuses currentColor exactly as index.mdx's Card icons already do for the same
    vendors, so the icon tracks the link's own ink (--cy-doc-tx, or
@@ -730,6 +743,26 @@
 .dark .cy-logo-ahrefs,
 .dark #nd-sidebar a[href$="/integrations/ahrefs-analytics"]::before {
   background-image: url(/figma-logos/ahrefs-dark.png);
+}
+
+.cy-logo-tiktok,
+#nd-sidebar a[href$="/integrations/tiktok-pixel"]::before {
+  background: url(/figma-logos/tiktok-pixel-light.svg) center / contain no-repeat;
+}
+
+.dark .cy-logo-tiktok,
+.dark #nd-sidebar a[href$="/integrations/tiktok-pixel"]::before {
+  background-image: url(/figma-logos/tiktok-pixel-dark.svg);
+}
+
+.cy-logo-mixpanel,
+#nd-sidebar a[href$="/integrations/mixpanel"]::before {
+  background: url(/figma-logos/mixpanel-light.png) center / contain no-repeat;
+}
+
+.dark .cy-logo-mixpanel,
+.dark #nd-sidebar a[href$="/integrations/mixpanel"]::before {
+  background-image: url(/figma-logos/mixpanel-dark.png);
 }
 
 /* meta-infinity.png is not a flat silhouette — a mask would show a blank shape.

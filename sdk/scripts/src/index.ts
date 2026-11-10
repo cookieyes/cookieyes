@@ -20,7 +20,33 @@ export {
   hotjarIdentify,
   hotjarStateChange,
 } from "./hotjar.js";
+export {
+  type MatomoAnalyticsConfig,
+  matomoAnalytics,
+  matomoEvent,
+  matomoPageView,
+} from "./matomo.js";
 export { type MetaPixelConfig, metaPixel } from "./meta.js";
+export {
+  type MicrosoftUetConfig,
+  microsoftUet,
+  type UetEventParams,
+  uetEvent,
+  uetPageLoad,
+} from "./microsoft-uet.js";
+export {
+  type MixpanelConfig,
+  type MixpanelProperties,
+  type MixpanelRegion,
+  type MixpanelSyncConfig,
+  mixpanel,
+  mixpanelIdentify,
+  mixpanelPeopleSet,
+  mixpanelRegister,
+  mixpanelReset,
+  mixpanelSync,
+  mixpanelTrack,
+} from "./mixpanel.js";
 export {
   type PostHogConfig,
   type PostHogRegion,
@@ -31,3 +57,14 @@ export {
 export { createQueue, flushQueue, type QueueStub } from "./queue.js";
 export { safeCall } from "./safe-call.js";
 export { type SegmentConfig, segment } from "./segment.js";
+export {
+  type TikTokEventParams,
+  type TikTokPixelConfig,
+  type TikTokStandardEvent,
+  type TikTokTrackOptions,
+  type TikTokUser,
+  tiktokIdentify,
+  tiktokPage,
+  tiktokPixel,
+  tiktokTrack,
+} from "./tiktok-pixel.js";

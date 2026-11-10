@@ -82,6 +82,8 @@ Nine keys for colour, corner radius and font. Each is listed with its default on
 
 Set the strictest law your visitors fall under, `"GDPR"` for most sites, and ship it for everyone. If you set nothing, the banner behaves as under `"GDPR"`. To choose per visitor, set `region` instead: it maps the visitor's country to a regulation. A manual `regulation` always wins over `region`, so set one or the other.
 
+Under `"CCPA"`, a browser that sends Global Privacy Control starts the visitor opted out until they choose; `region.honorGpc: false` turns this off. The signal never changes which banner shows. To read it yourself, `readGpc()` returns `true` while the browser is sending it, and every [consent record](/docs/getting-started/self-hosted) carries it as `gpc`.
+
 <Framework when="nextjs react">
 
 Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens it.

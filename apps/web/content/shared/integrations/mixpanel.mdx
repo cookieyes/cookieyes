@@ -1,0 +1,173 @@
+---
+title: Mixpanel
+description: Load Mixpanel only after analytics consent, or keep it silent until then, and stop it with its data removed when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`mixpanel()` loads Mixpanel after the visitor grants the analytics category. When consent is withdrawn, it uses Mixpanel's own opt-out, which stops events and throws away unsent ones, and removes everything Mixpanel stored in the browser, with no page reload. A second mode keeps Mixpanel on every page, opted out until consent. `mixpanelSync()` does the same for a Mixpanel you load yourself.
+
+## Set it up
+
+Install the integrations package and add `mixpanel()` to the `initCookieYes()` call you already have. `token` is the project token from `mixpanel.init("…")` in Mixpanel's snippet, 32 hexadecimal characters:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { mixpanel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [mixpanel({ token: "0123456789abcdef0123456789abcdef" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { mixpanel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [mixpanel({ token: "0123456789abcdef0123456789abcdef" })],
+});
+```
+
+</Framework>
+
+Remove Mixpanel's snippet from your page. The integration adds the script and calls `init` itself. Settings you had in `mixpanel.init` go into `initOptions`. Move your `mixpanel.track()` calls to the helpers below, or guard them: `window.mixpanel` does not exist before consent.
+
+### Single-page apps
+
+Route changes count as page views out of the box: the integration sets Mixpanel's `track_pageview` to `"url-with-path"`. Set `trackPageViews: "full-url"` to count query string and hash changes too, or `false` to send no page views, for example when you rely on Mixpanel's Autocapture page views instead.
+
+### Events
+
+```ts
+import { mixpanelIdentify, mixpanelPeopleSet, mixpanelTrack } from "@cookieyes/scripts";
+
+mixpanelTrack("signup", { plan: "pro" });
+mixpanelIdentify("user-42");
+mixpanelPeopleSet({ $name: "Jane", $email: "jane@example.com" });
+```
+
+The helpers do nothing before the visitor accepts and nothing after a withdrawal: the call is dropped, not sent later. A call made while the script is still loading is kept by Mixpanel's own queue and sent once it has loaded. `mixpanelRegister()` sets super properties and `mixpanelReset()` forgets the identified user, for example on logout.
+
+What you pass to `mixpanelIdentify()` and `mixpanelPeopleSet()` is personal data. Pass it only for a user who is logged in or gave you those details.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `token` | required | Your project token, 32 hexadecimal characters |
+| `onReject` | `"stop"` | `"stop"` or `"silence"`. See [What a "no" means](#what-a-no-means) |
+| `region` | `"us"` | `"us"`, `"eu"` or `"in"`: where your project stores data. See [Regions](#regions) |
+| `apiHost` | none | The host of a proxy. Overrides `region` |
+| `trackPageViews` | `"url-with-path"` | Mixpanel's `track_pageview`. Also `"url-with-path-and-query-string"`, `"full-url"` or `false` |
+| `deleteProfileOnWithdraw` | `true` | Delete the identified user's profile on withdrawal. See [Profile deletion](#profile-deletion) |
+| `initOptions` | none | Mixpanel's own `init` settings, applied over `region`, `apiHost` and `trackPageViews` |
+| `category` | `"analytics"` | The category the visitor must grant |
+| `id` | `"mixpanel"` | Only needed when you run more than one project |
+
+In `"silence"` mode the two opt-out settings Mixpanel needs cannot be overridden through `initOptions`.
+
+## What a "no" means
+
+| | `"stop"` (default) | `"silence"` |
+| --- | --- | --- |
+| Before a decision | Nothing loads | Mixpanel loads, opted out |
+| After accept | Mixpanel loads and tracks | Mixpanel opts in and tracks |
+| After withdrawal | Opted out, browser data removed, script stays silent | Opted out, browser data removed, script stays silent |
+
+Pick `"silence"` when your code calls `window.mixpanel` all over the place, or when you use Mixpanel's feature flags before consent. Before any decision it downloads Mixpanel's script from Mixpanel's CDN, so Mixpanel sees the visitor's IP address, writes an opt-out marker to localStorage and two tab ids to sessionStorage, and, if you configure `flags`, fetches them with the visitor's id. It sets no cookie. In development, picking this mode logs one console note.
+
+In both modes, a re-grant on the same page starts a fresh identity: Mixpanel's `reset()`, then `opt_in_tracking()`, which sends Mixpanel's `$opt_in` event. That event is an ordinary event in your project, sent once per grant.
+
+### Regions
+
+```ts check="false"
+mixpanel({ token: "…", region: "eu" });
+```
+
+**Mixpanel does not ingest events sent to the wrong region, and reports no error.** Set `region` to match your project. For a proxy, set `apiHost` instead; Mixpanel's own script and its session-replay module still come from Mixpanel's CDN.
+
+Two of Mixpanel's own settings you may want to pass through `initOptions`: `ip: false` stops Mixpanel working out city and country from the visitor's IP address, and `cookie_expiration` (default 365 days) sets the cookie's lifetime; some European regulators expect 13 months or less.
+
+### Profile deletion
+
+With an identified user, Mixpanel's own opt-out deletes that user's profile and clears their charges. The integration keeps that default. **It is irreversible, it deletes the profile but not the user's past events, and it happens every time a logged-in user turns analytics off.** When nobody has been identified, nothing is deleted. Set `deleteProfileOnWithdraw: false` to keep profiles.
+
+## Already loading Mixpanel yourself
+
+Keep your own `mixpanel.init()` and add `mixpanelSync()` instead. It injects nothing: on grant it calls `opt_in_tracking()`, on withdrawal `opt_out_tracking()` with the same cleanup as above. Initialise Mixpanel before `initCookieYes()` runs, and start it opted out, or it tracks from the moment it loads:
+
+```ts check="false"
+mixpanel.init("0123456789abcdef0123456789abcdef", {
+  opt_out_tracking_by_default: true,
+  opt_out_persistence_by_default: true,
+});
+```
+
+```ts check="false"
+integrations: [mixpanelSync()],
+```
+
+`mixpanelSync()` takes `deleteProfileOnWithdraw`, `category` and `id`, with the same defaults as above.
+
+## Good to know
+
+- **What Mixpanel stores.** A cookie `mp_<token>_mixpanel` on your root domain, for 365 days by default, or a localStorage entry of the same name with `persistence: "localStorage"`. Also an opt-in marker `__mp_opt_in_out_<token>`, three send queues `__mpq_<token>_*` in localStorage, two `mp_tab_id` keys in sessionStorage, and an IndexedDB database `mixpanelBrowserDb`, which holds session-replay data under keys starting `__mprec_`. On withdrawal the integration removes all of them except the opt-in marker, which now says "opted out" and is cleared before the next start.
+- **Session replay, heatmaps and Autocapture.** If you pass `record_sessions_percent`, `record_heatmap_data` or `autocapture` through `initOptions`, say so in your analytics category description, for example: "Analytics, including recordings of how you use our pages". Replays mask all text and inputs unless you unmask them; add the `mp-no-track` class to keep an element out of Autocapture and `mp-sensitive` to keep its text out of every event. Several European regulators treat session replay as higher-risk than ordinary analytics; check your own obligations. Not legal advice.
+- **Withdrawal stops new tracking.** It does not delete events already in Mixpanel. Deleting those is done in Mixpanel, under Organization Settings, Data & Privacy, and is the site owner's responsibility.
+- **Do Not Track.** Mixpanel honours it by default: a visitor with DNT on is not tracked even after accepting. `initOptions: { ignore_dnt: true }` changes that, at your own risk. Global Privacy Control is handled by CookieYes, so a GPC visitor never gets the analytics category.
+- **Direct calls while opted out.** Mixpanel drops `track()` and `people.set()`, but `identify()` and `register()` keep their values in memory and send them after a later opt-in. Use the helpers, which drop those too.
+- **Google Tag Manager.** Mixpanel's GTM guide suggests the "Consent Initialization" trigger for its tag. Do not use it for a tag that starts session replay: that records before anyone has chosen.
+
+## Check it works
+
+Open your site in a private window, filter the Network tab to `mixpanel` and watch the cookies and storage.
+
+In `"stop"` mode:
+
+1. Before a decision: no request, no `window.mixpanel`, no cookie or storage entry starting with `mp_` or `__mp`.
+2. Accept: the script loads from `cdn.mxpnl.com`, a request to `/track/` carries `$mp_web_page_view`, and the `mp_` cookie appears. Mixpanel's Events view shows the same event.
+3. Withdraw consent in the preferences dialog: the cookie and storage are gone. Click around, change route and call `mixpanelTrack()`: no new request. With an identified user, one request to `/engage/` carries `$delete`.
+4. Reload the page: nothing loads.
+
+In `"silence"` mode: before a decision the script loads and `window.mixpanel.has_opted_out_tracking()` returns `true`, with no `/track/` request and no cookie. After accept it returns `false` and events flow. After withdrawal it returns `true` again and a test event sends nothing.
+
+<Framework when="nextjs react">
+
+The [devtools panel](/docs/devtools) shows the integration as `active`, or `silenced` while consent is withdrawn.
+
+</Framework>
+
+## Common mistakes
+
+**Mixpanel tracks before the visitor accepts.**
+Mixpanel's snippet is still on the page. Remove it; with `mixpanelSync()`, start Mixpanel opted out as shown above.
+
+**`mixpanel is not defined` in the console.**
+A direct `mixpanel.track()` ran before consent. Use `mixpanelTrack()`, or guard the call: `window.mixpanel?.track(…)`.
+
+**Events never arrive.**
+The project is in the EU or India and `region` is not set, or the visitor's browser sends Do Not Track.
+
+**Events are missing.**
+The `mixpanelTrack()` calls ran before the visitor accepted; those calls are dropped.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [PostHog](/docs/integrations/posthog): the same two setup styles for PostHog
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration

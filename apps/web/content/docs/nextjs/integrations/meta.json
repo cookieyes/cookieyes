@@ -10,10 +10,14 @@
     "google-tag-manager",
     "google-ads",
     "hotjar",
+    "matomo",
     "meta-pixel",
+    "microsoft-uet",
     "microsoft-clarity",
+    "mixpanel",
     "posthog",
     "segment",
+    "tiktok-pixel",
     "--- Build your own ---",
     "custom-integration"
   ]

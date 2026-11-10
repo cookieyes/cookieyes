@@ -176,6 +176,7 @@ export const VENDORS: readonly Vendor[] = [
     category: A,
     hosts: ["mixpanel.com", "mxpnl.com"],
     cookies: ["mp_"],
+    preset: 'mixpanel({ token: "…" })',
   },
   {
     id: "amplitude",
@@ -198,7 +199,14 @@ export const VENDORS: readonly Vendor[] = [
     hosts: ["fullstory.com"],
     cookies: ["fs_uid", "fs_lua"],
   },
-  { id: "matomo", name: "Matomo", category: A, hosts: ["matomo.cloud"], cookies: ["_pk_"] },
+  {
+    id: "matomo",
+    name: "Matomo",
+    category: A,
+    hosts: ["matomo.cloud"],
+    cookies: ["_pk_"],
+    preset: 'matomoAnalytics({ matomoUrl: "https://…", siteId: 1 })',
+  },
   { id: "plausible", name: "Plausible", category: A, hosts: ["plausible.io"], cookieless: true },
   { id: "fathom", name: "Fathom", category: A, hosts: ["usefathom.com"], cookieless: true },
   {
@@ -301,7 +309,8 @@ export const VENDORS: readonly Vendor[] = [
     name: "Microsoft Advertising (UET)",
     category: AD,
     hosts: ["bat.bing.com"],
-    cookies: ["_uetsid", "_uetvid", "MUID"],
+    cookies: ["_uetsid", "_uetvid", "_uetmsclkid", "MUID"],
+    preset: 'microsoftUet({ tagId: "…" })',
   },
   {
     id: "linkedin",
@@ -314,8 +323,9 @@ export const VENDORS: readonly Vendor[] = [
     id: "tiktok",
     name: "TikTok Pixel",
     category: AD,
-    hosts: ["analytics.tiktok.com"],
-    cookies: ["_ttp"],
+    hosts: ["analytics.tiktok.com", "analytics-ipv6.tiktokw.us"],
+    cookies: ["_ttp", "_tt_enable_cookie", "ttcsid", "ttclid"],
+    preset: 'tiktokPixel({ pixelId: "…" })',
   },
   {
     id: "x-ads",
