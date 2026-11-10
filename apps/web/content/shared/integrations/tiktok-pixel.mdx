@@ -1,0 +1,140 @@
+---
+title: TikTok Pixel
+description: Load the TikTok Pixel only after advertising consent, send TikTok its consent signal, and stop it with its cookies deleted when consent is withdrawn.
+frameworks: [nextjs, react, core]
+---
+
+`tiktokPixel()` loads the TikTok Pixel after the visitor grants the advertising category and sends TikTok its own consent signal. When consent is withdrawn, the pixel is told to stop and its cookies are deleted at once, with no page reload. Nothing is loaded, queued or stored before consent.
+
+## Set it up
+
+Install the integrations package and add `tiktokPixel()` to the `initCookieYes()` call you already have. `pixelId` is the value in `ttq.load("…")` in the base code TikTok Events Manager gives you:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+<Framework when="nextjs react">
+
+```tsx title="app/consent-manager.tsx"
+"use client";
+
+import { initCookieYes } from "@cookieyes/react";
+import { tiktokPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [tiktokPixel({ pixelId: "C1234567890ABCDEFGHI" })],
+});
+```
+
+</Framework>
+<Framework when="core">
+
+```ts title="src/consent.ts"
+import { initCookieYes } from "@cookieyes/core";
+import { tiktokPixel } from "@cookieyes/scripts";
+
+initCookieYes({
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [tiktokPixel({ pixelId: "C1234567890ABCDEFGHI" })],
+});
+```
+
+</Framework>
+
+Remove TikTok's base code from your page, and any TikTok Pixel tag in a tag manager. The integration adds the script and sends the first page view itself. Move your `ttq.track()` calls to `tiktokTrack()` below, or guard them: `window.ttq` does not exist before consent.
+
+### Single-page apps
+
+The pixel counts route changes by itself, so there is nothing to add for Next.js or React Router. If your server also sends page views through the Events API, set `trackHistoryChanges: false` so each page is counted once.
+
+### Events
+
+```ts
+import { tiktokTrack } from "@cookieyes/scripts";
+
+tiktokTrack("CompletePayment", { value: 49, currency: "EUR" }, { eventId: "order-1001" });
+```
+
+`tiktokTrack()` takes TikTok's standard event names, with autocomplete, or any custom name, and the pixel's own parameters such as `value` and `currency`. `eventId` is sent as `event_id`, so TikTok can match the event with the same one sent from your server. The call does nothing before the visitor accepts and nothing after a withdrawal: it is dropped, not sent later. A call made while the script is still loading is kept by TikTok's own queue and sent once it has loaded. `tiktokPage()` sends a page view yourself.
+
+### Matching a logged-in visitor
+
+```ts
+import { tiktokIdentify } from "@cookieyes/scripts";
+
+tiktokIdentify({ email: "jane@example.com", phoneNumber: "+15551234567", externalId: "user-42" });
+```
+
+These values are personal data. Pass them only for a visitor who is logged in or typed them on this page. The pixel hashes the email and phone number with SHA-256 in the browser before sending. `externalId` is sent as given, so hash it yourself if it is sensitive. The call follows the same consent rules as `tiktokTrack()`.
+
+TikTok also has Automatic Advanced Matching, a setting in Events Manager that makes the pixel collect email addresses and phone numbers visitors type into forms on your page. The integration does not change that setting. Keep it off on a site with support, health or financial forms, and name it in your advertising category description if it is on.
+
+## Options
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `pixelId` | required | The value in `ttq.load("…")` from Events Manager |
+| `autoPageView` | `true` | Send the first page view when the pixel loads. Set `false` to call `tiktokPage()` yourself |
+| `trackHistoryChanges` | `true` | Count route changes as page views. Set `false` when your server sends them through the Events API |
+| `limitedDataUse` | unset | TikTok's Limited Data Use flag. Unset: on for a US opt-out visitor (CCPA). See [US opt-out visitors](#us-opt-out-visitors) |
+| `category` | `"advertisement"` | The category the visitor must grant |
+| `id` | `"tiktok-pixel"` | Only needed when you run more than one pixel |
+
+## What happens at each step
+
+- **Before a decision:** nothing. No script, no `window.ttq`, no cookie, no request.
+- **Accept:** `ttq.grantConsent()` is queued first, then the pixel loads and sends the first page view. A returning visitor who accepted earlier gets the pixel at once.
+- **Withdraw:** `ttq.revokeConsent()` makes the pixel drop every later page view, route change and event. `ttq.disableCookie()` then has TikTok's server expire its third-party `_ttp` cookie, and the integration deletes the first-party cookies and the pixel's `tt_*` sessionStorage keys. No reload.
+- **Accept again:** `ttq.grantConsent()` on the same pixel. Nothing is downloaded twice, and its cookies come back on the next page load.
+
+### US opt-out visitors
+
+Limited Data Use tells TikTok to apply its limited processing for a visitor who has opted out under a US state privacy law. The integration loads the pixel with `limited_data_use: true` for a visitor whose region resolves to CCPA, and `limitedDataUse` forces it on or off. A US visitor who opts out of advertising, including through Global Privacy Control, never gets the pixel at all. This is a TikTok feature, not legal advice.
+
+## Good to know
+
+- **The pixel's cookies.** `_ttp` (visitor id), `_tt_enable_cookie`, `ttcsid` and `ttcsid_<pixelId>` (session ids) and, after a click on a TikTok ad, `ttclid` are first-party cookies on your domain, each for 13 months from the last use. The integration deletes all of them on withdrawal. TikTok's own `_ttp` on `.tiktok.com` and `_pangle` on `analytics.pangle-ads.com` are third-party cookies set by TikTok's servers: `disableCookie()` has TikTok expire the first, and the second expires on its own, since no request is made after a withdrawal. First-party cookies can also be switched off for the pixel in Events Manager.
+- **Withdrawal sends two last requests.** TikTok's `revokeConsent()` reports the withdrawal to TikTok, with the visitor id, and `disableCookie()` makes the request that deletes the third-party cookie. After that nothing is sent: not on a route change, not on an event, not on the next page. On a route change or a direct `ttq` call while silenced, the script still writes a fresh `ttcsid` cookie, with nothing sent with it.
+- **Withdrawal stops new tracking.** It does not delete data TikTok already received. Deleting that is done through TikTok and is the site owner's responsibility.
+- **Events API.** Sending the same events from your server does not remove the consent requirement: a visitor who refused advertising must be skipped on the server too. With a self-hosted backend, [read the consent record on the server](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server).
+- **EU and UK.** Advertising pixels need prior consent there, and TikTok's own terms require advertisers to provide notices and obtain consents as required by law. Not legal advice.
+
+## Check it works
+
+Open your site in a private window, filter the Network tab to `tiktok` (the pixel talks to `analytics.tiktok.com` and `analytics-ipv6.tiktokw.us`) and watch the cookies.
+
+1. Before a decision: no request, no `window.ttq`, and no cookie starting with `_tt` or `ttc`.
+2. Accept: `events.js` loads with your pixel id as `sdkid`, a request to `/api/v2/pixel` carries `"event":"Pageview"`, and `_ttp` and `ttcsid` appear. TikTok's Pixel Helper extension and the Test Events tab in Events Manager show the same event.
+3. Withdraw consent in the preferences dialog: after TikTok's two last requests, the `_tt` cookies are gone. Click around, change route and call `tiktokTrack()`: no new request.
+4. Reload the page: nothing loads.
+5. Accept again: requests resume, with no second `events.js`.
+
+<Framework when="nextjs react">
+
+The [devtools panel](/docs/devtools) shows the integration as `active`, or `silenced` while consent is withdrawn.
+
+</Framework>
+
+## Common mistakes
+
+**The pixel tracks before the visitor accepts.**
+TikTok's base code, or a TikTok Pixel tag in a tag manager, is still on the page. Remove it.
+
+**`ttq is not defined` in the console.**
+A direct `ttq.track()` ran before consent. Use `tiktokTrack()`, or guard the call: `window.ttq?.track(…)`.
+
+**Every page view arrives twice.**
+`trackHistoryChanges` is on and your server sends page views too, or `autoPageView` is on and you also call `tiktokPage()` on load. Do one or the other.
+
+**Events are missing.**
+The `tiktokTrack()` calls ran before the visitor accepted; those calls are dropped.
+
+## Next steps
+
+- [Overview](/docs/integrations): the other integrations
+- [Meta Pixel](/docs/integrations/meta-pixel): the same pattern for Meta
+- [Custom integration](/docs/integrations/custom-integration): a tool with no ready-made integration

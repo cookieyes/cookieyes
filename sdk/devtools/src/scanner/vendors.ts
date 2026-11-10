@@ -176,6 +176,7 @@ export const VENDORS: readonly Vendor[] = [
     category: A,
     hosts: ["mixpanel.com", "mxpnl.com"],
     cookies: ["mp_"],
+    preset: 'mixpanel({ token: "…" })',
   },
   {
     id: "amplitude",
@@ -322,8 +323,9 @@ export const VENDORS: readonly Vendor[] = [
     id: "tiktok",
     name: "TikTok Pixel",
     category: AD,
-    hosts: ["analytics.tiktok.com"],
-    cookies: ["_ttp"],
+    hosts: ["analytics.tiktok.com", "analytics-ipv6.tiktokw.us"],
+    cookies: ["_ttp", "_tt_enable_cookie", "ttcsid", "ttclid"],
+    preset: 'tiktokPixel({ pixelId: "…" })',
   },
   {
     id: "x-ads",

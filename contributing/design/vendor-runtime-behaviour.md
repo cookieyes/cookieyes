@@ -1,6 +1,6 @@
 # Vendor behaviour the integrations rely on
 
-Four integrations in `@cookieyes/scripts` depend on how the vendor's script behaves today, not
+Six integrations in `@cookieyes/scripts` depend on how the vendor's script behaves today, not
 only on a documented API. If the vendor changes that behaviour, the
 integration keeps passing its tests (they use a stub, not the vendor's script) while the real
 vendor keeps tracking after the visitor said no. Re-check both against the live script before a
@@ -91,3 +91,73 @@ custom event. Count the entries for `bat.bing.com/action/` in
 `performance.getEntriesByType("resource")`: none may be added. (Playwright's request event misses
 the image beacons; the performance entries do not.) If beacons still go, the flag was renamed:
 withdrawal then still pushes `update denied` and sets the cookie for the next page load.
+
+## TikTok Pixel (`sdk/scripts/src/tiktok-pixel.ts`)
+
+TikTok documents `ttq.grantConsent()`, `ttq.revokeConsent()` and `ttq.holdConsent()`, but the
+page that says what each does is behind a login, so the behaviour below comes from the pixel
+script and live tests.
+
+**What we rely on.** The pixel has four consent states. After `revokeConsent()` it drops every
+page view, route change and event before sending, and queues nothing: a later `grantConsent()`
+sends nothing old. `holdConsent()` is different: it queues every request in sessionStorage
+(`tt_hold_events`) and `grantConsent()` sends them all, and it does not stop the pixel writing
+its cookies. That is why the integration never uses hold and loads nothing before consent.
+`revokeConsent()` itself sends one request (`/api/v2/pixel/act`, page trigger `RevokeConsent`)
+carrying the `_ttp` id and the page URL, and deletes no cookies. `disableCookie()` sets
+`_tt_enable_cookie=0`, expires the first-party `_ttp` and requests `/i18n/pixel/disable_cookie`,
+whose response expires TikTok's third-party `_ttp` on `.tiktok.com`; it also breaks
+`enableCookie()` for the rest of the page, so a re-grant only calls `grantConsent()` and the
+cookies return on the next page load. While revoked, a route change or a direct `ttq` call still
+writes a fresh `ttcsid` and `ttcsid_<pixelId>` cookie and the `tt_pixel_session_index` key
+before the request is dropped; `_ttp` and `_tt_enable_cookie` are not re-created. The pixel
+ignores Global Privacy Control and Do Not Track. `ttq.load(id, { limited_data_use: true })` puts
+`"limited_data_use":true` in every event body; `{ historyObserver: false }` stops route-change
+page views; `ttq.track(name, params, { event_id })` carries the id; `identify()` hashes email
+and phone with SHA-256 in the browser and sends `external_id` as given.
+
+**Last checked:** November 2026, in `main.*.js` (pixel.js 2.2.1) and live with a placeholder
+pixel id, with the loader's `firstPartyCookieEnabled` flag rewritten to `true` to stand in for a
+real pixel, which sets cookies for 390 days on the registrable domain.
+
+**How to re-check.** Load the pixel on a page with consent given, call
+`window.ttq.revokeConsent()`, then `window.ttq.page()`, `window.ttq.track("AddToCart")` and
+`history.pushState`: no `POST analytics.tiktok.com/api/v2/pixel` may follow, and
+`sessionStorage.tt_hold_events` must stay empty. Then `window.ttq.grantConsent()`: still nothing
+old is sent, and a new `pushState` sends one `Pageview`. If a queued event appears after the
+re-grant, TikTok has changed revoke to behave like hold and the helpers' drop-while-silenced
+rule is the only thing keeping events out of the queue.
+
+## Mixpanel (`sdk/scripts/src/mixpanel.ts`)
+
+`opt_in_tracking()`, `opt_out_tracking()` and their `init` defaults are documented by Mixpanel.
+What happens around them is not.
+
+**What we rely on.** Loading `mixpanel-browser` a second time on the same page double-counts:
+the first copy keeps its route-change listener, and both copies read one stored opt-in flag
+(`__mp_opt_in_out_<token>`), so once the new copy is opted in the old one tracks again. Deleting
+that flag while a copy is on the page has the same effect, because the copy reads it on every
+check. That is why withdrawal silences Mixpanel in place, keeps the flag at 0 until the next
+page, and the stop mode deletes the flag only before a fresh start. `opt_out_tracking()` stops
+events, deletes its cookie and localStorage record and drops the batch queues, but a profile
+deletion (`delete_user`) is queued like any people request, and the opt-out then stops the
+senders, so it would wait for a re-grant; `stop_batch_senders()` first turns batching off so the
+deletion is sent at once and the unsent queue is dropped. `identify()` and `register()` called
+while opted out keep their values in memory and send them after an opt-in, so the re-grant
+calls `reset()` first. An opted-out start writes no cookie, only the flag in localStorage and
+two `mp_tab_id` keys in sessionStorage, but fetches feature flags (with the distinct id) when
+`flags` is configured. A stale flag of 0 makes a normal start drop every event. With Do Not
+Track on, `has_opted_out_tracking()` is true and nothing is tracked, whatever consent says,
+unless `ignore_dnt` is set.
+
+**Last checked:** November 2026, in `mixpanel-2-latest.min.js` (2.85.0) and live on a local
+page with a placeholder token: two page views per route change after a second copy; the stale
+event sent after a re-grant when the queue was left in localStorage; the `$delete` request sent
+within 10 ms with batching stopped, and only after the re-grant without.
+
+**How to re-check.** Load the library with consent given and `track_pageview:
+"url-with-path"`, remove its `<script>` and `window.mixpanel`, load it again and change the
+path with `history.pushState`: one `$mp_web_page_view` per change means the double count is
+gone and withdrawal could remove the script. Then, on one copy, call `identify("x")`,
+`stop_batch_senders()` and `opt_out_tracking()`: a `POST /engage/` with `$delete` must follow
+at once, and nothing else until `opt_in_tracking()`.
