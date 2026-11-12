@@ -72,3 +72,15 @@ html {
   outline: 2px solid #5f9cff;
   outline-offset: 2px;
 }
+
+/* The site's consent button (SiteConsent): bottom right, clear of the docs sidebar. */
+.cy-widget.site-recall {
+  left: auto;
+  right: 15px;
+}
+
+/* The SDK's buttons are square-cornered (2px, not the theme radius); round them to match the
+   site's buttons. */
+:is(.cy-banner-wrap, .cy-dialog-overlay) .cy-btn {
+  border-radius: 6px;
+}
