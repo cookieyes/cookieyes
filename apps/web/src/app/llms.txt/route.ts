@@ -26,7 +26,7 @@ export function GET() {
   const body = [
     "# CookieYes for Developers",
     "",
-    "> Open-source consent management for React, Next.js and plain JavaScript. The @cookieyes packages render a cookie banner, store the visitor's choice and load third-party tools only after consent. MIT licensed, runs in your frontend, no hosted runtime required.",
+    "> Open-source consent management for React, Next.js and plain JavaScript. The @cookieyes packages render a cookie banner, store the visitor's choice and load third-party tools only after consent. Apache-2.0 licensed, runs in your frontend, no hosted runtime required.",
     "",
     `> Every page below is also available as Markdown: send \`Accept: text/markdown\` to the page URL. Agent skills: ${SITE_URL}/.well-known/agent-skills/index.json`,
     "",

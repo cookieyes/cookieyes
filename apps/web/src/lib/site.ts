@@ -59,7 +59,7 @@ export function pageMetadata({
 }
 
 /**
- * Whether this build loads the CookieYes banner, GA4 and Clarity. Only production builds
+ * Whether this build loads GA4 and Clarity once consent allows. Only production builds
  * do, and never a Vercel preview deployment, so review traffic stays out of the GA4
  * property. DISABLE_TRACKING=1 switches them off for any other build, such as a review
  * project's own production deployment.

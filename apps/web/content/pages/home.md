@@ -34,7 +34,7 @@ Use consent from your app to control when analytics, ads, and other third-party 
 Everything runs in your stack. Consent state is yours to persist. You choose how and where it is stored.
 
 - **Frontend only.** Runs in your bundle. No hosted runtime required for the banner and consent logic.
-- **MIT licensed.** Fork it. Audit it. Self-host it. No closed-source runtime dependency. Every line is yours to read.
+- **Apache-2.0 licensed.** Fork it. Audit it. Self-host it. No closed-source runtime dependency. Every line is yours to read.
 - **Your data, your storage.** Keep consent records in the infrastructure you already use.
 
 ## Built to last
@@ -51,9 +51,9 @@ If your app sets non-essential cookies or loads tools such as analytics, ads or 
 
 Yes. `@cookieyes/nextjs` supports the App Router and the Pages Router on Next.js 14 and later. The banner is rendered on the server, and a returning visitor's saved choice is read from the request, so they never see the banner flash in and out.
 
-### Is it free and MIT licensed?
+### Is it free and Apache-2.0 licensed?
 
-Yes. The SDK is open source under the MIT licence, on GitHub. It runs entirely in your frontend: there is no account to create and no dashboard to set up.
+Yes. The SDK is open source under the Apache-2.0 licence, on GitHub. It runs entirely in your frontend: there is no account to create and no dashboard to set up.
 
 ### How big is the bundle?
 

@@ -477,4 +477,4 @@ so it never becomes noise. `coreVersionWarning(version?, range?)` and
 
 ## License
 
-MIT © [CookieYes](https://www.cookieyes.com)
+Apache-2.0 © [CookieYes](https://www.cookieyes.com)

@@ -16,7 +16,7 @@ Task guides live in `.agents/skills/<name>/SKILL.md`. Read the matching one befo
 
 ## The repo
 
-Public, MIT-licensed monorepo (pnpm workspaces + Turborepo). Node 20 or newer, pnpm 10. The
+Public, Apache-2.0-licensed monorepo (pnpm workspaces + Turborepo). Node 20 or newer, pnpm 10. The
 README has the full layout. In short: `sdk/*` are the published packages (`core` is the engine
 with zero runtime dependencies; `ui` is the framework-free banner layer (styles, tokens,
 markup, behaviour) every adapter draws from; `react`, `nextjs` and `vanilla` are wiring only;

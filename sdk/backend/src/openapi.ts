@@ -89,7 +89,7 @@ export function buildOpenApi(basePath?: string): Json {
       version: String(CONTRACT_VERSION),
       description:
         "The HTTP contract between the CookieYes SDK and a server that stores consent records. Any server that passes the conformance suite in @cookieyes/test/backend is compatible.",
-      license: { name: "MIT", identifier: "MIT" },
+      license: { name: "Apache-2.0", identifier: "Apache-2.0" },
     },
     ...(basePath === undefined ? {} : { servers: [{ url: basePath || "/" }] }),
     paths: {
