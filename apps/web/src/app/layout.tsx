@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Inter, Poppins } from "next/font/google";
 import "./global.css";
-import { Analytics } from "@/components/Analytics";
+import { GoogleConsentMode } from "@cookieyes/nextjs/server";
 import { AnnouncementGate, AnnouncementStrip } from "@/components/Announcement";
-import { ConsentBanner } from "@/components/ConsentBanner";
+import { SiteConsent } from "@/components/SiteConsent";
 import { getSearchIndex } from "@/lib/search-index";
-import { SITE_NAME, SITE_URL } from "@/lib/site";
+import { SITE_NAME, SITE_URL, TRACKING_ENABLED } from "@/lib/site";
 import { Providers } from "./Providers";
 import { SkipLink } from "./SkipLink";
 
@@ -82,14 +82,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        <ConsentBanner />
+        {/* Before any Google tag: the deny-by-default the GA4 integration updates. */}
+        <GoogleConsentMode />
         <AnnouncementGate />
       </head>
       <body>
         <SkipLink />
         <AnnouncementStrip />
         <Providers pageIndex={getSearchIndex()}>{children}</Providers>
-        <Analytics />
+        <SiteConsent tracking={TRACKING_ENABLED} />
       </body>
     </html>
   );
