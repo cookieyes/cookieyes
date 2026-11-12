@@ -277,7 +277,7 @@ A failed gate blocks the publish only once the repository variable `PACKAGE_GATE
 ## Licensing
 
 By submitting a contribution, you agree that it is licensed under this project's existing
-license (see [LICENSE](./LICENSE), MIT).
+license (see [LICENSE](./LICENSE), Apache-2.0).
 
 ## Reporting bugs & requesting features
 

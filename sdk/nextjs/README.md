@@ -435,5 +435,5 @@ private vulnerability reporting.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The "Powered by CookieYes" attribution may not be removed on the
+Apache-2.0. See [LICENSE](./LICENSE). The "Powered by CookieYes" attribution may not be removed on the
 free tier.

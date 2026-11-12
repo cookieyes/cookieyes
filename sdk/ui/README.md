@@ -95,4 +95,4 @@ Reduced motion needs no code: the stylesheet turns the entry animation off under
 
 ## License
 
-MIT
+Apache-2.0

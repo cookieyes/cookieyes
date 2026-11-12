@@ -789,5 +789,5 @@ was blocked, rather than failing silently.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The "Powered by CookieYes" attribution in the banner may not be
+Apache-2.0. See [LICENSE](./LICENSE). The "Powered by CookieYes" attribution in the banner may not be
 removed on the free tier.

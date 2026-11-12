@@ -16,9 +16,9 @@ export const FAQ_ITEMS: { question: string; answer: string }[] = [
       "Yes. @cookieyes/nextjs supports the App Router and the Pages Router on Next.js 14 and later. The banner is rendered on the server, and a returning visitor's saved choice is read from the request, so they never see the banner flash in and out.",
   },
   {
-    question: "Is it free and MIT licensed?",
+    question: "Is it free and Apache-2.0 licensed?",
     answer:
-      "Yes. The SDK is open source under the MIT licence, on GitHub. It runs entirely in your frontend: there is no account to create and no dashboard to set up.",
+      "Yes. The SDK is open source under the Apache-2.0 licence, on GitHub. It runs entirely in your frontend: there is no account to create and no dashboard to set up.",
   },
   {
     question: "How big is the bundle?",

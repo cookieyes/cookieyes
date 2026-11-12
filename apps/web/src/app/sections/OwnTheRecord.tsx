@@ -538,7 +538,7 @@ export function OwnTheRecord() {
                       padding: "2px 7px",
                     }}
                   >
-                    {"MIT"}
+                    {"Apache-2.0"}
                   </span>{" "}
                 </div>{" "}
                 <div
@@ -626,7 +626,7 @@ export function OwnTheRecord() {
                   textTransform: "uppercase",
                 }}
               >
-                {"MIT licensed"}
+                {"Apache-2.0 licensed"}
               </span>{" "}
               <span
                 style={{

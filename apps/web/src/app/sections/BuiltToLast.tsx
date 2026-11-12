@@ -178,7 +178,7 @@ export function BuiltToLast() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {"MIT"}
+                  {"Apache-2.0"}
                 </span>{" "}
                 <span
                   style={{

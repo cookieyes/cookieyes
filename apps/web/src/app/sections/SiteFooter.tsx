@@ -392,7 +392,7 @@ export function SiteFooter() {
                   transition: "color 0.15s",
                 }}
               >
-                {"MIT License"}
+                {"Apache-2.0 License"}
               </a>{" "}
               <a
                 href="https://www.cookieyes.com/privacy-policy/"
