@@ -28,11 +28,6 @@
 
 ---
 
-> **Free-tier note:** the "Powered by CookieYes" attribution in the banner may not be removed
-> on the free tier. Paid plans remove it.
-
----
-
 ## Key features
 
 - **App Router & Pages Router** — one component works in both.
@@ -435,5 +430,4 @@ private vulnerability reporting.
 
 ## License
 
-Apache-2.0. See [LICENSE](./LICENSE). The "Powered by CookieYes" attribution may not be removed on the
-free tier.
+Apache-2.0. See [LICENSE](./LICENSE).
