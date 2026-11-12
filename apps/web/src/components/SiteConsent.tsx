@@ -23,6 +23,14 @@ function start(tracking: boolean): void {
   initCookieYes({
     mode: "cookie-only",
     regulation: "GDPR",
+    // Any theme makes the SDK write its full token set on its own containers. Without one,
+    // the banner inherited the landing page's same-named --cy-* tokens and changed colour
+    // from page to page. Colours stay on the SDK defaults so its dark scheme still applies.
+    theme: {
+      primaryColor: "#136fe8",
+      borderRadius: "8px",
+      fontFamily: "var(--font-inter), system-ui, sans-serif",
+    },
     // "basic" keeps gtag.js off the page until analytics is granted, instead of loading it
     // at once behind Consent Mode.
     integrations: tracking
@@ -44,7 +52,8 @@ export function SiteConsent({ tracking }: { tracking: boolean }) {
     <>
       <CookieBanner />
       <CookiePreferences />
-      <RecallButton />
+      {/* Bottom right: at the default bottom left it covered the docs sidebar. */}
+      <RecallButton className="cy-widget site-recall" />
     </>
   );
 }
