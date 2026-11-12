@@ -8,7 +8,7 @@
 # CookieYes Consent SDK
 
 [![CI](https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml/badge.svg)](https://github.com/cookieyes/cookieyes/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/@cookieyes/core?label=%40cookieyes%2Fcore)](https://www.npmjs.com/package/@cookieyes/core)
 
 **[Documentation](https://developers.cookieyes.com)** · [Roadmap](https://github.com/orgs/cookieyes/projects/3) · [Contributing](./CONTRIBUTING.md)
@@ -188,4 +188,4 @@ To report a vulnerability, see [SECURITY.md](./SECURITY.md). Please do not open 
 
 ## License
 
-[MIT](./LICENSE) © CookieYes
+[Apache-2.0](./LICENSE) © CookieYes

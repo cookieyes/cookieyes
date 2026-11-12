@@ -5,7 +5,7 @@ description: "Add the CookieYes consent banner to a Next.js, React or plain Java
 
 # Install the CookieYes consent banner
 
-Use this when someone wants a cookie consent banner in a Next.js, React or plain JavaScript project, without a hosted service or an account. The packages are open source (MIT), run in the frontend and store the visitor's choice in a cookie. Full docs: https://developers.cookieyes.com/docs/nextjs (switch the framework in the sidebar).
+Use this when someone wants a cookie consent banner in a Next.js, React or plain JavaScript project, without a hosted service or an account. The packages are open source (Apache-2.0), run in the frontend and store the visitor's choice in a cookie. Full docs: https://developers.cookieyes.com/docs/nextjs (switch the framework in the sidebar).
 
 ## Decide two things first
 

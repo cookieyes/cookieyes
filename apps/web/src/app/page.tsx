@@ -60,7 +60,7 @@ const STRUCTURED_DATA = {
         "Open-source cookie consent SDK for React and Next.js, with a framework-free JavaScript core.",
       codeRepository: REPO_URL,
       programmingLanguage: "TypeScript",
-      license: "https://opensource.org/licenses/MIT",
+      license: "https://www.apache.org/licenses/LICENSE-2.0",
       author: { "@id": "https://www.cookieyes.com/#organization" },
     },
     {

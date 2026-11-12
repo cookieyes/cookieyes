@@ -10,10 +10,11 @@ import { createMDX } from "fumadocs-mdx/next";
  * banner, its preference centre, saving and changing consent, GA4, Clarity, search, the docs
  * and the playground's config editor all ran with no violations.
  *
- * The third-party origins are the CookieYes banner (cdn, log and directory), GA4 and Google
- * Tag Manager, and Microsoft Clarity (which also beacons to c.bing.com); cdn.jsdelivr.net
- * serves the integration logos. Inline scripts stay allowed: Next.js and the Consent Mode
- * default are inline, and per-request nonces would stop pages being served from the cache.
+ * The banner is the SDK itself, served from this origin. The third-party origins are GA4 and
+ * Google Tag Manager, and Microsoft Clarity (which also beacons to c.bing.com), both loaded
+ * only after consent; cdn.jsdelivr.net serves the integration logos. Inline scripts stay
+ * allowed: Next.js and the Consent Mode default are inline, and per-request nonces would stop
+ * pages being served from the cache.
  *
  * The playground also needs 'unsafe-eval': its config reader evaluates the edited config in
  * a sandboxed srcdoc iframe, and a srcdoc document inherits this page's policy.
@@ -25,17 +26,15 @@ function contentSecurityPolicy({ allowEval = false } = {}) {
       "'self'",
       "'unsafe-inline'",
       ...(allowEval ? ["'unsafe-eval'"] : []),
-      "https://cdn-cookieyes.com",
       "https://www.googletagmanager.com",
       "https://*.clarity.ms",
       "https://c.bing.com",
     ],
-    "style-src": ["'self'", "'unsafe-inline'", "https://cdn-cookieyes.com"],
+    "style-src": ["'self'", "'unsafe-inline'"],
     "img-src": [
       "'self'",
       "data:",
       "blob:",
-      "https://cdn-cookieyes.com",
       "https://cdn.jsdelivr.net",
       "https://*.google-analytics.com",
       "https://*.googletagmanager.com",
@@ -45,9 +44,6 @@ function contentSecurityPolicy({ allowEval = false } = {}) {
     "font-src": ["'self'", "data:"],
     "connect-src": [
       "'self'",
-      "https://cdn-cookieyes.com",
-      "https://log.cookieyes.com",
-      "https://directory.cookieyes.com",
       "https://*.google-analytics.com",
       "https://*.analytics.google.com",
       "https://*.googletagmanager.com",

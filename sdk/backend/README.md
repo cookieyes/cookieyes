@@ -105,4 +105,4 @@ The contract is [`openapi.json`](./openapi.json). Any server that passes the con
 
 ## License
 
-MIT
+Apache-2.0

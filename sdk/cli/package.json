@@ -19,7 +19,7 @@
     "url": "git+https://github.com/cookieyes/cookieyes.git",
     "directory": "sdk/cli"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "CookieYes (https://www.cookieyes.com)",
   "type": "module",
   "bin": {

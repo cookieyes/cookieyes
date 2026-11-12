@@ -113,4 +113,4 @@ only sees the banner never downloads them. Measured with `pnpm size` against an 
 
 ## License
 
-MIT
+Apache-2.0

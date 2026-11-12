@@ -731,4 +731,4 @@ console.table(getCookieYes().getIntegrations());
 
 ## License
 
-MIT © [CookieYes](https://www.cookieyes.com)
+Apache-2.0 © [CookieYes](https://www.cookieyes.com)

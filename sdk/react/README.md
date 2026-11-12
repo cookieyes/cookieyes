@@ -28,11 +28,6 @@
 
 ---
 
-> **Free-tier note:** the "Powered by CookieYes" attribution in the banner may not be removed
-> on the free tier. Paid plans remove it.
-
----
-
 ## Key features
 
 - **Drop-in components** — banner, preferences dialog, and recall button work out of the box, no wiring required.
@@ -789,5 +784,4 @@ was blocked, rather than failing silently.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The "Powered by CookieYes" attribution in the banner may not be
-removed on the free tier.
+Apache-2.0. See [LICENSE](./LICENSE).
