@@ -12,7 +12,7 @@
 //     and every source a sourcemap points at is in the tarball
 //   - every exported stylesheet contains the package's class prefix, so an empty or
 //     wrong file cannot pass a presence check
-//   - publint (strict) and attw (node16 profile) pass
+//   - publint (strict) and attw (node16 profile; esm-only for the ESM_ONLY packages) pass
 //   - the file list matches tools/package-gate/contents.json; `--update` rewrites it
 //
 // Writes the tarballs and report.json (every file with its size) to --out, for the
@@ -45,12 +45,20 @@ const update = args.includes("--update");
 const outArg = args.indexOf("--out");
 const outDir = resolve(outArg === -1 ? join(tmpdir(), "cookieyes-package-gate") : args[outArg + 1]);
 
+/**
+ * Packages that ship ES modules only, checked by attw's `esm-only` profile instead of `node16`.
+ * `@cookieyes/nuxt` is a Nuxt module: Nuxt loads modules with `import`, never `require`, and the
+ * module finds its runtime files through `import.meta.url`, which a CommonJS build would not have.
+ */
+const ESM_ONLY = new Set(["@cookieyes/nuxt"]);
+
 /** Class prefix each stylesheet must contain. A package not listed ships no CSS. */
 const CSS_PREFIX = {
   "@cookieyes/ui": ".cy-",
   "@cookieyes/react": ".cy-",
   "@cookieyes/vanilla": ".cy-",
   "@cookieyes/vue": ".cy-",
+  "@cookieyes/nuxt": ".cy-",
   "@cookieyes/nextjs": ".cy-",
   "@cookieyes/devtools": ".cyd-",
 };
@@ -224,7 +232,8 @@ for (const { dir, manifest } of packages) {
   const hasTypes = claimed.some(([where]) => /types/.test(where));
   if (hasTypes) {
     const cssEntries = Object.keys(packedManifest.exports ?? {}).filter((k) => k.endsWith(".css"));
-    const attwArgs = [tarball, "--profile", "node16", "--format", "json"];
+    const profile = ESM_ONLY.has(name) ? "esm-only" : "node16";
+    const attwArgs = [tarball, "--profile", profile, "--format", "json"];
     if (cssEntries.length) attwArgs.push("--exclude-entrypoints", ...cssEntries);
     // attw exits 1 when it finds problems, and calls process.exit before a pipe has
     // drained, which cut its JSON off at 64 KB. Writes to a file descriptor are
@@ -244,6 +253,9 @@ for (const { dir, manifest } of packages) {
     const inPackage = (file) => file?.replace(`/node_modules/${name}/`, "");
     for (const problem of analysis.problems ?? []) {
       if (problem.resolutionKind === "node10") continue;
+      // The JSON report lists every resolution whatever the profile; `esm-only` means a
+      // CommonJS `require` is not supported, so its problems are not ours to fix.
+      if (ESM_ONLY.has(name) && problem.resolutionKind === "node16-cjs") continue;
       // Resolution problems name a sub-path; file problems (such as FalseESM) name files.
       const where = problem.entrypoint
         ? `"${problem.entrypoint}" under ${problem.resolutionKind}`
