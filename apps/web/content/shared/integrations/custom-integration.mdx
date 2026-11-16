@@ -1,7 +1,7 @@
 ---
 title: Custom integration
 description: Load any script only after consent, with customScript() or a small integration object of your own.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 Two ways to gate a tool that has no ready-made integration. `customScript()` covers most cases: give it a script URL and a category. Write an integration object of your own when the tool needs more, for example a call to its own consent API instead of removing the script.
@@ -16,6 +16,11 @@ Install the integrations package and add `customScript()` to the `initCookieYes(
 <Framework when="vue">
 
 Install the integrations package and add `customScript()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
+<Framework when="nuxt">
+
+Install the integrations package and add `customScript()` to `cookieyes.integrations` in `app/app.config.ts`:
 
 </Framework>
 
@@ -71,6 +76,27 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+import { customScript } from "@cookieyes/scripts";
+
+export default defineAppConfig({
+  cookieyes: {
+    integrations: [
+      customScript({
+        id: "chat-widget",
+        src: "https://cdn.example.com/widget.js",
+        category: "functional",
+      }),
+    ],
+  },
+});
+```
+
+`integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
 <Framework when="core">
@@ -165,6 +191,15 @@ To see every integration with its current status, run this in the console:
 import { getCookieYes } from "@cookieyes/vue";
 
 console.table(getCookieYes().getIntegrations());
+```
+
+</Framework>
+<Framework when="nuxt">
+
+To see every integration with its current status, log it from a component once it has mounted. `getCookieYes()` is auto-imported:
+
+```ts
+onMounted(() => console.table(getCookieYes().getIntegrations()));
 ```
 
 </Framework>

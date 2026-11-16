@@ -1,0 +1,23 @@
+{
+  "title": "Integrations",
+  "root": true,
+  "pages": [
+    "index",
+    "google-consent-mode",
+    "--- Ready-made integrations ---",
+    "ahrefs-analytics",
+    "ga4",
+    "google-tag-manager",
+    "google-ads",
+    "matomo",
+    "meta-pixel",
+    "microsoft-uet",
+    "microsoft-clarity",
+    "mixpanel",
+    "posthog",
+    "segment",
+    "tiktok-pixel",
+    "--- Build your own ---",
+    "custom-integration"
+  ]
+}

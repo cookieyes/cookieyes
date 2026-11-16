@@ -1,7 +1,7 @@
 ---
 title: Google Consent Mode v2
 description: "Tell Google tags what the visitor allowed: add one default snippet, and the SDK sends every update."
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 Google Analytics 4, Google Ads and Google Tag Manager read consent through Google Consent Mode. It has two halves: a default that says "denied" before any Google tag runs, and an update each time the visitor decides. The SDK sends the updates on its own, on page load and on every change. You add the default.
@@ -80,6 +80,23 @@ export function setupConsent(app: App): void {
 ```
 
 </Framework>
+<Framework when="nuxt">
+
+Turn on the `googleConsentMode` option in `nuxt.config.ts`. The module then writes the default right after `<meta charset>` in every page, ahead of every other tag in `<head>`, as an inline script, so it runs before any Google tag. This includes `ssr: false` pages, pages from `nuxt generate` and cached routes. Everything else stays as it is: `<CookieYesRoot />` still renders the banner and dialogs.
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    regulation: "GDPR",
+    googleConsentMode: true,
+  },
+});
+```
+
+`true` uses the defaults. To change them, pass the options `bootstrapGoogleConsentMode()` takes in the other packages instead, for example `{ urlPassthrough: true }`. The option needs no extra package.
+
+</Framework>
 <Framework when="core">
 
 Call `bootstrapGoogleConsentMode()` before `initCookieYes()`, in the same file. Everything else in that file stays as it is:
@@ -123,6 +140,13 @@ If the default is missing, the Google integration sets one itself when it loads 
 > `[cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.`
 
 The message names `@cookieyes/nextjs` for every framework. In a Vue app, fix it by calling `bootstrapGoogleConsentMode()` before the SDK initialises, as shown above.
+
+</Framework>
+<Framework when="nuxt">
+
+> `[cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.`
+
+The message names `@cookieyes/nextjs` for every framework. In a Nuxt app, fix it by setting `googleConsentMode` in `nuxt.config.ts`, as shown above.
 
 </Framework>
 

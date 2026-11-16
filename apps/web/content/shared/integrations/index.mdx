@@ -1,7 +1,7 @@
 ---
 title: Overview
 description: Load third-party tools only after consent, with a ready-made integration or your own.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="nextjs react core">
@@ -12,6 +12,11 @@ An integration loads a third-party tool only after the visitor grants its catego
 <Framework when="vue">
 
 An integration loads a third-party tool only after the visitor grants its category, and stops it again when consent is withdrawn. You add it to the config you pass to `app.use(CookieYes, config)` once; no consent checks in your own code. Every ready-made integration comes from one extra package:
+
+</Framework>
+<Framework when="nuxt">
+
+An integration loads a third-party tool only after the visitor grants its category, and stops it again when consent is withdrawn. You add it once, to `cookieyes.integrations` in `app/app.config.ts`; no consent checks in your own code. Every ready-made integration comes from one extra package:
 
 </Framework>
 

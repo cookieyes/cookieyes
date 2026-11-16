@@ -1,14 +1,18 @@
 ---
 title: ReloadNotice
 description: Ask the visitor to reload when a withdrawn tool cannot be stopped otherwise.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
 
 Some third-party tools cannot be switched off once they are running. When a visitor withdraws consent for such a tool, this notice appears with a **Reload** and a **Dismiss** button. It never reloads on its own; the visitor decides.
 
+<Framework when="nextjs react vue">
+
 You need it only if you register a tool as "needs a reload" (below). The ready-made [integrations](/docs/integrations) stop their tools themselves. Hotjar is the exception; its page shows how to register it.
+
+</Framework>
 
 ## Add it
 
@@ -28,6 +32,24 @@ You need it only if you register a tool as "needs a reload" (below). The ready-m
 <CookieBanner />
 <CookiePreferences />
 <ReloadNotice />
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+`<CookieYesRoot />` does not render it. List the components inside `<CookieYesRoot>` and add it there; the slot replaces the default contents, so keep the others:
+
+```vue title="app/app.vue"
+<template>
+  <CookieYesRoot>
+    <CookieBanner />
+    <CookiePreferences />
+    <RecallButton />
+    <ReloadNotice />
+  </CookieYesRoot>
+  <NuxtPage />
+</template>
 ```
 
 </Framework>
@@ -60,6 +82,21 @@ registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload
 import { registerStopHandler } from "@cookieyes/vue";
 
 registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+Then mark the tool that cannot be stopped, once, in a plugin that runs **before** the module's. The SDK reads this list once, when it starts, and the module starts it in a plugin with `enforce: "pre"` (order -20), so give yours a lower `order`. `registerStopHandler` is auto-imported:
+
+```ts title="app/plugins/cookieyes-stop-handlers.ts"
+export default defineNuxtPlugin({
+  order: -30,
+  setup() {
+    registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+  },
+});
 ```
 
 </Framework>

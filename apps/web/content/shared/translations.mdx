@@ -1,7 +1,7 @@
 ---
 title: Translations
 description: Show the banner and dialogs in your visitors' language, or change any text.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 Every text the SDK shows comes from one translation map, in English by default. You can swap in a shipped language, write your own, or change a single string. All of it goes through the `i18n` option of the configuration.
@@ -52,6 +52,25 @@ export function setupConsent(app: App): void {
   });
 }
 ```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+import { fr } from "@cookieyes/translations/fr";
+
+export default defineAppConfig({
+  cookieyes: {
+    i18n: {
+      locale: "fr",
+      messages: { fr },
+    },
+  },
+});
+```
+
+`messages` and `locale` are plain data, so they work under `cookieyes` in `nuxt.config.ts` too. `loadLanguage`, below, is a function and must be in `app/app.config.ts`.
 
 </Framework>
 
@@ -132,6 +151,28 @@ export function setupConsent(app: App): void {
     },
   });
 }
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+export default defineAppConfig({
+  cookieyes: {
+    i18n: {
+      messages: {
+        en: {
+          bannerTitle: "We value your privacy",
+          acceptAll: "Sounds good",
+          categories: {
+            analytics: { label: "Statistics", description: "Helps us see which pages are useful." },
+          },
+        },
+      },
+    },
+  },
+});
 ```
 
 </Framework>
@@ -230,6 +271,30 @@ async function onChange(event: Event): Promise<void> {
 
 </Framework>
 
+<Framework when="nuxt">
+
+```vue title="app/components/LanguagePicker.vue"
+<script setup lang="ts">
+const { language, languages, setLanguage } = useLanguage();
+
+async function onChange(event: Event): Promise<void> {
+  const tag = (event.target as HTMLSelectElement).value;
+  await setLanguage(tag);
+  localStorage.setItem("language", tag);
+}
+</script>
+
+<template>
+  <select :value="language" @change="onChange">
+    <option v-for="tag in languages" :key="tag" :value="tag">{{ tag }}</option>
+  </select>
+</template>
+```
+
+`useLanguage()` is auto-imported, and Nuxt registers the component, so `<LanguagePicker />` works in any page without an import.
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/language-picker.ts"
@@ -286,6 +351,22 @@ export function setupConsent(app: App): void {
 
 </Framework>
 
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+export default defineAppConfig({
+  cookieyes: {
+    i18n: {
+      loadLanguage: async (tag) => (await import(`@cookieyes/translations/${tag}`))[tag],
+    },
+  },
+});
+```
+
+It goes in `app/app.config.ts`: a function under `cookieyes` in `nuxt.config.ts` is dropped, because that file becomes runtime config, which is JSON.
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -317,7 +398,7 @@ On a site where the URL carries the language, call `setLanguage()` with the tag 
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **Your own components can read the text.** `useTranslations()` returns a computed ref of the active language's map, and it updates when the language changes.
 
@@ -350,7 +431,7 @@ It is async, and it warns in the console if the language is not in `messages` an
 ## Next steps
 
 - [Configuration](/docs/getting-started/configuration#i18n): the `i18n` option in the reference table
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 - [Focused hooks](/docs/hooks/focused-hooks): `useTranslations()` and `useLanguage()` in full
 

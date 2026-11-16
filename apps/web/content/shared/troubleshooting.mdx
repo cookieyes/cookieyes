@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Common CookieYes setup problems, like a banner that never shows or scripts loading before consent, and the one line to check for each.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 Most problems here are a setup detail, and several show no error at all. Find what you see in the table; each row is one line to check.
@@ -60,6 +60,32 @@ Most problems here are a setup detail, and several show no error at all. Find wh
 
 </Framework>
 
+<Framework when="nuxt">
+
+| What you see | Cause | Fix |
+| --- | --- | --- |
+| The banner never appears | You already chose in this browser, or closed it in this page view | Delete the `cookieyes-consent` cookie and reload, see [Reset and re-test](#reset-and-re-test) |
+| The banner never appears, no error anywhere | `<CookieYesRoot />` is not in `app/app.vue` | See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes) |
+| `Failed to resolve component: CookieYesRoot` in the console | `@cookieyes/nuxt` is missing from `modules` | Add it to `modules` in `nuxt.config.ts` |
+| An integration or a callback never runs | It is under `cookieyes` in `nuxt.config.ts`, which becomes JSON runtime config and drops functions | Move it under `cookieyes` in `app/app.config.ts`, see [Configuration](/docs/getting-started/configuration) |
+| The preferences dialog is unstyled, the banner is fine | Only the inlined critical CSS applied: the full stylesheet did not load | Check the request to `/cookieyes/styles.css`, or your `stylesHref`, in the Network tab |
+| Do Not Sell does nothing | `<CookieOptOut />` is not rendered | `<CookieYesRoot />` renders it only when `regulation`, `region.strictest` or a `region.map` value is `"CCPA"`. In your own `<CookieYesRoot>` slot, render it yourself |
+| Customise or your own "Cookie settings" link does nothing | `<CookiePreferences />` is not rendered | Your own `<CookieYesRoot>` slot replaces the default components. Render it in the slot |
+| A tracker loads when a switch is flipped, before Save | You read the live values | Use `useConsentCategory()` or `committedCategories`, see [useConsent](/docs/hooks/use-consent#saved-values-vs-live-values) |
+| A custom category is missing | Your `categories` list was rejected; the console says why | See [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories) |
+| The banner is in English although you set a language | The language is not in `i18n.messages` | Import the catalogue, see [Translations](/docs/translations) |
+| The recall button is an unstyled circle | `class` replaced its default class | Add `cy-widget` to your class |
+| The banner flashes and vanishes for returning visitors | The page's HTML is the same for every visitor: `ssr: false`, `nuxt generate`, or a route with `swr`, `isr`, `cache` or `prerender` route rules | Expected on those pages: the browser hides the banner after hydration. A server-rendered route reads the visitor's cookie and sends no banner |
+| Your CSS rule does nothing | A `theme` value sets the same property inline, or your selector loses to the SDK's | See [Custom CSS](/docs/styling/custom-css) |
+| Scoped CSS or CSS Modules never reach the banner | The components render into `<body>` | Use global CSS with `data-cy-part` selectors |
+| Tracking continues after the visitor withdraws consent | A script that already ran cannot be unloaded | Render [`ReloadNotice`](/docs/components/reload-notice) |
+| Every returning visitor is asked again | You changed a category id, or which one is required | Expected. See [CookiePreferences](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) |
+| A checkbox in your own dialog turns on but never off | `@change="toggle"` passes the event | Use `@change="toggle(($event.target as HTMLInputElement).checked)"` |
+| Focus jumps to the top of the page when a dialog closes | The dialog was opened through the runtime directly | Open it with `useConsentActions().showPreferences()` |
+| The banner is not where you put it in your code | It moves to the top of `<body>` so keyboard users reach it first | Expected. See [Accessibility](/docs/accessibility) |
+
+</Framework>
+
 ## Console messages
 
 <Framework when="nextjs react">
@@ -94,6 +120,25 @@ You passed text, a fragment or two elements to a piece with `asChild`. Pass exac
 
 </Framework>
 
+<Framework when="nuxt">
+
+**`` ... in nuxt.config.ts holds a function, which runtime config drops because it is JSON. Move it under `cookieyes` in app.config.ts. ``**
+A development warning from the module, naming the option, such as `cookieyes.onConsentUpdate`. Move that option to `app/app.config.ts`.
+
+**`[cookieyes] useConsent() could not find CookieYes. Add app.use(CookieYes, config) before mounting the app, and call composables inside setup() or app.runWithContext().`**
+The module installs the plugin for you, so in a Nuxt app this means the composable ran outside a component's `setup()`, for example inside an event handler. Call it at the top of `<script setup>` and use what it returns.
+
+**`[cookieyes] <CookieYesRoot /> needs the @cookieyes/nuxt module in modules.`**
+`<CookieYesRoot />` rendered without the module's plugin. Add `@cookieyes/nuxt` to `modules` in `nuxt.config.ts`.
+
+**`[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`**
+An `OptOut.*` piece sits outside `OptOut.Root`. Move it inside. `Preferences.*` pieces give the same message about `<Preferences.Root>`.
+
+**`` [cookieyes] `asChild` expects exactly one element child. ``**
+You passed text, a fragment or two elements to a piece with `asChild`. Pass exactly one element.
+
+</Framework>
+
 **`[cookieyes] Invalid categories config (...). Falling back to the default five`**
 Your `categories` list broke a rule; the reason is in the brackets. The built-in five are shown until you fix it.
 
@@ -103,8 +148,12 @@ You set both `regulation` and `region`. Keep one.
 **`[cookieyes] no translations for language "..."; staying on "..."`**
 You switched to a language that is not in `i18n.messages` and has no `loadLanguage`. Add the catalogue.
 
+<Framework when="nextjs react vue">
+
 **`[cookieyes] blocked POST https://... (rule "...", category: ...)`**
 Not an error: network blocking stopped a request, as configured. Set `logBlockedRequests: false` to silence it.
+
+</Framework>
 
 ## Reset and re-test
 
@@ -141,5 +190,12 @@ The SDK sets this in the browser on every page where it starts, whether or not t
 
 - [Installation](/docs/getting-started/installation): the three-step setup, with its own common mistakes
 - [Configuration](/docs/getting-started/configuration): every option of `app.use(CookieYes, config)`
+
+</Framework>
+
+<Framework when="nuxt">
+
+- [Installation](/docs/getting-started/installation): the three-step setup, with its own common mistakes
+- [Configuration](/docs/getting-started/configuration): every option of the `cookieyes` key
 
 </Framework>

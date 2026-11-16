@@ -1,7 +1,7 @@
 ---
 title: Runtime and server helpers
 description: Direct access to the runtime from plain code, and reading a returning visitor's consent on the server.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What this page covers
@@ -15,6 +15,12 @@ Two things the regular hooks do not do: reaching the runtime from code that is n
 <Framework when="vue">
 
 Two things the regular composables do not do: reaching the runtime from code that is not a component, and reading a visitor's saved consent on the server so the banner is right on the first paint. Most apps need neither. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+</Framework>
+
+<Framework when="nuxt">
+
+Two things the regular composables do not do: reaching the runtime from code that is not a component, and knowing a visitor's saved consent on the server so the banner is right on the first paint. The module does the second for you. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
 
 </Framework>
 
@@ -62,9 +68,48 @@ The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every a
 
 </Framework>
 
+<Framework when="nuxt">
+
+The module starts one runtime for the app. `getCookieYes()` returns it from any code, such as a route middleware, a store or a plain module, and `useConsentRuntime()` returns the same object inside a component. Nuxt imports both for you.
+
+```ts title="app/utils/consent-log.ts"
+export function logCurrentConsent() {
+  const snapshot = getCookieYes().getSnapshot();
+  console.log(snapshot.committedCategories);
+}
+```
+
+The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every action) and `getIntegrations()` for a debug panel.
+
+**Call it from browser code.** On the server one runtime serves every request and holds no visitor's choice, so call `getCookieYes()` from an event handler, `onMounted` or other code that runs in the browser. To read consent while rendering, use [`useConsent()`](/docs/hooks/use-consent).
+
+</Framework>
+
 ## Read a returning visitor's consent on the server
 
+<Framework when="nextjs react vue">
+
 By default the server does not know what a visitor chose, so it renders the banner for everyone and the browser removes it after loading, which a returning visitor sees as a flash. To avoid it, read the saved decision from the request cookie and pass it to `CookieYesProvider`.
+
+</Framework>
+
+<Framework when="nuxt">
+
+The module does this for you; there is nothing to call. On every server render it reads the consent cookie and the visitor's region from the Vercel (`x-vercel-ip-country`, `x-vercel-ip-country-region`) or Cloudflare (`cf-ipcountry`) headers, and `<CookieYesRoot />` hands both to the `CookieYesProvider` it renders. Those headers are then the only region source, in the browser too: a `region.detect` in `app/app.config.ts` is not used on such a page. The result travels to the browser in the Nuxt payload, so the first client render matches the server HTML. A returning visitor gets no banner and no flash, and a visitor whose region maps to `"CCPA"` gets the CCPA banner from the server. Global Privacy Control is applied in the browser.
+
+With `ssr: false`, with `nuxt generate`, and on routes with `swr`, `isr`, `cache` or `prerender` route rules, which Nuxt serves to every visitor, the module does not read the request. Those pages behave like a static page: the banner is in the HTML for everyone, and the browser hides it for a returning visitor after hydration. One visitor's choice or region never reaches another.
+
+Composables read the server's answer only inside `<CookieYesRoot>`. Elsewhere they render a fresh visitor on the server and switch to the live state once mounted.
+
+## Common mistakes
+
+**`getCookieYes is not defined`.**
+`@cookieyes/nuxt` is missing from `modules` in `nuxt.config.ts`, so nothing is imported for you. See [Installation](/docs/getting-started/installation).
+
+**The banner flashes on every load for a returning visitor.**
+On a server-rendered route, the banner is rendered outside `<CookieYesRoot>`, where no server-read consent reaches it. Render it inside the slot of `<CookieYesRoot>`. With `ssr: false`, `nuxt generate` or a cached route, the flash is expected: see above.
+
+</Framework>
 
 <Framework when="nextjs">
 

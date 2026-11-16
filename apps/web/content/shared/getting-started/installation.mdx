@@ -1,7 +1,7 @@
 ---
 title: Installation
 description: Install the CookieYes SDK and get a working banner in three steps.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="nextjs react">
@@ -13,6 +13,12 @@ Three steps, about five minutes. If you would rather have the files written for 
 <Framework when="vue">
 
 Three steps, about five minutes: install the package, add the plugin to your app, and render the banner once. If you would rather have the files written for you, run `npx @cookieyes/cli init`: it does exactly what this page does. See [Quick start](/docs/getting-started/quick-start).
+
+</Framework>
+
+<Framework when="nuxt">
+
+Three steps, about five minutes: install the module, add it to `nuxt.config.ts`, and render `<CookieYesRoot />` once. If you would rather have the files written for you, run `npx @cookieyes/cli init`. See [Quick start](/docs/getting-started/quick-start).
 
 </Framework>
 
@@ -55,6 +61,16 @@ The rest of this page sets up `@cookieyes/core`. Two steps, about five minutes.
 | Requirement | Minimum |
 | --- | --- |
 | Node.js | 20 |
+| Vue | 3.5 |
+
+</Framework>
+
+<Framework when="nuxt">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20, or the newer version your Nuxt release requires |
+| Nuxt | 4 |
 | Vue | 3.5 |
 
 </Framework>
@@ -103,6 +119,16 @@ npm install @cookieyes/vue
 ```
 
 This is the only package you install. `vue` is a peer dependency, so the copy your app already has is the one used.
+
+</Framework>
+
+<Framework when="nuxt">
+
+```npm
+npm install @cookieyes/nuxt
+```
+
+This is the only package you install. `nuxt` and `vue` are peer dependencies, so the copies your app already has are the ones used. `npx nuxi module add @cookieyes/nuxt` installs it and adds it to `modules` in one go.
 
 </Framework>
 
@@ -293,6 +319,39 @@ Done. Reload the page and the banner appears. If it does not, see [Common mistak
 
 </Framework>
 
+<Framework when="nuxt">
+
+## 2. Add the module
+
+```ts title="nuxt.config.ts" group="setup"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    mode: "cookie-only", // the default: no backend needed
+    regulation: "GDPR", // "GDPR" | "CCPA"
+  },
+});
+```
+
+The `cookieyes` key takes the same configuration as `initCookieYes()` in the other packages, so a configuration copies across unchanged. Options that hold functions, such as integrations and callbacks, go in `app/app.config.ts` instead; see [Configuration](/docs/getting-started/configuration).
+
+There is no stylesheet to import. The module puts the banner's critical CSS in the server HTML and serves the full stylesheet itself.
+
+## 3. Render it once
+
+```vue title="app/app.vue" group="setup"
+<template>
+  <CookieYesRoot />
+  <NuxtPage />
+</template>
+```
+
+`<CookieYesRoot />` renders the banner, the preferences dialog and the recall button, plus the opt-out dialog when a CCPA regulation can apply. Nuxt imports it for you. Keep it in `app.vue`, outside `<NuxtPage />`, so it stays mounted across navigation, and before your page content, so the banner is early in the DOM: screen readers announce it first, and it paints before the rest of the page.
+
+Done. Reload the page and the banner appears. It is already in the server HTML, and a visitor who has chosen before gets no banner at all. If it does not appear, see [Common mistakes](#common-mistakes).
+
+</Framework>
+
 <Framework when="core">
 
 ## 2. Initialise the runtime
@@ -335,6 +394,19 @@ The stylesheet import is missing. Keep the `@cookieyes/vue/styles.css` import in
 
 </Framework>
 
+<Framework when="nuxt">
+
+**`Failed to resolve component: CookieYesRoot` in the console.**
+`@cookieyes/nuxt` is missing from `modules` in `nuxt.config.ts`. Add it, as in step 2.
+
+**Nothing renders: no banner, no error anywhere.**
+`<CookieYesRoot />` is not in `app/app.vue`. Render it once, as in step 3.
+
+**An integration or a callback never runs.**
+It is in `nuxt.config.ts`, where options become runtime config, which is JSON and drops functions. Move it under `cookieyes` in `app/app.config.ts`. In development the module logs a warning naming the option.
+
+</Framework>
+
 <Framework when="nextjs">
 
 **`You're importing a component that needs "use client"`**
@@ -355,7 +427,7 @@ The module that calls it is imported from two places under a bundler that duplic
 
 </Framework>
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue nuxt core">
 
 ## Next steps
 
@@ -372,6 +444,14 @@ The module that calls it is imported from two places under a bundler that duplic
 <Framework when="vue">
 
 - [Configuration](/docs/getting-started/configuration): every option the plugin takes, including CCPA and languages
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="nuxt">
+
+- [Configuration](/docs/getting-started/configuration): every option of the `cookieyes` key, including CCPA and languages
 - [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
 - [Styling](/docs/styling/overview): match the banner to your brand
 

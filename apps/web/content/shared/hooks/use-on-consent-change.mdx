@@ -1,7 +1,7 @@
 ---
 title: useOnConsentChange
 description: Run your own code when the visitor's consent changes.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -12,7 +12,7 @@ Calls your function whenever consent is saved, and once when the component mount
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Calls your function whenever consent is saved, and once when the component mounts, with the current state. Use it to start something when a category is granted: initialise an analytics SDK, start a session recorder, sync the decision to your own backend. The subscription is removed when the component unmounts, or when the effect scope it was called in stops.
 
@@ -62,6 +62,27 @@ useOnConsentChange("change", ({ categories }) => {
 ```
 
 It subscribes after the component mounts, so it does nothing during server rendering. Outside a component, call it inside an effect scope and it unsubscribes when the scope stops. `type` and `options` are read once.
+
+</Framework>
+
+<Framework when="nuxt">
+
+```vue title="app/components/AnalyticsLoader.vue"
+<script setup lang="ts">
+/** Whatever starts analytics in your app. Safe to call more than once. */
+declare function loadAnalytics(): void;
+
+useOnConsentChange("change", ({ categories }) => {
+  if (categories.analytics) loadAnalytics();
+});
+</script>
+
+<template>
+  <slot />
+</template>
+```
+
+Render `<AnalyticsLoader />` once, in `app/app.vue`. It subscribes after the component mounts, so it does nothing during server rendering. `type` and `options` are read once.
 
 </Framework>
 

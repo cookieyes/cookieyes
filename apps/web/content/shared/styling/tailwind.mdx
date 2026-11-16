@@ -1,7 +1,7 @@
 ---
 title: Tailwind
 description: Use Tailwind utilities with the banner and dialogs, in the right order.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -32,6 +32,17 @@ Import the SDK's stylesheet **after** Tailwind. Tailwind's preflight resets butt
 
 </Framework>
 
+<Framework when="nuxt">
+
+```css title="app/assets/css/main.css"
+@import "tailwindcss";
+@import "@cookieyes/nuxt/styles.css";
+```
+
+Load the file with `css: ["~/assets/css/main.css"]` in `nuxt.config.ts`. The module still writes the SDK's stylesheet right after `<meta charset>`, before Tailwind. The copy imported here comes after Tailwind, which is the order that counts; both copies hold the same rules.
+
+</Framework>
+
 <Framework when="core">
 
 ```css title="src/styles.css"
@@ -41,7 +52,11 @@ Import the SDK's stylesheet **after** Tailwind. Tailwind's preflight resets butt
 
 </Framework>
 
+<Framework when="nextjs react vue core">
+
 If you import the stylesheet in your consent file instead, remove that import and keep this one, so the order is fixed in one place.
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -70,6 +85,27 @@ import { CookieBanner } from "@cookieyes/vue";
 
 <template>
   <CookieBanner class="shadow-2xl ring-1 ring-black/5" />
+</template>
+```
+
+`RecallButton` is the exception: its `class` replaces the default class. Keep `cy-widget` if you want the default look: `<RecallButton class="cy-widget ring-2" />`.
+
+</Framework>
+
+<Framework when="nuxt">
+
+## Three ways to use utilities
+
+**On a component.** `class` is added to the component's own classes. Pass the components to `<CookieYesRoot>`'s slot, which replaces the ones it renders by default, so list each one you want, and `<CookieOptOut />` too if a CCPA regulation can apply:
+
+```vue title="app/app.vue"
+<template>
+  <CookieYesRoot>
+    <CookieBanner class="shadow-2xl ring-1 ring-black/5" />
+    <CookiePreferences />
+    <RecallButton />
+  </CookieYesRoot>
+  <NuxtPage />
 </template>
 ```
 
@@ -119,6 +155,23 @@ import { CookieBanner } from "@cookieyes/vue";
 
 </Framework>
 
+<Framework when="nuxt">
+
+```css title="app/assets/css/main.css"
+@import "tailwindcss";
+@import "@cookieyes/nuxt/styles.css";
+
+[data-cy-part="banner"] {
+  @apply max-w-lg rounded-xl p-6 shadow-2xl;
+}
+
+[data-cy-part="accept-all"] {
+  @apply font-semibold;
+}
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```css title="src/styles.css"
@@ -136,7 +189,7 @@ import { CookieBanner } from "@cookieyes/vue";
 
 </Framework>
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 **On primitives.** Build the banner from [primitives](/docs/headless/banner) and put utilities straight on your elements.
 
@@ -153,7 +206,7 @@ import { CookieBanner } from "@cookieyes/vue";
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 - Arbitrary values set the SDK's variables: `<CookieBanner class="[--cy-primary:#7c3aed]" />`. This works only while `primaryColor` is not set in `theme`.
 
@@ -175,7 +228,7 @@ Your CSS comes before `styles.css`, or the value is set in `theme`.
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **A utility on `<CookieBanner>` does nothing.**
 Your CSS comes before `styles.css`, or the value is set in `theme`.

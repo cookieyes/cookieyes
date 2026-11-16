@@ -1,7 +1,7 @@
 ---
 title: Configuration
 description: Every option of initCookieYes(), grouped by what it changes.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="nextjs react core">
@@ -37,7 +37,50 @@ export function setupConsent(app: App): void {
 
 </Framework>
 
+<Framework when="nuxt">
+
+The `cookieyes` key in `nuxt.config.ts` is where you configure CookieYes. It takes the same `CookieYesConfig` that `initCookieYes()` takes in the other packages. `mode` defaults to `"cookie-only"` here, so no option is required.
+
+```ts title="nuxt.config.ts" group="config"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    regulation: "GDPR",
+    theme: { primaryColor: "#1863dc" },
+  },
+});
+```
+
+Options that hold functions, such as `integrations`, `onConsentReady` and `onConsentUpdate`, go under the same key in `app/app.config.ts`. `nuxt.config.ts` becomes runtime config, which is JSON and drops functions; in development the module warns when it finds one there.
+
+```ts title="app/app.config.ts" group="config"
+export default defineAppConfig({
+  cookieyes: {
+    onConsentUpdate: (state) => {
+      console.log("Consent saved", state.categories);
+    },
+  },
+});
+```
+
+The module merges the two files. `app.config.ts` wins for a key set in both, and one level of nesting is merged, so `i18n.messages` in one file and `i18n.loadLanguage` in the other both apply. Arrays are replaced, not combined.
+
+</Framework>
+
 ## Options
+
+<Framework when="nuxt">
+
+### Module options
+
+Two options exist only in the Nuxt module, under `cookieyes` in `nuxt.config.ts`:
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `stylesHref` | `"/cookieyes/styles.css"` | The path the module serves the full stylesheet from. |
+| `googleConsentMode` | not set | `true`, or Consent Mode options, adds Google's deny-by-default snippet right after `<meta charset>`, before any Google tag. See [Google Consent Mode](/docs/integrations/google-consent-mode). |
+
+</Framework>
 
 ### Setup
 
@@ -61,7 +104,7 @@ export function setupConsent(app: App): void {
 
 ### `theme`
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 Nine keys for colour, corner radius and font. Each is listed with its default on [Theme tokens](/docs/styling/theme-tokens).
 
@@ -77,9 +120,15 @@ Nine keys for colour, corner radius and font. Each is listed with its default on
 
 <ConfigNestedTable path="region" />
 
+<Framework when="nuxt">
+
+Put `region.map` in `nuxt.config.ts`. On a page the server renders per request, the module reads the region from the Vercel or Cloudflare geo headers, and those headers are the only region source, for the banner and for the browser alike. A `region.detect` in `app/app.config.ts` is used only where the server reads nothing (`ssr: false`, `nuxt generate`, and routes with `swr`, `isr`, `cache` or `prerender` route rules), once the page has loaded.
+
+</Framework>
+
 ### `i18n`
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 `messages` per language, `locale`, `detectBrowserLanguage` and `loadLanguage`. See [Translations](/docs/translations).
 
@@ -105,6 +154,12 @@ Nine keys for colour, corner radius and font. Each is listed with its default on
 
 </Framework>
 
+<Framework when="nuxt">
+
+`rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Put `rules` in `nuxt.config.ts`: the module finds them there when it builds, registers the blocker itself and bundles it only then. `onRequestBlocked` is a function, so it goes in `app/app.config.ts`. See [Network blocking](/docs/network-blocking).
+
+</Framework>
+
 ## Choosing a privacy law: the `regulation` option
 
 | | `"GDPR"` | `"CCPA"` |
@@ -120,6 +175,12 @@ Under `"CCPA"`, a browser that sends Global Privacy Control starts the visitor o
 <Framework when="nextjs react vue">
 
 Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens it.
+
+</Framework>
+
+<Framework when="nuxt">
+
+Under `"CCPA"`, `<CookieYesRoot />` renders `<CookieOptOut />` for you, and so it does when `region` can resolve to `"CCPA"`: Do Not Sell opens it.
 
 </Framework>
 
@@ -164,6 +225,23 @@ export function setupConsent(app: App): void {
 
 </Framework>
 
+<Framework when="nuxt">
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    categories: [
+      { id: "necessary", required: true, label: "Essential" },
+      { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+      { id: "marketing", label: "Marketing", gcm: ["ad_storage", "ad_user_data"] },
+    ],
+  },
+});
+```
+
+</Framework>
+
 Ids must be unique and contain no `,` or `:`, and one category must be `required: true`; otherwise the list is rejected with a console warning and the built-in five are used. Decide your ids early: adding, removing or renaming an id later makes every returning visitor choose again. Labels and descriptions can change freely.
 
 ## Where the choice is stored
@@ -185,7 +263,7 @@ Your `categories` list broke one of the rules above; the console warning says wh
 
 ## Next steps
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 - [Translations](/docs/translations): every text in every language, through `i18n`
 - [Theme tokens](/docs/styling/theme-tokens): what each `theme` value changes

@@ -1,7 +1,7 @@
 ---
 title: Parts
 description: Every data-cy-part name the SDK renders, for CSS and for tests.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -27,6 +27,16 @@ Every element the SDK renders carries `data-cy-part="<name>"`. The names are the
 <Framework when="vue">
 
 ```css title="src/consent.css"
+[data-cy-part="banner"] [data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
 [data-cy-part="banner"] [data-cy-part="accept-all"] {
   font-weight: 600;
 }
@@ -92,7 +102,7 @@ Five names appear on more than one surface: `title`, `close`, `accept-all`, `rej
 
 ## Good to know
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 - `data-cy-state` exists on the switch only, set by `CookiePreferences`. If you build the dialog from primitives, set it yourself from the `checked` value.
 
@@ -115,6 +125,14 @@ Five names appear on more than one surface: `title`, `close`, `accept-all`, `rej
 <Framework when="vue">
 
 - The part names are exported as constants, `CY_PART` and `CY_STATE` (from `@cookieyes/vue`), so a test can write `CY_PART.banner.acceptAll` instead of a string.
+- Two more selectors are stable: `#cookieyes-portal-root`, the container the banner and recall button render into, and `[data-cky-banner]`, the visible banner card. The dialogs exist in the page only while open.
+- The `cy-*` class names are stable too, but prefer parts. `.cy-frame-placeholder` is the exception: the `GatedFrame` placeholder has no part.
+
+</Framework>
+
+<Framework when="nuxt">
+
+- The part names are exported as constants, `CY_PART` and `CY_STATE`, from `@cookieyes/ui`, so a test can write `CY_PART.banner.acceptAll` instead of a string. `@cookieyes/nuxt` does not export them; install `@cookieyes/ui` to use them.
 - Two more selectors are stable: `#cookieyes-portal-root`, the container the banner and recall button render into, and `[data-cky-banner]`, the visible banner card. The dialogs exist in the page only while open.
 - The `cy-*` class names are stable too, but prefer parts. `.cy-frame-placeholder` is the exception: the `GatedFrame` placeholder has no part.
 

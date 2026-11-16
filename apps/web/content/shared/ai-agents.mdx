@@ -1,7 +1,7 @@
 ---
 title: AI coding assistants
 description: Install the CookieYes skills so Claude Code, Cursor, Codex, Copilot and other AI coding assistants set up consent with the current API.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 An AI coding assistant that writes consent code from memory can invent options or use ones that were removed. The CookieYes skills are short guides your assistant reads before it writes code: how to install the banner, gate third-party tools and test the result, written against the current packages.
@@ -39,6 +39,16 @@ Then ask your assistant in plain words, for example "add a cookie consent banner
 | Skill | Use it to |
 | --- | --- |
 | `install-consent-banner` | Add the banner to a Next.js, React, Vue or plain JavaScript site |
+| `gate-third-party-scripts` | Load Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment, Ahrefs Web Analytics, Hotjar, Matomo, Microsoft Advertising, TikTok Pixel, Mixpanel or any script only after consent, or write your own integration |
+| `test-consent` | Unit-test code that depends on consent with `@cookieyes/test` |
+
+</Framework>
+
+<Framework when="nuxt">
+
+| Skill | Use it to |
+| --- | --- |
+| `install-consent-banner` | Add the banner to a Next.js, React, Vue, Nuxt or plain JavaScript site |
 | `gate-third-party-scripts` | Load Google Analytics, Google Tag Manager, Google Ads, Meta Pixel, Microsoft Clarity, PostHog, Segment, Ahrefs Web Analytics, Hotjar, Matomo, Microsoft Advertising, TikTok Pixel, Mixpanel or any script only after consent, or write your own integration |
 | `test-consent` | Unit-test code that depends on consent with `@cookieyes/test` |
 

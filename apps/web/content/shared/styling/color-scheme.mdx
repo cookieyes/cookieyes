@@ -1,7 +1,7 @@
 ---
 title: Colour scheme
 description: Show the consent banner and dialogs in light or dark colours, or follow the visitor's device setting, with the colorScheme option.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -47,6 +47,19 @@ export function setupConsent(app: App): void {
     colorScheme: "light",
   });
 }
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    colorScheme: "light",
+  },
+});
 ```
 
 </Framework>
@@ -98,6 +111,21 @@ The brand colour does not switch. A `primaryColor` that reads well on white can 
 
 </Framework>
 
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    --cy-primary: #4d8ef7;
+  }
+}
+```
+
+Load the file through the `css` option in `nuxt.config.ts`, as shown on [Custom CSS](/docs/styling/custom-css).
+
+</Framework>
+
 ## Your site has its own dark-mode switch
 
 If your site toggles dark mode with a class on `<html>` (Tailwind's class strategy, `next-themes`, your own toggle), the SDK does not see it: it reads only `colorScheme` and, under `"system"`, the device setting. Set `colorScheme` to your default scheme, and switch the variables from that class:
@@ -120,6 +148,21 @@ html.dark [data-cy-part="optout"] {
 <Framework when="vue">
 
 ```css title="src/consent.css"
+html.dark [data-cy-part="banner"],
+html.dark [data-cy-part="dialog"],
+html.dark [data-cy-part="optout"] {
+  --cy-bg: #161b27;
+  --cy-text: #f3f4f6;
+  --cy-muted: #9ca3af;
+  --cy-border: #2d3748;
+}
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
 html.dark [data-cy-part="banner"],
 html.dark [data-cy-part="dialog"],
 html.dark [data-cy-part="optout"] {
