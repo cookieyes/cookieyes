@@ -10,7 +10,7 @@ import * as ui from "../index.js";
  * imported by the source of an adapter (`@cookieyes/vanilla`,
  * `@cookieyes/react`) or of the conformance suite in `@cookieyes/test`.
  */
-const CONSUMERS = ["vanilla", "react", "test"];
+const CONSUMERS = ["vanilla", "react", "vue", "test"];
 
 /**
  * Exports kept without an adapter importing them, each with its reason.
