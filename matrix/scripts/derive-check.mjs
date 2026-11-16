@@ -29,6 +29,7 @@ export const PEER_FIELD_MAP = {
   react: "react",
   "react-dom": "reactDom",
   vue: "vue",
+  nuxt: "nuxt",
 };
 
 /**
@@ -36,6 +37,13 @@ export const PEER_FIELD_MAP = {
  * combination and are skipped rather than reported as unmapped.
  */
 const IGNORED_PEERS = new Set(["@cookieyes/devtools"]);
+
+/**
+ * Peers that a package's framework peer brings with it, per package. Nuxt depends on Vue itself,
+ * so a Nuxt leg pins only `nuxt` and runs the Vue that Nuxt resolves: such a peer needs no floor
+ * combination of its own, but a combination that does pin it must still satisfy its range.
+ */
+const SUPPLIED_BY_FRAMEWORK = { "@cookieyes/nuxt": new Set(["vue"]) };
 
 /** Combinations that actually claim to test `packageName` (Story 1 AC3 future-proofing). */
 function combinationsUnderTest(combinations, packageName) {
@@ -69,6 +77,8 @@ export function checkPeerDependencyMatrix({ peerPackages, combinations }) {
         );
         continue;
       }
+
+      if (SUPPLIED_BY_FRAMEWORK[name]?.has(peerName)) continue;
 
       const floor = semver.minVersion(range);
       if (!floor) {
@@ -159,6 +169,7 @@ async function main() {
     { name: "@cookieyes/react", path: join(repoRoot, "sdk", "react", "package.json") },
     { name: "@cookieyes/nextjs", path: join(repoRoot, "sdk", "nextjs", "package.json") },
     { name: "@cookieyes/vue", path: join(repoRoot, "sdk", "vue", "package.json") },
+    { name: "@cookieyes/nuxt", path: join(repoRoot, "sdk", "nuxt", "package.json") },
   ].map(({ name, path }) => {
     const pkg = JSON.parse(readFileSync(path, "utf8"));
     return { name, peerDependencies: pkg.peerDependencies ?? {} };

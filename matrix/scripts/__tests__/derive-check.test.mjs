@@ -153,3 +153,59 @@ describe("checkPeerDependencyMatrix with a Vue combination", () => {
     expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
   });
 });
+
+/** A Nuxt fixture: Nuxt pinned, Vue left to Nuxt, as in matrix.config.mjs. */
+function nuxtFixture() {
+  return {
+    peerPackages: [
+      {
+        name: "@cookieyes/nuxt",
+        peerDependencies: { nuxt: "^4.0.0", vue: ">=3.5.0" },
+      },
+    ],
+    combinations: [
+      {
+        id: "fixture-nuxt-4.0.0",
+        role: "floor",
+        app: "nuxt",
+        packagesUnderTest: ["@cookieyes/nuxt"],
+        versions: { nuxt: "4.0.0" },
+      },
+    ],
+  };
+}
+
+describe("checkPeerDependencyMatrix with a Nuxt combination", () => {
+  it("returns no violations for a consistent Nuxt fixture", () => {
+    expect(checkPeerDependencyMatrix(nuxtFixture())).toEqual([]);
+  });
+
+  it("fails when the nuxt range is widened without a matching floor combination", () => {
+    const fixture = nuxtFixture();
+    fixture.peerPackages[0].peerDependencies.nuxt = "^3.0.0 || ^4.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes('"nuxt"') && e.includes("3.0.0"))).toBe(true);
+  });
+
+  it("fails the inverse check when a Nuxt combination pins a Vue outside the vue range", () => {
+    const fixture = nuxtFixture();
+    fixture.combinations[0].versions.vue = "3.4.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("does not satisfy") && e.includes(">=3.5.0"))).toBe(true);
+  });
+
+  it("still requires the vue floor of @cookieyes/vue when only Nuxt legs exist", () => {
+    const fixture = nuxtFixture();
+    fixture.peerPackages.push({ name: "@cookieyes/vue", peerDependencies: { vue: ">=3.5.0" } });
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("@cookieyes/vue") && e.includes("3.5.0"))).toBe(true);
+  });
+
+  it("leaves the Vue fixture's verdict unchanged when Nuxt legs sit beside it", () => {
+    const fixture = vueFixture();
+    const nuxt = nuxtFixture();
+    fixture.peerPackages.push(...nuxt.peerPackages);
+    fixture.combinations.push(...nuxt.combinations);
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+});

@@ -2,9 +2,10 @@
 // Reads `matrix/matrix-results.json` (produced by the DEVP-80 CI peer-dependency matrix) and
 // `matrix/matrix.config.mjs` (the latter only to know which combination IDs *should* be present),
 // then writes `apps/web/.generated/peer-matrix-reference.json` and injects marker-delimited
-// markdown compatibility tables into `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md`
-// and `sdk/vue/README.md`. Combinations are split by `app`: the Next.js/React table goes to the
-// root and the React and Next.js READMEs, the Vue table to the root and the Vue README.
+// markdown compatibility tables into `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md`,
+// `sdk/vue/README.md` and `sdk/nuxt/README.md`. Combinations are split by `app`: the
+// Next.js/React table goes to the root and the React and Next.js READMEs, the Vue table to the
+// root and the Vue README, the Nuxt table to the root and the Nuxt README.
 //
 // Sibling to `generate-config-reference.mjs` / `generate-component-reference.mjs` /
 // `generate-css-variables-reference.mjs` — same fail-closed discipline, adapted to this contract's
@@ -55,10 +56,11 @@ const outDir = join(webRoot, ".generated");
 const outFile = join(outDir, "peer-matrix-reference.json");
 
 const README_TARGETS = [
-  { path: join(repoRoot, "README.md"), kind: "root", apps: ["next", "vue"] },
+  { path: join(repoRoot, "README.md"), kind: "root", apps: ["next", "vue", "nuxt"] },
   { path: join(repoRoot, "sdk", "react", "README.md"), kind: "package", apps: ["next"] },
   { path: join(repoRoot, "sdk", "nextjs", "README.md"), kind: "package", apps: ["next"] },
   { path: join(repoRoot, "sdk", "vue", "README.md"), kind: "package", apps: ["vue"] },
+  { path: join(repoRoot, "sdk", "nuxt", "README.md"), kind: "package", apps: ["nuxt"] },
 ];
 
 /** `generatedAt` older than this many days is treated as "the workflow stopped running." */
@@ -86,7 +88,12 @@ const REQUIRED_COMBINATION_FIELDS = [
   "outcome",
   "steps",
 ];
-const REQUIRED_VERSION_FIELDS = { next: ["next", "react", "reactDom"], vue: ["vue"] };
+const REQUIRED_VERSION_FIELDS = {
+  next: ["next", "react", "reactDom"],
+  vue: ["vue"],
+  // Only `nuxt` is requested; the Vue a Nuxt row shows is the one Nuxt resolved.
+  nuxt: ["nuxt"],
+};
 
 /** A combination without an `app` field is a Next.js one, as in matrix.config.mjs. */
 function appOf(combo) {
@@ -296,6 +303,9 @@ function buildRows(data) {
     if (common.app === "vue") {
       return { ...common, vue: `${combo.resolved.vue}${floorSuffix}` };
     }
+    if (common.app === "nuxt") {
+      return { ...common, nuxt: `${combo.resolved.nuxt}${floorSuffix}`, vue: combo.resolved.vue };
+    }
     return {
       ...common,
       next: `${combo.resolved.next}${floorSuffix}`,
@@ -355,11 +365,35 @@ function renderVueSection({ rows, rationaleLink }) {
   ];
 }
 
+function renderNuxtSection({ rows, rationaleLink }) {
+  const header =
+    "| Nuxt | Vue | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |\n" +
+    "|---|---|---|---|---|---|";
+  const body = rows
+    .map(
+      (r) =>
+        `| ${r.nuxt} | ${r.vue} | ${r.verifiedDate} | ${r.buildTypecheck} | ${r.ssr} | ${r.behaviour} |`,
+    )
+    .join("\n");
+  return [
+    header,
+    body,
+    "",
+    `Verified by installing the exact Nuxt versions above (Vue is the version Nuxt resolved), ` +
+      `building a real Nuxt app with the module, starting its server and asserting over HTTP the ` +
+      `banner's HTML for first-time, returning and California visitors (and the consent value ` +
+      `the server read for the returning one), then running behaviour assertions in Nuxt's test ` +
+      `environment in \`jsdom\`. Node 22, pnpm. See [rationale](${rationaleLink}) for why this ` +
+      `stops short of a real browser.`,
+  ];
+}
+
 function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
   const testLink = testPackageLink(fromFile);
   const rationaleLink = "https://github.com/cookieyes/cookieyes#compatibility";
   const nextRows = rows.filter((r) => r.app === "next");
   const vueRows = rows.filter((r) => r.app === "vue");
+  const nuxtRows = rows.filter((r) => r.app === "nuxt");
 
   // Static claims this generator itself makes (things the verification depth structurally never
   // covers, independent of any one matrix run) plus, dynamically, every limit the *producer*
@@ -372,6 +406,9 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
   }
   if (apps.includes("vue")) {
     notVerifiedItems.push("Any Vue version outside the rows above.");
+  }
+  if (apps.includes("nuxt")) {
+    notVerifiedItems.push("Any Nuxt version outside the rows above.");
   }
   notVerifiedItems.push("npm/yarn as the install client.", ...coverageLimits);
   if (apps.includes("vue")) {
@@ -386,6 +423,7 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
   if (apps.includes("next"))
     sections.push(renderNextSection({ rows: nextRows, testLink, rationaleLink }));
   if (apps.includes("vue")) sections.push(renderVueSection({ rows: vueRows, rationaleLink }));
+  if (apps.includes("nuxt")) sections.push(renderNuxtSection({ rows: nuxtRows, rationaleLink }));
 
   return [
     MARKER_START,

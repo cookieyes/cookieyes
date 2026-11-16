@@ -17,6 +17,7 @@ on:
       - "sdk/ui/**"
       - "sdk/nextjs/**"
       - "sdk/vue/**"
+      - "sdk/nuxt/**"
       - "sdk/core/**"
       - "matrix/**"
   schedule:
@@ -121,10 +122,18 @@ jobs:
         combo: ${{ fromJson(needs.plan.outputs.combinations) }}
     steps:
       - uses: actions/checkout@v7
+
+      # Each combination names its own Node in matrix.config.mjs: the Nuxt legs need Node 22,
+      # which Nuxt 4.6 requires. Read with the runner's preinstalled Node, before setup-node.
+      - name: Read the combination's Node version
+        id: node
+        run: |
+          echo "version=$(node --input-type=module -e "const { combinations } = await import('./matrix/matrix.config.mjs'); process.stdout.write(combinations.find((c) => c.id === '${{ matrix.combo }}').node)")" >> "$GITHUB_OUTPUT"
+
       - uses: pnpm/action-setup@v5
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: ${{ steps.node.outputs.version }}
           cache: pnpm
 
       # Only the root's own devDependencies (semver etc.) are needed to run

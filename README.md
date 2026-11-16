@@ -67,12 +67,20 @@ Verified by installing the exact versions above, building a real Next.js app, se
 
 Verified by installing the exact Vue versions above, building a real Vite app, rendering it on the server with `vue/server-renderer` and asserting the banner's HTML (and a returning visitor's cookie value) is correct, then running behaviour and hydration assertions in `jsdom`. Node 20, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
 
+| Nuxt | Vue | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |
+|---|---|---|---|---|---|
+| 4.0.0 (declared floor) | 3.5.45 | 2026-11-16 | pass | pass | pass |
+| 4.6.4 | 3.5.45 | 2026-11-16 | pass | pass | pass |
+
+Verified by installing the exact Nuxt versions above (Vue is the version Nuxt resolved), building a real Nuxt app with the module, starting its server and asserting over HTTP the banner's HTML for first-time, returning and California visitors (and the consent value the server read for the returning one), then running behaviour assertions in Nuxt's test environment in `jsdom`. Node 22, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
+
 **Not verified by this table:**
 - Any Next.js/React version outside the rows above.
 - Any Vue version outside the rows above.
+- Any Nuxt version outside the rows above.
 - npm/yarn as the install client.
 - No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).
-- Node, package-manager and module-resolution dimensions are not yet varied — every combination above ran on Node 20 / pnpm / moduleResolution=bundler.
+- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, all with pnpm and moduleResolution=bundler.
 - Server rendering of the Vue rows is asserted on the Vite SSR build's render function, not a live server, so it does not prove a particular server framework forwards the Cookie header.
 <!-- PEER-MATRIX:END -->
 
