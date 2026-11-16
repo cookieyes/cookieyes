@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generates the per-framework docs trees under content/docs/{nextjs,react,vue,core} from the
+// Generates the per-framework docs trees under content/docs/{nextjs,react,vue,nuxt,core} from the
 // shared bodies in content/shared.
 //
 // One body, written once, is published under every framework it applies to. Each
@@ -30,6 +30,7 @@ const FRAMEWORKS = {
   nextjs: "Next.js",
   react: "React",
   vue: "Vue",
+  nuxt: "Nuxt",
   core: "JavaScript",
 };
 
@@ -67,7 +68,7 @@ function readFrontmatter(source, file) {
     if (key === "frameworks") {
       const inner = /^\[(.*)\]$/.exec(value);
       if (!inner)
-        throw new Error(`${file}: frameworks must be written as [nextjs, react, vue, core]`);
+        throw new Error(`${file}: frameworks must be written as [nextjs, react, vue, nuxt, core]`);
       data.frameworks = inner[1]
         .split(",")
         .map((s) => unquote(s))

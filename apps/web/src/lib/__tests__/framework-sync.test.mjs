@@ -4,8 +4,8 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
-// The framework set and the Vue guard are restated in plain scripts that cannot import the
-// TypeScript modules. This keeps every restatement identical, so adding a framework in one
+// The framework set and the Vue guard (which also covers Nuxt pages) are restated in plain
+// scripts that cannot import the TypeScript modules. This keeps every restatement identical, so adding a framework in one
 // place and forgetting another fails here, not in front of a reader.
 
 const webRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -22,6 +22,7 @@ describe("framework set", () => {
   it("is the same list in the TypeScript modules and the scripts", () => {
     const expected = listAfterFrameworks(read("src/lib/framework-docs.ts"));
     assert.ok(expected.includes("vue"));
+    assert.ok(expected.includes("nuxt"));
     for (const file of ["src/lib/remark-framework-docs.ts", "scripts/check-examples.mjs"]) {
       assert.deepEqual(listAfterFrameworks(read(file)), expected, file);
     }

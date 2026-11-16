@@ -3,13 +3,13 @@
  * the sidebar switcher, the header, search and the raw-Markdown route.
  *
  * The docs are written once in content/shared and published under `/docs/nextjs`,
- * `/docs/react`, `/docs/vue` and `/docs/core` (scripts/generate-framework-docs.mjs). A page's framework
+ * `/docs/react`, `/docs/vue`, `/docs/nuxt` and `/docs/core` (scripts/generate-framework-docs.mjs). A page's framework
  * is therefore the first path segment, and nothing else — no stored preference decides
  * what a URL shows, which is what makes a docs link mean the same thing for everyone who
  * opens it.
  */
 
-export const FRAMEWORKS = ["nextjs", "react", "vue", "core"] as const;
+export const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "core"] as const;
 
 export type Framework = (typeof FRAMEWORKS)[number];
 
@@ -21,6 +21,7 @@ export const FRAMEWORK_LABEL: Record<Framework, string> = {
   nextjs: "Next.js",
   react: "React",
   vue: "Vue",
+  nuxt: "Nuxt",
   core: "JavaScript",
 };
 
@@ -43,7 +44,7 @@ export function frameworkOf(slugsOrPath: readonly string[] | string): Framework 
  * `index.mdx`, which is why this works from the file path and not from the URL.
  */
 export function sharedPath(wrapperPath: string): string {
-  return wrapperPath.replace(/^(nextjs|react|vue|core)\//, "");
+  return wrapperPath.replace(/^(nextjs|react|vue|nuxt|core)\//, "");
 }
 
 /**
@@ -72,7 +73,14 @@ export function resolveDocsHref(
   // The reader's own framework first; then React before Next.js, since a page missing
   // from JavaScript is a React-layer page and its plain-React form is the nearer one.
   const order: Framework[] = [
-    ...new Set<Framework>([...(current ? [current] : []), "react", "nextjs", "vue", "core"]),
+    ...new Set<Framework>([
+      ...(current ? [current] : []),
+      "react",
+      "nextjs",
+      "vue",
+      "nuxt",
+      "core",
+    ]),
   ];
   const target = order.find((fw) => exists(fw, rest)) ?? current ?? DEFAULT_FRAMEWORK;
   return `/docs/${target}/${rest}${hash ? `#${hash}` : ""}`;
@@ -91,10 +99,11 @@ const OPT_OUT = /(^|\s)frameworkSwap=false(\s|$)/;
 const USE_CLIENT = /^"use client";\n\n?/;
 const APP_DIR_TITLE = /title="app\//;
 /**
- * What must never reach a Vue page's code: a React or Next.js import, the `"use client"`
- * directive or a React-only hook. Vue code is written by hand in `<Framework when="vue">`
- * blocks and is never produced by rewriting a shared React fence, so one of these in a Vue
- * fence means a React example was left outside a `when` block.
+ * What must never reach a Vue or Nuxt page's code: a React or Next.js import, the
+ * `"use client"` directive or a React-only hook. Vue and Nuxt code is written by hand in
+ * `<Framework when="vue">` and `<Framework when="nuxt">` blocks and is never produced by
+ * rewriting a shared React fence, so one of these in such a fence means a React example was
+ * left outside a `when` block.
  */
 const VUE_FORBIDDEN = /@cookieyes\/(react|nextjs)(?![\w-])|"use client"|useSyncExternalStore/;
 /** An innermost block: one whose body opens no further <Framework>. Resolved repeatedly. */
@@ -118,23 +127,25 @@ export function composeMarkdown(body: string, framework: Framework): string {
 
   out = out.replace(FENCE, (_m, opener: string, code: string) => {
     let swapped = code;
-    if (framework === "vue") {
+    const handWritten = framework === "vue" || framework === "nuxt";
+    if (handWritten) {
       const lang = /^```(\w*)/.exec(opener)?.[1];
       if (lang === "tsx" || VUE_FORBIDDEN.test(code)) {
         throw new Error(
-          "A Vue page has a React fence (tsx, a @cookieyes/react or @cookieyes/nextjs import, " +
+          `A ${FRAMEWORK_LABEL[framework]} page has a React fence (tsx, a @cookieyes/react or @cookieyes/nextjs import, ` +
             'a "use client" line or useSyncExternalStore). Wrap it in <Framework when="nextjs react">.',
         );
       }
     }
-    if (framework !== "core" && framework !== "vue" && !OPT_OUT.test(opener)) {
+    if (framework !== "core" && !handWritten && !OPT_OUT.test(opener)) {
       swapped = swapped.replace(SWAPPABLE, (_s, _pkg, suffix: string | undefined) => {
         return `@cookieyes/${framework}${suffix ?? ""}`;
       });
     }
     let head = opener;
-    if (framework !== "nextjs") {
-      // Next.js conventions neither a plain React app nor a plain JavaScript one has.
+    if (framework !== "nextjs" && framework !== "nuxt") {
+      // Next.js conventions neither a plain React app nor a plain JavaScript one has. Nuxt keeps
+      // its own `app/` directory, so its titles are left as written.
       swapped = swapped.replace(USE_CLIENT, "");
       head = head.replace(APP_DIR_TITLE, 'title="src/');
     }

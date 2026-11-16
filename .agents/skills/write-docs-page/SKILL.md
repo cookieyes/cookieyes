@@ -45,6 +45,8 @@ components or hooks, so its examples are hand-written inside `<Framework when="c
 Include `vue` when `@cookieyes/vue` has the feature; Vue code is never rewritten from React, so
 it is hand-written inside `<Framework when="vue">` in `ts` and `vue` fences (rules in
 `apps/web/content/shared/README.md`).
+Include `nuxt` when `@cookieyes/nuxt` has the feature; Nuxt code is hand-written the same way,
+inside `<Framework when="nuxt">`, with no imports for what the module auto-imports.
 
 ## 3. Structure
 

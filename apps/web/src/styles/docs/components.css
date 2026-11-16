@@ -499,6 +499,11 @@
   color: var(--cy-doc-gr);
 }
 
+.cy-doc-pkg-mark[data-pkg="nuxt"] {
+  background: var(--cy-doc-gr-bg);
+  color: var(--cy-doc-gr);
+}
+
 .cy-doc-pkg-mark[data-pkg="cli"] {
   background: var(--cy-doc-gr-bg);
   color: var(--cy-doc-gr);
