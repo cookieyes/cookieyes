@@ -1,7 +1,7 @@
 ---
 title: Colour scheme
 description: Show the consent banner and dialogs in light or dark colours, or follow the visitor's device setting, with the colorScheme option.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 <Framework when="core">
@@ -35,6 +35,22 @@ initCookieYes({
 
 </Framework>
 
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "cookie-only",
+    colorScheme: "light",
+  });
+}
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -56,6 +72,8 @@ Five colours switch: the surface (`--cy-bg`), text (`--cy-text`), secondary text
 
 The brand colour does not switch. A `primaryColor` that reads well on white can fail on the dark surface, so give it a dark value in CSS:
 
+<Framework when="nextjs react core">
+
 ```css title="app/consent.css"
 @media (prefers-color-scheme: dark) {
   [data-cy-part="banner"],
@@ -65,9 +83,26 @@ The brand colour does not switch. A `primaryColor` that reads well on white can 
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/consent.css"
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    --cy-primary: #4d8ef7;
+  }
+}
+```
+
+</Framework>
+
 ## Your site has its own dark-mode switch
 
 If your site toggles dark mode with a class on `<html>` (Tailwind's class strategy, `next-themes`, your own toggle), the SDK does not see it: it reads only `colorScheme` and, under `"system"`, the device setting. Set `colorScheme` to your default scheme, and switch the variables from that class:
+
+<Framework when="nextjs react core">
 
 ```css title="app/consent.css"
 html.dark [data-cy-part="banner"],
@@ -79,6 +114,23 @@ html.dark [data-cy-part="optout"] {
   --cy-border: #2d3748;
 }
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/consent.css"
+html.dark [data-cy-part="banner"],
+html.dark [data-cy-part="dialog"],
+html.dark [data-cy-part="optout"] {
+  --cy-bg: #161b27;
+  --cy-text: #f3f4f6;
+  --cy-muted: #9ca3af;
+  --cy-border: #2d3748;
+}
+```
+
+</Framework>
 
 This works only when the same colours are not set in `theme`; see [Theme tokens → Config or CSS, not both](/docs/styling/theme-tokens#good-to-know).
 

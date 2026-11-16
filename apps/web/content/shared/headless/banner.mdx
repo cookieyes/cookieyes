@@ -1,7 +1,7 @@
 ---
 title: Banner
 description: Build the consent banner with your own markup and classes, keeping CookieYes behaviour for showing, accepting, rejecting and translated text.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
@@ -13,6 +13,8 @@ Use it only when `CookieBanner` cannot produce the markup your design needs. For
 ## Build a banner
 
 Render this in place of `<CookieBanner />`. `Banner.Root` decides when the banner shows and hides, so keep it as the outer element.
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-banner.tsx"
 "use client";
@@ -42,7 +44,46 @@ export function ConsentBanner() {
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/ConsentBanner.vue"
+<script setup lang="ts">
+import { Banner, useRegulation } from "@cookieyes/vue";
+
+const regulation = useRegulation();
+</script>
+
+<template>
+  <Banner.Root class="banner">
+    <Banner.Title class="banner-title" />
+    <Banner.Description class="banner-text" />
+    <Banner.Actions class="banner-actions">
+      <Banner.DoNotSell v-if="regulation === 'CCPA'" class="btn" />
+      <template v-else>
+        <Banner.AcceptAll class="btn btn-primary" />
+        <Banner.RejectAll class="btn" />
+      </template>
+      <Banner.OpenPreferences class="btn btn-link" />
+    </Banner.Actions>
+  </Banner.Root>
+</template>
+```
+
+</Framework>
+
+<Framework when="nextjs react">
+
 Each piece renders with the translated text for the active language. Pass `children` to replace it with your own text.
+
+</Framework>
+
+<Framework when="vue">
+
+Each piece renders with the translated text for the active language. Put your own content in its default slot to replace it.
+
+</Framework>
 
 ## The pieces
 
@@ -59,9 +100,21 @@ Each piece renders with the translated text for the active language. Pass `child
 | `Banner.Close` | `<button>` | Hides the banner for this page view. Saves nothing; the banner returns on the next page load |
 | `Banner.Branding` | `<a>` | The "Powered by" link |
 
+<Framework when="nextjs react">
+
 Every piece takes `className`, `style` and the other props of the element it renders. The part names for CSS are the same as on [`CookieBanner`](/docs/components/cookie-banner#restyle-it).
 
+</Framework>
+
+<Framework when="vue">
+
+Every piece takes `class`, `style` and the other attributes of the element it renders. The part names for CSS are the same as on [`CookieBanner`](/docs/components/cookie-banner#restyle-it).
+
+</Framework>
+
 ## Use your own button component
+
+<Framework when="nextjs react">
 
 Add `asChild` to a button piece and pass one element. The piece puts its behaviour on your element instead of rendering its own `<button>`:
 
@@ -71,13 +124,38 @@ Add `asChild` to a button piece and pass one element. The piece puts its behavio
 </Banner.AcceptAll>
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+Add `as-child` to a button piece and pass one element. The piece puts its behaviour on your element instead of rendering its own `<button>`. It throws if the slot holds anything other than exactly one element:
+
+```vue check="false"
+<Banner.AcceptAll as-child>
+  <MyButton variant="primary">Accept all</MyButton>
+</Banner.AcceptAll>
+```
+
+</Framework>
+
 ## Common mistakes
 
 **The banner shows for visitors who already chose.**
 `Banner.Root` is missing, or something else wraps the pieces. It must be the outer element.
 
+<Framework when="nextjs react">
+
 **A button renders inside another button.**
 Your component already renders a `<button>`. Add `asChild`.
+
+</Framework>
+
+<Framework when="vue">
+
+**A button renders inside another button.**
+Your component already renders a `<button>`. Add `as-child`.
+
+</Framework>
 
 **Customise does nothing.**
 `CookiePreferences` is not rendered. `Banner.OpenPreferences` only opens it.

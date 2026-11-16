@@ -1,14 +1,23 @@
 ---
 title: Segment
 description: Load Segment only after analytics consent, and remove it with its identifiers when consent is withdrawn.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 `segment()` loads Segment's `analytics.js` after the visitor grants the analytics category. When consent is withdrawn, the script and Segment's `ajs_anonymous_id` and `ajs_user_id` are removed. When consent is granted again, Segment loads once more and starts a new session.
 
 ## Set it up
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `segment()` to the `initCookieYes()` call you already have:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `segment()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -28,6 +37,28 @@ initCookieYes({
   integrations: [segment({ writeKey: "YOUR_WRITE_KEY" })],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { segment } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [segment({ writeKey: "YOUR_WRITE_KEY" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">

@@ -1,12 +1,14 @@
 ---
 title: Self-hosted mode
 description: Send each consent decision to your own server as a record, and keep it as proof.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 In `mode: "self-hosted"`, every decision a visitor makes is also sent to your server as a consent record, so you can keep proof of it. The choice is still kept in the browser cookie too.
 
 ## Turn it on
+
+<Framework when="nextjs react core">
 
 ```ts check="false"
 initCookieYes({
@@ -14,6 +16,24 @@ initCookieYes({
   apiUrl: "https://example.com/api/consent", // your server's endpoint
 });
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "self-hosted",
+    apiUrl: "https://example.com/api/consent", // your server's endpoint
+  });
+}
+```
+
+</Framework>
 
 Each decision is sent as one `POST` with a JSON body. If you set `apiKey`, it goes in an `Authorization: Bearer` header; anyone can see it in the browser, so never treat it as a secret.
 
@@ -41,7 +61,7 @@ export async function POST(request: Request) {
 
 </Framework>
 
-<Framework when="react core">
+<Framework when="react vue core">
 
 For example, a handler for `POST /api/consent`, the path in `apiUrl` above, written with the standard `Request` and `Response` most servers use:
 
@@ -110,6 +130,8 @@ Your server is where the proof lives. How long to keep records is for you and yo
 
 Instead of `apiUrl`, pass a `backend` with a `persist(record)` function. Throw when your server did not store the record, so it is sent again:
 
+<Framework when="nextjs react core">
+
 ```ts check="false"
 initCookieYes({
   mode: "self-hosted",
@@ -121,6 +143,29 @@ initCookieYes({
   },
 });
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "self-hosted",
+    backend: {
+      async persist(record) {
+        const res = await fetch("/api/consent", { method: "POST", body: JSON.stringify(record) });
+        if (!res.ok) throw new Error(`Consent record not stored: HTTP ${res.status}`);
+      },
+    },
+  });
+}
+```
+
+</Framework>
 
 ## Common mistakes
 
@@ -138,8 +183,20 @@ Add your `apiUrl` origin to `connect-src`.
 
 ## Next steps
 
+<Framework when="nextjs react core">
+
 - [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
 - [Configuration](/docs/getting-started/configuration): every other option of `initCookieYes()`
+
+</Framework>
+
+<Framework when="vue">
+
+- [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
+- [Configuration](/docs/getting-started/configuration): every other option the plugin takes
+- [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
+
+</Framework>
 
 <Framework when="nextjs react">
 

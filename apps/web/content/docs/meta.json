@@ -3,6 +3,7 @@
   "pages": [
     "nextjs",
     "react",
+    "vue",
     "core",
     "changelog"
   ]

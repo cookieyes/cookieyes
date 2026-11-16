@@ -1,7 +1,7 @@
 ---
 title: CookieOptOut
 description: "The Do Not Sell dialog for CCPA: one checkbox that opts the visitor out of every optional category, and respects Global Privacy Control."
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
@@ -14,28 +14,72 @@ If the visitor's browser sends a Global Privacy Control signal, they start opted
 
 Render it next to the banner whenever your site can be under CCPA. Without it, Do Not Sell does nothing and nothing warns you.
 
+<Framework when="nextjs react">
+
 ```tsx check="false"
 <CookieBanner />
 <CookieOptOut />
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+</Framework>
+
 If you serve GDPR visitors too, render `CookiePreferences` as well. Each dialog appears only under its own regulation.
 
 ## Change what it shows
 
+<Framework when="nextjs react">
+
 The wording comes from `i18n` ([Translations](/docs/translations)) and the colours from `theme` ([Theme tokens](/docs/styling/theme-tokens)), both set in `initCookieYes()`. There are no props for them.
+
+</Framework>
+
+<Framework when="vue">
+
+The wording comes from `i18n` ([Translations](/docs/translations)) and the colours from `theme` ([Theme tokens](/docs/styling/theme-tokens)), both set in the config you pass to `app.use(CookieYes, config)`. There are no props for them.
+
+</Framework>
 
 ## Restyle it
 
+<Framework when="nextjs react">
+
 It accepts `className` and `style` like any element; they are added to the dialog's own styling. For one part, use its `data-cy-part` in your CSS. The parts are `optout`, `title`, `message`, `confirm` and `close`. For your own markup, use the [OptOut primitives](/docs/headless/opt-out).
+
+</Framework>
+
+<Framework when="vue">
+
+It accepts `class` and `style` like any element; they land on the dialog card and are added to its own styling. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`root`, `title`, `message`, `checkbox`, `checkboxLabel`, `cancel`, `confirm`, `confirmation`, `close`, `branding`). Or use its `data-cy-part` in your CSS. The parts are `optout`, `title`, `message`, `confirm` and `close`. For your own markup, use the [OptOut primitives](/docs/headless/opt-out).
+
+</Framework>
 
 ## Common mistakes
 
 **Do Not Sell does nothing.**
 `<CookieOptOut />` is not rendered.
 
+<Framework when="nextjs react">
+
 **The dialog never appears.**
 The visitor is not under CCPA. Check `regulation` in `initCookieYes()`.
+
+</Framework>
+
+<Framework when="vue">
+
+**The dialog never appears.**
+The visitor is not under CCPA. Check `regulation` in the config you pass to `app.use(CookieYes, config)`.
+
+</Framework>
 
 **Visitors are opted out before touching anything.**
 Their browser sends Global Privacy Control, which CookieYes honours by default.

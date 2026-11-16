@@ -1,14 +1,23 @@
 ---
 title: Ahrefs Web Analytics
 description: Load Ahrefs Web Analytics only after analytics consent, and stop it sending when consent is withdrawn.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 `ahrefsAnalytics()` loads Ahrefs Web Analytics after the visitor grants the analytics category. When consent is withdrawn, Ahrefs stops sending page views and events straight away, with no reload. Ahrefs sets no cookies, so there is nothing to delete.
 
 ## Set it up
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `ahrefsAnalytics()` to the `initCookieYes()` call you already have. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `ahrefsAnalytics()` to the config you pass to `app.use(CookieYes, config)`. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -28,6 +37,28 @@ initCookieYes({
   integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">

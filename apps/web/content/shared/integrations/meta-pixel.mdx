@@ -1,14 +1,23 @@
 ---
 title: Meta Pixel
 description: Load the Meta Pixel only after advertising consent, and pause it when consent is withdrawn.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 `metaPixel()` loads the Meta Pixel after the visitor grants the advertising category. When consent is withdrawn, it tells Meta to stop with Meta's own consent call and clears the `_fbp` and `_fbc` cookies. When consent is granted again, tracking resumes without loading the script a second time.
 
 ## Set it up
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `metaPixel()` to the `initCookieYes()` call you already have:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `metaPixel()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -28,6 +37,28 @@ initCookieYes({
   integrations: [metaPixel({ pixelId: "123456789012345" })],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { metaPixel } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [metaPixel({ pixelId: "123456789012345" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">

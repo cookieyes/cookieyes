@@ -1,16 +1,28 @@
 ---
 title: useOnConsentChange
 description: Run your own code when the visitor's consent changes.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
 
+<Framework when="nextjs react">
+
 Calls your function whenever consent is saved, and once when the component mounts, with the current state. Use it to start something when a category is granted: initialise an analytics SDK, start a session recorder, sync the decision to your own backend. The subscription is removed when the component unmounts.
+
+</Framework>
+
+<Framework when="vue">
+
+Calls your function whenever consent is saved, and once when the component mounts, with the current state. Use it to start something when a category is granted: initialise an analytics SDK, start a session recorder, sync the decision to your own backend. The subscription is removed when the component unmounts, or when the effect scope it was called in stops.
+
+</Framework>
 
 To load a `<script>` tag, use [`GatedScript`](/docs/components/gated-script) instead: no code to write. To show or hide an element, use [`useConsentCategory()`](/docs/hooks/focused-hooks).
 
 ## Example
+
+<Framework when="nextjs react">
 
 ```tsx title="app/analytics.tsx"
 "use client";
@@ -27,6 +39,31 @@ export function Analytics() {
   return null;
 }
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/AnalyticsLoader.vue"
+<script setup lang="ts">
+import { useOnConsentChange } from "@cookieyes/vue";
+
+/** Whatever starts analytics in your app. Safe to call more than once. */
+declare function loadAnalytics(): void;
+
+useOnConsentChange("change", ({ categories }) => {
+  if (categories.analytics) loadAnalytics();
+});
+</script>
+
+<template>
+  <slot />
+</template>
+```
+
+It subscribes after the component mounts, so it does nothing during server rendering. Outside a component, call it inside an effect scope and it unsubscribes when the scope stops. `type` and `options` are read once.
+
+</Framework>
 
 ## Parameters
 

@@ -1,7 +1,7 @@
 ---
 title: Accessibility
 description: What the components guarantee for keyboard, focus and screen-reader users, and what is still yours to check.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 <Framework when="core">
@@ -25,9 +25,21 @@ This page covers keyboard use, focus, screen-reader labels and reduced motion fo
 
 Two behaviours apply to all of it:
 
+<Framework when="nextjs react core">
+
 - **Focus returns to the button that opened a dialog**, whether it closed by Save, Cancel or Escape, and even when that button was replaced in the meantime. This works for your own triggers too, as long as you open the dialog through the SDK: [`useConsentActions()`](/docs/hooks/use-consent-actions) in React, `openPreferences()` or `openOptOut()` in `@cookieyes/vanilla`.
 - **After the banner is answered or closed, focus moves to the recall button**, so the visitor is never left nowhere. The banner's close button hides it for this page view without saving anything; it comes back on the next page load. Customise, Do Not Sell and the recall button are marked as opening a dialog (`aria-haspopup="dialog"`).
 - **Every label comes from the translation map**, so a German site announces its dialogs in German. See [Translations](/docs/translations).
+
+</Framework>
+
+<Framework when="vue">
+
+- **Focus returns to the button that opened a dialog**, whether it closed by Save, Cancel or Escape, and even when that button was replaced in the meantime. This works for your own triggers too, as long as you open the dialog through the SDK: [`useConsentActions()`](/docs/hooks/use-consent-actions).
+- **After the banner is answered or closed, focus moves to the recall button**, so the visitor is never left nowhere. The banner's close button hides it for this page view without saving anything; it comes back on the next page load. Customise, Do Not Sell and the recall button are marked as opening a dialog (`aria-haspopup="dialog"`).
+- **Every label comes from the translation map**, so a German site announces its dialogs in German. See [Translations](/docs/translations).
+
+</Framework>
 
 ## Why the banner is first in Tab order
 
@@ -37,6 +49,8 @@ The banner and the recall button render into a container placed as the **first c
 
 When the visitor's device asks for reduced motion, every entrance and exit animation is removed: banner, dialogs, recall button, reload notice. Everything still appears and works the same. If you replace the SDK's CSS, keep that rule:
 
+<Framework when="nextjs react core">
+
 ```css title="app/consent.css"
 @media (prefers-reduced-motion: reduce) {
   [data-cy-part] {
@@ -45,6 +59,21 @@ When the visitor's device asks for reduced motion, every entrance and exit anima
   }
 }
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/consent.css"
+@media (prefers-reduced-motion: reduce) {
+  [data-cy-part] {
+    animation: none;
+    transition: none;
+  }
+}
+```
+
+</Framework>
 
 ## Not covered
 
@@ -70,6 +99,8 @@ Repeat step 5 with Save and with Cancel: all three must return focus to Customis
 
 ## If you build your own UI
 
+<Framework when="nextjs react core">
+
 The behaviour above lives in `Banner.Root`, `Preferences.Root`, `OptOut.Root` and `useConsentActions()`, so building on the [primitives](/docs/headless/banner) keeps it. Building on hooks alone means you provide it yourself:
 
 - The banner and the dialogs hold focus: Tab and Shift+Tab wrap inside.
@@ -78,6 +109,21 @@ The behaviour above lives in `Banner.Root`, `Preferences.Root`, `OptOut.Root` an
 - The dialog container has `tabIndex={-1}` so it can receive focus without being a tab stop.
 - Every control shows a visible focus outline.
 - Reduced motion is honoured.
+
+</Framework>
+
+<Framework when="vue">
+
+The behaviour above lives in `Banner.Root`, `Preferences.Root`, `OptOut.Root` and `useConsentActions()`, so building on the [primitives](/docs/headless/banner) keeps it. Building on composables alone means you provide it yourself:
+
+- The banner and the dialogs hold focus: Tab and Shift+Tab wrap inside.
+- Escape closes a dialog.
+- Focus returns to the opener on close.
+- The dialog container has `tabindex="-1"` so it can receive focus without being a tab stop.
+- Every control shows a visible focus outline.
+- Reduced motion is honoured.
+
+</Framework>
 
 ## Common mistakes
 

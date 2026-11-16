@@ -1,7 +1,7 @@
 ---
 title: Tailwind
 description: Use Tailwind utilities with the banner and dialogs, in the right order.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 <Framework when="core">
@@ -19,6 +19,15 @@ Import the SDK's stylesheet **after** Tailwind. Tailwind's preflight resets butt
 ```css title="app/globals.css"
 @import "tailwindcss";
 @import "@cookieyes/react/styles.css";
+```
+
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/styles.css"
+@import "tailwindcss";
+@import "@cookieyes/vue/styles.css";
 ```
 
 </Framework>
@@ -48,6 +57,26 @@ If you import the stylesheet in your consent file instead, remove that import an
 
 </Framework>
 
+<Framework when="vue">
+
+## Three ways to use utilities
+
+**On a component.** `class` is added to the component's own classes:
+
+```vue title="src/components/CookieYesRoot.vue"
+<script setup lang="ts">
+import { CookieBanner } from "@cookieyes/vue";
+</script>
+
+<template>
+  <CookieBanner class="shadow-2xl ring-1 ring-black/5" />
+</template>
+```
+
+`RecallButton` is the exception: its `class` replaces the default class. Keep `cy-widget` if you want the default look: `<RecallButton class="cy-widget ring-2" />`.
+
+</Framework>
+
 <Framework when="core">
 
 ## Use utilities on parts
@@ -61,6 +90,23 @@ If you import the stylesheet in your consent file instead, remove that import an
 ```css title="app/globals.css"
 @import "tailwindcss";
 @import "@cookieyes/react/styles.css";
+
+[data-cy-part="banner"] {
+  @apply max-w-lg rounded-xl p-6 shadow-2xl;
+}
+
+[data-cy-part="accept-all"] {
+  @apply font-semibold;
+}
+```
+
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/styles.css"
+@import "tailwindcss";
+@import "@cookieyes/vue/styles.css";
 
 [data-cy-part="banner"] {
   @apply max-w-lg rounded-xl p-6 shadow-2xl;
@@ -90,7 +136,7 @@ If you import the stylesheet in your consent file instead, remove that import an
 
 </Framework>
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 **On primitives.** Build the banner from [primitives](/docs/headless/banner) and put utilities straight on your elements.
 
@@ -107,6 +153,12 @@ If you import the stylesheet in your consent file instead, remove that import an
 
 </Framework>
 
+<Framework when="vue">
+
+- Arbitrary values set the SDK's variables: `<CookieBanner class="[--cy-primary:#7c3aed]" />`. This works only while `primaryColor` is not set in `theme`.
+
+</Framework>
+
 
 ## Common mistakes
 
@@ -120,6 +172,16 @@ Your CSS comes before `styles.css`, or the value is set in `theme`.
 
 **`<RecallButton className="...">` lost its style.**
 `className` replaces the default class there. Include `cy-widget`.
+
+</Framework>
+
+<Framework when="vue">
+
+**A utility on `<CookieBanner>` does nothing.**
+Your CSS comes before `styles.css`, or the value is set in `theme`.
+
+**`<RecallButton class="...">` lost its style.**
+`class` replaces the default class there. Include `cy-widget`.
 
 </Framework>
 

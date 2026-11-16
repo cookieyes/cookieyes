@@ -1,7 +1,7 @@
 ---
 title: GatedFrame
 description: Show a third-party iframe only after the visitor consents, with a placeholder until then.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
@@ -11,6 +11,8 @@ Renders a placeholder instead of the iframe until its category is granted. The p
 Use it for embeds that set cookies: YouTube, Vimeo, Google Maps, Spotify, social posts, Calendly. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds).
 
 ## Add it
+
+<Framework when="nextjs react">
 
 ```tsx title="app/video-embed.tsx"
 "use client";
@@ -30,6 +32,28 @@ export function VideoEmbed() {
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/VideoEmbed.vue"
+<script setup lang="ts">
+import { GatedFrame } from "@cookieyes/vue";
+</script>
+
+<template>
+  <GatedFrame
+    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+    category="functional"
+    :width="560"
+    :height="315"
+    title="Product tour"
+  />
+</template>
+```
+
+</Framework>
+
 Video and map embeds are usually `functional`; social and ad embeds are usually `advertisement`. The category must exist in your `categories` list.
 
 ## Props
@@ -40,7 +64,19 @@ Every other `<iframe>` attribute (`width`, `height`, `title`, `allow`, ...) is p
 
 ## Change the placeholder
 
+<Framework when="nextjs react">
+
 Pass your own element as `placeholder`:
+
+</Framework>
+
+<Framework when="vue">
+
+Fill the `placeholder` slot with your own content. It is rendered inside the placeholder box, `.cy-frame-placeholder`:
+
+</Framework>
+
+<Framework when="nextjs react">
 
 ```tsx title="app/video-embed.tsx"
 "use client";
@@ -72,6 +108,37 @@ export function VideoEmbed() {
   );
 }
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/VideoEmbed.vue"
+<script setup lang="ts">
+import { GatedFrame, useConsentActions } from "@cookieyes/vue";
+
+const { showPreferences } = useConsentActions();
+</script>
+
+<template>
+  <GatedFrame
+    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+    category="functional"
+    :width="560"
+    :height="315"
+    title="Product tour"
+  >
+    <template #placeholder>
+      <div class="video-placeholder">
+        <p>This video is hosted by YouTube and needs functional cookies.</p>
+        <button type="button" @click="showPreferences">Cookie settings</button>
+      </div>
+    </template>
+  </GatedFrame>
+</template>
+```
+
+</Framework>
 
 To only change the default text, set `gatedFrame.placeholder` and `gatedFrame.action` in `i18n`; see [Translations](/docs/translations). To style the default placeholder, target `.cy-frame-placeholder` in your CSS.
 

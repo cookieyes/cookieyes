@@ -1,18 +1,30 @@
 ---
 title: useConsentActions
 description: Accept, reject, save or reset consent, and open the dialogs, from your own buttons.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
 
+<Framework when="nextjs react">
+
 Returns the functions that change consent or open a dialog. Use it to build your own controls: a "Cookie settings" link in the footer, an accept button in a custom banner, a reset button on a settings page. It only writes, so a component that calls it never re-renders when consent changes. To read consent, use [`useConsent()`](/docs/hooks/use-consent).
+
+</Framework>
+
+<Framework when="vue">
+
+Returns the functions that change consent or open a dialog. Use it to build your own controls: a "Cookie settings" link in the footer, an accept button in a custom banner, a reset button on a settings page. It only writes, so it does not track consent changes. To read consent, use [`useConsent()`](/docs/hooks/use-consent).
+
+</Framework>
 
 You do not need it with `CookieBanner` or the [Banner primitives](/docs/headless/banner): their buttons already call these functions.
 
 ## Example
 
 The most common use, a link that reopens the preferences dialog:
+
+<Framework when="nextjs react">
 
 ```tsx title="app/cookie-settings-link.tsx"
 "use client";
@@ -28,6 +40,24 @@ export function CookieSettingsLink() {
   );
 }
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/CookieSettingsLink.vue"
+<script setup lang="ts">
+import { useConsentActions } from "@cookieyes/vue";
+
+const { showPreferences } = useConsentActions();
+</script>
+
+<template>
+  <button type="button" @click="showPreferences">Cookie settings</button>
+</template>
+```
+
+</Framework>
 
 Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can reach it. The dialog moves focus into itself when it opens and back to your button when it closes.
 
@@ -51,9 +81,29 @@ Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can 
 
 **`acceptSelected` replaces the whole list.** Categories you leave out are rejected. To add one category to the current choices, read `committedCategories` from `useConsent()`, add the id, and pass the full list.
 
+<Framework when="nextjs react">
+
 **Tell the consent record where your controls are.** In `mode: "self-hosted"` every decision is sent as a [consent record](/docs/getting-started/self-hosted) with a `source`. Pass it once, `useConsentActions("banner")` (or `"preferences"`, `"optout"`), and every action from that hook records it. Without it, decisions are recorded as `"api"`. The actions still take no arguments, so `onClick={acceptAll}` works as before.
 
+</Framework>
+
+<Framework when="vue">
+
+**Tell the consent record where your controls are.** In `mode: "self-hosted"` every decision is sent as a [consent record](/docs/getting-started/self-hosted) with a `source`. Pass it once, `useConsentActions("banner")` (or `"preferences"`, `"optout"`), and every action from that hook records it. Without it, decisions are recorded as `"api"`. The actions still take no arguments, so `@click="acceptAll"` works as before.
+
+</Framework>
+
+<Framework when="nextjs react">
+
 **Before the runtime is ready** (on the server, or if `initCookieYes()` has not run), every action is a silent no-op. Nothing throws.
+
+</Framework>
+
+<Framework when="vue">
+
+**Without the plugin it throws.** If `app.use(CookieYes, config)` has not run, calling `useConsentActions()` throws "could not find CookieYes". Call it inside `setup()`.
+
+</Framework>
 
 ## Common mistakes
 
@@ -66,8 +116,19 @@ You called `updateCategory()` without `save()`.
 **`showPreferences()` does nothing.**
 `CookiePreferences` (or your own `Preferences.Root`) is not rendered. The action only opens it.
 
+<Framework when="nextjs react">
+
 **Nothing happens and there is no error.**
 `initCookieYes()` did not run. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
+
+</Framework>
+
+<Framework when="vue">
+
+**It throws "could not find CookieYes".**
+`app.use(CookieYes, config)` did not run before the app mounted. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
+
+</Framework>
 
 ## Next steps
 

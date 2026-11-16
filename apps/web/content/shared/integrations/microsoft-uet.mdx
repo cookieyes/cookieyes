@@ -1,14 +1,23 @@
 ---
 title: Microsoft Advertising
 description: Load the UET tag only after advertising consent, send Microsoft the consent signal it asks for, and stop at once when consent is withdrawn.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 `microsoftUet()` loads Microsoft Advertising's UET tag after the visitor grants the advertising category, and sends Microsoft the consent signal it requires. When consent is withdrawn, the tag goes quiet and its cookies are deleted at once, with no page reload. A second mode loads the tag on every page with consent denied by default; see [Consent modes](#consent-modes).
 
 ## Set it up
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `microsoftUet()` to the `initCookieYes()` call you already have. `tagId` is the `ti` value in the snippet Microsoft Advertising gives you:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `microsoftUet()` to the config you pass to `app.use(CookieYes, config)`. `tagId` is the `ti` value in the snippet Microsoft Advertising gives you:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -30,6 +39,28 @@ initCookieYes({
 ```
 
 </Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { microsoftUet } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [microsoftUet({ tagId: "12345678" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -49,7 +80,16 @@ Remove the UET snippet from your page, and any UET tag in a tag manager. The int
 
 ### Single-page apps
 
+<Framework when="nextjs react core">
+
 UET counts route changes by itself, so there is nothing to add for Next.js or React Router. To report page loads yourself instead, set `autoSpaTracking: false` and call `uetPageLoad()` on every route change. Do not do both, or each page is counted twice.
+
+</Framework>
+<Framework when="vue">
+
+UET counts route changes by itself, so there is nothing to add for Vue Router. To report page loads yourself instead, set `autoSpaTracking: false` and call `uetPageLoad()` on every route change. Do not do both, or each page is counted twice.
+
+</Framework>
 
 ### Events
 
