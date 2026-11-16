@@ -34,6 +34,8 @@ one component that mounts the SDK:
 | `with-vanilla` | `vanilla` | `@cookieyes/vanilla`'s `start()`: banner and recall button, dialogs on first open |
 | `baseline-vue` | `baseline-vue` | nothing: the control for the Vue fixture |
 | `with-vue` | `vue` | `@cookieyes/vue`'s plugin, `<CookieBanner />`, `<CookiePreferences />` and `<RecallButton />` (the README's three-file setup) |
+| `baseline-nuxt` | `baseline-nuxt` | nothing: the control for the Nuxt fixture |
+| `with-nuxt` | `nuxt` | `@cookieyes/nuxt` in `modules` and `<CookieYesRoot />` in `app/app.vue` |
 
 `baseline`, `with-core` and `with-react` mirror consentbench's own `baseline`,
 `with-cookieyes-core` and `with-cookieyes-react` apps, so our figures are
@@ -59,6 +61,22 @@ Its **initial** set is every `<script type="module">` and `<link rel="moduleprel
 page, so there is no other route to exclude from `total`. Vite, `@vitejs/plugin-vue` and Vue are
 pinned exactly in both fixtures, and `measure.mjs` fails if two copies of Vue resolve, as it does
 for React.
+
+### The Nuxt fixtures
+
+`with-nuxt` is measured against `baseline-nuxt`, an empty Nuxt app, for the same reason. A fixture
+with a `nuxt.config.ts` is built with `nuxi build`. Nuxt renders pages on request, so the build
+leaves no HTML to read: `measure.mjs` starts the built server, saves the HTML it renders for `/` as
+`.output/index.html` and stops it. Prerendering `/` would also produce a page, but it changes the
+client bundle (payload extraction adds about 2 KB to Nuxt's entry), and fixtures carry no build
+tuning. **initial** is every `<script type="module">` and `<link rel="modulepreload">` in that
+page; **total** adds every other script in `.output/public/_nuxt`. Nuxt marks the entry's dynamic
+imports `<link rel="prefetch">`, which the browser fetches when idle, so those count in `total`
+only. Nuxt's error pages are such imports, present on both sides of the subtraction. Nuxt and Vue
+are pinned exactly in both fixtures.
+
+`@cookieyes/nuxt`'s tarball is packed by `measure.mjs` itself: the peer-dependency matrix's
+`pack-tarballs.mjs` packs what its example apps install, and none of them is a Nuxt app.
 
 ### `with-nextjs-devtools` (AD-5 / A2)
 
@@ -201,7 +219,8 @@ The stylesheet. `@cookieyes/react/styles.css` and `critical.css` are measured
 and reported separately, because a real consumer does ship them and leaving
 them unmeasured is a gap someone eventually fills with a guess. They are not
 added into the JS figure, and a JS figure must never be quoted as though it
-included them.
+included them. The Nuxt module inlines `critical.css` in the HTML and serves
+`styles.css` from a route; neither is a script, so neither is in its figure.
 
 ## `breakdown.mjs` — where the weight is
 
