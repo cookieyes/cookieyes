@@ -1,5 +1,27 @@
 # @cookieyes/nextjs
 
+## 0.9.0
+
+### Minor Changes
+
+- 106f75a: The SDK is now licensed under the Apache License 2.0. You can still use, change, bundle and sell it in open or closed source products, as before.
+
+  **What changes for you.** Keep the `LICENSE` file with any copy you redistribute, and mark the files you change. Apache 2.0 also gives you an explicit patent licence from every contributor, and it does not grant use of the CookieYes name or logo.
+
+  **Earlier versions stay MIT.** Every version published before this one remains under the MIT licence.
+
+### Patch Changes
+
+- bb46020: The READMEs no longer say the "Powered by CookieYes" link may not be removed. The licence sets no such condition, and there is no free or paid tier in the SDK. The link still shows by default.
+
+  Documentation only; no behaviour change.
+
+- Updated dependencies [bb46020]
+- Updated dependencies [106f75a]
+  - @cookieyes/react@0.15.0
+  - @cookieyes/core@0.14.0
+  - @cookieyes/scripts@0.5.0
+
 ## 0.8.7
 
 ### Patch Changes
