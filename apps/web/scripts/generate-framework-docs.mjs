@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// Generates the per-framework docs trees under content/docs/{nextjs,react,core} from the
+// Generates the per-framework docs trees under content/docs/{nextjs,react,vue,core} from the
 // shared bodies in content/shared.
 //
 // One body, written once, is published under every framework it applies to. Each
 // published page is a thin wrapper — frontmatter plus an <include> of the body — so the
-// three copies of a page can never drift, and adding a page to a framework is one
+// copies of a page can never drift, and adding a page to a framework is one
 // frontmatter entry. The build-time plugin (src/lib/remark-framework-docs.ts) then
 // resolves <Framework when="…"> blocks and the package name for the framework the
 // wrapper sits under.
@@ -29,6 +29,7 @@ const docsDir = join(webRoot, "content", "docs");
 const FRAMEWORKS = {
   nextjs: "Next.js",
   react: "React",
+  vue: "Vue",
   core: "JavaScript",
 };
 
@@ -65,7 +66,8 @@ function readFrontmatter(source, file) {
 
     if (key === "frameworks") {
       const inner = /^\[(.*)\]$/.exec(value);
-      if (!inner) throw new Error(`${file}: frameworks must be written as [nextjs, react, core]`);
+      if (!inner)
+        throw new Error(`${file}: frameworks must be written as [nextjs, react, vue, core]`);
       data.frameworks = inner[1]
         .split(",")
         .map((s) => unquote(s))

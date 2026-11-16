@@ -1,10 +1,11 @@
-type PackageKey = "core" | "react" | "nextjs" | "cli" | "translations";
+type PackageKey = "core" | "react" | "nextjs" | "vue" | "cli" | "translations";
 
 /** Initial shown in the colour chip — mirrors the sidebar package switcher. */
 const PACKAGE_MARK: Record<PackageKey, string> = {
   core: "C",
   react: "R",
   nextjs: "N",
+  vue: "V",
   cli: "✦",
   translations: "T",
 };

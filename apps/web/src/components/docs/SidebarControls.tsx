@@ -37,7 +37,7 @@ interface PackageOption {
 
 /**
  * The three frameworks a reader picks between, per the design's .pdrop
- * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/core`.
+ * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/vue`, `/docs/core`.
  *
  * `@cookieyes/cli` and `@cookieyes/translations` are deliberately absent: they are
  * not frameworks, so choosing one here answered nothing.
@@ -54,6 +54,12 @@ const PACKAGES: Record<Framework, PackageOption> = {
     name: "@cookieyes/react",
     logo: <ReactLogo />,
     hint: FRAMEWORK_LABEL.react,
+  },
+  vue: {
+    id: "vue",
+    name: "@cookieyes/vue",
+    logo: <VueLogo />,
+    hint: FRAMEWORK_LABEL.vue,
   },
   core: {
     id: "core",
@@ -239,6 +245,16 @@ function ReactLogo() {
         <ellipse cx="12" cy="12" rx="10" ry="3.9" transform="rotate(60 12 12)" />
         <ellipse cx="12" cy="12" rx="10" ry="3.9" transform="rotate(120 12 12)" />
       </g>
+    </svg>
+  );
+}
+
+/** Vue: the two-chevron mark in brand green and navy, fixed in both themes. */
+function VueLogo() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2 3h4.6L12 12.4 17.4 3H22L12 20.5z" fill="#41B883" />
+      <path d="M6.6 3H10l2 3.5L14 3h3.4L12 12.4z" fill="#35495E" />
     </svg>
   );
 }
