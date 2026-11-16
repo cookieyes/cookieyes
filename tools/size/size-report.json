@@ -940,9 +940,7 @@
       "packed": 147494,
       "unpacked": 508785,
       "install": {
-        "packages": [
-          "@cookieyes/core"
-        ],
+        "packages": ["@cookieyes/core"],
         "packed": 147494,
         "unpacked": 508785
       }
@@ -951,10 +949,7 @@
       "packed": 78069,
       "unpacked": 270562,
       "install": {
-        "packages": [
-          "@cookieyes/ui",
-          "@cookieyes/core"
-        ],
+        "packages": ["@cookieyes/ui", "@cookieyes/core"],
         "packed": 225563,
         "unpacked": 779347
       }
@@ -963,11 +958,7 @@
       "packed": 124230,
       "unpacked": 423222,
       "install": {
-        "packages": [
-          "@cookieyes/react",
-          "@cookieyes/core",
-          "@cookieyes/ui"
-        ],
+        "packages": ["@cookieyes/react", "@cookieyes/core", "@cookieyes/ui"],
         "packed": 349793,
         "unpacked": 1202569
       }
@@ -991,11 +982,7 @@
       "packed": 31233,
       "unpacked": 111002,
       "install": {
-        "packages": [
-          "@cookieyes/vanilla",
-          "@cookieyes/core",
-          "@cookieyes/ui"
-        ],
+        "packages": ["@cookieyes/vanilla", "@cookieyes/core", "@cookieyes/ui"],
         "packed": 256796,
         "unpacked": 890349
       }
@@ -1004,11 +991,7 @@
       "packed": 107139,
       "unpacked": 368445,
       "install": {
-        "packages": [
-          "@cookieyes/vue",
-          "@cookieyes/core",
-          "@cookieyes/ui"
-        ],
+        "packages": ["@cookieyes/vue", "@cookieyes/core", "@cookieyes/ui"],
         "packed": 332702,
         "unpacked": 1147792
       }
