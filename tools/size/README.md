@@ -32,6 +32,8 @@ one component that mounts the SDK:
 | `with-react-banner` | `banner` | `<CookieBanner />` alone |
 | `with-react` | `interface` | `<CookieBanner />` + `<CookiePreferences />` + `<RecallButton />` |
 | `with-vanilla` | `vanilla` | `@cookieyes/vanilla`'s `start()`: banner and recall button, dialogs on first open |
+| `baseline-vue` | `baseline-vue` | nothing: the control for the Vue fixture |
+| `with-vue` | `vue` | `@cookieyes/vue`'s plugin, `<CookieBanner />`, `<CookiePreferences />` and `<RecallButton />` (the README's three-file setup) |
 
 `baseline`, `with-core` and `with-react` mirror consentbench's own `baseline`,
 `with-cookieyes-core` and `with-cookieyes-react` apps, so our figures are
@@ -39,6 +41,24 @@ directly comparable to the published leaderboard. `with-react-banner` has no
 counterpart there; it exists because the landing page quotes a figure for "the
 whole banner", which is a narrower claim than the full interface fixture
 measures.
+
+### The Vue fixtures have their own control
+
+`with-vue` is not measured against `baseline`. An empty Next.js app carries React, so a delta over
+it would put React's runtime into a Vue figure, or take Vue's out of it. `baseline-vue` is an empty
+Vite + Vue app, and `vue` is its delta over that control. Unlike React, Vue's runtime is
+tree-shaken, so the control holds only what an empty app uses: the runtime features the adapter
+adds (`Teleport`, watchers, `useId`) count in `vue`, while React's whole runtime sits in the
+Next.js control. The two figures are therefore not directly comparable. A `DEFAULT_APPS`
+entry names its control with `control`; an entry whose `control` is `null` is a control and has no
+delta of its own.
+
+A fixture with a `vite.config.ts` is built with `vite build` into `dist/` instead of `next build`.
+Its **initial** set is every `<script type="module">` and `<link rel="modulepreload">` in
+`dist/index.html`; its **total** adds every other script in `dist/assets`. A Vite fixture is one
+page, so there is no other route to exclude from `total`. Vite, `@vitejs/plugin-vue` and Vue are
+pinned exactly in both fixtures, and `measure.mjs` fails if two copies of Vue resolve, as it does
+for React.
 
 ### `with-nextjs-devtools` (AD-5 / A2)
 

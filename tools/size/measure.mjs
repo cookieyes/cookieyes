@@ -98,9 +98,12 @@ const REPO = resolve(HERE, "..", "..");
  * The apps under measurement.
  *
  * `baseline` is the control and must stay first — every other entry is reported
- * as a delta against it. `key` is what appears in the report, in the budgets and
- * on the site, so it names the thing a reader recognises ("core", "interface")
- * rather than the directory.
+ * as a delta against it, unless it names another control with `control`. The Vue
+ * fixtures do: a delta over an empty Next.js app would put React's runtime in a
+ * Vue figure, so `baseline-vue` (an empty Vite + Vue app) is the control for
+ * `vue`, and a control is an entry whose `control` is `null`. `key` is what
+ * appears in the report, in the budgets and on the site, so it names the thing a
+ * reader recognises ("core", "interface") rather than the directory.
  */
 const DEFAULT_APPS = [
   { dir: "baseline", key: "baseline", label: "empty Next.js app (control)" },
@@ -120,6 +123,18 @@ const DEFAULT_APPS = [
     dir: "with-vanilla",
     key: "vanilla",
     label: "@cookieyes/vanilla: banner + recall, dialogs on demand, no framework of its own",
+  },
+  {
+    dir: "baseline-vue",
+    key: "baseline-vue",
+    control: null,
+    label: "empty Vite + Vue app (control for the Vue adapter)",
+  },
+  {
+    dir: "with-vue",
+    key: "vue",
+    control: "baseline-vue",
+    label: "@cookieyes/vue: banner + preferences + recall (three-file setup)",
   },
   {
     dir: "with-nextjs-devtools",
@@ -159,6 +174,20 @@ const APPS = appsSpec
   : DEFAULT_APPS;
 if (APPS[0].key !== "baseline")
   throw new Error(`the first --apps entry must be the control, keyed "baseline"`);
+
+/** The key of the control an app is measured against, or null when the app is one. */
+function controlOf(app) {
+  if (app.control !== undefined) return app.control;
+  return app.key === "baseline" ? null : "baseline";
+}
+APPS.forEach((app, index) => {
+  const control = controlOf(app);
+  if (control !== null && !APPS.slice(0, index).some((other) => other.key === control)) {
+    throw new Error(
+      `app "${app.key}" is measured against "${control}", which must be listed first`,
+    );
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Compression
@@ -288,6 +317,7 @@ function otherRouteHtml(appDir) {
  * "dynamic" code in `@cookieyes/core`, which ships no dynamic import at all.
  */
 function chunkSets(appDir) {
+  if (isViteApp(appDir)) return viteChunkSets(appDir);
   const indexHtml = join(appDir, ".next", "server", "app", "index.html");
   if (!existsSync(indexHtml)) {
     throw new Error(
@@ -307,6 +337,53 @@ function chunkSets(appDir) {
   const total = new Set(initial);
   for (const file of emittedChunks(appDir)) {
     if (!claimedByOtherRoutes.has(file)) total.add(file);
+  }
+  return { initial: [...initial], total: [...total] };
+}
+
+/**
+ * The two chunk sets for a Vite app.
+ *
+ * Same definitions as the Next.js path: `initial` is what the built `index.html`
+ * tells the browser to fetch eagerly (`<script type="module" src>` and
+ * `<link rel="modulepreload">`), and `total` adds every other emitted script.
+ * A Vite fixture is a single page, so there is no other route whose chunks need
+ * excluding from `total`.
+ */
+function viteChunkSets(appDir) {
+  const dist = join(appDir, "dist");
+  const indexHtml = join(dist, "index.html");
+  if (!existsSync(indexHtml)) {
+    throw new Error(
+      `No built HTML at ${relative(REPO, indexHtml)}: the build did not produce a page. ` +
+        `Run without --no-build, or check the build output.`,
+    );
+  }
+  const source = readFileSync(indexHtml, "utf8");
+  const initial = new Set();
+  for (const tag of source.match(/<(?:script|link)\b[^>]*>/g) ?? []) {
+    const eager =
+      (tag.startsWith("<script") && /\btype="module"/.test(tag)) ||
+      (tag.startsWith("<link") && /\brel="modulepreload"/.test(tag));
+    const reference = /\b(?:src|href)="([^"]+\.js)"/.exec(tag)?.[1];
+    if (!eager || !reference) continue;
+    const file = join(dist, reference.replace(/^\//, ""));
+    if (!existsSync(file)) {
+      throw new Error(
+        `${relative(REPO, indexHtml)} references ${reference}, which was not emitted`,
+      );
+    }
+    initial.add(file);
+  }
+  if (initial.size === 0)
+    throw new Error(`No client scripts referenced by ${relative(REPO, indexHtml)}`);
+
+  const total = new Set(initial);
+  const assets = join(dist, "assets");
+  if (existsSync(assets)) {
+    for (const name of readdirSync(assets).sort()) {
+      if (name.endsWith(".js")) total.add(join(assets, name));
+    }
   }
   return { initial: [...initial], total: [...total] };
 }
@@ -354,7 +431,8 @@ function installFixture(appDir, name, tarballs) {
     .replace("__TARBALL_REACT__", `file:${tarballs["@cookieyes/react"]}`)
     .replace("__TARBALL_NEXTJS__", `file:${tarballs["@cookieyes/nextjs"]}`)
     .replace("__TARBALL_DEVTOOLS__", `file:${tarballs["@cookieyes/devtools"]}`)
-    .replace("__TARBALL_VANILLA__", `file:${tarballs["@cookieyes/vanilla"]}`);
+    .replace("__TARBALL_VANILLA__", `file:${tarballs["@cookieyes/vanilla"]}`)
+    .replace("__TARBALL_VUE__", `file:${tarballs["@cookieyes/vue"]}`);
   if (resolved.includes("__TARBALL_")) {
     throw new Error(`fixture "${name}" has an unresolved tarball placeholder in package.json`);
   }
@@ -427,7 +505,7 @@ function installFixture(appDir, name, tarballs) {
   // `pnpm build` just produced. Everything above is a proxy for this; this is
   // the invariant. Without it, `file:` resolution caching silently measured a
   // previous run's code and reported a real change as a 0-byte saving.
-  for (const pkg of ["core", "ui", "react", "nextjs", "vanilla", "scripts", "devtools"]) {
+  for (const pkg of ["core", "ui", "react", "nextjs", "vanilla", "vue", "scripts", "devtools"]) {
     const built = join(REPO, "sdk", pkg, "dist", "index.js");
     const installed = join(appDir, "node_modules", "@cookieyes", pkg, "dist", "index.js");
     if (!existsSync(installed) || !existsSync(built)) continue;
@@ -440,18 +518,23 @@ function installFixture(appDir, name, tarballs) {
     }
   }
 
-  const seen = new Set();
-  if (existsSync(pnpmDir)) {
-    for (const entry of readdirSync(pnpmDir)) {
-      const match = /^react@(\d+\.\d+\.\d+)/.exec(entry);
-      if (match) seen.add(match[1]);
+  for (const [framework, label] of [
+    ["react", "React"],
+    ["vue", "Vue"],
+  ]) {
+    const seen = new Set();
+    if (existsSync(pnpmDir)) {
+      for (const entry of readdirSync(pnpmDir)) {
+        const match = new RegExp(`^${framework}@(\\d+\\.\\d+\\.\\d+)`).exec(entry);
+        if (match) seen.add(match[1]);
+      }
     }
-  }
-  if (seen.size > 1) {
-    throw new Error(
-      `fixture "${name}" resolved ${seen.size} copies of React (${[...seen].join(", ")}). ` +
-        `The delta would measure that duplication, not the SDK.`,
-    );
+    if (seen.size > 1) {
+      throw new Error(
+        `fixture "${name}" resolved ${seen.size} copies of ${label} (${[...seen].join(", ")}). ` +
+          `The delta would measure that duplication, not the SDK.`,
+      );
+    }
   }
 }
 
@@ -459,10 +542,14 @@ function installFixture(appDir, name, tarballs) {
 // Build
 // ---------------------------------------------------------------------------
 
+/** A Vite fixture is recognised by its config; everything else is a Next.js app. */
+const isViteApp = (appDir) => existsSync(join(appDir, "vite.config.ts"));
+
 function build(appDir, name) {
-  rmSync(join(appDir, ".next"), { recursive: true, force: true });
+  const vite = isViteApp(appDir);
+  rmSync(join(appDir, vite ? "dist" : ".next"), { recursive: true, force: true });
   const started = Date.now();
-  const result = spawnSync("npx", ["next", "build"], {
+  const result = spawnSync("npx", vite ? ["vite", "build"] : ["next", "build"], {
     cwd: appDir,
     stdio: ["ignore", "pipe", "pipe"],
     encoding: "utf8",
@@ -477,7 +564,7 @@ function build(appDir, name) {
   if (result.status !== 0) {
     process.stderr.write(result.stdout ?? "");
     process.stderr.write(result.stderr ?? "");
-    throw new Error(`next build failed for fixture "${name}"`);
+    throw new Error(`${vite ? "vite" : "next"} build failed for fixture "${name}"`);
   }
   return Date.now() - started;
 }
@@ -493,6 +580,7 @@ const TARBALL_PACKAGES = [
   "@cookieyes/react",
   "@cookieyes/nextjs",
   "@cookieyes/vanilla",
+  "@cookieyes/vue",
 ];
 
 /** Bytes of file content inside a `.tgz`, read from the tar headers. */
@@ -575,7 +663,17 @@ if (doBuild) {
   // at that path is different. Putting the content hash in the path makes the
   // specifier change whenever the code does.
   const stamp = createHash("sha256");
-  for (const pkg of ["core", "ui", "react", "nextjs", "vanilla", "scripts", "test", "devtools"]) {
+  for (const pkg of [
+    "core",
+    "ui",
+    "react",
+    "nextjs",
+    "vanilla",
+    "vue",
+    "scripts",
+    "test",
+    "devtools",
+  ]) {
     const dist = join(REPO, "sdk", pkg, "dist", "index.js");
     if (existsSync(dist)) stamp.update(readFileSync(dist));
   }
@@ -605,8 +703,10 @@ for (const app of APPS) {
 
 const base = measured.baseline;
 
-/** The published figure for an app: its compressed client JS over the control. */
-function delta(app) {
+/** The published figure for an app: its compressed client JS over its control. */
+function delta(entry) {
+  const app = measured[entry.key];
+  const base = measured[controlOf(entry)];
   return {
     initial: {
       raw: app.initial.raw - base.initial.raw,
@@ -623,8 +723,8 @@ function delta(app) {
 
 const deltas = {};
 for (const app of APPS) {
-  if (app.key === "baseline") continue;
-  deltas[app.key] = delta(measured[app.key]);
+  if (controlOf(app) === null) continue;
+  deltas[app.key] = delta(app);
 }
 
 // The interface layer's cost *on top of* the engine — the number Story 2 of
@@ -677,10 +777,13 @@ const report = {
       "Delta in compressed client JavaScript between an empty Next.js app and the same app " +
       "with one CookieYes entry mounted. gzip level 9 is the headline basis; brotli quality 11 " +
       "is reported alongside. 'initial' counts only scripts the prerendered HTML references; " +
-      "'total' counts every emitted client chunk including dynamic ones.",
+      "'total' counts every emitted client chunk including dynamic ones. The Vue entry is " +
+      "measured the same way against an empty Vite + Vue app, so Vue's runtime is in its control.",
     compression: { headline: "gzip", gzipLevel: 9, brotliQuality: 11 },
     next: "16.3.0",
     react: "19.2.8",
+    vite: "8.3.6",
+    vue: "3.5.45",
   },
   measuredAt: new Date().toISOString(),
   node: process.version,
@@ -710,13 +813,13 @@ writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
 
 const lines = [];
 lines.push("");
-lines.push("Compressed client-JS delta over an empty Next.js app");
+lines.push("Compressed client-JS delta over an empty app of the same framework");
 lines.push("─".repeat(78));
 lines.push(
   `${"".padEnd(24)}${"initial (gzip)".padStart(17)}${"total (gzip)".padStart(17)}${"initial (br)".padStart(17)}`,
 );
 for (const app of APPS) {
-  if (app.key === "baseline") continue;
+  if (controlOf(app) === null) continue;
   const d = deltas[app.key];
   lines.push(
     app.key.padEnd(24) +
@@ -735,6 +838,13 @@ if (interfaceOverCore) {
 }
 lines.push("─".repeat(78));
 lines.push(`control: ${fmtKb(base.initial.gzip)} initial / ${fmtKb(base.total.gzip)} total (gzip)`);
+for (const app of APPS) {
+  if (app.key === "baseline" || controlOf(app) !== null) continue;
+  const control = measured[app.key];
+  lines.push(
+    `${app.key}: ${fmtKb(control.initial.gzip)} initial / ${fmtKb(control.total.gzip)} total (gzip)`,
+  );
+}
 const css = report.stylesheet;
 if (css["styles.css"]) {
   lines.push(
@@ -946,7 +1056,7 @@ const fmtChange = (bytes) => {
 
 function commentMarkdown() {
   const out = ["## Bundle size", ""];
-  const appKeys = APPS.map((app) => app.key).filter((key) => key !== "baseline");
+  const appKeys = APPS.filter((app) => controlOf(app) !== null).map((app) => app.key);
   const changes = [
     ...appKeys.flatMap((key) => [appChange(key, "initial"), appChange(key, "total")]),
     ...TARBALL_PACKAGES.flatMap((name) => [
