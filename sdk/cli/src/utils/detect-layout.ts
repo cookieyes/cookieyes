@@ -87,3 +87,29 @@ export function reactProjectPaths(cwd: string): ReactProjectPaths {
     ],
   };
 }
+
+export type VueProjectPaths = {
+  /** Whether the project's entry file is TypeScript; JavaScript only when `main.js` alone exists. */
+  typescript: boolean;
+  consentManagerPath: string;
+  consentManagerLabel: string;
+  rootPath: string;
+  entryPath: string;
+  entryLabel: string;
+  appPath: string;
+};
+
+export function vueProjectPaths(cwd: string): VueProjectPaths {
+  const src = join(cwd, "src");
+  const typescript = existsSync(join(src, "main.ts")) || !existsSync(join(src, "main.js"));
+  const ext = typescript ? "ts" : "js";
+  return {
+    typescript,
+    consentManagerPath: join(src, `consent-manager.${ext}`),
+    consentManagerLabel: `src/consent-manager.${ext}`,
+    rootPath: join(src, "components", "CookieYesRoot.vue"),
+    entryPath: join(src, `main.${ext}`),
+    entryLabel: `src/main.${ext}`,
+    appPath: join(src, "App.vue"),
+  };
+}

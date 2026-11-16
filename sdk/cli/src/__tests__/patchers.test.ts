@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { insertImport, patchNextjsLayout, patchNextjsPagesApp } from "../utils/patchers.js";
+import {
+  insertImport,
+  patchNextjsLayout,
+  patchNextjsPagesApp,
+  patchVueApp,
+  patchVueMain,
+} from "../utils/patchers.js";
 
 describe("insertImport", () => {
   it("inserts after the last existing import", () => {
@@ -104,5 +110,141 @@ describe("patchNextjsPagesApp", () => {
       `}`,
     ].join("\n");
     expect(patchNextjsPagesApp(odd)).toBeNull();
+  });
+});
+
+describe("patchVueMain", () => {
+  const createVue = [
+    `import { createApp } from 'vue'`,
+    `import App from './App.vue'`,
+    ``,
+    `createApp(App).mount('#app')`,
+    ``,
+  ].join("\n");
+
+  it("splits the one-line create-vue entry and keeps its style", () => {
+    expect(patchVueMain(createVue)).toBe(
+      [
+        `import { createApp } from 'vue'`,
+        `import App from './App.vue'`,
+        `import { setupConsent } from './consent-manager'`,
+        ``,
+        `const app = createApp(App)`,
+        `setupConsent(app)`,
+        `app.mount('#app')`,
+        ``,
+      ].join("\n"),
+    );
+  });
+
+  it("keeps .use calls in the chain and the semicolon style", () => {
+    const out = patchVueMain(
+      [
+        `import { createApp } from "vue";`,
+        `import router from "./router";`,
+        `createApp(App).use(router).mount("#app");`,
+      ].join("\n"),
+    );
+    expect(out).toContain(
+      `const app = createApp(App).use(router);\nsetupConsent(app);\napp.mount("#app");`,
+    );
+    expect(out).toContain(`import { setupConsent } from "./consent-manager";`);
+  });
+
+  it("inserts the call before mount when the app is already a variable", () => {
+    const out = patchVueMain(
+      [
+        `import { createApp } from "vue";`,
+        `import App from "./App.vue";`,
+        ``,
+        `const app = createApp(App);`,
+        `app.use(router);`,
+        `app.mount("#app");`,
+      ].join("\n"),
+    );
+    expect(out).toContain(`app.use(router);\nsetupConsent(app);\napp.mount("#app");`);
+    expect(out).toContain(`import { setupConsent } from "./consent-manager";`);
+  });
+
+  it("returns null when already patched", () => {
+    expect(patchVueMain(patchVueMain(createVue) as string)).toBeNull();
+  });
+
+  it("returns null for shapes it cannot place the call in", () => {
+    expect(patchVueMain(`import { createApp } from "vue";\nrender(createApp(App));\n`)).toBeNull();
+    expect(patchVueMain(`const app = createApp(App);\nstart(app);\n`)).toBeNull();
+    // A name clash with `app` would break the rewrite.
+    expect(patchVueMain(`const app = 1;\ncreateApp(App).mount("#app");\n`)).toBeNull();
+    // `insertImport` would split a multi-line import.
+    expect(
+      patchVueMain(`import {\n  createApp,\n} from "vue";\ncreateApp(App).mount("#app");\n`),
+    ).toBeNull();
+  });
+});
+
+describe("patchVueApp", () => {
+  const createVue = [
+    `<script setup lang="ts">`,
+    `import HelloWorld from './components/HelloWorld.vue'`,
+    `</script>`,
+    ``,
+    `<template>`,
+    `  <header>`,
+    `    <HelloWorld msg="Hi" />`,
+    `  </header>`,
+    `</template>`,
+    ``,
+  ].join("\n");
+
+  it("imports the root and renders it first in the template", () => {
+    expect(patchVueApp(createVue)).toBe(
+      [
+        `<script setup lang="ts">`,
+        `import HelloWorld from './components/HelloWorld.vue'`,
+        `import CookieYesRoot from './components/CookieYesRoot.vue'`,
+        `</script>`,
+        ``,
+        `<template>`,
+        `  <CookieYesRoot />`,
+        `  <header>`,
+        `    <HelloWorld msg="Hi" />`,
+        `  </header>`,
+        `</template>`,
+        ``,
+      ].join("\n"),
+    );
+  });
+
+  it("adds an import line to a script setup block that has none", () => {
+    const out = patchVueApp(
+      `<script setup>\nconst n = 1;\n</script>\n<template><p /></template>\n`,
+    );
+    expect(out).toBe(
+      `<script setup>\nimport CookieYesRoot from "./components/CookieYesRoot.vue";\nconst n = 1;\n</script>\n<template>\n  <CookieYesRoot /><p /></template>\n`,
+    );
+  });
+
+  it("works when the template comes before the script", () => {
+    const out = patchVueApp(
+      `<template>\n  <main />\n</template>\n\n<script setup>\nimport a from "./a";\n</script>\n`,
+    );
+    expect(out).toContain(`<template>\n  <CookieYesRoot />\n  <main />`);
+    expect(out).toContain(`import a from "./a";\nimport CookieYesRoot from`);
+  });
+
+  it("returns null when already patched", () => {
+    expect(patchVueApp(patchVueApp(createVue) as string)).toBeNull();
+  });
+
+  it("returns null for an Options API component or a file without a template", () => {
+    expect(
+      patchVueApp(`<script>\nexport default {};\n</script>\n<template><div /></template>\n`),
+    ).toBeNull();
+    expect(patchVueApp(`<script setup>\nconst n = 1;\n</script>\n`)).toBeNull();
+    expect(
+      patchVueApp(
+        `<script setup>\nimport {\n  a,\n} from "./a";\n</script>\n<template><i /></template>\n`,
+      ),
+    ).toBeNull();
   });
 });

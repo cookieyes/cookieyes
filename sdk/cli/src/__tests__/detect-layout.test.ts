@@ -8,6 +8,7 @@ import {
   detectReactLayout,
   nextProjectPaths,
   reactProjectPaths,
+  vueProjectPaths,
 } from "../utils/detect-layout.js";
 
 let tmp: string;
@@ -182,5 +183,29 @@ describe("reactProjectPaths", () => {
       "index.jsx",
     ]);
     expect(p.entryCandidates[0]!.path).toBe(join(tmp, "main.tsx"));
+  });
+});
+
+describe("vueProjectPaths", () => {
+  it("uses TypeScript files when src/main.ts exists", () => {
+    touch("src/main.ts");
+    const p = vueProjectPaths(tmp);
+    expect(p.typescript).toBe(true);
+    expect(p.entryPath).toBe(join(tmp, "src", "main.ts"));
+    expect(p.consentManagerLabel).toBe("src/consent-manager.ts");
+    expect(p.rootPath).toBe(join(tmp, "src", "components", "CookieYesRoot.vue"));
+    expect(p.appPath).toBe(join(tmp, "src", "App.vue"));
+  });
+
+  it("uses JavaScript files when only src/main.js exists", () => {
+    touch("src/main.js");
+    const p = vueProjectPaths(tmp);
+    expect(p.typescript).toBe(false);
+    expect(p.entryLabel).toBe("src/main.js");
+    expect(p.consentManagerLabel).toBe("src/consent-manager.js");
+  });
+
+  it("defaults to TypeScript when there is no entry file", () => {
+    expect(vueProjectPaths(tmp).typescript).toBe(true);
   });
 });
