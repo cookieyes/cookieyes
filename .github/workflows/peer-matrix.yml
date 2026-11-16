@@ -16,6 +16,7 @@ on:
       - "sdk/react/**"
       - "sdk/ui/**"
       - "sdk/nextjs/**"
+      - "sdk/vue/**"
       - "sdk/core/**"
       - "matrix/**"
   schedule:

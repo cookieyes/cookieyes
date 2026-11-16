@@ -9,7 +9,7 @@
 
 export const dimensions = {
   // Varied today.
-  framework: ["next", "react", "reactDom", "typesReact", "typesReactDom"],
+  framework: ["next", "react", "reactDom", "typesReact", "typesReactDom", "vue"],
   // Reserved — add a value here (and to one or more `combinations` entries) to
   // extend the matrix. No script or workflow file needs to change for this
   // (Story 1 AC3): `print-combinations.mjs` and `run-combination.mjs` both
@@ -25,13 +25,15 @@ export const dimensions = {
  *   id: string,
  *   role: "floor" | "middle" | "newest",
  *   label: string,
+ *   app?: "next" | "vue",
  *   packagesUnderTest: string[],
  *   versions: {
- *     next: string,
- *     react: string,
- *     reactDom: string,
- *     typesReact: string,
- *     typesReactDom: string,
+ *     next?: string,
+ *     react?: string,
+ *     reactDom?: string,
+ *     typesReact?: string,
+ *     typesReactDom?: string,
+ *     vue?: string,
  *   },
  *   node: string,
  *   packageManager: string,
@@ -39,6 +41,17 @@ export const dimensions = {
  *   subsets: ("fast" | "full")[],
  * }} Combination
  */
+
+/**
+ * Which example app a combination runs. Read through this, never off `combo.app`, so the three
+ * Next.js combinations stay untouched: leaving `app` out means the Next.js app.
+ *
+ * @param {Combination} combo
+ * @returns {"next" | "vue"}
+ */
+export function appOf(combo) {
+  return combo.app ?? "next";
+}
 
 /**
  * Exact pins, no `^`/`>=`, for `next`/`react`/`reactDom` on every leg
@@ -101,6 +114,34 @@ export const combinations = [
       typesReact: "^19.2.17",
       typesReactDom: "^19.2.3",
     },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["fast", "full"],
+  },
+  // The Vue legs pin only `vue`: Vite and the Vue plugin are fixed in
+  // matrix/example-app-vue, not a matrix dimension. The floor's version string is compared
+  // literally with `peerDependencies.vue` in sdk/vue/package.json by derive-check.mjs, and the
+  // newest leg must stay the newest Vue 3.5.x that is at least 72 hours old.
+  {
+    id: "vue-3.5.0",
+    role: "floor",
+    label: "Vue 3.5.0 (declared floor)",
+    app: "vue",
+    packagesUnderTest: ["@cookieyes/vue"],
+    versions: { vue: "3.5.0" },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "vue-3.5.45",
+    role: "newest",
+    label: "Vue 3.5.45",
+    app: "vue",
+    packagesUnderTest: ["@cookieyes/vue"],
+    versions: { vue: "3.5.45" },
     node: "20",
     packageManager: "pnpm@10.22.0",
     moduleResolution: "bundler",
