@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export type Framework = "nextjs" | "react" | "vue" | "vanilla";
+export type Framework = "nextjs" | "react" | "vue" | "nuxt" | "vanilla";
 
 function readDeps(cwd: string): Record<string, string> | null {
   const pkgPath = join(cwd, "package.json");
@@ -21,15 +21,11 @@ export function detectFramework(cwd = process.cwd()): Framework | null {
   const deps = readDeps(cwd);
   if (!deps) return null;
   if ("next" in deps) return "nextjs";
+  // Nuxt depends on vue, and the Vue setup patches `main.ts`, which a Nuxt app does not have,
+  // so `nuxt` is checked first. Before react too: a `nuxt` dependency names the framework, while
+  // react can arrive in a Nuxt app as a library's dependency.
+  if ("nuxt" in deps) return "nuxt";
   if ("react" in deps) return "react";
-  // Nuxt depends on vue, but the Vue setup patches `main.ts`, which a Nuxt app does not
-  // have, so a Nuxt project must never be taken for a plain Vue one.
-  if ("vue" in deps && !("nuxt" in deps)) return "vue";
+  if ("vue" in deps) return "vue";
   return "vanilla";
-}
-
-/** Whether the project depends on Nuxt, which the Vue setup does not support yet. */
-export function isNuxtProject(cwd = process.cwd()): boolean {
-  const deps = readDeps(cwd);
-  return deps !== null && "nuxt" in deps;
 }

@@ -7,6 +7,7 @@ import {
   detectNextRouter,
   detectReactLayout,
   nextProjectPaths,
+  nuxtProjectPaths,
   reactProjectPaths,
   vueProjectPaths,
 } from "../utils/detect-layout.js";
@@ -207,5 +208,53 @@ describe("vueProjectPaths", () => {
 
   it("defaults to TypeScript when there is no entry file", () => {
     expect(vueProjectPaths(tmp).typescript).toBe(true);
+  });
+});
+
+describe("nuxtProjectPaths", () => {
+  it("uses the app/ source directory of a Nuxt 4 project", () => {
+    touch("nuxt.config.ts");
+    touch("app/app.vue");
+    const p = nuxtProjectPaths(tmp);
+    expect(p.configPath).toBe(join(tmp, "nuxt.config.ts"));
+    expect(p.configLabel).toBe("nuxt.config.ts");
+    expect(p.appConfigPath).toBe(join(tmp, "app", "app.config.ts"));
+    expect(p.appConfigLabel).toBe("app/app.config.ts");
+    expect(p.existingAppConfigLabel).toBeNull();
+    expect(p.appPath).toBe(join(tmp, "app", "app.vue"));
+    expect(p.appLabel).toBe("app/app.vue");
+  });
+
+  it("uses the project root when there is no app/ directory", () => {
+    touch("nuxt.config.ts");
+    const p = nuxtProjectPaths(tmp);
+    expect(p.appConfigLabel).toBe("app.config.ts");
+    expect(p.appPath).toBe(join(tmp, "app.vue"));
+  });
+
+  it("keeps a root app.vue when app/ holds only other files", () => {
+    touch("app.vue");
+    touch("app/router.options.ts");
+    expect(nuxtProjectPaths(tmp).appLabel).toBe("app.vue");
+  });
+
+  it("writes JavaScript when the Nuxt config is a .js or .mjs file", () => {
+    touch("nuxt.config.mjs");
+    const p = nuxtProjectPaths(tmp);
+    expect(p.configLabel).toBe("nuxt.config.mjs");
+    expect(p.appConfigLabel).toBe("app.config.js");
+  });
+
+  it("reports an app config the project already has", () => {
+    touch("nuxt.config.ts");
+    touch("app/app.config.js");
+    expect(nuxtProjectPaths(tmp).existingAppConfigLabel).toBe("app/app.config.js");
+  });
+
+  it("has no config path when the project has no Nuxt config", () => {
+    const p = nuxtProjectPaths(tmp);
+    expect(p.configPath).toBeNull();
+    expect(p.configLabel).toBe("nuxt.config.ts");
+    expect(p.appConfigLabel).toBe("app.config.ts");
   });
 });

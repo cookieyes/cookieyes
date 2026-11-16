@@ -113,3 +113,40 @@ export function vueProjectPaths(cwd: string): VueProjectPaths {
     appPath: join(src, "App.vue"),
   };
 }
+
+export type NuxtProjectPaths = {
+  /** The existing `nuxt.config.*`, or null when the project has none. */
+  configPath: string | null;
+  configLabel: string;
+  /** Where a new app config goes, in Nuxt's source directory. */
+  appConfigPath: string;
+  appConfigLabel: string;
+  /** An `app.config.*` the project already has, which is never overwritten. */
+  existingAppConfigLabel: string | null;
+  appPath: string;
+  appLabel: string;
+};
+
+const NUXT_CONFIG_FILES = ["nuxt.config.ts", "nuxt.config.js", "nuxt.config.mjs"];
+const NUXT_APP_CONFIG_FILES = ["app.config.ts", "app.config.js", "app.config.mjs"];
+
+export function nuxtProjectPaths(cwd: string): NuxtProjectPaths {
+  const config = NUXT_CONFIG_FILES.find((f) => existsSync(join(cwd, f)));
+  // JavaScript only when the Nuxt config is a `.js` or `.mjs` file, as the Vue setup does.
+  const typescript = config === undefined || config.endsWith(".ts");
+  // Nuxt 4 takes `app/` as its source directory when it exists, and the project root otherwise.
+  // A Nuxt 3 layout keeps `app.vue` in the root even when an `app/` folder holds other files.
+  const rootApp = existsSync(join(cwd, "app.vue")) && !existsSync(join(cwd, "app", "app.vue"));
+  const prefix = existsSync(join(cwd, "app")) && !rootApp ? "app/" : "";
+  const appConfig = `app.config.${typescript ? "ts" : "js"}`;
+  const existing = NUXT_APP_CONFIG_FILES.find((f) => existsSync(join(cwd, prefix, f)));
+  return {
+    configPath: config === undefined ? null : join(cwd, config),
+    configLabel: config ?? "nuxt.config.ts",
+    appConfigPath: join(cwd, prefix, appConfig),
+    appConfigLabel: `${prefix}${appConfig}`,
+    existingAppConfigLabel: existing === undefined ? null : `${prefix}${existing}`,
+    appPath: join(cwd, prefix, "app.vue"),
+    appLabel: `${prefix}app.vue`,
+  };
+}

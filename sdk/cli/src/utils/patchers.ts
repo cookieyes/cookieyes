@@ -113,11 +113,131 @@ export function patchVueApp(src: string): string | null {
   const newBody = /^import\s/m.test(body)
     ? insertImport(body, importLine)
     : `\n${importLine}${body.startsWith("\n") ? body : `\n${body}`}`;
-  const withScript = src.replace(whole, () => `${open}${newBody}${close}`);
+  return renderRootFirst(src.replace(whole, () => `${open}${newBody}${close}`));
+}
 
-  const template = /^<template(?:\s[^>]*)?>/m.exec(withScript);
+/** Put `<CookieYesRoot />` first in the component's template, indented like what follows it. */
+function renderRootFirst(src: string): string | null {
+  const template = /^<template(?:\s[^>]*)?>/m.exec(src);
   if (!template) return null;
   const end = template.index + template[0].length;
-  const indent = /\n([ \t]*)\S/.exec(withScript.slice(end))?.[1] ?? "  ";
-  return `${withScript.slice(0, end)}\n${indent}<CookieYesRoot />${withScript.slice(end)}`;
+  const indent = /\n([ \t]*)\S/.exec(src.slice(end))?.[1] ?? "  ";
+  return `${src.slice(0, end)}\n${indent}<CookieYesRoot />${src.slice(end)}`;
+}
+
+/**
+ * Render `<CookieYesRoot />` first in a Nuxt `app.vue`, before `<NuxtPage />` or whatever else
+ * the template holds. The module auto-imports the component, so no import is added. Returns null
+ * when already patched or when the file has no template.
+ */
+export function patchNuxtApp(src: string): string | null {
+  if (src.includes("CookieYesRoot")) return null;
+  return renderRootFirst(src);
+}
+
+const NUXT_MODULE = "@cookieyes/nuxt";
+
+/** Index just past the string or comment that starts at `i`, or `i` when none starts there. */
+function skipLiteral(src: string, i: number): number {
+  const c = src.charAt(i);
+  if (c === '"' || c === "'" || c === "`") {
+    let j = i + 1;
+    while (j < src.length && src.charAt(j) !== c) j += src.charAt(j) === "\\" ? 2 : 1;
+    return j + 1;
+  }
+  if (src.startsWith("//", i)) {
+    const end = src.indexOf("\n", i);
+    return end === -1 ? src.length : end;
+  }
+  if (src.startsWith("/*", i)) {
+    const end = src.indexOf("*/", i + 2);
+    return end === -1 ? src.length : end + 2;
+  }
+  return i;
+}
+
+/**
+ * Walk the bracket at `open` to its closing bracket, skipping strings and comments. `visit` sees
+ * every other character directly inside it (depth 1). Returns the closing index, or -1.
+ */
+function walkBracket(src: string, open: number, visit?: (i: number) => void): number {
+  let depth = 0;
+  for (let i = open; i < src.length; ) {
+    const next = skipLiteral(src, i);
+    if (next !== i) {
+      i = next;
+      continue;
+    }
+    const c = src.charAt(i);
+    if (c === "{" || c === "[" || c === "(") depth++;
+    else if (c === "}" || c === "]" || c === ")") {
+      depth--;
+      if (depth === 0) return i;
+    } else if (depth === 1) visit?.(i);
+    i++;
+  }
+  return -1;
+}
+
+/**
+ * Add `"@cookieyes/nuxt"` to the `modules` array of `defineNuxtConfig({...})`, creating the array
+ * when the config has none. Returns null when the module is already listed, and also when the file
+ * has a shape where an edit could be wrong: no single `defineNuxtConfig({`, a spread that may hold
+ * its own `modules`, a `modules` that is not an array literal, or a comment inside the array. The
+ * caller then prints the manual step; a second `modules` key would silently drop the first.
+ */
+export function patchNuxtConfig(src: string): string | null {
+  if (/["']@cookieyes\/nuxt["']/.test(src)) return null;
+  const calls = [...src.matchAll(/\bdefineNuxtConfig\s*\(\s*\{/g)];
+  const call = calls[0];
+  if (calls.length !== 1 || call === undefined) return null;
+  const open = call.index + call[0].length - 1;
+
+  let modules = -1;
+  let spread = false;
+  // The last character seen directly in the object, past comments: a key follows `{` or `,`.
+  let prev = "{";
+  const close = walkBracket(src, open, (i) => {
+    if (src.startsWith("...", i)) spread = true;
+    const key = /^modules\s*:\s*/.exec(src.slice(i, i + 40));
+    if (key && (prev === "{" || prev === ",")) modules = i + key[0].length;
+    if (/\S/.test(src.charAt(i))) prev = src.charAt(i);
+  });
+  if (close === -1 || spread) return null;
+
+  const quote = /["']/.exec(src.slice(open, close))?.[0] ?? '"';
+  const entry = `${quote}${NUXT_MODULE}${quote}`;
+
+  if (modules === -1) {
+    // A nested `modules:` (Vite's CSS modules, say) is left to the developer rather than risk
+    // giving a top-level one a twin.
+    if (/\bmodules\s*:/.test(src.slice(open, close))) return null;
+    const body = src.slice(open + 1, close);
+    if (body.trim() === "")
+      return `${src.slice(0, open)}{ modules: [${entry}] }${src.slice(close + 1)}`;
+    if (!body.includes("\n")) {
+      return `${src.slice(0, open)}{ modules: [${entry}], ${body.trimStart()}${src.slice(close)}`;
+    }
+    const indent = /\n([ \t]*)\S/.exec(body)?.[1] ?? "  ";
+    return `${src.slice(0, open + 1)}\n${indent}modules: [${entry}],${src.slice(open + 1)}`;
+  }
+
+  if (src.charAt(modules) !== "[") return null;
+  const end = walkBracket(src, modules);
+  if (end === -1) return null;
+  const inner = src.slice(modules + 1, end);
+  if (inner.includes("//") || inner.includes("/*")) return null;
+  if (inner.trim() === "") return `${src.slice(0, modules)}[${entry}]${src.slice(end + 1)}`;
+
+  const last = modules + 1 + inner.trimEnd().length - 1;
+  const comma = src.charAt(last) === ",";
+  let added: string;
+  if (inner.includes("\n")) {
+    const lineStart = src.lastIndexOf("\n", last) + 1;
+    const indent = /^[ \t]*/.exec(src.slice(lineStart))?.[0] ?? "";
+    added = comma ? `\n${indent}${entry},` : `,\n${indent}${entry}`;
+  } else {
+    added = comma ? ` ${entry}` : `, ${entry}`;
+  }
+  return `${src.slice(0, last + 1)}${added}${src.slice(last + 1)}`;
 }

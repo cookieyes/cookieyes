@@ -41,9 +41,11 @@ describe("cli entry", () => {
     expect(runInit).not.toHaveBeenCalled();
   });
 
-  it("lists vue among the --framework values in the help", async () => {
+  it("lists vue and nuxt among the --framework values in the help", async () => {
     await runCli("--help");
-    expect(String(logSpy.mock.calls[0]?.[0])).toContain("--framework <nextjs|react|vue|vanilla>");
+    expect(String(logSpy.mock.calls[0]?.[0])).toContain(
+      "--framework <nextjs|react|vue|nuxt|vanilla>",
+    );
   });
 
   it("prints help, not the prompts, for init --help", async () => {

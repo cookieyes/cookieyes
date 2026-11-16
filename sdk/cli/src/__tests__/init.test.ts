@@ -15,12 +15,12 @@ const h = vi.hoisted(() => ({
   writeFileSync: vi.fn(),
   readFileSync: vi.fn((_path?: unknown): string => ""),
   detectFramework: vi.fn(() => null),
-  isNuxtProject: vi.fn(() => false),
   detectPackageManager: vi.fn(() => "npm"),
   installPackage: vi.fn(),
   nextProjectPaths: vi.fn(),
   reactProjectPaths: vi.fn(),
   vueProjectPaths: vi.fn(),
+  nuxtProjectPaths: vi.fn(),
 }));
 
 vi.mock("@clack/prompts", () => ({
@@ -42,16 +42,14 @@ vi.mock("node:fs", () => ({
   writeFileSync: h.writeFileSync,
   readFileSync: h.readFileSync,
 }));
-vi.mock("../utils/detect-framework.js", () => ({
-  detectFramework: h.detectFramework,
-  isNuxtProject: h.isNuxtProject,
-}));
+vi.mock("../utils/detect-framework.js", () => ({ detectFramework: h.detectFramework }));
 vi.mock("../utils/detect-pm.js", () => ({ detectPackageManager: h.detectPackageManager }));
 vi.mock("../utils/install.js", () => ({ installPackage: h.installPackage }));
 vi.mock("../utils/detect-layout.js", () => ({
   nextProjectPaths: h.nextProjectPaths,
   reactProjectPaths: h.reactProjectPaths,
   vueProjectPaths: h.vueProjectPaths,
+  nuxtProjectPaths: h.nuxtProjectPaths,
 }));
 
 import { cancel, note } from "@clack/prompts";
@@ -82,6 +80,16 @@ const VUE_PATHS = {
   appPath: "/proj/src/App.vue",
 };
 
+const NUXT_PATHS = {
+  configPath: "/proj/nuxt.config.ts",
+  configLabel: "nuxt.config.ts",
+  appConfigPath: "/proj/app/app.config.ts",
+  appConfigLabel: "app/app.config.ts",
+  existingAppConfigLabel: null,
+  appPath: "/proj/app/app.vue",
+  appLabel: "app/app.vue",
+};
+
 /** All strings written to disk during a runInit() call. */
 function writtenContents(): string[] {
   return h.writeFileSync.mock.calls.map((c) => String(c[1]));
@@ -93,12 +101,12 @@ beforeEach(() => {
   h.existsSync.mockReturnValue(false);
   h.readFileSync.mockReturnValue("");
   h.detectFramework.mockReturnValue(null);
-  h.isNuxtProject.mockReturnValue(false);
   h.detectPackageManager.mockReturnValue("npm");
   h.installPackage.mockResolvedValue(undefined);
   h.nextProjectPaths.mockReturnValue(NEXT_PATHS);
   h.reactProjectPaths.mockReturnValue(REACT_PATHS);
   h.vueProjectPaths.mockReturnValue(VUE_PATHS);
+  h.nuxtProjectPaths.mockReturnValue(NUXT_PATHS);
   process.stdin.isTTY = true;
 });
 
@@ -309,7 +317,7 @@ describe("runInit: Vue patching", () => {
 
 describe("runInit: Vue in a Nuxt project", () => {
   beforeEach(() => {
-    h.isNuxtProject.mockReturnValue(true);
+    h.detectFramework.mockReturnValue("nuxt" as never);
   });
 
   it("exits non-zero and writes nothing with --framework vue", async () => {
@@ -317,7 +325,9 @@ describe("runInit: Vue in a Nuxt project", () => {
       throw new Error(`exit ${code}`);
     }) as never);
     await expect(runInit(["--framework=vue", "--yes"])).rejects.toThrow("exit 1");
-    expect(cancel).toHaveBeenCalledWith("--framework vue is not supported in a Nuxt project.");
+    expect(cancel).toHaveBeenCalledWith(
+      "--framework vue is not supported in a Nuxt project. Use --framework nuxt.",
+    );
     expect(h.writeFileSync).not.toHaveBeenCalled();
     expect(h.installPackage).not.toHaveBeenCalled();
     vi.restoreAllMocks();
@@ -336,13 +346,140 @@ describe("runInit: Vue in a Nuxt project", () => {
 
     expect(h.writeFileSync).not.toHaveBeenCalled();
     expect(h.installPackage).not.toHaveBeenCalled();
-    expect(noteTexts().some((t) => t.includes("Nuxt is not supported"))).toBe(true);
+    expect(noteTexts().some((t) => t.includes("pick Nuxt, or pass --framework nuxt"))).toBe(true);
+  });
+});
+
+const NUXT_CONFIG = `export default defineNuxtConfig({\n  devtools: { enabled: true }\n})\n`;
+const NUXT_APP = `<template>\n  <NuxtPage />\n</template>\n`;
+
+describe("runInit: Nuxt", () => {
+  it("offers Nuxt at the prompt, pre-selected when detected", async () => {
+    h.detectFramework.mockReturnValue("nuxt" as never);
+    h.select
+      .mockResolvedValueOnce("nuxt")
+      .mockResolvedValueOnce("cookie-only")
+      .mockResolvedValueOnce("GDPR")
+      .mockResolvedValueOnce("light");
+    h.multiselect.mockResolvedValueOnce([]);
+    h.confirm.mockResolvedValueOnce(true);
+
+    await runInit();
+
+    const question = h.select.mock.calls[0]?.[0] as {
+      initialValue: string;
+      options: { value: string; hint?: string }[];
+    };
+    expect(question.initialValue).toBe("nuxt");
+    expect(question.options.find((o) => o.value === "nuxt")?.hint).toBe("detected");
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/nuxt", "npm", expect.any(String));
   });
 
-  it("still takes a Nuxt project as vanilla with --yes", async () => {
-    h.detectFramework.mockReturnValue("vanilla" as never);
-    await runInit(["--yes", "--no-install"]);
-    expect(writtenContents().some((w) => w.includes("getOrCreateConsentRuntime"))).toBe(true);
+  it("takes a detected Nuxt project with --yes and wires all three files", async () => {
+    h.detectFramework.mockReturnValue("nuxt" as never);
+    h.existsSync.mockImplementation(
+      (p: unknown) => p === NUXT_PATHS.configPath || p === NUXT_PATHS.appPath,
+    );
+    h.readFileSync.mockImplementation((p: unknown) =>
+      p === NUXT_PATHS.configPath ? NUXT_CONFIG : NUXT_APP,
+    );
+
+    await runInit(["--yes"]);
+
+    expect(writtenTo(NUXT_PATHS.configPath)).toContain(`  modules: ["@cookieyes/nuxt"],\n`);
+    expect(writtenTo(NUXT_PATHS.appConfigPath)).toBe(
+      [
+        `export default defineAppConfig({`,
+        `  cookieyes: {`,
+        `    mode: "cookie-only",`,
+        `    regulation: "GDPR",`,
+        `    colorScheme: "light",`,
+        `  },`,
+        `});`,
+        ``,
+      ].join("\n"),
+    );
+    expect(writtenTo(NUXT_PATHS.appPath)).toBe(
+      `<template>\n  <CookieYesRoot />\n  <NuxtPage />\n</template>\n`,
+    );
+    expect(noteTexts().some((t) => t.endsWith("|Manual step needed"))).toBe(false);
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/nuxt", "npm", expect.any(String));
+  });
+
+  it("writes apiUrl and the locale imports into app.config", async () => {
+    await runInit([
+      "--framework=nuxt",
+      "--api-url=https://api.example.com/consent",
+      "--regulation=CCPA",
+      "--color-scheme=dark",
+      "--locales=es,fr",
+      "--no-install",
+    ]);
+
+    const appConfig = writtenTo(NUXT_PATHS.appConfigPath);
+    expect(appConfig).toMatch(
+      /^import \{ es \} from "@cookieyes\/translations\/es";\nimport \{ fr \} from "@cookieyes\/translations\/fr";\n\nexport default defineAppConfig\(\{/,
+    );
+    expect(appConfig).toContain(
+      `    mode: "self-hosted",\n    apiUrl: "https://api.example.com/consent",`,
+    );
+    expect(appConfig).toContain(`    regulation: "CCPA",\n    colorScheme: "dark",`);
+    expect(appConfig).toContain(`    i18n: { messages: { es, fr } },\n  },\n});`);
+    expect(h.installPackage).not.toHaveBeenCalled();
+  });
+
+  it("never overwrites an existing app config and prints the options to add", async () => {
+    h.nuxtProjectPaths.mockReturnValue({
+      ...NUXT_PATHS,
+      existingAppConfigLabel: "app/app.config.ts",
+    });
+    await runInit(["--framework=nuxt", "--yes", "--no-install"]);
+
+    expect(writtenTo(NUXT_PATHS.appConfigPath)).toBeUndefined();
+    const manual = noteTexts().filter((t) => t.endsWith("|Manual step needed"));
+    expect(manual.some((t) => t.includes("app/app.config.ts already exists"))).toBe(true);
+    expect(manual.some((t) => t.includes(`cookieyes: {\n    mode: "cookie-only",`))).toBe(true);
+  });
+
+  it("prints manual steps when nuxt.config and app.vue are missing or cannot be patched", async () => {
+    h.nuxtProjectPaths.mockReturnValue({ ...NUXT_PATHS, configPath: null });
+    await runInit(["--framework=nuxt", "--yes", "--no-install"]);
+    let manual = noteTexts().filter((t) => t.endsWith("|Manual step needed"));
+    expect(manual).toHaveLength(2);
+    expect(manual[0]).toContain(`modules: ["@cookieyes/nuxt"],`);
+    expect(manual[1]).toContain("<CookieYesRoot />\n  <NuxtPage />");
+
+    vi.clearAllMocks();
+    h.nuxtProjectPaths.mockReturnValue(NUXT_PATHS);
+    h.existsSync.mockReturnValue(true);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      p === NUXT_PATHS.configPath
+        ? "export default defineNuxtConfig(shared)\n"
+        : "<script setup>\n</script>\n",
+    );
+    await runInit(["--framework=nuxt", "--yes", "--no-install"]);
+    expect(writtenTo(NUXT_PATHS.configPath)).toBeUndefined();
+    expect(writtenTo(NUXT_PATHS.appPath)).toBeUndefined();
+    manual = noteTexts().filter((t) => t.endsWith("|Manual step needed"));
+    expect(manual).toHaveLength(2);
+  });
+
+  it("leaves nuxt.config and app.vue alone when they are already set up", async () => {
+    h.existsSync.mockReturnValue(true);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      p === NUXT_PATHS.configPath
+        ? `export default defineNuxtConfig({ modules: ["@cookieyes/nuxt"] })\n`
+        : `<template>\n  <CookieYesRoot />\n</template>\n`,
+    );
+
+    await runInit(["--framework=nuxt", "--yes", "--no-install"]);
+
+    expect(writtenTo(NUXT_PATHS.configPath)).toBeUndefined();
+    expect(writtenTo(NUXT_PATHS.appPath)).toBeUndefined();
+    expect(h.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("already lists @cookieyes/nuxt"),
+    );
+    expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already uses CookieYesRoot"));
   });
 });
 
@@ -549,6 +686,10 @@ describe("parseInitFlags", () => {
 
   it("accepts vue as a framework", () => {
     expect(parseInitFlags(["--framework", "vue"]).framework).toBe("vue");
+  });
+
+  it("accepts nuxt as a framework", () => {
+    expect(parseInitFlags(["--framework=Nuxt"]).framework).toBe("nuxt");
   });
 
   it("reads an empty --locales as no extra languages", () => {
