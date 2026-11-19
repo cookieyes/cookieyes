@@ -30,7 +30,9 @@ function stubDownloads() {
   return { createObjectURL, click };
 }
 
-describe("Consent tab controls", () => {
+// A longer timeout, not a weaker check: on busy CI runners the first test here takes 2 to 4 s,
+// against well under 1 s locally, and once took just over the 5 s default.
+describe("Consent tab controls", { timeout: 20_000 }, () => {
   it("toggles a category (unsaved), then saves it", async () => {
     mountCookieOnly("GDPR");
     const user = await openTab("consent");
