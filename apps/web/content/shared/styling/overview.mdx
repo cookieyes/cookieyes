@@ -1,7 +1,7 @@
 ---
 title: Styling
 description: Change the colours, font and layout of the banner and dialogs, and know which tool to use for each.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 <Framework when="core">
@@ -20,6 +20,18 @@ The components look finished out of the box. To make them match your site, pick 
 | Light, dark, or follow the device | `colorScheme` in `initCookieYes()` | [Colour scheme](/docs/styling/color-scheme) |
 | Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
 | The same, with utility classes | `className` and `@apply` | [Tailwind](/docs/styling/tailwind) |
+| The markup itself | Primitives | [Banner primitives](/docs/headless/banner) |
+
+</Framework>
+
+<Framework when="vue">
+
+| You want to change | Use | Page |
+| --- | --- | --- |
+| Brand colour, corner radius, font, backgrounds | `theme` in `app.use(CookieYes, config)` | [Theme tokens](/docs/styling/theme-tokens) |
+| Light, dark, or follow the device | `colorScheme` in `app.use(CookieYes, config)` | [Colour scheme](/docs/styling/color-scheme) |
+| Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
+| The same, with utility classes | `class` and `@apply` | [Tailwind](/docs/styling/tailwind) |
 | The markup itself | Primitives | [Banner primitives](/docs/headless/banner) |
 
 </Framework>

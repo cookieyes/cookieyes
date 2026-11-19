@@ -50,6 +50,7 @@ const CSS_PREFIX = {
   "@cookieyes/ui": ".cy-",
   "@cookieyes/react": ".cy-",
   "@cookieyes/vanilla": ".cy-",
+  "@cookieyes/vue": ".cy-",
   "@cookieyes/nextjs": ".cy-",
   "@cookieyes/devtools": ".cyd-",
 };

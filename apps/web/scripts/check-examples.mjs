@@ -7,7 +7,8 @@
 // (scripts/generate-framework-docs.mjs). A body is therefore checked once per framework it
 // is published under, after the same two transformations the build applies for that
 // framework — <Framework when="…"> blocks resolved, `@cookieyes/nextjs|react` swapped to the
-// framework's package (src/lib/remark-framework-docs.ts). A swap that produced code which
+// framework's package (src/lib/remark-framework-docs.ts). A Vue page is never swapped, and fails
+// here if a React fence is left in it. A swap that produced code which
 // does not compile fails here, not in front of a reader.
 
 import { execFileSync } from "node:child_process";
@@ -62,9 +63,13 @@ const ENABLED_FILES = [
   "components/reload-notice.mdx",
   "troubleshooting.mdx",
   "network-blocking.mdx",
+  "embeds.mdx",
   "styling/overview.mdx",
   "styling/css-variables.mdx",
   "styling/critical-css.mdx",
+  "styling/tailwind.mdx",
+  "styling/color-scheme.mdx",
+  "styling/theme-tokens.mdx",
   "integrations/google-consent-mode.mdx",
   "integrations/ahrefs-analytics.mdx",
   "integrations/ga4.mdx",
@@ -92,11 +97,13 @@ const ATTR_RE = /(?<name>[a-zA-Z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'))?/g;
 // Keep them identical.
 // ---------------------------------------------------------------------------------------
 
-const FRAMEWORKS = ["nextjs", "react", "core"];
+const FRAMEWORKS = ["nextjs", "react", "vue", "core"];
 const SWAPPABLE = /@cookieyes\/(react|nextjs)(\/styles\.css|\/critical\.css)?(?![\w/-])/g;
 const OPT_OUT = /(^|\s)frameworkSwap=false(\s|$)/;
 const USE_CLIENT = /^"use client";\n\n?/;
 const APP_DIR_TITLE = /title="app\//;
+// Kept identical to VUE_FORBIDDEN in src/lib/framework-docs.ts; a test compares the two.
+const VUE_FORBIDDEN = /@cookieyes\/(react|nextjs)(?![\w-])|"use client"|useSyncExternalStore/;
 const BLOCK = /<Framework when="([^"]*)">\s*\n((?:(?!<Framework)[\s\S])*?)\n\s*<\/Framework>\n?/g;
 const FENCE = /^(```[^\n]*)\n([\s\S]*?)^```[ \t]*$/gm;
 
@@ -123,7 +130,17 @@ function composeFor(source, framework) {
   }
   out = out.replace(FENCE, (_m, opener, code) => {
     let swapped = code;
-    if (framework !== "core" && !OPT_OUT.test(opener)) {
+    if (framework === "vue") {
+      const lang = /^```(\w*)/.exec(opener)?.[1];
+      if (lang === "tsx" || VUE_FORBIDDEN.test(code)) {
+        throw new Error(
+          `[check-examples] a Vue page has a React fence (tsx, a @cookieyes/react or ` +
+            `@cookieyes/nextjs import, a "use client" line or useSyncExternalStore). Wrap it in ` +
+            `<Framework when="nextjs react">:\n${code.split("\n").slice(0, 3).join("\n")}`,
+        );
+      }
+    }
+    if (framework !== "core" && framework !== "vue" && !OPT_OUT.test(opener)) {
       swapped = swapped.replace(
         SWAPPABLE,
         (_s, _pkg, suffix) => `@cookieyes/${framework}${suffix ?? ""}`,
@@ -147,7 +164,7 @@ function parseMeta(meta) {
   return attrs;
 }
 
-function extractGroups(mdxSource) {
+function extractGroups(mdxSource, withVue = false) {
   const lines = mdxSource.split("\n");
   const groups = [];
   let currentGroup = null;
@@ -176,7 +193,9 @@ function extractGroups(mdxSource) {
     }
     if (inFence && line.trim() === "```") {
       inFence = false;
-      const isTs = fenceLang === "ts" || fenceLang === "tsx";
+      // `vue` fences are single-file components. They join the groups of the Vue variant only,
+      // where vue-tsc compiles them next to the `ts` fences that import them.
+      const isTs = fenceLang === "ts" || fenceLang === "tsx" || (withVue && fenceLang === "vue");
       const skipped = fenceMeta.check === "false";
       if (isTs && !skipped) {
         // Fences under one heading compile together, so they can import each other. A
@@ -225,6 +244,34 @@ function resolveContained(groupDir, relPath, relFile, line) {
   return target;
 }
 
+/**
+ * The Vue variant's compiler settings: no Next types, and JSX left to Vue. Unlike the
+ * React base, nothing here declares `*.css`; the harness adds that to each group (see
+ * checkVariant) because the stylesheet import is the reader's bundler's job, not the SDK's.
+ */
+function writeVueTsconfig() {
+  const base = {
+    compilerOptions: {
+      target: "ESNext",
+      lib: ["dom", "dom.iterable", "esnext"],
+      jsx: "preserve",
+      module: "esnext",
+      moduleResolution: "bundler",
+      strict: true,
+      noEmit: true,
+      esModuleInterop: true,
+      forceConsistentCasingInFileNames: true,
+      skipLibCheck: true,
+      isolatedModules: true,
+      resolveJsonModule: true,
+      types: ["node"],
+    },
+  };
+  const path = join(outDir, "tsconfig.vue.json");
+  writeFileSync(path, JSON.stringify(base, null, 2));
+  return path;
+}
+
 function writeBaseTsconfig() {
   const base = {
     compilerOptions: {
@@ -255,8 +302,9 @@ function writeBaseTsconfig() {
  */
 function checkVariant(relFile, variant, source, baseTsconfigPath) {
   const variantId = `${relFile.replace(/[\\/]/g, "__")}__${variant}`;
+  const isVue = variant === "vue";
   let ok = true;
-  extractGroups(source).forEach((group, idx) => {
+  extractGroups(source, isVue).forEach((group, idx) => {
     const groupDir = join(outDir, variantId, `group-${idx}`);
     mkdirSync(groupDir, { recursive: true });
     for (const f of group.files) {
@@ -309,13 +357,25 @@ function checkVariant(relFile, variant, source, baseTsconfigPath) {
         "",
       ].join("\n"),
     );
+    // The stylesheet import (`@cookieyes/vue/styles.css`) is resolved by the reader's bundler.
+    // Next's own types declare `*.css` for the other variants; the Vue variant needs it said
+    // here, and only here, so the user-facing example stays exactly what a reader writes.
+    if (isVue) writeFileSync(join(groupDir, "harness-env.d.ts"), 'declare module "*.css";\n');
     writeFileSync(
       join(groupDir, "tsconfig.json"),
-      JSON.stringify({ extends: baseTsconfigPath, include: ["**/*"] }, null, 2),
+      JSON.stringify(
+        {
+          extends: baseTsconfigPath,
+          // A bare `**/*` leaves `.vue` files out of the program.
+          include: isVue ? ["**/*.ts", "**/*.vue"] : ["**/*"],
+        },
+        null,
+        2,
+      ),
     );
 
     try {
-      execFileSync("pnpm", ["exec", "tsc", "--noEmit", "-p", groupDir], {
+      execFileSync("pnpm", ["exec", isVue ? "vue-tsc" : "tsc", "--noEmit", "-p", groupDir], {
         cwd: webRoot,
         stdio: ["ignore", "pipe", "pipe"],
       });
@@ -334,7 +394,8 @@ function checkVariant(relFile, variant, source, baseTsconfigPath) {
 function main() {
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
-  const baseTsconfigPath = writeBaseTsconfig();
+  const reactTsconfigPath = writeBaseTsconfig();
+  const vueTsconfigPath = writeVueTsconfig();
 
   let checkedFiles = 0;
   let checkedVariants = 0;
@@ -357,7 +418,8 @@ function main() {
 
     const frameworks = frameworksOf(source, relFile).filter((fw) => FRAMEWORKS.includes(fw));
     for (const framework of frameworks) {
-      if (!checkVariant(relFile, framework, composeFor(source, framework), baseTsconfigPath)) {
+      const base = framework === "vue" ? vueTsconfigPath : reactTsconfigPath;
+      if (!checkVariant(relFile, framework, composeFor(source, framework), base)) {
         failed = true;
       }
       checkedVariants++;
@@ -373,7 +435,7 @@ function main() {
     const relFile = `skills/${skill}/SKILL.md`;
     const source = readFileSync(absFile, "utf8");
     skippedFences += (source.match(/check="false"/g) ?? []).length;
-    if (!checkVariant(relFile, "skill", source, baseTsconfigPath)) failed = true;
+    if (!checkVariant(relFile, "skill", source, reactTsconfigPath)) failed = true;
     checkedSkills++;
   }
 

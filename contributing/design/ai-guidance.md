@@ -35,7 +35,8 @@ the other: fix the docs or the rules, never leave both.
 | Load Google Analytics only after consent | `ga4({ measurementId, consentMode: "basic" })` in `integrations`, plus `<GoogleConsentMode />` or `bootstrapGoogleConsentMode()` | `builtInIntegrations`, a gtag snippet pasted in the HTML, or the default `"advanced"` mode, which loads the tag before consent |
 | GA4 runs inside a GTM container | `googleTagManager()` only | Both `googleTagManager()` and `ga4()` |
 | Gate a script with no ready-made integration | `customScript({ id, src, category })`, or an `Integration` with `load: "afterConsent"` | `load: "immediately"` |
-| Use CookieYes in Vue or Svelte | `@cookieyes/core`, UI built from `consentStore` | `@cookieyes/react` |
+| Use CookieYes in a Vue 3 app | `@cookieyes/vue`, `app.use(CookieYes, config)`, `@cookieyes/vue/styles.css` | `@cookieyes/react` |
+| Use CookieYes in Svelte | `@cookieyes/core`, UI built from `consentStore` | `@cookieyes/react` |
 | Opt-out consent for California | `regulation: "CCPA"` | A custom category list |
 | Unit-test that analytics loads only after consent | `createConsentTest()` from `@cookieyes/test`, reset after each test | Hand-writing the consent cookie |
 | Test a React component that reads consent | `createReactConsentTest()` from `@cookieyes/test/react`, one harness per file | Both harnesses in one file |

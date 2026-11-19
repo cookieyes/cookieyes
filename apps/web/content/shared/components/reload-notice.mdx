@@ -1,7 +1,7 @@
 ---
 title: ReloadNotice
 description: Ask the visitor to reload when a withdrawn tool cannot be stopped otherwise.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
@@ -12,19 +12,57 @@ You need it only if you register a tool as "needs a reload" (below). The ready-m
 
 ## Add it
 
+<Framework when="nextjs react">
+
 ```tsx check="false"
 <CookieBanner />
 <CookiePreferences />
 <ReloadNotice />
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue check="false"
+<CookieBanner />
+<CookiePreferences />
+<ReloadNotice />
+```
+
+</Framework>
+
+<Framework when="nextjs react">
+
 Then mark the tool that cannot be stopped, once, **before** `initCookieYes()`. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors:
+
+</Framework>
+
+<Framework when="vue">
+
+Then mark the tool that cannot be stopped, once, **before** `app.use(CookieYes, config)`. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors:
+
+</Framework>
+
+<Framework when="nextjs react">
 
 ```ts title="app/consent-manager.tsx"
 import { registerStopHandler } from "@cookieyes/react";
 
 registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import { registerStopHandler } from "@cookieyes/vue";
+
+registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+```
+
+</Framework>
 
 ## It appears only when a reload is genuinely needed
 

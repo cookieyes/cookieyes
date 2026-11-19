@@ -1,7 +1,7 @@
 ---
 title: Theme tokens
 description: Set the brand colour, corner radius and font once; every CookieYes surface follows.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 <Framework when="core">
@@ -29,6 +29,26 @@ initCookieYes({
     fontFamily: "'Inter', sans-serif",
   },
 });
+```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "cookie-only",
+    theme: {
+      primaryColor: "#1863dc",
+      borderRadius: "8px",
+      fontFamily: "'Inter', sans-serif",
+    },
+  });
+}
 ```
 
 </Framework>
@@ -80,11 +100,25 @@ Every variable with its light and dark default is on the [CSS variables referenc
 
 **First paint.** The stylesheet's defaults show until the theme is applied after the page loads, which a visitor may see as a brief flash from the default blue. To avoid it, set the same colour in your own CSS as well:
 
+<Framework when="nextjs react core">
+
 ```css title="app/consent.css"
 :root {
   --cy-primary: #1863dc;
 }
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/consent.css"
+:root {
+  --cy-primary: #1863dc;
+}
+```
+
+</Framework>
 
 ## Common mistakes
 

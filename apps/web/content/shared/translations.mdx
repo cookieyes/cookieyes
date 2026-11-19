@@ -1,7 +1,7 @@
 ---
 title: Translations
 description: Show the banner and dialogs in your visitors' language, or change any text.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 Every text the SDK shows comes from one translation map, in English by default. You can swap in a shipped language, write your own, or change a single string. All of it goes through the `i18n` option of the configuration.
@@ -31,6 +31,26 @@ initCookieYes({
     messages: { fr },
   },
 });
+```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+import { fr } from "@cookieyes/translations/fr";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "cookie-only",
+    i18n: {
+      locale: "fr",
+      messages: { fr },
+    },
+  });
+}
 ```
 
 </Framework>
@@ -86,6 +106,32 @@ initCookieYes({
     },
   },
 });
+```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "cookie-only",
+    i18n: {
+      messages: {
+        en: {
+          bannerTitle: "We value your privacy",
+          acceptAll: "Sounds good",
+          categories: {
+            analytics: { label: "Statistics", description: "Helps us see which pages are useful." },
+          },
+        },
+      },
+    },
+  });
+}
 ```
 
 </Framework>
@@ -160,6 +206,30 @@ export function LanguagePicker() {
 
 </Framework>
 
+<Framework when="vue">
+
+```vue title="src/components/LanguagePicker.vue"
+<script setup lang="ts">
+import { useLanguage } from "@cookieyes/vue";
+
+const { language, languages, setLanguage } = useLanguage();
+
+async function onChange(event: Event): Promise<void> {
+  const tag = (event.target as HTMLSelectElement).value;
+  await setLanguage(tag);
+  localStorage.setItem("language", tag);
+}
+</script>
+
+<template>
+  <select :value="language" @change="onChange">
+    <option v-for="tag in languages" :key="tag" :value="tag">{{ tag }}</option>
+  </select>
+</template>
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/language-picker.ts"
@@ -197,6 +267,25 @@ initCookieYes({
 
 </Framework>
 
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type PartialTranslations } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "cookie-only",
+    i18n: {
+      loadLanguage: async (tag): Promise<PartialTranslations> =>
+        (await import(`@cookieyes/translations/${tag}`))[tag],
+    },
+  });
+}
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -228,6 +317,14 @@ On a site where the URL carries the language, call `setLanguage()` with the tag 
 
 </Framework>
 
+<Framework when="vue">
+
+**Your own components can read the text.** `useTranslations()` returns a computed ref of the active language's map, and it updates when the language changes.
+
+**Right-to-left languages.** The ready-made components always render left to right. For Arabic, Hebrew or another right-to-left language, build on the [Banner primitives](/docs/headless/banner) and bind `:dir` to the `direction` that `useLanguage()` returns on your root element.
+
+</Framework>
+
 <Framework when="core">
 
 **Your own code can read the text.** `consentStore.translations` is the active language's map; `consentStore.subscribe()` tells you when it changes.
@@ -253,7 +350,7 @@ It is async, and it warns in the console if the language is not in `messages` an
 ## Next steps
 
 - [Configuration](/docs/getting-started/configuration#i18n): the `i18n` option in the reference table
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 - [Focused hooks](/docs/hooks/focused-hooks): `useTranslations()` and `useLanguage()` in full
 

@@ -1,7 +1,7 @@
 ---
 title: OptOut
 description: Build the CCPA Do Not Sell dialog with your own markup.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
@@ -13,6 +13,8 @@ Use it only when [`CookieOptOut`](/docs/components/cookie-opt-out) cannot produc
 ## Build a dialog
 
 Render this in place of `<CookieOptOut />`. `OptOut.Root` renders nothing while the dialog is closed, so keep it as the outer element.
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-opt-out.tsx"
 "use client";
@@ -43,7 +45,50 @@ export function ConsentOptOut() {
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/ConsentOptOut.vue"
+<script setup lang="ts">
+import { OptOut } from "@cookieyes/vue";
+</script>
+
+<template>
+  <OptOut.Root class="overlay">
+    <div class="dialog">
+      <OptOut.Title class="dialog-title" />
+      <OptOut.Close class="dialog-close" />
+      <OptOut.Description class="dialog-text" />
+
+      <div class="opt-out-row">
+        <OptOut.Checkbox id="do-not-sell" />
+        <OptOut.CheckboxLabel for="do-not-sell" />
+      </div>
+
+      <OptOut.Buttons class="dialog-actions">
+        <OptOut.Cancel class="btn" />
+        <OptOut.Save class="btn btn-primary" />
+      </OptOut.Buttons>
+      <OptOut.Success class="dialog-success" />
+    </div>
+  </OptOut.Root>
+</template>
+```
+
+</Framework>
+
+<Framework when="nextjs react">
+
 Give the checkbox an `id` and the label the matching `htmlFor`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after an opt-out, the buttons disappear and the confirmation takes their place. Saving without an opt-out closes the dialog at once.
+
+</Framework>
+
+<Framework when="vue">
+
+Give the checkbox an `id` and the label the matching `for`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after an opt-out, the buttons disappear and the confirmation takes their place. Saving without an opt-out closes the dialog at once.
+
+</Framework>
 
 ## The pieces
 
@@ -61,7 +106,17 @@ Give the checkbox an `id` and the label the matching `htmlFor`, so clicking the 
 | `OptOut.Success` | `<div>` | The confirmation after an opt-out, with a ten-second countdown, then the dialog closes. It receives focus so screen readers announce it |
 | `OptOut.Branding` | `<a>` | The "Powered by" link |
 
+<Framework when="nextjs react">
+
 Every piece takes `className`, `style` and the other props of the element it renders, and renders the translated text for the active language; pass `children` to replace it. `Close`, `Cancel` and `Save` accept `asChild` for your own button component, the same way as on [Banner](/docs/headless/banner#use-your-own-button-component).
+
+</Framework>
+
+<Framework when="vue">
+
+Every piece takes `class`, `style` and the other attributes of the element it renders, and renders the translated text for the active language; put your own content in its default slot to replace it. `Close`, `Cancel` and `Save` accept `as-child` for your own button component, the same way as on [Banner](/docs/headless/banner#use-your-own-button-component).
+
+</Framework>
 
 ## What Save actually writes
 
@@ -75,8 +130,19 @@ Save with the box **ticked** rejects every optional category. Save with the box 
 **Nothing shows after Save.**
 If the box was not ticked, the dialog simply closes; that is expected. If it was ticked, `OptOut.Success` is not rendered.
 
+<Framework when="nextjs react">
+
 **Clicking the label does not tick the box.**
 The checkbox `id` and the label `htmlFor` do not match.
+
+</Framework>
+
+<Framework when="vue">
+
+**Clicking the label does not tick the box.**
+The checkbox `id` and the label `for` do not match.
+
+</Framework>
 
 **The dialog never opens.**
 The visitor is not under CCPA, or nothing opens it. Render `Banner.DoNotSell`, `RecallButton`, or your own button calling `useConsentActions().showOptOut()`.

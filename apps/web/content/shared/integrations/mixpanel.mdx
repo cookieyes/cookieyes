@@ -1,14 +1,23 @@
 ---
 title: Mixpanel
 description: Load Mixpanel only after analytics consent, or keep it silent until then, and stop it with its data removed when consent is withdrawn.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 `mixpanel()` loads Mixpanel after the visitor grants the analytics category. When consent is withdrawn, it uses Mixpanel's own opt-out, which stops events and throws away unsent ones, and removes everything Mixpanel stored in the browser, with no page reload. A second mode keeps Mixpanel on every page, opted out until consent. `mixpanelSync()` does the same for a Mixpanel you load yourself.
 
 ## Set it up
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `mixpanel()` to the `initCookieYes()` call you already have. `token` is the project token from `mixpanel.init("…")` in Mixpanel's snippet, 32 hexadecimal characters:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `mixpanel()` to the config you pass to `app.use(CookieYes, config)`. `token` is the project token from `mixpanel.init("…")` in Mixpanel's snippet, 32 hexadecimal characters:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -28,6 +37,28 @@ initCookieYes({
   integrations: [mixpanel({ token: "0123456789abcdef0123456789abcdef" })],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { mixpanel } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [mixpanel({ token: "0123456789abcdef0123456789abcdef" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">
@@ -109,7 +140,16 @@ With an identified user, Mixpanel's own opt-out deletes that user's profile and 
 
 ## Already loading Mixpanel yourself
 
+<Framework when="nextjs react core">
+
 Keep your own `mixpanel.init()` and add `mixpanelSync()` instead. It injects nothing: on grant it calls `opt_in_tracking()`, on withdrawal `opt_out_tracking()` with the same cleanup as above. Initialise Mixpanel before `initCookieYes()` runs, and start it opted out, or it tracks from the moment it loads:
+
+</Framework>
+<Framework when="vue">
+
+Keep your own `mixpanel.init()` and add `mixpanelSync()` instead. It injects nothing: on grant it calls `opt_in_tracking()`, on withdrawal `opt_out_tracking()` with the same cleanup as above. Initialise Mixpanel before `app.use(CookieYes, config)` runs, and start it opted out, or it tracks from the moment it loads:
+
+</Framework>
 
 ```ts check="false"
 mixpanel.init("0123456789abcdef0123456789abcdef", {

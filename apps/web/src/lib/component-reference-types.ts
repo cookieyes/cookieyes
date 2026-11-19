@@ -46,6 +46,10 @@ export type MergedComponentOption = ComponentSidecarEntry & {
   required: boolean;
 };
 
-export type ComponentReferenceData = {
-  components: Record<ComponentName, MergedComponentOption[]>;
-};
+/** The adapters that have a props table. Next.js pages use React's: same components. */
+export type ComponentAdapter = "react" | "vue";
+
+export type ComponentReferenceData = Record<
+  ComponentAdapter,
+  Record<ComponentName, MergedComponentOption[]>
+>;

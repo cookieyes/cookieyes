@@ -1,9 +1,9 @@
 {
   "$schema": "https://cookieyes.dev/schemas/peer-matrix-results.schema.json",
   "schemaVersion": 1,
-  "generatedAt": "2026-09-07T11:25:26.547Z",
-  "commit": "ff751e4214c64473cac9b2dde2467d9b975fcc63",
-  "matrixConfigHash": "sha256:d22e103be392eac346c780fed533fbb137ad4f9449570006250bf24540c29c04",
+  "generatedAt": "2026-11-11T08:23:13.249Z",
+  "commit": "3997e295c691d4fa5e6cda63d43abcc970395658",
+  "matrixConfigHash": "sha256:b722301322d131fa3b0ab6ded8408396211bb11b922a4b1bdff979f890326474",
   "subset": "full",
   "dimensions": {
     "varied": ["framework"],
@@ -232,11 +232,167 @@
       },
       "notes": null,
       "logsArtifact": "run-34116359076/next-16.3.0-react-19.2.8.log"
+    },
+    {
+      "id": "vue-3.5.0",
+      "role": "floor",
+      "label": "Vue 3.5.0 (declared floor)",
+      "app": "vue",
+      "packagesUnderTest": ["@cookieyes/vue"],
+      "requested": {
+        "vue": "3.5.0"
+      },
+      "resolved": {
+        "vue": "3.5.0"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-11T08:21:14.290Z",
+      "finishedAt": "2026-11-11T08:21:22.441Z",
+      "durationMs": 8151,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "asChild-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-click-commits-consent",
+              "outcome": "pass"
+            },
+            {
+              "name": "ssr-markup-hydrates-without-mismatch",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/vue-3.5.0.log"
+    },
+    {
+      "id": "vue-3.5.45",
+      "role": "newest",
+      "label": "Vue 3.5.45",
+      "app": "vue",
+      "packagesUnderTest": ["@cookieyes/vue"],
+      "requested": {
+        "vue": "3.5.45"
+      },
+      "resolved": {
+        "vue": "3.5.45"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-11T08:21:27.587Z",
+      "finishedAt": "2026-11-11T08:21:36.567Z",
+      "durationMs": 8979,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "asChild-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-click-commits-consent",
+              "outcome": "pass"
+            },
+            {
+              "name": "ssr-markup-hydrates-without-mismatch",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/vue-3.5.45.log"
     }
   ],
   "summary": {
-    "total": 3,
-    "pass": 3,
+    "total": 5,
+    "pass": 5,
     "fail": 0,
     "outcome": "pass"
   },

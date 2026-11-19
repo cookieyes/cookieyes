@@ -1,8 +1,8 @@
 /**
  * Resolves a shared docs body for the framework it is being published under.
  *
- * The docs are written once, in content/shared, and published three times, under
- * content/docs/{nextjs,react,core} (scripts/generate-framework-docs.mjs). This plugin runs
+ * The docs are written once, in content/shared, and published once per framework, under
+ * content/docs/{nextjs,react,vue,core} (scripts/generate-framework-docs.mjs). This plugin runs
  * after `<include>` has spliced the body into its wrapper, reads the framework from the
  * wrapper's path, and does two things:
  *
@@ -16,22 +16,27 @@
  *    everything the two share the import is the only line that differs; that is what makes
  *    the rewrite safe. It never touches `@cookieyes/nextjs/server` or `/styles-route`,
  *    which exist in one package only, and never touches prose, where the two names are
- *    usually being compared. Under JavaScript nothing is rewritten: `@cookieyes/core` has
- *    no components, so its examples are written for it by hand, in `<Framework when="core">`.
+ *    usually being compared. Under JavaScript and Vue nothing is rewritten: `@cookieyes/core`
+ *    has no components, and `@cookieyes/vue` has a different API from React's, so their
+ *    examples are written by hand, in `<Framework when="core">` and `<Framework when="vue">`.
+ *    A Vue page whose code still names a React package, uses a `tsx` fence or carries a
+ *    `"use client"` line fails the build instead of shipping the wrong code.
  *
  * A fence that names a framework on purpose opts out with ```ts frameworkSwap=false.
  */
 
-const FRAMEWORKS = ["nextjs", "react", "core"] as const;
+const FRAMEWORKS = ["nextjs", "react", "vue", "core"] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 /** `content/docs/<framework>/…` — the only place wrappers live. */
-const ROOT_IN_PATH = /[\\/]content[\\/]docs[\\/](nextjs|react|core)[\\/]/;
+const ROOT_IN_PATH = /[\\/]content[\\/]docs[\\/](nextjs|react|vue|core)[\\/]/;
 
 const SWAPPABLE = /@cookieyes\/(react|nextjs)(\/styles\.css|\/critical\.css)?(?![\w/-])/g;
 const OPT_OUT = /(^|\s)frameworkSwap=false(\s|$)/;
 const USE_CLIENT = /^"use client";\n\n?/;
 const APP_DIR_TITLE = /title="app\//;
+/** Kept identical to VUE_FORBIDDEN in framework-docs.ts; a test compares the two. */
+const VUE_FORBIDDEN = /@cookieyes\/(react|nextjs)(?![\w-])|"use client"|useSyncExternalStore/;
 
 // Structural types for the few node shapes touched. The mdast and mdast-util-mdx-jsx
 // typings are not dependencies of this app, and the plugin needs only this much.
@@ -41,6 +46,7 @@ interface Node {
 }
 interface CodeNode extends Node {
   type: "code";
+  lang?: string | null;
   value: string;
   meta?: string | null;
 }
@@ -100,7 +106,18 @@ function resolve(parent: Node, framework: Framework, where: string): void {
     }
 
     if (isCode(child)) {
-      if (framework !== "core" && !(child.meta && OPT_OUT.test(child.meta))) {
+      if (framework === "vue" && (child.lang === "tsx" || VUE_FORBIDDEN.test(child.value))) {
+        throw new Error(
+          `${where}: a Vue page has a React fence (tsx, a @cookieyes/react or @cookieyes/nextjs ` +
+            `import, a "use client" line or useSyncExternalStore). Wrap it in ` +
+            `<Framework when="nextjs react">.`,
+        );
+      }
+      if (
+        framework !== "core" &&
+        framework !== "vue" &&
+        !(child.meta && OPT_OUT.test(child.meta))
+      ) {
         child.value = child.value.replace(SWAPPABLE, (_m, _pkg, suffix: string | undefined) => {
           return `@cookieyes/${framework}${suffix ?? ""}`;
         });

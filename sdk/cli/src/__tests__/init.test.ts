@@ -15,10 +15,12 @@ const h = vi.hoisted(() => ({
   writeFileSync: vi.fn(),
   readFileSync: vi.fn((_path?: unknown): string => ""),
   detectFramework: vi.fn(() => null),
+  isNuxtProject: vi.fn(() => false),
   detectPackageManager: vi.fn(() => "npm"),
   installPackage: vi.fn(),
   nextProjectPaths: vi.fn(),
   reactProjectPaths: vi.fn(),
+  vueProjectPaths: vi.fn(),
 }));
 
 vi.mock("@clack/prompts", () => ({
@@ -40,12 +42,16 @@ vi.mock("node:fs", () => ({
   writeFileSync: h.writeFileSync,
   readFileSync: h.readFileSync,
 }));
-vi.mock("../utils/detect-framework.js", () => ({ detectFramework: h.detectFramework }));
+vi.mock("../utils/detect-framework.js", () => ({
+  detectFramework: h.detectFramework,
+  isNuxtProject: h.isNuxtProject,
+}));
 vi.mock("../utils/detect-pm.js", () => ({ detectPackageManager: h.detectPackageManager }));
 vi.mock("../utils/install.js", () => ({ installPackage: h.installPackage }));
 vi.mock("../utils/detect-layout.js", () => ({
   nextProjectPaths: h.nextProjectPaths,
   reactProjectPaths: h.reactProjectPaths,
+  vueProjectPaths: h.vueProjectPaths,
 }));
 
 import { cancel, note } from "@clack/prompts";
@@ -66,6 +72,16 @@ const REACT_PATHS = {
   entryCandidates: [{ path: "/proj/src/main.tsx", label: "src/main.tsx" }],
 };
 
+const VUE_PATHS = {
+  typescript: true,
+  consentManagerPath: "/proj/src/consent-manager.ts",
+  consentManagerLabel: "src/consent-manager.ts",
+  rootPath: "/proj/src/components/CookieYesRoot.vue",
+  entryPath: "/proj/src/main.ts",
+  entryLabel: "src/main.ts",
+  appPath: "/proj/src/App.vue",
+};
+
 /** All strings written to disk during a runInit() call. */
 function writtenContents(): string[] {
   return h.writeFileSync.mock.calls.map((c) => String(c[1]));
@@ -77,10 +93,12 @@ beforeEach(() => {
   h.existsSync.mockReturnValue(false);
   h.readFileSync.mockReturnValue("");
   h.detectFramework.mockReturnValue(null);
+  h.isNuxtProject.mockReturnValue(false);
   h.detectPackageManager.mockReturnValue("npm");
   h.installPackage.mockResolvedValue(undefined);
   h.nextProjectPaths.mockReturnValue(NEXT_PATHS);
   h.reactProjectPaths.mockReturnValue(REACT_PATHS);
+  h.vueProjectPaths.mockReturnValue(VUE_PATHS);
   process.stdin.isTTY = true;
 });
 
@@ -145,6 +163,186 @@ describe("runInit — React (self-hosted, CCPA, locales, skip install)", () => {
       expect.stringContaining("github.com/cookieyes/cookieyes"),
       expect.any(String),
     );
+  });
+});
+
+const VUE_MAIN =
+  "import { createApp } from 'vue'\nimport App from './App.vue'\n\ncreateApp(App).mount('#app')\n";
+const VUE_APP =
+  "<script setup lang=\"ts\">\nimport A from './A.vue'\n</script>\n\n<template>\n  <A />\n</template>\n";
+
+/** The `src/...` files init wrote, by path. */
+function writtenTo(path: string): string | undefined {
+  const call = h.writeFileSync.mock.calls.find((c) => c[0] === path);
+  return call === undefined ? undefined : String(call[1]);
+}
+
+function noteTexts(): string[] {
+  return vi.mocked(note).mock.calls.map((c) => `${String(c[0])}|${String(c[1])}`);
+}
+
+describe("runInit: Vue (cookie-only, GDPR)", () => {
+  it("scaffolds the consent setup and root component and installs the vue adapter", async () => {
+    h.select
+      .mockResolvedValueOnce("vue")
+      .mockResolvedValueOnce("cookie-only")
+      .mockResolvedValueOnce("GDPR")
+      .mockResolvedValueOnce("light");
+    h.multiselect.mockResolvedValueOnce([]);
+    h.confirm.mockResolvedValueOnce(true);
+
+    await runInit();
+
+    const setup = writtenTo(VUE_PATHS.consentManagerPath);
+    expect(setup).toContain('import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";');
+    expect(setup).toContain('import "@cookieyes/vue/styles.css";');
+    expect(setup).toContain('const config: CookieYesConfig = {\n  mode: "cookie-only",');
+    expect(setup).toContain("export function setupConsent(app: App): void {");
+    expect(setup).toContain("app.use(CookieYes, config);");
+    const root = writtenTo(VUE_PATHS.rootPath);
+    expect(root).toContain('<script setup lang="ts">');
+    expect(root).toContain("<CookieBanner />\n  <CookiePreferences />\n  <RecallButton />");
+    expect(root).not.toContain("CookieOptOut");
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/vue", "npm", expect.any(String));
+  });
+
+  it("writes plain JavaScript for a project whose entry is main.js", async () => {
+    h.vueProjectPaths.mockReturnValue({
+      ...VUE_PATHS,
+      typescript: false,
+      consentManagerPath: "/proj/src/consent-manager.js",
+      consentManagerLabel: "src/consent-manager.js",
+    });
+    await runInit(["--framework=vue", "--yes", "--no-install"]);
+
+    const setup = writtenTo("/proj/src/consent-manager.js");
+    expect(setup).toContain('import { CookieYes } from "@cookieyes/vue";');
+    expect(setup).toContain("const config = {");
+    expect(setup).toContain("export function setupConsent(app) {");
+    expect(setup).not.toContain("CookieYesConfig");
+    expect(writtenTo(VUE_PATHS.rootPath)).toContain("<script setup>");
+  });
+});
+
+describe("runInit: Vue (self-hosted, CCPA, locales)", () => {
+  it("emits apiUrl, the opt-out component and locale imports", async () => {
+    await runInit([
+      "--framework=vue",
+      "--api-url=https://api.example.com/consent",
+      "--regulation=CCPA",
+      "--color-scheme=dark",
+      "--locales=es,fr",
+      "--install",
+    ]);
+
+    const setup = writtenTo(VUE_PATHS.consentManagerPath);
+    expect(setup).toContain('apiUrl: "https://api.example.com/consent",');
+    expect(setup).toContain('regulation: "CCPA"');
+    expect(setup).toContain('import { es } from "@cookieyes/translations/es";');
+    expect(setup).toContain("i18n: { messages: { es, fr } },");
+    expect(writtenTo(VUE_PATHS.rootPath)).toContain("<CookieOptOut />");
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/vue", "npm", expect.any(String));
+    expect(h.installPackage).toHaveBeenCalledWith(
+      "@cookieyes/translations",
+      "npm",
+      expect.any(String),
+    );
+  });
+});
+
+describe("runInit: Vue patching", () => {
+  it("wires an existing main.ts and App.vue", async () => {
+    h.existsSync.mockImplementation(
+      (p: unknown) => String(p).endsWith("main.ts") || String(p).endsWith("App.vue"),
+    );
+    h.readFileSync.mockImplementation((p: unknown) =>
+      String(p).endsWith("main.ts") ? VUE_MAIN : VUE_APP,
+    );
+
+    await runInit(["--framework=vue", "--yes", "--no-install"]);
+
+    expect(writtenTo(VUE_PATHS.entryPath)).toContain("setupConsent(app)\napp.mount('#app')");
+    expect(writtenTo(VUE_PATHS.appPath)).toContain("<template>\n  <CookieYesRoot />");
+    expect(noteTexts().some((t) => t.endsWith("|Manual step needed"))).toBe(false);
+  });
+
+  it("prints manual steps and writes nothing when neither file can be patched", async () => {
+    h.existsSync.mockImplementation(
+      (p: unknown) => String(p).endsWith("main.ts") || String(p).endsWith("App.vue"),
+    );
+    h.readFileSync.mockImplementation((p: unknown) =>
+      String(p).endsWith("main.ts") ? "start();\n" : "<template><div /></template>\n",
+    );
+
+    await runInit(["--framework=vue", "--yes", "--no-install"]);
+
+    expect(writtenTo(VUE_PATHS.entryPath)).toBeUndefined();
+    expect(writtenTo(VUE_PATHS.appPath)).toBeUndefined();
+    const manual = noteTexts().filter((t) => t.endsWith("|Manual step needed"));
+    expect(manual).toHaveLength(2);
+    expect(manual[0]).toContain("setupConsent(app);");
+    expect(manual[1]).toContain('import CookieYesRoot from "./components/CookieYesRoot.vue";');
+  });
+
+  it("prints manual steps when main.ts and App.vue do not exist", async () => {
+    await runInit(["--framework=vue", "--yes", "--no-install"]);
+    expect(noteTexts().filter((t) => t.endsWith("|Manual step needed"))).toHaveLength(2);
+  });
+
+  it("leaves everything alone when the project is already set up", async () => {
+    h.existsSync.mockReturnValue(true);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      String(p).endsWith("main.ts")
+        ? "setupConsent(app)\n"
+        : "<script setup>\nimport CookieYesRoot from './x.vue'\n</script>\n",
+    );
+
+    await runInit(["--framework=vue", "--yes", "--no-install"]);
+
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+    expect(noteTexts().some((t) => t.endsWith("|Manual step needed"))).toBe(false);
+    expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already exists, skipped"));
+    expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already calls setupConsent"));
+    expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already uses CookieYesRoot"));
+  });
+});
+
+describe("runInit: Vue in a Nuxt project", () => {
+  beforeEach(() => {
+    h.isNuxtProject.mockReturnValue(true);
+  });
+
+  it("exits non-zero and writes nothing with --framework vue", async () => {
+    vi.spyOn(process, "exit").mockImplementation(((code: number) => {
+      throw new Error(`exit ${code}`);
+    }) as never);
+    await expect(runInit(["--framework=vue", "--yes"])).rejects.toThrow("exit 1");
+    expect(cancel).toHaveBeenCalledWith("--framework vue is not supported in a Nuxt project.");
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+    expect(h.installPackage).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it("prints the manual step and writes nothing when Vue is picked at the prompt", async () => {
+    h.select
+      .mockResolvedValueOnce("vue")
+      .mockResolvedValueOnce("cookie-only")
+      .mockResolvedValueOnce("GDPR")
+      .mockResolvedValueOnce("light");
+    h.multiselect.mockResolvedValueOnce([]);
+    h.confirm.mockResolvedValueOnce(true);
+
+    await runInit();
+
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+    expect(h.installPackage).not.toHaveBeenCalled();
+    expect(noteTexts().some((t) => t.includes("Nuxt is not supported"))).toBe(true);
+  });
+
+  it("still takes a Nuxt project as vanilla with --yes", async () => {
+    h.detectFramework.mockReturnValue("vanilla" as never);
+    await runInit(["--yes", "--no-install"]);
+    expect(writtenContents().some((w) => w.includes("getOrCreateConsentRuntime"))).toBe(true);
   });
 });
 
@@ -347,6 +545,10 @@ describe("parseInitFlags", () => {
 
   it("treats an API URL as a self-hosted setup", () => {
     expect(parseInitFlags(["--api-url=https://api.example.com/consent"]).mode).toBe("self-hosted");
+  });
+
+  it("accepts vue as a framework", () => {
+    expect(parseInitFlags(["--framework", "vue"]).framework).toBe("vue");
   });
 
   it("reads an empty --locales as no extra languages", () => {

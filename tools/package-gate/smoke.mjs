@@ -86,6 +86,12 @@ await check("initCookieYes() via require", () => {
   if (typeof initCookieYes(minimalConfig) !== "object") throw new Error("returned no runtime");
 });
 
+await check("@cookieyes/vue exposes the plugin and getCookieYes", async () => {
+  const vue = await import("@cookieyes/vue");
+  if (typeof vue.CookieYes?.install !== "function") throw new Error("CookieYes is not a plugin");
+  if (typeof vue.getCookieYes !== "function") throw new Error("getCookieYes is missing");
+});
+
 console.log(`${passed} checks passed`);
 if (failures.length) {
   for (const failure of failures) console.error(`✗ ${failure}`);

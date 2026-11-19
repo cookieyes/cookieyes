@@ -1,7 +1,7 @@
 ---
 title: Google Ads
 description: Load Google Ads conversion tracking with one integration and let the SDK keep its Consent Mode signals up to date.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 `googleAds()` loads Google Ads conversion tracking and registers your conversion id. Consent reaches Google through Google Consent Mode: the SDK tells Google what the visitor allowed, on page load and on every change.
@@ -10,7 +10,16 @@ frameworks: [nextjs, react, core]
 
 First add the Consent Mode default, once, before any Google tag: [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
 
+<Framework when="nextjs react core">
+
 Then install the integrations package and add `googleAds()` to the `initCookieYes()` call you already have:
+
+</Framework>
+<Framework when="vue">
+
+Then install the integrations package and add `googleAds()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -30,6 +39,28 @@ initCookieYes({
   integrations: [googleAds({ conversionId: "AW-XXXXXXXXX" })],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { googleAds } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [googleAds({ conversionId: "AW-XXXXXXXXX" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">

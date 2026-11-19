@@ -1,14 +1,26 @@
 ---
 title: useConsent
 description: Read the visitor's current consent state in a component, re-rendering whenever it changes, for settings pages and status displays.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
 
+<Framework when="nextjs react">
+
 Returns the visitor's current consent as a plain object and re-renders your component whenever it changes. Use it to show state: a settings page, a "your choices" panel, a status line. To change consent, use [`useConsentActions()`](/docs/hooks/use-consent-actions).
 
+</Framework>
+
+<Framework when="vue">
+
+Returns the visitor's current consent as a computed ref and updates your component whenever it changes. Use it to show state: a settings page, a "your choices" panel, a status line. To change consent, use [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+</Framework>
+
 ## Example
+
+<Framework when="nextjs react">
 
 ```tsx title="app/consent-status.tsx"
 "use client";
@@ -32,7 +44,36 @@ export function ConsentStatus() {
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/ConsentStatus.vue"
+<script setup lang="ts">
+import { useConsent } from "@cookieyes/vue";
+
+const consent = useConsent();
+</script>
+
+<template>
+  <p v-if="!consent.hasActed">No choice made yet.</p>
+  <ul v-else>
+    <li v-for="(granted, id) in consent.committedCategories" :key="id">
+      {{ id }}: {{ granted ? "allowed" : "blocked" }}
+    </li>
+  </ul>
+</template>
+```
+
+</Framework>
+
 ## What it returns
+
+<Framework when="vue">
+
+The fields below are on the ref's `.value`. In a template Vue unwraps the ref, so you write `consent.hasActed`.
+
+</Framework>
 
 | Field | Meaning |
 | --- | --- |
@@ -51,15 +92,41 @@ Two fields look alike:
 - **Saved values: `committedCategories`.** They change only when the visitor accepts, rejects, saves or resets.
 - **Live values: `categories`.** They change on every switch the visitor flips in the dialog, before Save.
 
+<Framework when="nextjs react">
+
 Load anything from the saved values, `committedCategories`: scripts, embeds, trackers. Or use [`useConsentCategory(id)`](/docs/hooks/focused-hooks), which reads the saved value for one category and re-renders less. Use the live values, `categories`, only to drive the checkboxes of your own dialog.
 
+</Framework>
+
+<Framework when="vue">
+
+Load anything from the saved values, `committedCategories`: scripts, embeds, trackers. Or use [`useConsentCategory(id)`](/docs/hooks/focused-hooks), which reads the saved value for one category and only changes when that one does. Use the live values, `categories`, only to drive the checkboxes of your own dialog.
+
+</Framework>
+
 ## Good to know
+
+<Framework when="nextjs react">
 
 It re-renders on every consent change, including a dialog opening or closing. Call it in the component that shows the state, not at the top of your app.
 
 Before the runtime is ready, on the server and on the very first paint, it returns a fresh-visitor snapshot instead of throwing: `hasActed: false`, only required categories granted.
 
+</Framework>
+
+<Framework when="vue">
+
+It updates on every consent change, including a dialog opening or closing. Call it in the component that shows the state, not at the top of your app.
+
+During server rendering and the hydrating render it returns a fresh-visitor snapshot: `hasActed: false`, only required categories granted. If a [`CookieYesProvider`](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server) above it was given `initialConsent`, the snapshot carries that visitor's saved choice instead. It switches to the live state once the component has mounted.
+
+It throws if `app.use(CookieYes, config)` has not run, and must be called inside `setup()`.
+
+</Framework>
+
 ## Common mistakes
+
+<Framework when="nextjs react">
 
 **A tracker loads the moment someone flips a switch.**
 You read `categories`. Read `committedCategories`, or use `useConsentCategory()`.
@@ -67,6 +134,17 @@ You read `categories`. Read `committedCategories`, or use `useConsentCategory()`
 **Everything is default and there is no error.**
 `initCookieYes()` did not run before this component rendered. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
 
+</Framework>
+
+<Framework when="vue">
+
+**A tracker loads the moment someone flips a switch.**
+You read `categories`. Read `committedCategories`, or use `useConsentCategory()`.
+
+**It throws "could not find CookieYes".**
+`app.use(CookieYes, config)` did not run before the app mounted, or you called it outside `setup()`. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
+
+</Framework>
 **`hasActed` is `true` but every category is `false`.**
 The visitor rejected everything. Correct.
 

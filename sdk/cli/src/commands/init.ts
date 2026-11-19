@@ -14,11 +14,17 @@ import {
   text,
 } from "@clack/prompts";
 import pc from "picocolors";
-import { detectFramework, type Framework } from "../utils/detect-framework.js";
-import { nextProjectPaths, reactProjectPaths } from "../utils/detect-layout.js";
+import { detectFramework, type Framework, isNuxtProject } from "../utils/detect-framework.js";
+import { nextProjectPaths, reactProjectPaths, vueProjectPaths } from "../utils/detect-layout.js";
 import { detectPackageManager, type PackageManager } from "../utils/detect-pm.js";
 import { installPackage } from "../utils/install.js";
-import { insertImport, patchNextjsLayout, patchNextjsPagesApp } from "../utils/patchers.js";
+import {
+  insertImport,
+  patchNextjsLayout,
+  patchNextjsPagesApp,
+  patchVueApp,
+  patchVueMain,
+} from "../utils/patchers.js";
 
 // ─── Option builders ──────────────────────────────────────────────────────────
 
@@ -167,6 +173,45 @@ function reactProviderTemplate(opts: OptionInputs, isCCPA: boolean): string {
   ].join("\n");
 }
 
+function vueConsentManagerTemplate(opts: OptionInputs, typescript: boolean): string {
+  return [
+    ...(typescript
+      ? [
+          `import type { App } from "vue";`,
+          `import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";`,
+        ]
+      : [`import { CookieYes } from "@cookieyes/vue";`]),
+    `import "@cookieyes/vue/styles.css";`,
+    ...localeImportLines(opts),
+    ``,
+    `const config${typescript ? ": CookieYesConfig" : ""} = ${buildConfigLiteral(opts, "")};`,
+    ``,
+    `export function setupConsent(app${typescript ? ": App): void" : ")"} {`,
+    `  app.use(CookieYes, config);`,
+    `}`,
+    ``,
+  ].join("\n");
+}
+
+function vueRootTemplate(typescript: boolean, isCCPA: boolean): string {
+  return [
+    `<script setup${typescript ? ' lang="ts"' : ""}>`,
+    `import {`,
+    `  CookieBanner,${isCCPA ? "\n  CookieOptOut," : ""}`,
+    `  CookiePreferences,`,
+    `  RecallButton,`,
+    `} from "@cookieyes/vue";`,
+    `</script>`,
+    ``,
+    `<template>`,
+    `  <CookieBanner />`,
+    `  <CookiePreferences />${isCCPA ? "\n  <CookieOptOut />" : ""}`,
+    `  <RecallButton />`,
+    `</template>`,
+    ``,
+  ].join("\n");
+}
+
 function vanillaTemplate(opts: OptionInputs): string {
   const coreImport = `import { getOrCreateConsentRuntime } from "@cookieyes/core";`;
   const localeImports = localeImportLines(opts);
@@ -231,6 +276,20 @@ function patchReactEntry(
   return entry.label;
 }
 
+/** Result of adding a Vue setup line to an existing file. */
+type VuePatch = "patched" | "already" | "manual" | "missing";
+
+function patchVueFile(path: string, patch: (src: string) => string | null, done: RegExp): VuePatch {
+  if (!existsSync(path)) return "missing";
+  const src = readFileSync(path, "utf-8");
+  const patched = patch(src);
+  if (patched) {
+    writeFileSync(path, patched, "utf-8");
+    return "patched";
+  }
+  return done.test(src) ? "already" : "manual";
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function writeFile(path: string, content: string, label: string) {
@@ -242,6 +301,7 @@ function writeFile(path: string, content: string, label: string) {
 function pkgForFramework(framework: Framework): string {
   if (framework === "nextjs") return "@cookieyes/nextjs";
   if (framework === "react") return "@cookieyes/react";
+  if (framework === "vue") return "@cookieyes/vue";
   return "@cookieyes/core";
 }
 
@@ -321,7 +381,7 @@ export function parseInitFlags(args: readonly string[]): InitFlags {
         flags.install = false;
         break;
       case "--framework":
-        flags.framework = oneOf(name, value(), ["nextjs", "react", "vanilla"] as const);
+        flags.framework = oneOf(name, value(), ["nextjs", "react", "vue", "vanilla"] as const);
         break;
       case "--mode":
         flags.mode = oneOf(name, value(), ["cookie-only", "self-hosted"] as const);
@@ -386,6 +446,7 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
   intro(pc.bgBlue(pc.bold(pc.white("  CookieYes  "))));
 
   const detected = detectFramework(cwd);
+  const nuxt = isNuxtProject(cwd);
   const pm = detectPackageManager(cwd);
 
   // ── Framework ──────────────────────────────────────────────────────────────
@@ -407,7 +468,16 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
                 label: "React",
                 hint: detected === "react" ? "detected" : "Vite, CRA, etc.",
               },
-              { value: "vanilla" as const, label: "Vanilla JS / Other" },
+              {
+                value: "vue" as const,
+                label: "Vue",
+                hint: detected === "vue" ? "detected" : "Vite, create-vue, etc.",
+              },
+              {
+                value: "vanilla" as const,
+                label: "Vanilla JS / Other",
+                ...(nuxt ? { hint: "Nuxt detected, not supported by the Vue setup yet" } : {}),
+              },
             ],
             initialValue: detected ?? ("nextjs" as const),
           }),
@@ -418,6 +488,13 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
     process.exit(0);
   }
   const framework = frameworkAnswer as Framework;
+
+  // Nuxt has no `src/main.ts` or `App.vue` to patch; writing them anyway would leave dead
+  // files next to a banner that never renders.
+  if (framework === "vue" && nuxt && flags.framework === "vue") {
+    cancel("--framework vue is not supported in a Nuxt project.");
+    process.exit(1);
+  }
 
   // ── Mode ───────────────────────────────────────────────────────────────────
   const modeAnswer =
@@ -673,6 +750,80 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
           `  <App />`,
           `  <CookieYesRoot />`,
           `</>`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+  } else if (framework === "vue") {
+    if (nuxt) {
+      note(
+        [
+          `Nuxt is not supported by the Vue setup yet, so nothing was written.`,
+          `Install ${pkg} and add a plugin that calls app.use(CookieYes, config):`,
+          `https://github.com/cookieyes/cookieyes/tree/main/sdk/vue`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+      outro(`Install when ready: ${pc.cyan(installHint(pm, pkg))}`);
+      return;
+    }
+    const paths = vueProjectPaths(cwd);
+    const rootLabel = "src/components/CookieYesRoot.vue";
+
+    if (!existsSync(paths.consentManagerPath)) {
+      writeFile(
+        paths.consentManagerPath,
+        vueConsentManagerTemplate(optionInputs, paths.typescript),
+        paths.consentManagerLabel,
+      );
+    } else {
+      log.info(`${pc.yellow(paths.consentManagerLabel)} already exists, skipped.`);
+    }
+
+    if (!existsSync(paths.rootPath)) {
+      writeFile(paths.rootPath, vueRootTemplate(paths.typescript, isCCPA), rootLabel);
+    } else {
+      log.info(`${pc.yellow(rootLabel)} already exists, skipped.`);
+    }
+
+    const main = patchVueFile(paths.entryPath, patchVueMain, /setupConsent/);
+    if (main === "patched") {
+      log.success(`Updated ${pc.cyan(paths.entryLabel)}: called setupConsent`);
+    } else if (main === "already") {
+      log.info(`${pc.yellow(paths.entryLabel)} already calls setupConsent, skipped.`);
+    } else {
+      note(
+        [
+          `Call setupConsent(app) in ${paths.entryLabel}, after createApp and before mount:`,
+          ``,
+          `import { setupConsent } from "./consent-manager";`,
+          ``,
+          `const app = createApp(App);`,
+          `setupConsent(app);`,
+          `app.mount("#app");`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    const app = patchVueFile(paths.appPath, patchVueApp, /CookieYesRoot/);
+    if (app === "patched") {
+      log.success(`Updated ${pc.cyan("src/App.vue")}: mounted CookieYesRoot`);
+    } else if (app === "already") {
+      log.info(`${pc.yellow("src/App.vue")} already uses CookieYesRoot, skipped.`);
+    } else {
+      note(
+        [
+          `Render <CookieYesRoot /> once in src/App.vue, before the page content:`,
+          ``,
+          `<script setup${paths.typescript ? ' lang="ts"' : ""}>`,
+          `import CookieYesRoot from "./components/CookieYesRoot.vue";`,
+          `</script>`,
+          ``,
+          `<template>`,
+          `  <CookieYesRoot />`,
+          `  <!-- your page content -->`,
+          `</template>`,
         ].join("\n"),
         "Manual step needed",
       );

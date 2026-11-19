@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { detectFramework } from "../utils/detect-framework.js";
+import { detectFramework, isNuxtProject } from "../utils/detect-framework.js";
 
 let dir: string;
 
@@ -45,5 +45,37 @@ describe("detectFramework", () => {
   it("returns null when package.json is malformed", () => {
     writeFileSync(join(dir, "package.json"), "{ not json", "utf-8");
     expect(detectFramework(dir)).toBeNull();
+  });
+
+  it("detects Vue from a vue dependency", () => {
+    writePkg({ dependencies: { vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("vue");
+  });
+
+  it("keeps React when both react and vue are present", () => {
+    writePkg({ dependencies: { react: "19.0.0", vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("react");
+  });
+
+  it("never takes a Nuxt project for plain Vue", () => {
+    writePkg({ dependencies: { nuxt: "4.0.0", vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("vanilla");
+  });
+});
+
+describe("isNuxtProject", () => {
+  it("is true when nuxt is a dependency or a devDependency", () => {
+    writePkg({ dependencies: { nuxt: "4.0.0" } });
+    expect(isNuxtProject(dir)).toBe(true);
+    writePkg({ devDependencies: { nuxt: "4.0.0" } });
+    expect(isNuxtProject(dir)).toBe(true);
+  });
+
+  it("is false without nuxt, without package.json and with a malformed one", () => {
+    expect(isNuxtProject(dir)).toBe(false);
+    writePkg({ dependencies: { vue: "3.5.0" } });
+    expect(isNuxtProject(dir)).toBe(false);
+    writeFileSync(join(dir, "package.json"), "{ not json", "utf-8");
+    expect(isNuxtProject(dir)).toBe(false);
   });
 });

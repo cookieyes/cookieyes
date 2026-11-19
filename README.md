@@ -22,6 +22,7 @@ Open-source cookie consent SDK for developers. Build consent banners and manage 
 | [`@cookieyes/core`](./sdk/core) | Headless consent engine — zero UI, zero deps | [![npm](https://img.shields.io/npm/v/@cookieyes/core)](https://www.npmjs.com/package/@cookieyes/core) |
 | [`@cookieyes/ui`](./sdk/ui) | Framework-free banner layer: styles, tokens, markup and accessibility behaviour every adapter shares | [![npm](https://img.shields.io/npm/v/@cookieyes/ui)](https://www.npmjs.com/package/@cookieyes/ui) |
 | [`@cookieyes/react`](./sdk/react) | React adapter — components and hooks | [![npm](https://img.shields.io/npm/v/@cookieyes/react)](https://www.npmjs.com/package/@cookieyes/react) |
+| [`@cookieyes/vue`](./sdk/vue) | Vue 3 adapter: a plugin, components and composables | [![npm](https://img.shields.io/npm/v/@cookieyes/vue)](https://www.npmjs.com/package/@cookieyes/vue) |
 | [`@cookieyes/vanilla`](./sdk/vanilla) | The banner for any page with no framework | [![npm](https://img.shields.io/npm/v/@cookieyes/vanilla)](https://www.npmjs.com/package/@cookieyes/vanilla) |
 | [`@cookieyes/scripts`](./sdk/scripts) | Ready-made, consent-gated third-party integrations (Segment, custom scripts, …) | [![npm](https://img.shields.io/npm/v/@cookieyes/scripts)](https://www.npmjs.com/package/@cookieyes/scripts) |
 | [`@cookieyes/nextjs`](./sdk/nextjs) | Next.js App Router adapter | [![npm](https://img.shields.io/npm/v/@cookieyes/nextjs)](https://www.npmjs.com/package/@cookieyes/nextjs) |
@@ -53,17 +54,26 @@ specific edge case.
      `pnpm generate:peer-matrix-readme` instead. -->
 | Next.js | React | React DOM | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |
 |---|---|---|---|---|---|---|
-| 14.0.0 (declared floor) | 18.0.0 (declared floor) | 18.0.0 | 2026-08-27 | pass | pass | pass |
-| 15.5.24 | 18.3.1 | 18.3.1 | 2026-08-27 | pass | pass | pass |
-| 16.3.0 | 19.2.8 | 19.2.8 | 2026-08-27 | pass | pass | pass |
+| 14.0.0 (declared floor) | 18.0.0 (declared floor) | 18.0.0 | 2026-09-07 | pass | pass | pass |
+| 15.5.24 | 18.3.1 | 18.3.1 | 2026-09-07 | pass | pass | pass |
+| 16.3.0 | 19.2.8 | 19.2.8 | 2026-09-07 | pass | pass | pass |
 
 Verified by installing the exact versions above, building a real Next.js app, server-rendering it and asserting the banner's HTML (and a returning visitor's cookie value) is correct, then running behaviour assertions in `jsdom` via [`@cookieyes/test`](./sdk/test). Node 20, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
 
+| Vue | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |
+|---|---|---|---|---|
+| 3.5.0 (declared floor) | 2026-11-11 | pass | pass | pass |
+| 3.5.45 | 2026-11-11 | pass | pass | pass |
+
+Verified by installing the exact Vue versions above, building a real Vite app, rendering it on the server with `vue/server-renderer` and asserting the banner's HTML (and a returning visitor's cookie value) is correct, then running behaviour and hydration assertions in `jsdom`. Node 20, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
+
 **Not verified by this table:**
 - Any Next.js/React version outside the rows above.
+- Any Vue version outside the rows above.
 - npm/yarn as the install client.
 - No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).
 - Node, package-manager and module-resolution dimensions are not yet varied — every combination above ran on Node 20 / pnpm / moduleResolution=bundler.
+- Server rendering of the Vue rows is asserted on the Vite SSR build's render function, not a live server, so it does not prove a particular server framework forwards the Cookie header.
 <!-- PEER-MATRIX:END -->
 
 ## Quick start
@@ -150,6 +160,7 @@ sdk/
   core/          @cookieyes/core         headless engine
   ui/            @cookieyes/ui           framework-free banner layer
   react/         @cookieyes/react        React components + hooks
+  vue/           @cookieyes/vue          Vue 3 plugin + components + composables
   vanilla/       @cookieyes/vanilla      banner with no framework
   scripts/       @cookieyes/scripts      consent-gated third-party integrations
   nextjs/        @cookieyes/nextjs       Next.js App Router adapter

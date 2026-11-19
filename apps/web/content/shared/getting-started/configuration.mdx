@@ -1,8 +1,10 @@
 ---
 title: Configuration
 description: Every option of initCookieYes(), grouped by what it changes.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
+
+<Framework when="nextjs react core">
 
 `initCookieYes(config)` is the one place you configure CookieYes. `mode` is the only required option; everything else has a sensible default.
 
@@ -13,6 +15,27 @@ initCookieYes({
   theme: { primaryColor: "#1863dc" },
 });
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+`app.use(CookieYes, config)` is the one place you configure CookieYes. `mode` is the only required option; everything else has a sensible default. The config is the same `CookieYesConfig` that `initCookieYes()` takes in the other packages.
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "cookie-only",
+    regulation: "GDPR",
+    theme: { primaryColor: "#1863dc" },
+  });
+}
+```
+
+</Framework>
 
 ## Options
 
@@ -38,7 +61,7 @@ initCookieYes({
 
 ### `theme`
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 Nine keys for colour, corner radius and font. Each is listed with its default on [Theme tokens](/docs/styling/theme-tokens).
 
@@ -56,7 +79,7 @@ Nine keys for colour, corner radius and font. Each is listed with its default on
 
 ### `i18n`
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 `messages` per language, `locale`, `detectBrowserLanguage` and `loadLanguage`. See [Translations](/docs/translations).
 
@@ -70,7 +93,17 @@ Nine keys for colour, corner radius and font. Each is listed with its default on
 
 ### `networkBlocker`
 
+<Framework when="nextjs react core">
+
 `rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Needs `registerNetworkBlocker()` called once before `initCookieYes()`. See [Network blocking](/docs/network-blocking).
+
+</Framework>
+
+<Framework when="vue">
+
+`rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Needs `registerNetworkBlocker()` called once before `app.use(CookieYes, config)`. See [Network blocking](/docs/network-blocking).
+
+</Framework>
 
 ## Choosing a privacy law: the `regulation` option
 
@@ -84,7 +117,7 @@ Set the strictest law your visitors fall under, `"GDPR"` for most sites, and shi
 
 Under `"CCPA"`, a browser that sends Global Privacy Control starts the visitor opted out until they choose; `region.honorGpc: false` turns this off. The signal never changes which banner shows. To read it yourself, `readGpc()` returns `true` while the browser is sending it, and every [consent record](/docs/getting-started/self-hosted) carries it as `gpc`.
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens it.
 
@@ -93,6 +126,8 @@ Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens 
 ## Consent categories
 
 Leave `categories` out and you get the built-in five: `necessary` (required), `functional`, `analytics`, `performance` and `advertisement`. To use your own list:
+
+<Framework when="nextjs react core">
 
 ```ts title="src/consent.ts"
 import { initCookieYes } from "@cookieyes/core";
@@ -106,6 +141,28 @@ initCookieYes({
   ],
 });
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes } from "@cookieyes/vue";
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, {
+    mode: "cookie-only",
+    categories: [
+      { id: "necessary", required: true, label: "Essential" },
+      { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+      { id: "marketing", label: "Marketing", gcm: ["ad_storage", "ad_user_data"] },
+    ],
+  });
+}
+```
+
+</Framework>
 
 Ids must be unique and contain no `,` or `:`, and one category must be `required: true`; otherwise the list is rejected with a console warning and the built-in five are used. Decide your ids early: adding, removing or renaming an id later makes every returning visitor choose again. Labels and descriptions can change freely.
 
@@ -128,7 +185,7 @@ Your `categories` list broke one of the rules above; the console warning says wh
 
 ## Next steps
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 - [Translations](/docs/translations): every text in every language, through `i18n`
 - [Theme tokens](/docs/styling/theme-tokens): what each `theme` value changes

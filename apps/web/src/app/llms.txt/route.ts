@@ -9,6 +9,7 @@ import { source } from "@/lib/source";
 const SECTIONS: Record<string, string> = {
   nextjs: "Next.js",
   react: "React",
+  vue: "Vue",
   core: "JavaScript",
   changelog: "Changelog",
 };

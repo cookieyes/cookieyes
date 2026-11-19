@@ -1,14 +1,23 @@
 ---
 title: Custom integration
 description: Load any script only after consent, with customScript() or a small integration object of your own.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 Two ways to gate a tool that has no ready-made integration. `customScript()` covers most cases: give it a script URL and a category. Write an integration object of your own when the tool needs more, for example a call to its own consent API instead of removing the script.
 
 ## Load a script after consent
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `customScript()` to the `initCookieYes()` call you already have:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `customScript()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -34,6 +43,34 @@ initCookieYes({
   ],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { customScript } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [
+    customScript({
+      id: "chat-widget",
+      src: "https://cdn.example.com/widget.js",
+      category: "functional",
+    }),
+  ],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">
@@ -115,6 +152,17 @@ To see every integration with its current status, run this in the console:
 
 ```ts check="false"
 import { getCookieYes } from "@cookieyes/react";
+
+console.table(getCookieYes().getIntegrations());
+```
+
+</Framework>
+<Framework when="vue">
+
+To see every integration with its current status, run this in the console:
+
+```ts check="false"
+import { getCookieYes } from "@cookieyes/vue";
 
 console.table(getCookieYes().getIntegrations());
 ```

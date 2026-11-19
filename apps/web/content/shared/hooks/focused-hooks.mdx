@@ -1,12 +1,22 @@
 ---
 title: Focused hooks
 description: "Ten small hooks that each answer one question: is this category granted, which law applies, is the banner showing, and more."
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What they are
 
+<Framework when="nextjs react">
+
 [`useConsent()`](/docs/hooks/use-consent) gives you everything and re-renders on every change. The hooks on this page each answer one question and re-render only when that answer changes. None of them throws: before the runtime is ready they return a safe default.
+
+</Framework>
+
+<Framework when="vue">
+
+[`useConsent()`](/docs/hooks/use-consent) gives you everything and updates on every change. The composables on this page each answer one question and change only when that answer changes. They return computed refs, so read `.value` in script and use them directly in templates; the Returns column is the type of that value. `useLanguage()` and `useReloadNotice()` return an object whose fields are refs, plus functions. Every one of them throws if `app.use(CookieYes, config)` has not run, and must be called inside `setup()`.
+
+</Framework>
 
 | You want to know | Hook | Returns |
 | --- | --- | --- |
@@ -22,6 +32,8 @@ frameworks: [nextjs, react]
 
 ## Show something only with consent
 
+<Framework when="nextjs react">
+
 ```tsx title="app/analytics-widget.tsx"
 "use client";
 
@@ -34,6 +46,27 @@ export function AnalyticsWidget() {
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/AnalyticsWidget.vue"
+<script setup lang="ts">
+import { useConsentCategory } from "@cookieyes/vue";
+
+const allowed = useConsentCategory("analytics");
+</script>
+
+<template>
+  <iframe v-if="allowed" title="Dashboard" src="https://analytics.example.com/embed" />
+  <p v-else>Enable analytics cookies to see your dashboard.</p>
+</template>
+```
+
+The category can also be a ref or a getter, such as `useConsentCategory(() => props.category)`.
+
+</Framework>
+
 `useConsentCategory` reads the **saved** value, so a switch flipped in the dialog but not saved changes nothing here. For an `<iframe>` with a ready-made placeholder, [`GatedFrame`](/docs/components/gated-frame) does this for you.
 
 ## Which law applies, and why
@@ -44,7 +77,17 @@ export function AnalyticsWidget() {
 
 ## Build your own category list
 
+<Framework when="nextjs react">
+
 `useCategories()` returns your configured categories in order (`list`), their ids, the ids that are always on (`requiredIds`), and `isDefault`, which is `true` when the built-in five are in effect. Render from `list` rather than writing the five names by hand, so custom categories appear automatically. The list is fixed when the runtime starts, so this hook never re-renders.
+
+</Framework>
+
+<Framework when="vue">
+
+`useCategories()` returns your configured categories in order (`list`), their ids, the ids that are always on (`requiredIds`), and `isDefault`, which is `true` when the built-in five are in effect. Render from `list` rather than writing the five names by hand, so custom categories appear automatically. The list is fixed when the runtime starts, so it never changes.
+
+</Framework>
 
 ## The banner and the dialogs
 
@@ -54,7 +97,17 @@ export function AnalyticsWidget() {
 
 ## Language and text
 
+<Framework when="nextjs react">
+
 `useTranslations()` returns the text for the active language, the same strings the components show, and re-renders when the language changes. `useLanguage()` returns the active `language`, its `direction` for right-to-left layouts, the loaded `languages`, and `setLanguage(tag)`. [Translations](/docs/translations) has a picker built on it.
+
+</Framework>
+
+<Framework when="vue">
+
+`useTranslations()` returns the text for the active language, the same strings the components show, and updates when the language changes. `useLanguage()` returns the active `language`, its `direction` for right-to-left layouts and the loaded `languages` as computed refs, plus `setLanguage(tag)`, which returns a promise. [Translations](/docs/translations) has a picker built on it.
+
+</Framework>
 
 ## A custom reload notice
 

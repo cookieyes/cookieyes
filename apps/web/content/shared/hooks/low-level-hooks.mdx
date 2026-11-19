@@ -1,14 +1,26 @@
 ---
 title: Runtime and server helpers
 description: Direct access to the runtime from plain code, and reading a returning visitor's consent on the server.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What this page covers
 
+<Framework when="nextjs react">
+
 Two things the regular hooks do not do: reaching the runtime from code that is not a component, and reading a visitor's saved consent on the server so the banner is right on the first paint. Most apps need neither. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
 
+</Framework>
+
+<Framework when="vue">
+
+Two things the regular composables do not do: reaching the runtime from code that is not a component, and reading a visitor's saved consent on the server so the banner is right on the first paint. Most apps need neither. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+</Framework>
+
 ## Module-level registry
+
+<Framework when="nextjs react">
 
 `initCookieYes()` registers one runtime for the page. `getCookieYes()` returns it from any code, and `useConsentRuntime()` returns the same object inside a component.
 
@@ -26,6 +38,29 @@ The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every a
 **Both throw** if no runtime is registered yet, with `[cookieyes] No runtime is registered`. Every other hook returns a safe default instead. So call them only from code that runs in the browser after `initCookieYes()`, never during server rendering.
 
 `resetCookieYes()` clears the registry. Use it between tests.
+
+</Framework>
+
+<Framework when="vue">
+
+`app.use(CookieYes, config)` starts one runtime for the page. `getCookieYes()` returns it from any code, such as a router guard, a store or a plain module, and `useConsentRuntime()` returns the same object inside a component.
+
+```ts title="src/consent-log.ts"
+import { getCookieYes } from "@cookieyes/vue";
+
+export function logCurrentConsent() {
+  const snapshot = getCookieYes().getSnapshot();
+  console.log(snapshot.committedCategories);
+}
+```
+
+The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every action) and `getIntegrations()` for a debug panel.
+
+**Both throw** if the plugin has not run yet. Every other composable throws the same way, so call them only after `app.use(CookieYes, config)`, from `setup()` or from code that runs later, such as an event handler.
+
+`resetCookieYes()` clears the runtime. Use it between tests.
+
+</Framework>
 
 ## Read a returning visitor's consent on the server
 
@@ -77,6 +112,69 @@ A client-only app (Vite, Create React App) has no server render, so it needs non
 
 </Framework>
 
+<Framework when="vue">
+
+Read the request's `Cookie` header with `readServerConsent()` and pass the result to `CookieYesProvider`:
+
+```ts title="src/server/consent.ts"
+import { readServerConsent } from "@cookieyes/vue";
+
+export function getInitialConsent(request: Request) {
+  // null means the visitor has not chosen yet: the banner shows as usual.
+  return readServerConsent(request.headers.get("cookie") ?? "", { regulation: "GDPR" });
+}
+```
+
+The root component takes the result as a prop and hands it to the provider, which wraps the consent components:
+
+```vue title="src/App.vue"
+<script setup lang="ts">
+import {
+  type ConsentSnapshot,
+  CookieBanner,
+  CookiePreferences,
+  CookieYesProvider,
+  RecallButton,
+} from "@cookieyes/vue";
+
+defineProps<{ initialConsent: ConsentSnapshot | null }>();
+</script>
+
+<template>
+  <CookieYesProvider regulation="GDPR" :initial-consent="initialConsent">
+    <CookieBanner />
+    <CookiePreferences />
+    <RecallButton />
+    <h1>Your app</h1>
+  </CookieYesProvider>
+</template>
+```
+
+Create the app per request, install the plugin with one shared config object, and pass the consent in as a prop:
+
+```ts title="src/entry-server.ts"
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { createSSRApp } from "vue";
+import { renderToString } from "vue/server-renderer";
+import App from "./App.vue";
+import { getInitialConsent } from "./server/consent";
+
+// The same object for every request: the plugin reuses the runtime when the config is the same one.
+const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR" };
+
+export async function render(request: Request): Promise<string> {
+  const app = createSSRApp(App, { initialConsent: getInitialConsent(request) });
+  app.use(CookieYes, config);
+  return renderToString(app);
+}
+```
+
+A client-only app (Vite with no server rendering) has no server render, so it needs none of this.
+
+</Framework>
+
+<Framework when="nextjs react">
+
 Pass the result to the provider only. Never write a visitor's consent into `initCookieYes()` or onto the runtime: the server runs one process for every visitor at once, and per-visitor values there would leak between them.
 
 To choose the regulation per visitor on the server, `regionFromHeaders(headers)` from `@cookieyes/core` reads the visitor's region, such as `"DE"` or `"US-CA"`, from the hosting provider's headers. Map it to `"GDPR"` or `"CCPA"` and pass that as the provider's `regulation`. See the `region` option on [Configuration](/docs/getting-started/configuration#region).
@@ -91,6 +189,27 @@ No `initialConsent` reached `CookieYesProvider`. Read it on the server as shown 
 
 **One visitor's consent appears for another in production.**
 A per-visitor value was written into `initCookieYes()` or onto the runtime on the server. Per-visitor values go on `CookieYesProvider` only.
+
+</Framework>
+
+<Framework when="vue">
+
+Pass the result to the provider only. Never write a visitor's consent into the config you give `app.use(CookieYes, config)` or onto the runtime: the server runs one process for every visitor at once, and per-visitor values there would leak between them.
+
+To choose the regulation per visitor on the server, `regionFromHeaders(headers)` from `@cookieyes/vue` reads the visitor's region, such as `"DE"` or `"US-CA"`, from the hosting provider's headers. Map it to `"GDPR"` or `"CCPA"` and pass that as the provider's `regulation`. See the `region` option on [Configuration](/docs/getting-started/configuration#region).
+
+## Common mistakes
+
+**`[cookieyes] getCookieYes() found no runtime`, or `could not find CookieYes`.**
+`app.use(CookieYes, config)` has not run on this app, or you called a composable outside `setup()`. Install the plugin before mounting, and call composables from `setup()`.
+
+**The banner flashes on every load for a returning visitor.**
+No `initialConsent` reached `CookieYesProvider`. Read it on the server as shown above.
+
+**One visitor's consent appears for another in production.**
+A per-visitor value was written into the plugin config or onto the runtime on the server. Per-visitor values go on `CookieYesProvider` only.
+
+</Framework>
 
 ## Next steps
 

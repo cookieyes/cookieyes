@@ -1,7 +1,7 @@
 ---
 title: CookieBanner
 description: The consent banner a visitor sees on their first visit.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue]
 ---
 
 ## What it does
@@ -10,13 +10,35 @@ Shows on the first visit and stays until the visitor chooses. Under GDPR it offe
 
 You already render it if you followed [Installation](/docs/getting-started/installation). Try it in the [Playground](/playground).
 
+<Framework when="nextjs react">
+
 ```tsx check="false"
 <CookieBanner />
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue check="false"
+<CookieBanner />
+```
+
+</Framework>
+
 ## Change what it shows
 
+<Framework when="nextjs react">
+
 Nothing on the banner is set through props. Everything comes from `initCookieYes()`, so the banner, the dialogs and the recall button always match.
+
+</Framework>
+
+<Framework when="vue">
+
+Nothing on the banner is set through props. Everything comes from the config you pass to `app.use(CookieYes, config)`, so the banner, the dialogs and the recall button always match.
+
+</Framework>
 
 | To change | Set |
 | --- | --- |
@@ -27,7 +49,17 @@ Nothing on the banner is set through props. Everything comes from `initCookieYes
 
 ## Restyle it
 
+<Framework when="nextjs react">
+
 It accepts `className` and `style` like any element; they are added to the banner's own styling, not replacing it. For one part of the banner, use its `data-cy-part` in your CSS:
+
+</Framework>
+
+<Framework when="vue">
+
+It accepts `class` and `style` like any element; they land on the banner card and are added to its own styling, not replacing it. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`root`, `title`, `description`, `actions`, `acceptAll`, `rejectAll`, `customise`, `doNotSell`, `close`, `branding`), for example `:class-names="{ acceptAll: 'my-accept' }"`. Or use its `data-cy-part` in your CSS:
+
+</Framework>
 
 ```css title="app/consent.css"
 [data-cy-part="banner"] {
@@ -45,10 +77,23 @@ The parts are `banner`, `title`, `description`, `actions`, `accept-all`, `reject
 
 Do Not Sell opens the opt-out dialog, so render it next to the banner:
 
+<Framework when="nextjs react">
+
 ```tsx check="false"
 <CookieBanner />
 <CookieOptOut />
 ```
+
+</Framework>
+
+<Framework when="vue">
+
+```vue check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+</Framework>
 
 ## Common mistakes
 

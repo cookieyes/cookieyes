@@ -1,7 +1,7 @@
 ---
 title: Google Consent Mode v2
 description: "Tell Google tags what the visitor allowed: add one default snippet, and the SDK sends every update."
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 Google Analytics 4, Google Ads and Google Tag Manager read consent through Google Consent Mode. It has two halves: a default that says "denied" before any Google tag runs, and an update each time the visitor decides. The SDK sends the updates on its own, on page load and on every change. You add the default.
@@ -53,6 +53,33 @@ initCookieYes({
 ```
 
 </Framework>
+<Framework when="vue">
+
+Call `bootstrapGoogleConsentMode()` before `app.use(CookieYes, config)`, in the same file. Everything else in that file stays as it is:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { bootstrapGoogleConsentMode } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+bootstrapGoogleConsentMode();
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+</Framework>
 <Framework when="core">
 
 Call `bootstrapGoogleConsentMode()` before `initCookieYes()`, in the same file. Everything else in that file stays as it is:
@@ -74,7 +101,7 @@ initCookieYes({
 ```
 
 </Framework>
-<Framework when="react core">
+<Framework when="react vue core">
 
 If your HTML is rendered on a server, you can print `googleConsentModeSnippet()` into `<head>` as an inline script instead.
 
@@ -84,9 +111,20 @@ Then add the Google tool itself: [Google Analytics 4](/docs/integrations/ga4), [
 
 If the default is missing, the Google integration sets one itself when it loads and logs this warning. The SDK's first update, sent on page load, has already been skipped by then, so a returning visitor who accepted on an earlier visit is treated as denied until they change their choice again:
 
+<Framework when="nextjs react core">
+
 ```text
 [cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.
 ```
+
+</Framework>
+<Framework when="vue">
+
+> `[cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.`
+
+The message names `@cookieyes/nextjs` for every framework. In a Vue app, fix it by calling `bootstrapGoogleConsentMode()` before the SDK initialises, as shown above.
+
+</Framework>
 
 ## Which category controls which signal
 

@@ -1,7 +1,7 @@
 ---
 title: Critical CSS
 description: Paint the banner on the first frame by inlining its rules in the HTML.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, core]
 ---
 
 <Framework when="core">
@@ -58,6 +58,12 @@ Copy the contents of `@cookieyes/react/critical.css` into a `<style>` in your HT
 
 </Framework>
 
+<Framework when="vue">
+
+Copy the contents of `@cookieyes/vue/critical.css` into a `<style>` in your HTML `<head>`, and load `styles.css` without blocking, for example with `<link rel="preload" as="style" onload="this.rel='stylesheet'">`. Then remove `import "@cookieyes/vue/styles.css"` from `consent-manager.ts`; otherwise the stylesheet is back on the critical path.
+
+</Framework>
+
 <Framework when="core">
 
 Copy the contents of `@cookieyes/vanilla/critical.css` into a `<style>` in your HTML `<head>` and keep the `styles.css` import. To have the banner itself in the first frame, not only its styles, put the output of `renderShell(config)` at the start of `<body>`: see [Banner with no framework](/docs/getting-started/vanilla#show-the-banner-before-any-script-runs).
@@ -71,8 +77,19 @@ If you send a `Content-Security-Policy`, the inline block needs its hash in `sty
 **The preferences dialog is unstyled, the banner is fine.**
 Only `critical.css` is loaded. Load `styles.css` too.
 
+<Framework when="nextjs react core">
+
 **Nothing got faster.**
 The full stylesheet is still imported in `consent-manager.tsx`. Remove that import.
+
+</Framework>
+
+<Framework when="vue">
+
+**Nothing got faster.**
+The full stylesheet is still imported in `consent-manager.ts`. Remove that import.
+
+</Framework>
 
 ## Next steps
 
