@@ -15,10 +15,23 @@ import {
 } from "@clack/prompts";
 import pc from "picocolors";
 import { detectFramework, type Framework } from "../utils/detect-framework.js";
-import { nextProjectPaths, reactProjectPaths } from "../utils/detect-layout.js";
+import {
+  nextProjectPaths,
+  nuxtProjectPaths,
+  reactProjectPaths,
+  vueProjectPaths,
+} from "../utils/detect-layout.js";
 import { detectPackageManager, type PackageManager } from "../utils/detect-pm.js";
 import { installPackage } from "../utils/install.js";
-import { insertImport, patchNextjsLayout, patchNextjsPagesApp } from "../utils/patchers.js";
+import {
+  insertImport,
+  patchNextjsLayout,
+  patchNextjsPagesApp,
+  patchNuxtApp,
+  patchNuxtConfig,
+  patchVueApp,
+  patchVueMain,
+} from "../utils/patchers.js";
 
 // ─── Option builders ──────────────────────────────────────────────────────────
 
@@ -167,6 +180,61 @@ function reactProviderTemplate(opts: OptionInputs, isCCPA: boolean): string {
   ].join("\n");
 }
 
+function vueConsentManagerTemplate(opts: OptionInputs, typescript: boolean): string {
+  return [
+    ...(typescript
+      ? [
+          `import type { App } from "vue";`,
+          `import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";`,
+        ]
+      : [`import { CookieYes } from "@cookieyes/vue";`]),
+    `import "@cookieyes/vue/styles.css";`,
+    ...localeImportLines(opts),
+    ``,
+    `const config${typescript ? ": CookieYesConfig" : ""} = ${buildConfigLiteral(opts, "")};`,
+    ``,
+    `export function setupConsent(app${typescript ? ": App): void" : ")"} {`,
+    `  app.use(CookieYes, config);`,
+    `}`,
+    ``,
+  ].join("\n");
+}
+
+function vueRootTemplate(typescript: boolean, isCCPA: boolean): string {
+  return [
+    `<script setup${typescript ? ' lang="ts"' : ""}>`,
+    `import {`,
+    `  CookieBanner,${isCCPA ? "\n  CookieOptOut," : ""}`,
+    `  CookiePreferences,`,
+    `  RecallButton,`,
+    `} from "@cookieyes/vue";`,
+    `</script>`,
+    ``,
+    `<template>`,
+    `  <CookieBanner />`,
+    `  <CookiePreferences />${isCCPA ? "\n  <CookieOptOut />" : ""}`,
+    `  <RecallButton />`,
+    `</template>`,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * The options go in `app.config.ts`, not under `cookieyes` in `nuxt.config.ts`: that key becomes
+ * runtime config, which is JSON, so integrations and callbacks added there later would be dropped.
+ */
+function nuxtAppConfigTemplate(opts: OptionInputs): string {
+  const imports = localeImportLines(opts);
+  return [
+    ...imports,
+    ...(imports.length > 0 ? [``] : []),
+    `export default defineAppConfig({`,
+    `  cookieyes: ${buildConfigLiteral(opts, "  ")},`,
+    `});`,
+    ``,
+  ].join("\n");
+}
+
 function vanillaTemplate(opts: OptionInputs): string {
   const coreImport = `import { getOrCreateConsentRuntime } from "@cookieyes/core";`;
   const localeImports = localeImportLines(opts);
@@ -231,6 +299,20 @@ function patchReactEntry(
   return entry.label;
 }
 
+/** Result of adding a setup line to an existing file. */
+type FilePatch = "patched" | "already" | "manual" | "missing";
+
+function patchFile(path: string, patch: (src: string) => string | null, done: RegExp): FilePatch {
+  if (!existsSync(path)) return "missing";
+  const src = readFileSync(path, "utf-8");
+  const patched = patch(src);
+  if (patched) {
+    writeFileSync(path, patched, "utf-8");
+    return "patched";
+  }
+  return done.test(src) ? "already" : "manual";
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function writeFile(path: string, content: string, label: string) {
@@ -242,6 +324,8 @@ function writeFile(path: string, content: string, label: string) {
 function pkgForFramework(framework: Framework): string {
   if (framework === "nextjs") return "@cookieyes/nextjs";
   if (framework === "react") return "@cookieyes/react";
+  if (framework === "vue") return "@cookieyes/vue";
+  if (framework === "nuxt") return "@cookieyes/nuxt";
   return "@cookieyes/core";
 }
 
@@ -321,7 +405,13 @@ export function parseInitFlags(args: readonly string[]): InitFlags {
         flags.install = false;
         break;
       case "--framework":
-        flags.framework = oneOf(name, value(), ["nextjs", "react", "vanilla"] as const);
+        flags.framework = oneOf(name, value(), [
+          "nextjs",
+          "react",
+          "vue",
+          "nuxt",
+          "vanilla",
+        ] as const);
         break;
       case "--mode":
         flags.mode = oneOf(name, value(), ["cookie-only", "self-hosted"] as const);
@@ -386,6 +476,7 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
   intro(pc.bgBlue(pc.bold(pc.white("  CookieYes  "))));
 
   const detected = detectFramework(cwd);
+  const nuxt = detected === "nuxt";
   const pm = detectPackageManager(cwd);
 
   // ── Framework ──────────────────────────────────────────────────────────────
@@ -407,6 +498,16 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
                 label: "React",
                 hint: detected === "react" ? "detected" : "Vite, CRA, etc.",
               },
+              {
+                value: "vue" as const,
+                label: "Vue",
+                hint: detected === "vue" ? "detected" : "Vite, create-vue, etc.",
+              },
+              {
+                value: "nuxt" as const,
+                label: "Nuxt",
+                hint: nuxt ? "detected" : "Nuxt 4",
+              },
               { value: "vanilla" as const, label: "Vanilla JS / Other" },
             ],
             initialValue: detected ?? ("nextjs" as const),
@@ -418,6 +519,13 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
     process.exit(0);
   }
   const framework = frameworkAnswer as Framework;
+
+  // Nuxt has no `src/main.ts` or `App.vue` to patch; writing them anyway would leave dead
+  // files next to a banner that never renders.
+  if (framework === "vue" && nuxt && flags.framework === "vue") {
+    cancel("--framework vue is not supported in a Nuxt project. Use --framework nuxt.");
+    process.exit(1);
+  }
 
   // ── Mode ───────────────────────────────────────────────────────────────────
   const modeAnswer =
@@ -673,6 +781,137 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
           `  <App />`,
           `  <CookieYesRoot />`,
           `</>`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+  } else if (framework === "vue") {
+    if (nuxt) {
+      note(
+        [
+          `This is a Nuxt project, which the Vue setup does not patch, so nothing was written.`,
+          `Run the CLI again and pick Nuxt, or pass --framework nuxt.`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+      outro(`Nothing was installed.`);
+      return;
+    }
+    const paths = vueProjectPaths(cwd);
+    const rootLabel = "src/components/CookieYesRoot.vue";
+
+    if (!existsSync(paths.consentManagerPath)) {
+      writeFile(
+        paths.consentManagerPath,
+        vueConsentManagerTemplate(optionInputs, paths.typescript),
+        paths.consentManagerLabel,
+      );
+    } else {
+      log.info(`${pc.yellow(paths.consentManagerLabel)} already exists, skipped.`);
+    }
+
+    if (!existsSync(paths.rootPath)) {
+      writeFile(paths.rootPath, vueRootTemplate(paths.typescript, isCCPA), rootLabel);
+    } else {
+      log.info(`${pc.yellow(rootLabel)} already exists, skipped.`);
+    }
+
+    const main = patchFile(paths.entryPath, patchVueMain, /setupConsent/);
+    if (main === "patched") {
+      log.success(`Updated ${pc.cyan(paths.entryLabel)}: called setupConsent`);
+    } else if (main === "already") {
+      log.info(`${pc.yellow(paths.entryLabel)} already calls setupConsent, skipped.`);
+    } else {
+      note(
+        [
+          `Call setupConsent(app) in ${paths.entryLabel}, after createApp and before mount:`,
+          ``,
+          `import { setupConsent } from "./consent-manager";`,
+          ``,
+          `const app = createApp(App);`,
+          `setupConsent(app);`,
+          `app.mount("#app");`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    const app = patchFile(paths.appPath, patchVueApp, /CookieYesRoot/);
+    if (app === "patched") {
+      log.success(`Updated ${pc.cyan("src/App.vue")}: mounted CookieYesRoot`);
+    } else if (app === "already") {
+      log.info(`${pc.yellow("src/App.vue")} already uses CookieYesRoot, skipped.`);
+    } else {
+      note(
+        [
+          `Render <CookieYesRoot /> once in src/App.vue, before the page content:`,
+          ``,
+          `<script setup${paths.typescript ? ' lang="ts"' : ""}>`,
+          `import CookieYesRoot from "./components/CookieYesRoot.vue";`,
+          `</script>`,
+          ``,
+          `<template>`,
+          `  <CookieYesRoot />`,
+          `  <!-- your page content -->`,
+          `</template>`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+  } else if (framework === "nuxt") {
+    const paths = nuxtProjectPaths(cwd);
+    const appConfig = nuxtAppConfigTemplate(optionInputs);
+
+    const config =
+      paths.configPath === null
+        ? "missing"
+        : patchFile(paths.configPath, patchNuxtConfig, /["']@cookieyes\/nuxt["']/);
+    if (config === "patched") {
+      log.success(`Updated ${pc.cyan(paths.configLabel)}: added @cookieyes/nuxt to modules`);
+    } else if (config === "already") {
+      log.info(`${pc.yellow(paths.configLabel)} already lists @cookieyes/nuxt, skipped.`);
+    } else {
+      note(
+        [
+          `Add @cookieyes/nuxt to the modules in ${paths.configLabel}:`,
+          ``,
+          `export default defineNuxtConfig({`,
+          `  modules: ["@cookieyes/nuxt"],`,
+          `});`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    if (paths.existingAppConfigLabel === null) {
+      writeFile(paths.appConfigPath, appConfig, paths.appConfigLabel);
+    } else {
+      note(
+        [
+          `${paths.existingAppConfigLabel} already exists, so it was left as it is.`,
+          `Add the cookieyes key to the object it passes to defineAppConfig:`,
+          ``,
+          appConfig.trimEnd(),
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    const app = patchFile(paths.appPath, patchNuxtApp, /CookieYesRoot/);
+    if (app === "patched") {
+      log.success(`Updated ${pc.cyan(paths.appLabel)}: mounted CookieYesRoot`);
+    } else if (app === "already") {
+      log.info(`${pc.yellow(paths.appLabel)} already uses CookieYesRoot, skipped.`);
+    } else {
+      note(
+        [
+          `Render <CookieYesRoot /> once in ${paths.appLabel}, before the page content.`,
+          `Nuxt imports it for you:`,
+          ``,
+          `<template>`,
+          `  <CookieYesRoot />`,
+          `  <NuxtPage />`,
+          `</template>`,
         ].join("\n"),
         "Manual step needed",
       );

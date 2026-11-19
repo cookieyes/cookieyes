@@ -1,14 +1,28 @@
 ---
 title: Ahrefs Web Analytics
 description: Load Ahrefs Web Analytics only after analytics consent, and stop it sending when consent is withdrawn.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 `ahrefsAnalytics()` loads Ahrefs Web Analytics after the visitor grants the analytics category. When consent is withdrawn, Ahrefs stops sending page views and events straight away, with no reload. Ahrefs sets no cookies, so there is nothing to delete.
 
 ## Set it up
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `ahrefsAnalytics()` to the `initCookieYes()` call you already have. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `ahrefsAnalytics()` to the config you pass to `app.use(CookieYes, config)`. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+</Framework>
+<Framework when="nuxt">
+
+Install the integrations package and add `ahrefsAnalytics()` to `cookieyes.integrations` in `app/app.config.ts`. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -28,6 +42,43 @@ initCookieYes({
   integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+
+export default defineAppConfig({
+  cookieyes: {
+    integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
+  },
+});
+```
+
+`integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
 <Framework when="core">

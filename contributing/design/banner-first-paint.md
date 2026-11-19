@@ -56,12 +56,37 @@ These run in the ordinary `pnpm test` job — no browser needed.
 | `readServerConsent` agrees with the client about the same cookie | `core/src/__tests__/server-consent.test.ts` |
 | The server-rendered banner carries no inline `style` attribute, so a strict `style-src` cannot strip its screen-reader styling | `react/src/__tests__/ssr-first-paint.test.tsx` |
 
-Two checks now run in a real browser, in the CI job `conformance` (`pnpm test:browser`):
+These checks run in a real browser, in the CI job `conformance` (`pnpm test:browser`):
 
 | Invariant | Guard |
 |---|---|
-| Every adapter's banner has the same parts, focus, keyboard and announcement as React's | `@cookieyes/test/conformance`, run by `test/src/__tests__/conformance-react.browser.test.tsx` and `vanilla/src/__tests__/conformance.browser.test.ts` |
+| Every adapter's banner has the same parts, focus, keyboard and announcement as React's | `@cookieyes/test/conformance`, run by `test/src/__tests__/conformance-react.browser.test.tsx`, `vanilla/src/__tests__/conformance.browser.test.ts` and `vue/src/__tests__/conformance.browser.test.ts` |
 | The vanilla first-paint snippet (`renderShell` plus `critical.css`) is styled, fixed and visible with no script running | `vanilla/src/__tests__/first-paint.browser.test.ts` |
+| The Vue server-rendered banner plus `critical.css` is styled and visible with no script, and hydration keeps the same node | `vue/src/__tests__/first-paint.browser.test.ts` |
+| A Nuxt production build: the banner in a first visit's HTML and none in a returning visitor's, the CCPA banner from the geo headers, the head opening with the Consent Mode default and `critical.css`, no hydration mismatch for any of them (with a control page proving a mismatch is caught), and the stylesheet switched on | `nuxt/src/__tests__/ssr.browser.test.ts` |
+
+## Nuxt: head tags outside unhead
+
+`@cookieyes/nuxt` writes the Consent Mode default, `critical.css` and the deferred stylesheet
+`<link media="print" data-cy-full>` into the HTML from a Nitro `render:html` hook, not through
+`useHead` or `app.head`. It first used `app.head`, and the banner stayed on the critical rules
+only: unhead keeps the tags it manages in sync on the client, so it set the link back to
+`media="print"` right after the runtime switched it on. Plain server markup is left alone, as
+`<CookieYesStyles>` is in Next.js. The hook also runs for `ssr: false` shells and prerendered
+pages, so every deployment gets the tags. The browser test checks the link ends up
+`media="all"`.
+
+The region the server read goes to the browser's consent runtime too (`_withRequestRegion`), not
+only to `<CookieYesRoot />`'s provider. The runtime picks its regulation once, at start, and that
+regulation decides what loads, what the cookie records and the Consent Mode update. Handing it only
+the bare config once let it fall back to the strictest regulation: a visitor shown the GDPR banner
+ran under CCPA, which recorded every category as granted before they chose. Next.js avoids it by
+documenting the same `detect` for `initCookieYes` and the provider.
+
+The module also never reads the request on a route with `swr`, `isr`, `cache` or `prerender`
+route rules (`_isSharedRender`). Nuxt serves that HTML to every visitor, so one visitor's stored
+decision or region would reach the next: someone who never chose could get no banner. Next.js
+needs no such check, because reading cookies makes a route dynamic there.
 
 ## Without a server: `@cookieyes/vanilla`
 

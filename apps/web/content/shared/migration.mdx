@@ -1,8 +1,10 @@
 ---
 title: Migration & deprecations
 description: Deprecated option names that still work, the current name for each, and the console warning that points you here.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
+
+<Framework when="nextjs react core">
 
 A few option names are deprecated. They still work, but log a `[cookieyes]` warning, and they will be removed in a later release. If you see one of these warnings, or copied an older snippet, use the current name:
 
@@ -18,6 +20,43 @@ A few option names are deprecated. They still work, but log a `[cookieyes]` warn
 If both an old and a current name are set, the current one wins. The one exception is `integrations` and `builtInIntegrations`: both run, so remove the old entry once you add the preset, or the vendor's events are counted twice.
 
 Everything else is unchanged: components, hooks, styling, translations and categories keep the same names, and the same configuration object works in every CookieYes package.
+
+</Framework>
+
+<Framework when="vue">
+
+A few option names are deprecated. They still work, but log a `[cookieyes]` warning, and they will be removed in a later release. If you see one of these warnings, or copied an older snippet, use the current name:
+
+| Where | Deprecated | Use instead | Notes |
+| --- | --- | --- | --- |
+| `app.use(CookieYes, config)` option `mode` | `"offline"` | `"cookie-only"` | Same behaviour, clearer name |
+| `app.use(CookieYes, config)` option | `backendURL` | `apiUrl` | Under `mode: "self-hosted"` |
+| `app.use(CookieYes, config)` option | `overrides: { regulation }` | `regulation` at the top level | |
+| `app.use(CookieYes, config)` option | `builtInIntegrations: [{ vendor: "meta" }]` | `integrations: [metaPixel({ ... })]`, with presets from `@cookieyes/scripts` | The presets also load the tool after consent. See [Integrations](/docs/integrations) |
+| TypeScript type exported by the package | `ConsentRuntimeOptions` | `CookieYesConfig` | |
+
+If both an old and a current name are set, the current one wins. The one exception is `integrations` and `builtInIntegrations`: both run, so remove the old entry once you add the preset, or the vendor's events are counted twice.
+
+Everything else is unchanged: components, composables, styling, translations and categories keep the same names, and the same configuration object works in every CookieYes package.
+
+</Framework>
+
+<Framework when="nuxt">
+
+A few option names are deprecated. They still work, but log a `[cookieyes]` warning, and they will be removed in a later release. If you see one of these warnings, or copied an older snippet, use the current name:
+
+| Where | Deprecated | Use instead | Notes |
+| --- | --- | --- | --- |
+| `cookieyes` option `mode` | `"offline"` | `"cookie-only"` | Same behaviour, clearer name. `"cookie-only"` is also the module's default |
+| `cookieyes` option | `backendURL` | `apiUrl` | Under `mode: "self-hosted"` |
+| `cookieyes` option | `overrides: { regulation }` | `regulation` at the top level | |
+| `cookieyes` option | `builtInIntegrations: [{ vendor: "meta" }]` | `integrations: [metaPixel({ ... })]`, with presets from `@cookieyes/scripts`, in `app/app.config.ts` | The presets also load the tool after consent. See [Integrations](/docs/integrations) |
+
+If both an old and a current name are set, the current one wins. The one exception is `integrations` and `builtInIntegrations`: both run, so remove the old entry once you add the preset, or the vendor's events are counted twice.
+
+Everything else is unchanged: components, composables, styling, translations and categories keep the same names, and the same configuration object works in every CookieYes package.
+
+</Framework>
 
 ## Next steps
 

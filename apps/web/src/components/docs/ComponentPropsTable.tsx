@@ -1,4 +1,5 @@
 import type { ComponentName, ComponentReferenceData } from "@/lib/component-reference-types";
+import type { Framework } from "@/lib/framework-docs";
 import componentReference from "../../../.generated/component-reference.json";
 import { toComponentTypeMap } from "./component-reference-render";
 import { PropsTable } from "./PropsTable";
@@ -8,6 +9,8 @@ const data = componentReference as ComponentReferenceData;
 export interface ComponentPropsTableProps {
   /** One of the six components with real props — see ComponentName in component-reference-types.ts. */
   component: ComponentName;
+  /** The framework the page is published under; the docs page supplies it. */
+  framework?: Framework | null;
 }
 
 /**
@@ -20,8 +23,8 @@ export interface ComponentPropsTableProps {
  * component has zero rows — belt-and-suspenders on top of the generator's
  * own fail-closed checks, catching a `component` typo in the MDX itself.
  */
-export function ComponentPropsTable({ component }: ComponentPropsTableProps) {
-  const options = data.components[component];
+export function ComponentPropsTable({ component, framework }: ComponentPropsTableProps) {
+  const options = data[framework === "vue" || framework === "nuxt" ? "vue" : "react"][component];
   if (!options || options.length === 0) {
     throw new Error(
       `<ComponentPropsTable component="${component}"> has zero props in the generated component ` +

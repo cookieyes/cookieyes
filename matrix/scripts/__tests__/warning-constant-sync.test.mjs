@@ -45,15 +45,18 @@ function readHighestVerifiedReactMajor() {
 }
 
 function highestPinnedReactMajor() {
-  const majors = combinations.map((combo) => {
-    const match = /^(\d+)\./.exec(combo.versions.react);
-    if (!match) {
-      throw new Error(
-        `[warning-constant-sync] combination "${combo.id}" has an unparseable versions.react: "${combo.versions.react}".`,
-      );
-    }
-    return Number.parseInt(match[1], 10);
-  });
+  // Vue combinations pin no React at all.
+  const majors = combinations
+    .filter((combo) => combo.versions.react !== undefined)
+    .map((combo) => {
+      const match = /^(\d+)\./.exec(combo.versions.react);
+      if (!match) {
+        throw new Error(
+          `[warning-constant-sync] combination "${combo.id}" has an unparseable versions.react: "${combo.versions.react}".`,
+        );
+      }
+      return Number.parseInt(match[1], 10);
+    });
   return Math.max(...majors);
 }
 
@@ -67,5 +70,60 @@ describe("HIGHEST_VERIFIED_REACT_MAJOR stays in sync with matrix.config.mjs", ()
         `${constantValue}, but matrix.config.mjs's highest pinned combination is React ${matrixMax}.x. ` +
         "Update whichever one is stale.",
     ).toBe(matrixMax);
+  });
+});
+
+const vueWarningFilePath = join(
+  repoRoot,
+  "sdk",
+  "vue",
+  "src",
+  "diagnostics",
+  "vue-version-warning.ts",
+);
+
+function readHighestVerifiedVueMajor() {
+  const source = readFileSync(vueWarningFilePath, "utf8");
+  const match = /HIGHEST_VERIFIED_VUE_MAJOR\s*=\s*(\d+)/.exec(source);
+  if (!match) {
+    throw new Error(
+      `[warning-constant-sync] could not find "HIGHEST_VERIFIED_VUE_MAJOR = <number>" in ${vueWarningFilePath}.`,
+    );
+  }
+  return Number.parseInt(match[1], 10);
+}
+
+function highestPinnedVueMajor() {
+  const majors = combinations
+    .filter((combo) => combo.versions.vue !== undefined)
+    .map((combo) => {
+      const match = /^(\d+)\./.exec(combo.versions.vue);
+      if (!match) {
+        throw new Error(
+          `[warning-constant-sync] combination "${combo.id}" has an unparseable versions.vue: "${combo.versions.vue}".`,
+        );
+      }
+      return Number.parseInt(match[1], 10);
+    });
+  return Math.max(...majors);
+}
+
+describe("HIGHEST_VERIFIED_VUE_MAJOR stays in sync with matrix.config.mjs", () => {
+  it("matches the highest Vue major pinned by any combination", () => {
+    const constantValue = readHighestVerifiedVueMajor();
+    const matrixMax = highestPinnedVueMajor();
+    expect(
+      constantValue,
+      `sdk/vue/src/diagnostics/vue-version-warning.ts's HIGHEST_VERIFIED_VUE_MAJOR is ` +
+        `${constantValue}, but matrix.config.mjs's highest pinned combination is Vue ${matrixMax}.x. ` +
+        "Update whichever one is stale.",
+    ).toBe(matrixMax);
+  });
+
+  it("mirrors the declared floor: LOWEST_SUPPORTED_VUE_MINOR matches the floor combination", () => {
+    const source = readFileSync(vueWarningFilePath, "utf8");
+    const minor = Number.parseInt(/LOWEST_SUPPORTED_VUE_MINOR\s*=\s*(\d+)/.exec(source)?.[1], 10);
+    const floor = combinations.find((combo) => combo.app === "vue" && combo.role === "floor");
+    expect(`3.${minor}.0`).toBe(floor?.versions.vue);
   });
 });

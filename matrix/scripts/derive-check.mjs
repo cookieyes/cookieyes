@@ -28,7 +28,22 @@ export const PEER_FIELD_MAP = {
   next: "next",
   react: "react",
   "react-dom": "reactDom",
+  vue: "vue",
+  nuxt: "nuxt",
 };
+
+/**
+ * Peers that are optional extras, not a framework the matrix runs: they need no field on a
+ * combination and are skipped rather than reported as unmapped.
+ */
+const IGNORED_PEERS = new Set(["@cookieyes/devtools"]);
+
+/**
+ * Peers that a package's framework peer brings with it, per package. Nuxt depends on Vue itself,
+ * so a Nuxt leg pins only `nuxt` and runs the Vue that Nuxt resolves: such a peer needs no floor
+ * combination of its own, but a combination that does pin it must still satisfy its range.
+ */
+const SUPPLIED_BY_FRAMEWORK = { "@cookieyes/nuxt": new Set(["vue"]) };
 
 /** Combinations that actually claim to test `packageName` (Story 1 AC3 future-proofing). */
 function combinationsUnderTest(combinations, packageName) {
@@ -52,6 +67,7 @@ export function checkPeerDependencyMatrix({ peerPackages, combinations }) {
     const relevantCombos = combinationsUnderTest(combinations, name);
 
     for (const [peerName, range] of Object.entries(peerDependencies ?? {})) {
+      if (IGNORED_PEERS.has(peerName)) continue;
       const field = PEER_FIELD_MAP[peerName];
       if (!field) {
         errors.push(
@@ -61,6 +77,8 @@ export function checkPeerDependencyMatrix({ peerPackages, combinations }) {
         );
         continue;
       }
+
+      if (SUPPLIED_BY_FRAMEWORK[name]?.has(peerName)) continue;
 
       const floor = semver.minVersion(range);
       if (!floor) {
@@ -117,6 +135,8 @@ export function checkPeerDependencyMatrix({ peerPackages, combinations }) {
     for (const [typesField, runtimeField] of pairs) {
       const typesRange = combo.versions[typesField];
       const runtimeVersion = combo.versions[runtimeField];
+      // A Vue leg has no React packages at all; there is nothing to align.
+      if (typesRange === undefined && runtimeVersion === undefined) continue;
       const typesMin = semver.minVersion(typesRange);
       const runtimeMin = semver.minVersion(runtimeVersion);
       if (!typesMin || !runtimeMin) {
@@ -148,6 +168,8 @@ async function main() {
   const peerPackages = [
     { name: "@cookieyes/react", path: join(repoRoot, "sdk", "react", "package.json") },
     { name: "@cookieyes/nextjs", path: join(repoRoot, "sdk", "nextjs", "package.json") },
+    { name: "@cookieyes/vue", path: join(repoRoot, "sdk", "vue", "package.json") },
+    { name: "@cookieyes/nuxt", path: join(repoRoot, "sdk", "nuxt", "package.json") },
   ].map(({ name, path }) => {
     const pkg = JSON.parse(readFileSync(path, "utf8"));
     return { name, peerDependencies: pkg.peerDependencies ?? {} };

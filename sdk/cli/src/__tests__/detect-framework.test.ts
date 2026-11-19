@@ -46,4 +46,29 @@ describe("detectFramework", () => {
     writeFileSync(join(dir, "package.json"), "{ not json", "utf-8");
     expect(detectFramework(dir)).toBeNull();
   });
+
+  it("detects Vue from a vue dependency", () => {
+    writePkg({ dependencies: { vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("vue");
+  });
+
+  it("keeps React when both react and vue are present", () => {
+    writePkg({ dependencies: { react: "19.0.0", vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("react");
+  });
+
+  it("detects Nuxt before Vue, which every Nuxt app depends on", () => {
+    writePkg({ dependencies: { nuxt: "4.0.0", vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("nuxt");
+  });
+
+  it("detects Nuxt from a devDependency", () => {
+    writePkg({ devDependencies: { nuxt: "4.0.0" }, dependencies: { vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("nuxt");
+  });
+
+  it("takes a project with nuxt and react for Nuxt", () => {
+    writePkg({ dependencies: { nuxt: "4.0.0", react: "19.0.0" } });
+    expect(detectFramework(dir)).toBe("nuxt");
+  });
 });

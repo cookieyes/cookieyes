@@ -1,7 +1,7 @@
 ---
 title: GatedScript
 description: Load a third-party script only after the visitor consents.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -12,7 +12,19 @@ Use it for any tag you can reference in code: analytics, ad pixels, chat widgets
 
 ## Add it
 
+<Framework when="nextjs react">
+
 Anywhere inside your client tree, for example next to the banner:
+
+</Framework>
+
+<Framework when="vue nuxt">
+
+In any component of your app, for example next to the banner:
+
+</Framework>
+
+<Framework when="nextjs react">
 
 ```tsx check="false"
 <GatedScript
@@ -21,6 +33,20 @@ Anywhere inside your client tree, for example next to the banner:
   category="functional"
 />
 ```
+
+</Framework>
+
+<Framework when="vue nuxt">
+
+```vue check="false"
+<GatedScript
+  id="my-chat-widget"
+  src="https://widget.example.com/loader.js"
+  category="functional"
+/>
+```
+
+</Framework>
 
 ## Props
 

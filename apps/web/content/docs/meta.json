@@ -3,6 +3,8 @@
   "pages": [
     "nextjs",
     "react",
+    "vue",
+    "nuxt",
     "core",
     "changelog"
   ]

@@ -1,0 +1,86 @@
+{
+  "name": "@cookieyes/nuxt",
+  "version": "0.0.0",
+  "description": "Nuxt module for the CookieYes consent SDK: the banner in the server HTML, auto-imported components and composables",
+  "keywords": [
+    "cookie consent",
+    "GDPR",
+    "CCPA",
+    "cookie banner",
+    "consent management",
+    "privacy",
+    "compliance",
+    "Nuxt",
+    "nuxt-module",
+    "Vue",
+    "TypeScript",
+    "open source"
+  ],
+  "homepage": "https://developers.cookieyes.com/docs/nuxt/getting-started/quick-start",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/nuxt"
+  },
+  "license": "Apache-2.0",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./critical.css": "./dist/critical.css"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "!src/**/__tests__",
+    "!src/**/*.test.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && rollup -c && node scripts/copy-styles.mjs",
+    "dev": "rollup -c -w",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "nuxt": "^4.0.0",
+    "vue": ">=3.5.0"
+  },
+  "dependencies": {
+    "@cookieyes/core": "workspace:*",
+    "@cookieyes/scripts": "workspace:*",
+    "@cookieyes/vue": "workspace:*",
+    "@nuxt/kit": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "nuxt": "^4.6.4",
+    "playwright": "^1.61.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10",
+    "vue": "^3.5.44"
+  }
+}

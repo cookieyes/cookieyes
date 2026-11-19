@@ -1,0 +1,33 @@
+{
+  "name": "peer-matrix-example-app-nuxt",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "nuxt typecheck",
+    "build": "nuxt build",
+    "test:behaviour": "vitest run --config tests/vitest.config.mts"
+  },
+  "dependencies": {
+    "@cookieyes/nuxt": "__TARBALL_NUXT__",
+    "@cookieyes/core": "__TARBALL_CORE__",
+    "nuxt": "__NUXT_VERSION__"
+  },
+  "devDependencies": {
+    "@nuxt/test-utils": "4.4.0",
+    "@vue/test-utils": "2.5.1",
+    "jsdom": "29.1.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10",
+    "vue-tsc": "3.3.14"
+  },
+  "pnpm": {
+    "overrides": {
+      "@cookieyes/core": "__TARBALL_CORE__",
+      "@cookieyes/ui": "__TARBALL_UI__",
+      "@cookieyes/vue": "__TARBALL_VUE__",
+      "@cookieyes/nuxt": "__TARBALL_NUXT__",
+      "@cookieyes/scripts": "__TARBALL_SCRIPTS__"
+    }
+  }
+}

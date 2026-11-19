@@ -37,7 +37,8 @@ interface PackageOption {
 
 /**
  * The three frameworks a reader picks between, per the design's .pdrop
- * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/core`.
+ * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/vue`,
+ * `/docs/nuxt`, `/docs/core`.
  *
  * `@cookieyes/cli` and `@cookieyes/translations` are deliberately absent: they are
  * not frameworks, so choosing one here answered nothing.
@@ -54,6 +55,18 @@ const PACKAGES: Record<Framework, PackageOption> = {
     name: "@cookieyes/react",
     logo: <ReactLogo />,
     hint: FRAMEWORK_LABEL.react,
+  },
+  vue: {
+    id: "vue",
+    name: "@cookieyes/vue",
+    logo: <VueLogo />,
+    hint: FRAMEWORK_LABEL.vue,
+  },
+  nuxt: {
+    id: "nuxt",
+    name: "@cookieyes/nuxt",
+    logo: <NuxtLogo />,
+    hint: FRAMEWORK_LABEL.nuxt,
   },
   core: {
     id: "core",
@@ -239,6 +252,28 @@ function ReactLogo() {
         <ellipse cx="12" cy="12" rx="10" ry="3.9" transform="rotate(60 12 12)" />
         <ellipse cx="12" cy="12" rx="10" ry="3.9" transform="rotate(120 12 12)" />
       </g>
+    </svg>
+  );
+}
+
+/** Vue: the two-chevron mark in brand green and navy, fixed in both themes. */
+function VueLogo() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M2 3h4.6L12 12.4 17.4 3H22L12 20.5z" fill="#41B883" />
+      <path d="M6.6 3H10l2 3.5L14 3h3.4L12 12.4z" fill="#35495E" />
+    </svg>
+  );
+}
+
+/** Nuxt: the mountain mark in brand green, fixed in both themes. */
+function NuxtLogo() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M13.46 19.83h8.93c.28 0 .56-.07.8-.21a1.6 1.6 0 0 0 .6-.57 1.53 1.53 0 0 0 0-1.57L17.79 7.17a1.6 1.6 0 0 0-.59-.57 1.65 1.65 0 0 0-1.61 0 1.6 1.6 0 0 0-.59.57l-1.53 2.57-3-5.02a1.6 1.6 0 0 0-.59-.58 1.65 1.65 0 0 0-1.61 0 1.6 1.6 0 0 0-.59.58L.22 17.48a1.53 1.53 0 0 0 0 1.57 1.6 1.6 0 0 0 .59.57c.25.14.52.21.81.21h5.6c2.22 0 3.85-.95 4.98-2.79l2.73-4.6 1.47-2.45 4.39 7.38h-5.86zm-6.34-2.46H3.21l5.86-9.85L12 12.44l-1.96 3.29c-.75 1.2-1.6 1.63-2.92 1.63z"
+        fill="#00DC82"
+      />
     </svg>
   );
 }

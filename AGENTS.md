@@ -19,9 +19,9 @@ Task guides live in `.agents/skills/<name>/SKILL.md`. Read the matching one befo
 Public, Apache-2.0-licensed monorepo (pnpm workspaces + Turborepo). Node 20 or newer, pnpm 10. The
 README has the full layout. In short: `sdk/*` are the published packages (`core` is the engine
 with zero runtime dependencies; `ui` is the framework-free banner layer (styles, tokens,
-markup, behaviour) every adapter draws from; `react`, `nextjs` and `vanilla` are wiring only;
-plus `scripts`, `translations`, `cli`, `test`, `devtools`, and `backend`, the self-hosted
-consent server, which runs on servers only), `apps/web` is
+markup, behaviour) every adapter draws from; `react`, `nextjs`, `vue`, `nuxt` and `vanilla` are
+wiring only; plus `scripts`, `translations`, `cli`, `test`, `devtools`, and `backend`, the
+self-hosted consent server, which runs on servers only), `apps/web` is
 developers.cookieyes.com (docs source in `apps/web/content/shared`, rules in
 `apps/web/AGENTS.md`), `tools/size` measures bundles, `matrix` checks peer compatibility,
 `contributing/design` holds design notes for contributors (`docs/` is for SDK users). `skills/`
@@ -69,7 +69,7 @@ pnpm package-gate               # check the packed tarballs after pnpm build (co
 - Server and client resolve the same consent state; no hydration mismatch and no banner flash.
   Read `contributing/design/banner-first-paint.md` before touching banner rendering,
   `critical.css` or anything server-rendered.
-- `core`, `ui`, `react`, `nextjs`, `vanilla` and `test` pin their public surface in
+- `core`, `ui`, `react`, `nextjs`, `vue`, `nuxt`, `vanilla` and `test` pin their public surface in
   `src/__tests__/exports.test.ts`. Adding or removing an export anywhere is an API change: update
   that test where it exists, the docs and the changeset.
 - A change to consent behaviour updates `@cookieyes/test` in the same PR, including the
@@ -171,7 +171,7 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 
 | Path | Regenerate with | After changing |
 |---|---|---|
-| `apps/web/content/docs/{nextjs,react,core}/**` | `pnpm --filter @cookieyes/web generate:framework-docs` | anything in `apps/web/content/shared` |
+| `apps/web/content/docs/{nextjs,react,vue,nuxt,core}/**` | `pnpm --filter @cookieyes/web generate:framework-docs` | anything in `apps/web/content/shared` |
 | `sdk/ui/src/styles/critical.css` | `pnpm --filter @cookieyes/ui build:critical-css` | `cookieyes.css` |
 | `tools/size/size-report.json` | `pnpm build && pnpm size` | `core`, `react` or `nextjs` source |
 | `tools/package-gate/contents.json` | `pnpm build && pnpm package-gate --update` | a file added to or removed from a published package |
@@ -198,10 +198,11 @@ decision worth keeping goes in `contributing/design/` as a note anyone may read.
 ## Commits, changesets and PRs
 
 - Conventional Commits: `type(scope): summary`. Types in use: `feat`, `fix`, `docs`, `perf`,
-  `refactor`, `test`, `style`, `chore`, `build`. Scopes in use: `core`, `ui`, `react`, `nextjs`, `vanilla`,
-  `scripts`, `cli`, `backend`, `translations`, `test`, `web`, `size`, `matrix`. Subject at most 72
-  characters. Keep the body short, ideally a few short bullet points on what changed and why,
-  wrapped at 72. No Co-Authored-By or other AI attribution lines in commits or PRs.
+  `refactor`, `test`, `style`, `chore`, `build`. Scopes in use: `core`, `ui`, `react`, `nextjs`, `vue`,
+  `nuxt`, `vanilla`, `scripts`, `cli`, `backend`, `translations`, `test`, `web`, `size`, `matrix`.
+  Subject at most 72 characters. Keep the body short, ideally a few short bullet points on what
+  changed and why, wrapped at 72. No Co-Authored-By or other AI attribution lines in commits or
+  PRs.
 - Commits are granular and meaningful: one logical change each, no empty commits, and no
   commits that only patch the previous one (squash those). A regenerated file goes in the
   commit that changed its source.

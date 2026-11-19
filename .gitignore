@@ -31,6 +31,13 @@ pnpm-debug.log*
 out/
 next-env.d.ts
 
+# Nuxt build output (sdk/nuxt test fixtures). `nuxt generate` also leaves a `dist` symlink,
+# which the `dist/` rule above misses because it is not a directory.
+.nuxt/
+.output/
+.output-static/
+sdk/nuxt/test/fixtures/*/dist
+
 # Fumadocs generated content index (apps/web)
 .source/
 *.tsbuildinfo

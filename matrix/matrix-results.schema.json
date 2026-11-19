@@ -66,6 +66,13 @@
   "$defs": {
     "outcome": { "type": "string", "enum": ["pass", "fail", "skipped"] },
     "versionSet": {
+      "oneOf": [
+        { "$ref": "#/$defs/nextReactVersionSet" },
+        { "$ref": "#/$defs/vueVersionSet" },
+        { "$ref": "#/$defs/nuxtVersionSet" }
+      ]
+    },
+    "nextReactVersionSet": {
       "type": "object",
       "required": ["next", "react", "reactDom", "typesReact", "typesReactDom"],
       "additionalProperties": false,
@@ -75,6 +82,23 @@
         "reactDom": { "type": "string" },
         "typesReact": { "type": "string" },
         "typesReactDom": { "type": "string" }
+      }
+    },
+    "vueVersionSet": {
+      "type": "object",
+      "required": ["vue"],
+      "additionalProperties": false,
+      "properties": {
+        "vue": { "type": "string" }
+      }
+    },
+    "nuxtVersionSet": {
+      "type": "object",
+      "required": ["nuxt"],
+      "additionalProperties": false,
+      "properties": {
+        "nuxt": { "type": "string" },
+        "vue": { "type": "string" }
       }
     },
     "assertionResult": {
@@ -131,6 +155,7 @@
         "id": { "type": "string" },
         "role": { "type": "string", "enum": ["floor", "middle", "newest"] },
         "label": { "type": "string" },
+        "app": { "type": "string", "enum": ["next", "vue", "nuxt"] },
         "packagesUnderTest": { "type": "array", "items": { "type": "string" } },
         "requested": { "$ref": "#/$defs/versionSet" },
         "resolved": { "$ref": "#/$defs/versionSet" },

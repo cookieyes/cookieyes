@@ -74,7 +74,7 @@
  * is exceeded. Measuring never fails a build on its own.
  */
 
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -85,6 +85,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { createServer } from "node:net";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { brotliCompressSync, gunzipSync, gzipSync, constants as zlibConstants } from "node:zlib";
@@ -98,9 +99,13 @@ const REPO = resolve(HERE, "..", "..");
  * The apps under measurement.
  *
  * `baseline` is the control and must stay first — every other entry is reported
- * as a delta against it. `key` is what appears in the report, in the budgets and
- * on the site, so it names the thing a reader recognises ("core", "interface")
- * rather than the directory.
+ * as a delta against it, unless it names another control with `control`. The Vue
+ * fixtures do: a delta over an empty Next.js app would put React's runtime in a
+ * Vue figure, so `baseline-vue` (an empty Vite + Vue app) is the control for
+ * `vue`, and a control is an entry whose `control` is `null`. `nuxt` is measured
+ * against `baseline-nuxt`, an empty Nuxt app, for the same reason. `key` is what
+ * appears in the report, in the budgets and on the site, so it names the thing a
+ * reader recognises ("core", "interface") rather than the directory.
  */
 const DEFAULT_APPS = [
   { dir: "baseline", key: "baseline", label: "empty Next.js app (control)" },
@@ -120,6 +125,30 @@ const DEFAULT_APPS = [
     dir: "with-vanilla",
     key: "vanilla",
     label: "@cookieyes/vanilla: banner + recall, dialogs on demand, no framework of its own",
+  },
+  {
+    dir: "baseline-vue",
+    key: "baseline-vue",
+    control: null,
+    label: "empty Vite + Vue app (control for the Vue adapter)",
+  },
+  {
+    dir: "with-vue",
+    key: "vue",
+    control: "baseline-vue",
+    label: "@cookieyes/vue: banner + preferences + recall (three-file setup)",
+  },
+  {
+    dir: "baseline-nuxt",
+    key: "baseline-nuxt",
+    control: null,
+    label: "empty Nuxt app (control for the Nuxt module)",
+  },
+  {
+    dir: "with-nuxt",
+    key: "nuxt",
+    control: "baseline-nuxt",
+    label: "@cookieyes/nuxt: the module and <CookieYesRoot />",
   },
   {
     dir: "with-nextjs-devtools",
@@ -159,6 +188,20 @@ const APPS = appsSpec
   : DEFAULT_APPS;
 if (APPS[0].key !== "baseline")
   throw new Error(`the first --apps entry must be the control, keyed "baseline"`);
+
+/** The key of the control an app is measured against, or null when the app is one. */
+function controlOf(app) {
+  if (app.control !== undefined) return app.control;
+  return app.key === "baseline" ? null : "baseline";
+}
+APPS.forEach((app, index) => {
+  const control = controlOf(app);
+  if (control !== null && !APPS.slice(0, index).some((other) => other.key === control)) {
+    throw new Error(
+      `app "${app.key}" is measured against "${control}", which must be listed first`,
+    );
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Compression
@@ -288,6 +331,8 @@ function otherRouteHtml(appDir) {
  * "dynamic" code in `@cookieyes/core`, which ships no dynamic import at all.
  */
 function chunkSets(appDir) {
+  if (isViteApp(appDir)) return viteChunkSets(appDir);
+  if (isNuxtApp(appDir)) return nuxtChunkSets(appDir);
   const indexHtml = join(appDir, ".next", "server", "app", "index.html");
   if (!existsSync(indexHtml)) {
     throw new Error(
@@ -307,6 +352,72 @@ function chunkSets(appDir) {
   const total = new Set(initial);
   for (const file of emittedChunks(appDir)) {
     if (!claimedByOtherRoutes.has(file)) total.add(file);
+  }
+  return { initial: [...initial], total: [...total] };
+}
+
+/**
+ * The two chunk sets for a Vite app.
+ *
+ * Same definitions as the Next.js path: `initial` is what the built `index.html`
+ * tells the browser to fetch eagerly (`<script type="module" src>` and
+ * `<link rel="modulepreload">`), and `total` adds every other emitted script.
+ * A Vite fixture is a single page, so there is no other route whose chunks need
+ * excluding from `total`.
+ */
+function viteChunkSets(appDir) {
+  const dist = join(appDir, "dist");
+  return moduleChunkSets(join(dist, "index.html"), dist, join(dist, "assets"));
+}
+
+/**
+ * The two chunk sets for a Nuxt app, on the same definitions as a Vite app.
+ *
+ * `nuxi build` prerenders nothing, so the HTML is the page the built server
+ * renders for `/` (see `renderNuxtPage`). Nuxt adds `<link rel="prefetch">`
+ * for the entry's dynamic imports; a prefetch is fetched when the browser is
+ * idle, not eagerly, so those chunks count in `total` and not in `initial`. The
+ * error pages are dynamic imports of Nuxt's entry, present on both sides of the
+ * subtraction, so they cancel like the incidental Next.js routes do.
+ */
+function nuxtChunkSets(appDir) {
+  const output = join(appDir, ".output");
+  const publicDir = join(output, "public");
+  return moduleChunkSets(join(output, "index.html"), publicDir, join(publicDir, "_nuxt"));
+}
+
+/** `initial` from a built page's module scripts and preloads, `total` adding every emitted script. */
+function moduleChunkSets(indexHtml, root, assets) {
+  if (!existsSync(indexHtml)) {
+    throw new Error(
+      `No built HTML at ${relative(REPO, indexHtml)}: the build did not produce a page. ` +
+        `Run without --no-build, or check the build output.`,
+    );
+  }
+  const source = readFileSync(indexHtml, "utf8");
+  const initial = new Set();
+  for (const tag of source.match(/<(?:script|link)\b[^>]*>/gi) ?? []) {
+    const eager =
+      (/^<script/i.test(tag) && /\btype="module"/i.test(tag)) ||
+      (/^<link/i.test(tag) && /\brel="modulepreload"/i.test(tag));
+    const reference = /\b(?:src|href)="([^"]+\.js)"/i.exec(tag)?.[1];
+    if (!eager || !reference) continue;
+    const file = join(root, reference.replace(/^\//, ""));
+    if (!existsSync(file)) {
+      throw new Error(
+        `${relative(REPO, indexHtml)} references ${reference}, which was not emitted`,
+      );
+    }
+    initial.add(file);
+  }
+  if (initial.size === 0)
+    throw new Error(`No client scripts referenced by ${relative(REPO, indexHtml)}`);
+
+  const total = new Set(initial);
+  if (existsSync(assets)) {
+    for (const name of readdirSync(assets).sort()) {
+      if (name.endsWith(".js")) total.add(join(assets, name));
+    }
   }
   return { initial: [...initial], total: [...total] };
 }
@@ -354,7 +465,9 @@ function installFixture(appDir, name, tarballs) {
     .replace("__TARBALL_REACT__", `file:${tarballs["@cookieyes/react"]}`)
     .replace("__TARBALL_NEXTJS__", `file:${tarballs["@cookieyes/nextjs"]}`)
     .replace("__TARBALL_DEVTOOLS__", `file:${tarballs["@cookieyes/devtools"]}`)
-    .replace("__TARBALL_VANILLA__", `file:${tarballs["@cookieyes/vanilla"]}`);
+    .replace("__TARBALL_VANILLA__", `file:${tarballs["@cookieyes/vanilla"]}`)
+    .replace("__TARBALL_VUE__", `file:${tarballs["@cookieyes/vue"]}`)
+    .replace("__TARBALL_NUXT__", `file:${tarballs["@cookieyes/nuxt"]}`);
   if (resolved.includes("__TARBALL_")) {
     throw new Error(`fixture "${name}" has an unresolved tarball placeholder in package.json`);
   }
@@ -427,7 +540,17 @@ function installFixture(appDir, name, tarballs) {
   // `pnpm build` just produced. Everything above is a proxy for this; this is
   // the invariant. Without it, `file:` resolution caching silently measured a
   // previous run's code and reported a real change as a 0-byte saving.
-  for (const pkg of ["core", "ui", "react", "nextjs", "vanilla", "scripts", "devtools"]) {
+  for (const pkg of [
+    "core",
+    "ui",
+    "react",
+    "nextjs",
+    "vanilla",
+    "vue",
+    "nuxt",
+    "scripts",
+    "devtools",
+  ]) {
     const built = join(REPO, "sdk", pkg, "dist", "index.js");
     const installed = join(appDir, "node_modules", "@cookieyes", pkg, "dist", "index.js");
     if (!existsSync(installed) || !existsSync(built)) continue;
@@ -440,18 +563,23 @@ function installFixture(appDir, name, tarballs) {
     }
   }
 
-  const seen = new Set();
-  if (existsSync(pnpmDir)) {
-    for (const entry of readdirSync(pnpmDir)) {
-      const match = /^react@(\d+\.\d+\.\d+)/.exec(entry);
-      if (match) seen.add(match[1]);
+  for (const [framework, label] of [
+    ["react", "React"],
+    ["vue", "Vue"],
+  ]) {
+    const seen = new Set();
+    if (existsSync(pnpmDir)) {
+      for (const entry of readdirSync(pnpmDir)) {
+        const match = new RegExp(`^${framework}@(\\d+\\.\\d+\\.\\d+)`).exec(entry);
+        if (match) seen.add(match[1]);
+      }
     }
-  }
-  if (seen.size > 1) {
-    throw new Error(
-      `fixture "${name}" resolved ${seen.size} copies of React (${[...seen].join(", ")}). ` +
-        `The delta would measure that duplication, not the SDK.`,
-    );
+    if (seen.size > 1) {
+      throw new Error(
+        `fixture "${name}" resolved ${seen.size} copies of ${label} (${[...seen].join(", ")}). ` +
+          `The delta would measure that duplication, not the SDK.`,
+      );
+    }
   }
 }
 
@@ -459,10 +587,16 @@ function installFixture(appDir, name, tarballs) {
 // Build
 // ---------------------------------------------------------------------------
 
+/** Vite and Nuxt fixtures are recognised by their config; everything else is a Next.js app. */
+const isViteApp = (appDir) => existsSync(join(appDir, "vite.config.ts"));
+const isNuxtApp = (appDir) => existsSync(join(appDir, "nuxt.config.ts"));
+
 function build(appDir, name) {
-  rmSync(join(appDir, ".next"), { recursive: true, force: true });
+  const tool = isViteApp(appDir) ? "vite" : isNuxtApp(appDir) ? "nuxi" : "next";
+  const outputs = { vite: ["dist"], nuxi: [".nuxt", ".output"], next: [".next"] }[tool];
+  for (const output of outputs) rmSync(join(appDir, output), { recursive: true, force: true });
   const started = Date.now();
-  const result = spawnSync("npx", ["next", "build"], {
+  const result = spawnSync("npx", [tool, "build"], {
     cwd: appDir,
     stdio: ["ignore", "pipe", "pipe"],
     encoding: "utf8",
@@ -477,9 +611,72 @@ function build(appDir, name) {
   if (result.status !== 0) {
     process.stderr.write(result.stdout ?? "");
     process.stderr.write(result.stderr ?? "");
-    throw new Error(`next build failed for fixture "${name}"`);
+    throw new Error(`${tool} build failed for fixture "${name}"`);
   }
   return Date.now() - started;
+}
+
+/** A port nothing is listening on, for the Nuxt server to take. */
+function freePort() {
+  return new Promise((resolvePort, reject) => {
+    const probe = createServer();
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const { port } = probe.address();
+      probe.close(() => resolvePort(port));
+    });
+  });
+}
+
+/**
+ * Starts a built Nuxt fixture's server, saves the HTML it renders for `/` as
+ * `.output/index.html`, and stops it.
+ *
+ * Nuxt renders pages on request, so unlike Next.js and Vite a build leaves no
+ * HTML to read. Prerendering `/` would produce one, but it also changes the
+ * client bundle (payload extraction adds about 2 KB to Nuxt's entry), and no
+ * build tuning goes into a fixture. The saved file lets `--no-build` re-read
+ * the measurement without starting a server.
+ */
+async function renderNuxtPage(appDir, name) {
+  const port = await freePort();
+  const server = spawn(process.execPath, [join(".output", "server", "index.mjs")], {
+    cwd: appDir,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, NODE_ENV: "production", HOST: "127.0.0.1", PORT: String(port) },
+  });
+  let log = "";
+  server.stdout.on("data", (chunk) => {
+    log += chunk;
+  });
+  server.stderr.on("data", (chunk) => {
+    log += chunk;
+  });
+  try {
+    const deadline = Date.now() + 30_000;
+    for (;;) {
+      let response = null;
+      try {
+        response = await fetch(`http://127.0.0.1:${port}/`);
+      } catch {
+        // Not listening yet.
+      }
+      if (response) {
+        if (!response.ok) {
+          throw new Error(`the server for fixture "${name}" answered ${response.status} for /`);
+        }
+        writeFileSync(join(appDir, ".output", "index.html"), await response.text());
+        return;
+      }
+      if (server.exitCode !== null || Date.now() > deadline) {
+        process.stderr.write(log);
+        throw new Error(`the server for fixture "${name}" did not answer on port ${port}`);
+      }
+      await new Promise((wake) => setTimeout(wake, 200));
+    }
+  } finally {
+    server.kill();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -493,6 +690,8 @@ const TARBALL_PACKAGES = [
   "@cookieyes/react",
   "@cookieyes/nextjs",
   "@cookieyes/vanilla",
+  "@cookieyes/vue",
+  "@cookieyes/nuxt",
 ];
 
 /** Bytes of file content inside a `.tgz`, read from the tar headers. */
@@ -518,8 +717,9 @@ function unpackedSize(tgz) {
  * `install` is the figure a reader means by "how much does this pull in": the
  * React adapter alone is small, but nobody installs it without core. Peer
  * dependencies (React, Next) are left out because the consumer already has
- * them, and every runtime dependency of these packages is a `@cookieyes/*`
- * package, so the sum is the whole install.
+ * them. Every other runtime dependency is a `@cookieyes/*` package, except
+ * `@nuxt/kit` in `@cookieyes/nuxt`, which Nuxt itself depends on, so a Nuxt app
+ * already has it; it is left out for the same reason as a peer.
  */
 function tarballReport(packed) {
   const own = {};
@@ -528,7 +728,9 @@ function tarballReport(packed) {
     const buf = readFileSync(file);
     own[name] = { packed: buf.length, unpacked: unpackedSize(buf) };
     const manifest = join(REPO, "sdk", name.split("/")[1], "package.json");
-    deps[name] = Object.keys(JSON.parse(readFileSync(manifest, "utf8")).dependencies ?? {});
+    deps[name] = Object.keys(JSON.parse(readFileSync(manifest, "utf8")).dependencies ?? {}).filter(
+      (dep) => dep.startsWith("@cookieyes/"),
+    );
   }
   const report = {};
   for (const name of TARBALL_PACKAGES) {
@@ -575,12 +777,39 @@ if (doBuild) {
   // at that path is different. Putting the content hash in the path makes the
   // specifier change whenever the code does.
   const stamp = createHash("sha256");
-  for (const pkg of ["core", "ui", "react", "nextjs", "vanilla", "scripts", "test", "devtools"]) {
+  for (const pkg of [
+    "core",
+    "ui",
+    "react",
+    "nextjs",
+    "vanilla",
+    "vue",
+    "nuxt",
+    "scripts",
+    "test",
+    "devtools",
+  ]) {
     const dist = join(REPO, "sdk", pkg, "dist", "index.js");
     if (existsSync(dist)) stamp.update(readFileSync(dist));
   }
   const tarballDir = join(root, stamp.digest("hex").slice(0, 16));
   tarballs = packTarballs(tarballDir);
+  // The peer-dependency matrix packs what its example apps install, and none of
+  // them is a Nuxt app, so the Nuxt fixture's tarball is packed here.
+  if (!tarballs["@cookieyes/nuxt"]) {
+    const nuxtDir = join(REPO, "sdk", "nuxt");
+    if (!existsSync(join(nuxtDir, "dist"))) {
+      throw new Error("sdk/nuxt has no dist/: run pnpm build --filter './sdk/*' first");
+    }
+    const before = new Set(readdirSync(tarballDir));
+    spawnSync("pnpm", ["pack", "--pack-destination", tarballDir], {
+      cwd: nuxtDir,
+      stdio: ["ignore", "ignore", "inherit"],
+    });
+    const packed = readdirSync(tarballDir).find((f) => !before.has(f) && f.endsWith(".tgz"));
+    if (!packed) throw new Error("pnpm pack did not produce a tarball for @cookieyes/nuxt");
+    tarballs["@cookieyes/nuxt"] = join(tarballDir, packed);
+  }
   process.stderr.write("done\n");
 }
 
@@ -591,7 +820,12 @@ for (const app of APPS) {
     process.stderr.write(`installing ${app.dir} … `);
     installFixture(appDir, app.dir, tarballs);
     process.stderr.write("building … ");
-    const ms = build(appDir, app.dir);
+    let ms = build(appDir, app.dir);
+    if (isNuxtApp(appDir)) {
+      const started = Date.now();
+      await renderNuxtPage(appDir, app.dir);
+      ms += Date.now() - started;
+    }
     process.stderr.write(`${(ms / 1000).toFixed(1)}s\n`);
   }
   const sets = chunkSets(appDir);
@@ -605,8 +839,10 @@ for (const app of APPS) {
 
 const base = measured.baseline;
 
-/** The published figure for an app: its compressed client JS over the control. */
-function delta(app) {
+/** The published figure for an app: its compressed client JS over its control. */
+function delta(entry) {
+  const app = measured[entry.key];
+  const base = measured[controlOf(entry)];
   return {
     initial: {
       raw: app.initial.raw - base.initial.raw,
@@ -623,8 +859,8 @@ function delta(app) {
 
 const deltas = {};
 for (const app of APPS) {
-  if (app.key === "baseline") continue;
-  deltas[app.key] = delta(measured[app.key]);
+  if (controlOf(app) === null) continue;
+  deltas[app.key] = delta(app);
 }
 
 // The interface layer's cost *on top of* the engine — the number Story 2 of
@@ -677,10 +913,15 @@ const report = {
       "Delta in compressed client JavaScript between an empty Next.js app and the same app " +
       "with one CookieYes entry mounted. gzip level 9 is the headline basis; brotli quality 11 " +
       "is reported alongside. 'initial' counts only scripts the prerendered HTML references; " +
-      "'total' counts every emitted client chunk including dynamic ones.",
+      "'total' counts every emitted client chunk including dynamic ones. The Vue entry is " +
+      "measured the same way against an empty Vite + Vue app, so Vue's runtime is in its control, " +
+      "and the Nuxt entry against an empty Nuxt app, reading the HTML its server renders for /.",
     compression: { headline: "gzip", gzipLevel: 9, brotliQuality: 11 },
     next: "16.3.0",
     react: "19.2.8",
+    vite: "8.3.6",
+    vue: "3.5.45",
+    nuxt: "4.6.4",
   },
   measuredAt: new Date().toISOString(),
   node: process.version,
@@ -710,13 +951,13 @@ writeFileSync(outPath, `${JSON.stringify(report, null, 2)}\n`);
 
 const lines = [];
 lines.push("");
-lines.push("Compressed client-JS delta over an empty Next.js app");
+lines.push("Compressed client-JS delta over an empty app of the same framework");
 lines.push("─".repeat(78));
 lines.push(
   `${"".padEnd(24)}${"initial (gzip)".padStart(17)}${"total (gzip)".padStart(17)}${"initial (br)".padStart(17)}`,
 );
 for (const app of APPS) {
-  if (app.key === "baseline") continue;
+  if (controlOf(app) === null) continue;
   const d = deltas[app.key];
   lines.push(
     app.key.padEnd(24) +
@@ -735,6 +976,13 @@ if (interfaceOverCore) {
 }
 lines.push("─".repeat(78));
 lines.push(`control: ${fmtKb(base.initial.gzip)} initial / ${fmtKb(base.total.gzip)} total (gzip)`);
+for (const app of APPS) {
+  if (app.key === "baseline" || controlOf(app) !== null) continue;
+  const control = measured[app.key];
+  lines.push(
+    `${app.key}: ${fmtKb(control.initial.gzip)} initial / ${fmtKb(control.total.gzip)} total (gzip)`,
+  );
+}
 const css = report.stylesheet;
 if (css["styles.css"]) {
   lines.push(
@@ -946,7 +1194,7 @@ const fmtChange = (bytes) => {
 
 function commentMarkdown() {
   const out = ["## Bundle size", ""];
-  const appKeys = APPS.map((app) => app.key).filter((key) => key !== "baseline");
+  const appKeys = APPS.filter((app) => controlOf(app) !== null).map((app) => app.key);
   const changes = [
     ...appKeys.flatMap((key) => [appChange(key, "initial"), appChange(key, "total")]),
     ...TARBALL_PACKAGES.flatMap((name) => [

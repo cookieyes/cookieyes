@@ -1,7 +1,7 @@
 ---
 title: Styling
 description: Change the colours, font and layout of the banner and dialogs, and know which tool to use for each.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -24,6 +24,30 @@ The components look finished out of the box. To make them match your site, pick 
 
 </Framework>
 
+<Framework when="vue">
+
+| You want to change | Use | Page |
+| --- | --- | --- |
+| Brand colour, corner radius, font, backgrounds | `theme` in `app.use(CookieYes, config)` | [Theme tokens](/docs/styling/theme-tokens) |
+| Light, dark, or follow the device | `colorScheme` in `app.use(CookieYes, config)` | [Colour scheme](/docs/styling/color-scheme) |
+| Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
+| The same, with utility classes | `class` and `@apply` | [Tailwind](/docs/styling/tailwind) |
+| The markup itself | Primitives | [Banner primitives](/docs/headless/banner) |
+
+</Framework>
+
+<Framework when="nuxt">
+
+| You want to change | Use | Page |
+| --- | --- | --- |
+| Brand colour, corner radius, font, backgrounds | `theme` under `cookieyes` in `nuxt.config.ts` | [Theme tokens](/docs/styling/theme-tokens) |
+| Light, dark, or follow the device | `colorScheme` under `cookieyes` in `nuxt.config.ts` | [Colour scheme](/docs/styling/color-scheme) |
+| Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
+| The same, with utility classes | `class` and `@apply` | [Tailwind](/docs/styling/tailwind) |
+| The markup itself | Primitives | [Banner primitives](/docs/headless/banner) |
+
+</Framework>
+
 <Framework when="core">
 
 | You want to change | Use | Page |
@@ -42,7 +66,18 @@ Most sites stop at the first row.
 
 ## Two rules
 
+<Framework when="nextjs react vue core">
+
 1. **Load your CSS after the SDK's stylesheet.** The SDK's rules are plain single-class rules, so a rule of yours with the same selector strength wins only if it comes later. Import `styles.css` first and your own stylesheet after it. You never need `!important`.
+
+</Framework>
+
+<Framework when="nuxt">
+
+1. **Load your CSS after the SDK's stylesheet.** The SDK's rules are plain single-class rules, so a rule of yours with the same selector strength wins only if it comes later. The module writes its stylesheet right after `<meta charset>`, ahead of every other tag in `<head>`, so CSS you add through Nuxt, with the `css` option in `nuxt.config.ts` or an import in a component, comes after it already. You never need `!important`.
+
+</Framework>
+
 2. **Set a value in config or in CSS, not both.** A `theme` value is written straight onto the component, which beats any stylesheet rule for that variable. If you want to control `--cy-primary` from CSS, leave `primaryColor` out of `theme`.
 
 ## Good to know

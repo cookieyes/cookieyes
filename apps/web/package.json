@@ -9,7 +9,7 @@
     "build": "node scripts/generate-changelog.mjs && node scripts/generate-framework-docs.mjs && node scripts/generate-bundle-size.mjs && node scripts/generate-config-reference.mjs && node scripts/generate-component-reference.mjs && node scripts/generate-css-variables-reference.mjs && node scripts/generate-backend-reference.mjs && node scripts/check-examples.mjs && next build",
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --test src/lib/__tests__/announcement-gate.test.mjs",
+    "test": "node --test src/lib/__tests__/announcement-gate.test.mjs src/lib/__tests__/framework-sync.test.mjs",
     "check-examples": "node scripts/check-examples.mjs",
     "generate:framework-docs": "node scripts/generate-framework-docs.mjs",
     "generate:peer-matrix-readme": "node scripts/generate-peer-matrix-reference.mjs",
@@ -30,17 +30,22 @@
     "@cookieyes/backend": "workspace:*",
     "@cookieyes/core": "workspace:*",
     "@cookieyes/nextjs": "workspace:*",
+    "@cookieyes/nuxt": "workspace:*",
     "@cookieyes/react": "workspace:*",
     "@cookieyes/scripts": "workspace:*",
     "@cookieyes/test": "workspace:*",
     "@cookieyes/ui": "workspace:*",
     "@cookieyes/vanilla": "workspace:*",
+    "@cookieyes/vue": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "nuxt": "^4.6.4",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vue": "^3.5.44",
+    "vue-tsc": "3.3.14"
   }
 }

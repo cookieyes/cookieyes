@@ -32,6 +32,10 @@ const PACKAGES = [
   { name: "@cookieyes/ui", dir: join(repoRoot, "sdk", "ui") },
   { name: "@cookieyes/react", dir: join(repoRoot, "sdk", "react") },
   { name: "@cookieyes/nextjs", dir: join(repoRoot, "sdk", "nextjs") },
+  // The Vue leg's example app (matrix/example-app-vue) and tools/size's Vue fixtures install it.
+  { name: "@cookieyes/vue", dir: join(repoRoot, "sdk", "vue") },
+  // The Nuxt legs' example app (matrix/example-app-nuxt) installs it.
+  { name: "@cookieyes/nuxt", dir: join(repoRoot, "sdk", "nuxt") },
   // Packed so tools/size's with-vanilla fixture installs it from a tarball like
   // every other fixture; the matrix's own example app does not use it.
   { name: "@cookieyes/vanilla", dir: join(repoRoot, "sdk", "vanilla") },

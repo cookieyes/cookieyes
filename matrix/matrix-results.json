@@ -1,14 +1,14 @@
 {
   "$schema": "https://cookieyes.dev/schemas/peer-matrix-results.schema.json",
   "schemaVersion": 1,
-  "generatedAt": "2026-09-07T11:25:26.547Z",
-  "commit": "ff751e4214c64473cac9b2dde2467d9b975fcc63",
-  "matrixConfigHash": "sha256:d22e103be392eac346c780fed533fbb137ad4f9449570006250bf24540c29c04",
+  "generatedAt": "2026-11-16T06:16:28.557Z",
+  "commit": "8e541c0751ab76b26efcca0dbe3972ddf5d95005",
+  "matrixConfigHash": "sha256:6cc712c61bd442b5e2257a2b41afb8ddf6aa8350d0e95e117a85d2c57f3e822a",
   "subset": "full",
   "dimensions": {
     "varied": ["framework"],
     "fixed": {
-      "node": "20",
+      "node": "20, 22",
       "packageManager": "pnpm@10.22.0",
       "moduleResolution": "bundler"
     }
@@ -232,16 +232,338 @@
       },
       "notes": null,
       "logsArtifact": "run-34116359076/next-16.3.0-react-19.2.8.log"
+    },
+    {
+      "id": "vue-3.5.0",
+      "role": "floor",
+      "label": "Vue 3.5.0 (declared floor)",
+      "app": "vue",
+      "packagesUnderTest": ["@cookieyes/vue"],
+      "requested": {
+        "vue": "3.5.0"
+      },
+      "resolved": {
+        "vue": "3.5.0"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-11T08:21:14.290Z",
+      "finishedAt": "2026-11-11T08:21:22.441Z",
+      "durationMs": 8151,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "asChild-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-click-commits-consent",
+              "outcome": "pass"
+            },
+            {
+              "name": "ssr-markup-hydrates-without-mismatch",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/vue-3.5.0.log"
+    },
+    {
+      "id": "vue-3.5.45",
+      "role": "newest",
+      "label": "Vue 3.5.45",
+      "app": "vue",
+      "packagesUnderTest": ["@cookieyes/vue"],
+      "requested": {
+        "vue": "3.5.45"
+      },
+      "resolved": {
+        "vue": "3.5.45"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-11T08:21:27.587Z",
+      "finishedAt": "2026-11-11T08:21:36.567Z",
+      "durationMs": 8979,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "asChild-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-click-commits-consent",
+              "outcome": "pass"
+            },
+            {
+              "name": "ssr-markup-hydrates-without-mismatch",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/vue-3.5.45.log"
+    },
+    {
+      "id": "nuxt-4.0.0",
+      "role": "floor",
+      "label": "Nuxt 4.0.0 (declared floor)",
+      "app": "nuxt",
+      "packagesUnderTest": ["@cookieyes/nuxt"],
+      "requested": {
+        "nuxt": "4.0.0"
+      },
+      "resolved": {
+        "nuxt": "4.0.0",
+        "vue": "3.5.45"
+      },
+      "node": "22",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-16T06:14:53.743Z",
+      "finishedAt": "2026-11-16T06:15:42.639Z",
+      "durationMs": 48895,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "root-shows-banner-to-fresh-visitor",
+              "outcome": "pass"
+            },
+            {
+              "name": "accept-writes-cookie-and-hides-banner",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-click-commits-consent",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/nuxt-4.0.0.log"
+    },
+    {
+      "id": "nuxt-4.6.4",
+      "role": "newest",
+      "label": "Nuxt 4.6.4",
+      "app": "nuxt",
+      "packagesUnderTest": ["@cookieyes/nuxt"],
+      "requested": {
+        "nuxt": "4.6.4"
+      },
+      "resolved": {
+        "nuxt": "4.6.4",
+        "vue": "3.5.45"
+      },
+      "node": "22",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-16T06:15:42.711Z",
+      "finishedAt": "2026-11-16T06:16:10.462Z",
+      "durationMs": 27751,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "root-shows-banner-to-fresh-visitor",
+              "outcome": "pass"
+            },
+            {
+              "name": "accept-writes-cookie-and-hides-banner",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "asChild-click-commits-consent",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/nuxt-4.6.4.log"
     }
   ],
   "summary": {
-    "total": 3,
-    "pass": 3,
+    "total": 7,
+    "pass": 7,
     "fail": 0,
     "outcome": "pass"
   },
   "coverageLimits": [
     "No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).",
-    "Node, package-manager and module-resolution dimensions are not yet varied — every combination above ran on Node 20 / pnpm / moduleResolution=bundler."
+    "Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, all with pnpm and moduleResolution=bundler."
   ]
 }

@@ -1,7 +1,7 @@
 ---
 title: Custom CSS
 description: Change the width, spacing or any single element with a CSS rule on its part name.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -13,6 +13,8 @@ This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-starte
 ## What it does
 
 Every element the SDK renders carries a `data-cy-part` attribute: `banner`, `accept-all`, `dialog`, `toggle` and so on. Target it in your own stylesheet to change anything `theme` does not cover: width, spacing, shadows, one button, the toggle.
+
+<Framework when="nextjs react core">
 
 ```css title="app/consent.css"
 [data-cy-part="banner"] {
@@ -28,7 +30,58 @@ Every element the SDK renders carries a `data-cy-part` attribute: `banner`, `acc
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/consent.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+Add it to the `css` option. The module writes the SDK's stylesheet right after `<meta charset>`, ahead of every other tag in `<head>`, so your file always comes after it and your rules win:
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  css: ["~/assets/css/consent.css"],
+});
+```
+
+</Framework>
+
+<Framework when="nextjs react vue core">
+
 Import it after the SDK's stylesheet, so your rules win:
+
+</Framework>
 
 <Framework when="nextjs">
 
@@ -43,6 +96,15 @@ import "./consent.css";
 
 ```tsx title="src/consent-manager.tsx" check="false"
 import "@cookieyes/react/styles.css";
+import "./consent.css";
+```
+
+</Framework>
+
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts" check="false"
+import "@cookieyes/vue/styles.css";
 import "./consent.css";
 ```
 
@@ -63,15 +125,49 @@ The full list of part names is on [Parts](/docs/styling/part-and-state-contract)
 
 The switch in the preferences dialog is the one element that needs a specific selector. Its colour is painted by a child, `.cy-toggle-track`, and the SDK's own rule for the checked state is stronger than a single part selector, so repeat the attribute once to outrank it:
 
+<Framework when="nextjs react core">
+
 ```css title="app/consent.css"
 [data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
   background: #15803d;
 }
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```css title="src/consent.css"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: #15803d;
+}
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: #15803d;
+}
+```
+
+</Framework>
+
 ## Good to know
 
+<Framework when="nextjs react core">
+
 **Global CSS only.** The banner, dialogs and recall button render into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing, and CSS Modules or styled-components classes do not reach them.
+
+</Framework>
+
+<Framework when="vue nuxt">
+
+**Global CSS only.** The banner, dialogs and recall button render into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing, and a `<style scoped>` block or CSS Modules in one of your components does not reach them.
+
+</Framework>
 
 **Shared names.** `title`, `close`, `accept-all`, `reject-all` and `branding` exist on more than one surface. To style one, add its parent: `[data-cy-part="banner"] [data-cy-part="title"]`.
 
@@ -81,8 +177,19 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 ## Common mistakes
 
+<Framework when="nextjs react vue core">
+
 **A rule does nothing.**
 Your stylesheet loads before the SDK's. Import it after `styles.css`, or add the parent part to the selector.
+
+</Framework>
+
+<Framework when="nuxt">
+
+**A rule does nothing.**
+The file is missing from the `css` option, or the selector is weaker than the SDK's own rule. Add it to `css`, or add the parent part to the selector.
+
+</Framework>
 
 **A scoped selector matches nothing.**
 The components are under `<body>`, outside your app's element. Drop the ancestor.

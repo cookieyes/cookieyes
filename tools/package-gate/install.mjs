@@ -62,6 +62,11 @@ const peers = {
   next: newest.versions.next,
   react: newest.versions.react,
   "react-dom": newest.versions.reactDom,
+  // A literal because the compatibility matrix has no Vue combination yet; it follows the
+  // `vue` devDependency of @cookieyes/vue until the matrix supplies it.
+  vue: "3.5.44",
+  // The same, for the `nuxt` devDependency of @cookieyes/nuxt.
+  nuxt: "4.6.4",
 };
 
 /** Reads one file out of a tarball without unpacking it. */

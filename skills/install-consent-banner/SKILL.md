@@ -1,11 +1,11 @@
 ---
 name: install-consent-banner
-description: "Add the CookieYes consent banner to a Next.js, React or plain JavaScript site with the open-source @cookieyes packages: install, initialise, render, verify."
+description: "Add the CookieYes consent banner to a Next.js, React, Vue, Nuxt or plain JavaScript site with the open-source @cookieyes packages: install, initialise, render, verify."
 ---
 
 # Install the CookieYes consent banner
 
-Use this when someone wants a cookie consent banner in a Next.js, React or plain JavaScript project, without a hosted service or an account. The packages are open source (Apache-2.0), run in the frontend and store the visitor's choice in a cookie. Full docs: https://developers.cookieyes.com/docs/nextjs (switch the framework in the sidebar).
+Use this when someone wants a cookie consent banner in a Next.js, React, Vue, Nuxt or plain JavaScript project, without a hosted service or an account. The packages are open source (Apache-2.0), run in the frontend and store the visitor's choice in a cookie. Full docs: https://developers.cookieyes.com/docs/nextjs (switch the framework in the sidebar).
 
 ## Decide two things first
 
@@ -14,7 +14,7 @@ Use this when someone wants a cookie consent banner in a Next.js, React or plain
 
 ## Fastest path: the CLI
 
-In an existing Next.js or React project, run:
+In an existing Next.js, React, Vue or Nuxt project, run:
 
 ```bash
 npx @cookieyes/cli init
@@ -81,7 +81,67 @@ npm install @cookieyes/react
 
 Same `consent-manager.tsx` as above without the `"use client"` line, importing from `@cookieyes/react` and `@cookieyes/react/styles.css`. Render `<CookieYesRoot />` once, before the page content, for example in `src/main.tsx`.
 
-### Plain JavaScript, Vue, Svelte, Angular
+### Vue 3
+
+```bash
+npm install @cookieyes/vue
+```
+
+Needs Vue 3.5 or later. Three files:
+
+```ts title="src/consent-manager.ts" check="false"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR" };
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+```vue title="src/components/CookieYesRoot.vue"
+<script setup lang="ts">
+import { CookieBanner, CookiePreferences, RecallButton } from "@cookieyes/vue";
+</script>
+
+<template>
+  <CookieBanner />
+  <CookiePreferences />
+  <RecallButton />
+</template>
+```
+
+In an existing Vue project, `npx @cookieyes/cli init` writes these files and wires them in. Otherwise call `setupConsent(app)` in `src/main.ts` after `createApp(App)` and before `app.mount("#app")`, and render `<CookieYesRoot />` once in `src/App.vue`, before the page content. Under `"CCPA"`, also render `<CookieOptOut />` next to `<CookieBanner />`.
+
+### Nuxt 4
+
+```bash
+npx nuxi module add @cookieyes/nuxt
+```
+
+Options go under `cookieyes` in `nuxt.config.ts`; the module adds the stylesheet itself:
+
+```ts title="nuxt.config.ts" check="false"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: { mode: "cookie-only", regulation: "GDPR" },
+});
+```
+
+Render the consent UI once in `app/app.vue`, outside `<NuxtPage />`. Components and composables are auto-imported:
+
+```vue title="app/app.vue"
+<template>
+  <CookieYesRoot />
+  <NuxtPage />
+</template>
+```
+
+Options that hold functions (integrations from `@cookieyes/scripts`, callbacks) go under the same `cookieyes` key in `app/app.config.ts` with `defineAppConfig`, because `nuxt.config.ts` options travel as runtime config, which is JSON and drops functions. The module reads the consent cookie and the Vercel and Cloudflare geo headers on the server, so a returning visitor gets no banner in the HTML. `npx @cookieyes/cli init` sets all of this up in an existing Nuxt project.
+
+### Plain JavaScript, Svelte, Angular
 
 ```bash
 npm install @cookieyes/vanilla
@@ -108,7 +168,8 @@ Import this file once from the page's entry script. `start` draws the same banne
 ## Common mistakes
 
 - **Banner renders as plain text**: the `styles.css` import is missing.
-- **Nothing renders and no error**: `<CookieYesRoot />` is not rendered anywhere, so `initCookieYes()` never ran.
+- **Nothing renders and no error**: `<CookieYesRoot />` is not rendered anywhere, so `initCookieYes()` never ran. In Vue the composables throw instead if `app.use(CookieYes, config)` never ran.
+- **An integration or callback set in `nuxt.config.ts` silently does nothing** (Nuxt): runtime config drops functions. Move it under `cookieyes` in `app/app.config.ts`; the module warns about this in development.
 - **"You're importing a component that needs use client"** (Next.js): the consent file lost its `"use client"` line, or `initCookieYes()` was called in the layout.
 - **Set `regulation` to `"GDPR"` or `"CCPA"`**, or leave it out to behave as GDPR.
 - **`tsc` reports TS2882 for the `styles.css` import** in a fresh Next.js checkout: run `next dev` or `next build` once. It creates `next-env.d.ts`, which loads the Next.js types that declare CSS imports.

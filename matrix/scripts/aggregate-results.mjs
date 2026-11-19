@@ -95,6 +95,20 @@ export function buildAggregateResult({
     .filter((c) => expectedIds.has(c.id))
     .map((c) => perComboResults.find((r) => r.id === c.id));
 
+  // The Nuxt legs run on a newer Node than the rest, so the Node each framework ran on is stated
+  // per framework rather than as one value for the whole matrix.
+  const appNames = { next: "Next.js", vue: "Vue", nuxt: "Nuxt" };
+  const nodeByApp = new Map();
+  for (const r of orderedResults) {
+    const name = appNames[r.app ?? "next"];
+    if (!nodeByApp.has(name)) nodeByApp.set(name, new Set());
+    nodeByApp.get(name).add(r.node);
+  }
+  const nodes = [...new Set(orderedResults.map((r) => r.node))];
+  const nodeSummary = [...nodeByApp]
+    .map(([name, versions]) => `${name} on Node ${[...versions].join(" and ")}`)
+    .join(", ");
+
   const pass = orderedResults.filter((r) => r.outcome === "pass").length;
   const fail_ = orderedResults.length - pass;
 
@@ -108,7 +122,7 @@ export function buildAggregateResult({
     dimensions: {
       varied: ["framework"],
       fixed: {
-        node: combinations[0]?.node ?? "20",
+        node: nodes.length > 0 ? nodes.join(", ") : (combinations[0]?.node ?? "20"),
         packageManager: combinations[0]?.packageManager ?? "pnpm@10.22.0",
         moduleResolution: combinations[0]?.moduleResolution ?? "bundler",
       },
@@ -123,8 +137,8 @@ export function buildAggregateResult({
     coverageLimits: [
       "No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; " +
         "client behaviour is asserted in jsdom, not a browser DOM (no Playwright).",
-      "Node, package-manager and module-resolution dimensions are not yet varied — every " +
-        "combination above ran on Node 20 / pnpm / moduleResolution=bundler.",
+      "Node, package-manager and module-resolution dimensions are not yet varied within a " +
+        `framework: ${nodeSummary}, all with pnpm and moduleResolution=bundler.`,
     ],
   };
 }

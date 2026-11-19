@@ -9,6 +9,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ComponentProps } from "react";
 import { MAIN_CONTENT_ID } from "@/app/SkipLink";
+import {
+  ComponentPropsTable,
+  type ComponentPropsTableProps,
+} from "@/components/docs/ComponentPropsTable";
 import { LinkedDescription } from "@/components/docs/LinkedDescription";
 import { PmSplit } from "@/components/docs/PmSplit";
 import { TocFooter } from "@/components/docs/TocFooter";
@@ -258,7 +262,15 @@ export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
         )}
 
         <DocsBody>
-          <MDX components={getMDXComponents(frameworkLinkComponents(framework, page))} />
+          <MDX
+            components={getMDXComponents({
+              ...frameworkLinkComponents(framework, page),
+              // The props tables differ per adapter; the page knows which one it is.
+              ComponentPropsTable: (props: ComponentPropsTableProps) => (
+                <ComponentPropsTable {...props} framework={framework} />
+              ),
+            })}
+          />
         </DocsBody>
       </DocsPage>
     </>

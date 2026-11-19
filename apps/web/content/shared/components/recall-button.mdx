@@ -1,7 +1,7 @@
 ---
 title: RecallButton
 description: A floating button that lets a visitor change their cookie choice later.
-frameworks: [nextjs, react]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -10,7 +10,19 @@ A small round button in the bottom-left corner. It appears once the banner is an
 
 Visitors must be able to change their choice as easily as they made it. This button is the ready-made way to give them that.
 
+<Framework when="nextjs react vue">
+
 You already render it if you followed [Installation](/docs/getting-started/installation).
+
+</Framework>
+
+<Framework when="nuxt">
+
+In Nuxt, `<CookieYesRoot />` renders it for you. If you list the components inside `<CookieYesRoot>` yourself, its slot replaces the default contents, so keep the button there:
+
+</Framework>
+
+<Framework when="nextjs react">
 
 ```tsx check="false"
 <CookieBanner />
@@ -18,13 +30,52 @@ You already render it if you followed [Installation](/docs/getting-started/insta
 <RecallButton />
 ```
 
+</Framework>
+
+<Framework when="vue">
+
+```vue check="false"
+<CookieBanner />
+<CookiePreferences />
+<RecallButton />
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```vue title="app/app.vue"
+<template>
+  <CookieYesRoot>
+    <CookieBanner />
+    <CookiePreferences />
+    <RecallButton />
+  </CookieYesRoot>
+  <NuxtPage />
+</template>
+```
+
+</Framework>
+
 ## Prefer your own link
 
 A "Cookie settings" link in your footer does the same job. Render that instead of the button, or as well as it. See [useConsentActions](/docs/hooks/use-consent-actions).
 
 ## Change what it shows
 
+<Framework when="nextjs react">
+
 The tooltip and screen-reader label come from the `recallButtonLabel` text in `i18n` ([Translations](/docs/translations)). Pass `children` for your own icon:
+
+</Framework>
+
+<Framework when="vue nuxt">
+
+The tooltip and screen-reader label come from the `recallButtonLabel` text in `i18n` ([Translations](/docs/translations)). Put your own icon in the default slot:
+
+</Framework>
+
+<Framework when="nextjs react">
 
 ```tsx check="false"
 <RecallButton>
@@ -32,23 +83,68 @@ The tooltip and screen-reader label come from the `recallButtonLabel` text in `i
 </RecallButton>
 ```
 
+</Framework>
+
+<Framework when="vue nuxt">
+
+```vue check="false"
+<RecallButton>
+  <CookieIcon />
+</RecallButton>
+```
+
+</Framework>
+
 The position is fixed to the bottom-left corner.
 
 ## Restyle it
 
+<Framework when="nextjs react">
+
 Target `[data-cy-part="recall"]` in your CSS. Passing `className` **replaces** the button's own class, so the default look disappears; include `cy-widget` if you want to keep it:
+
+</Framework>
+
+<Framework when="vue nuxt">
+
+Target `[data-cy-part="recall"]` in your CSS. Passing `class` **replaces** the button's own class, so the default look disappears; include `cy-widget` if you want to keep it:
+
+</Framework>
+
+<Framework when="nextjs react">
 
 ```tsx check="false"
 <RecallButton className="cy-widget my-extra-class" />
 ```
+
+</Framework>
+
+<Framework when="vue nuxt">
+
+```vue check="false"
+<RecallButton class="cy-widget my-extra-class" />
+```
+
+</Framework>
 
 ## Common mistakes
 
 **The button never appears.**
 Under GDPR it appears only after the visitor has chosen. Accept or reject first.
 
+<Framework when="nextjs react">
+
 **The button is an unstyled circle.**
 You passed `className`, which replaced the default class. Add `cy-widget` to it.
+
+</Framework>
+
+<Framework when="vue nuxt">
+
+**The button is an unstyled circle.**
+You passed `class`, which replaced the default class. Add `cy-widget` to it.
+
+</Framework>
 
 **Clicking it does nothing.**
 The dialog it opens is not rendered: `CookiePreferences` under GDPR, `CookieOptOut` under CCPA.

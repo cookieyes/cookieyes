@@ -1,14 +1,14 @@
 ---
 title: Block embeds
 description: Load YouTube videos, maps and other iframes only after the visitor consents, on any site.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 ## What it does
 
 `blockIframes()` keeps an iframe empty until the visitor grants its category, and shows a placeholder in its place. It works on any HTML: your own templates, CMS content, Markdown, or a page with no framework at all.
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue nuxt">
 
 For an iframe you render in a component, [`GatedFrame`](/docs/components/gated-frame) is simpler. Use `blockIframes()` for iframes in HTML you do not render yourself, such as CMS or Markdown content.
 
@@ -74,6 +74,59 @@ export function EmbedBlocker() {
 ```
 
 Render `<EmbedBlocker />` once, next to `<CookieBanner />`. Apps that never import `blockIframes` do not download it.
+
+</Framework>
+
+<Framework when="vue">
+
+```vue title="src/components/EmbedBlocker.vue"
+<script setup lang="ts">
+import { onBeforeUnmount, onMounted } from "vue";
+import { blockIframes, getCookieYes } from "@cookieyes/vue";
+
+let stop: (() => void) | undefined;
+
+onMounted(() => {
+  const cookieYes = getCookieYes();
+  stop = blockIframes(cookieYes.manager, cookieYes);
+});
+
+onBeforeUnmount(() => stop?.());
+</script>
+
+<template></template>
+```
+
+Render `<EmbedBlocker />` once, next to `<CookieBanner />`. Apps that never import `blockIframes` do not download it.
+
+</Framework>
+
+<Framework when="nuxt">
+
+`blockIframes()` is not auto-imported. It ships in `@cookieyes/core`, which the module uses; install it in your app to import it:
+
+```npm
+npm install @cookieyes/core
+```
+
+```vue title="app/components/EmbedBlocker.vue"
+<script setup lang="ts">
+import { blockIframes } from "@cookieyes/core/iframes";
+
+let stop: (() => void) | undefined;
+
+onMounted(() => {
+  const cookieYes = getCookieYes();
+  stop = blockIframes(cookieYes.manager, cookieYes);
+});
+
+onBeforeUnmount(() => stop?.());
+</script>
+
+<template></template>
+```
+
+Render `<EmbedBlocker />` once in `app/app.vue`, next to `<CookieYesRoot />`. `onMounted` runs only in the browser, so the blocker never starts during server rendering. Apps that never import `blockIframes` do not download it.
 
 </Framework>
 
@@ -143,19 +196,33 @@ The address is in `src`. Move it to `data-cy-src`. The blocker stops the rest of
 
 </Framework>
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 **Nothing is blocked and no placeholder appears.**
 `<EmbedBlocker />` is not rendered. Render it once, next to `<CookieBanner />`.
 
 </Framework>
 
+<Framework when="nuxt">
+
+**Nothing is blocked and no placeholder appears.**
+`<EmbedBlocker />` is not rendered. Render it once in `app/app.vue`, next to `<CookieYesRoot />`.
+
+</Framework>
+
 ## Next steps
 
-<Framework when="nextjs react">
+<Framework when="nextjs react vue">
 
 - [GatedFrame](/docs/components/gated-frame): an iframe you render in a component
 - [Network blocking](/docs/network-blocking): requests that scripts make on their own
+
+</Framework>
+
+<Framework when="nuxt">
+
+- [GatedFrame](/docs/components/gated-frame): an iframe you render in a component
+- [Configuration → consent categories](/docs/getting-started/configuration#consent-categories): the categories an embed can wait for
 
 </Framework>
 

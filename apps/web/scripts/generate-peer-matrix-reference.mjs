@@ -2,7 +2,10 @@
 // Reads `matrix/matrix-results.json` (produced by the DEVP-80 CI peer-dependency matrix) and
 // `matrix/matrix.config.mjs` (the latter only to know which combination IDs *should* be present),
 // then writes `apps/web/.generated/peer-matrix-reference.json` and injects marker-delimited
-// markdown compatibility tables into `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md`.
+// markdown compatibility tables into `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md`,
+// `sdk/vue/README.md` and `sdk/nuxt/README.md`. Combinations are split by `app`: the
+// Next.js/React table goes to the root and the React and Next.js READMEs, the Vue table to the
+// root and the Vue README, the Nuxt table to the root and the Nuxt README.
 //
 // Sibling to `generate-config-reference.mjs` / `generate-component-reference.mjs` /
 // `generate-css-variables-reference.mjs` — same fail-closed discipline, adapted to this contract's
@@ -53,9 +56,11 @@ const outDir = join(webRoot, ".generated");
 const outFile = join(outDir, "peer-matrix-reference.json");
 
 const README_TARGETS = [
-  { path: join(repoRoot, "README.md"), kind: "root" },
-  { path: join(repoRoot, "sdk", "react", "README.md"), kind: "package" },
-  { path: join(repoRoot, "sdk", "nextjs", "README.md"), kind: "package" },
+  { path: join(repoRoot, "README.md"), kind: "root", apps: ["next", "vue", "nuxt"] },
+  { path: join(repoRoot, "sdk", "react", "README.md"), kind: "package", apps: ["next"] },
+  { path: join(repoRoot, "sdk", "nextjs", "README.md"), kind: "package", apps: ["next"] },
+  { path: join(repoRoot, "sdk", "vue", "README.md"), kind: "package", apps: ["vue"] },
+  { path: join(repoRoot, "sdk", "nuxt", "README.md"), kind: "package", apps: ["nuxt"] },
 ];
 
 /** `generatedAt` older than this many days is treated as "the workflow stopped running." */
@@ -83,7 +88,17 @@ const REQUIRED_COMBINATION_FIELDS = [
   "outcome",
   "steps",
 ];
-const REQUIRED_VERSION_FIELDS = ["next", "react", "reactDom"];
+const REQUIRED_VERSION_FIELDS = {
+  next: ["next", "react", "reactDom"],
+  vue: ["vue"],
+  // Only `nuxt` is requested; the Vue a Nuxt row shows is the one Nuxt resolved.
+  nuxt: ["nuxt"],
+};
+
+/** A combination without an `app` field is a Next.js one, as in matrix.config.mjs. */
+function appOf(combo) {
+  return combo.app ?? "next";
+}
 const REQUIRED_STEP_FIELDS = [
   "install",
   "typePackageCheck",
@@ -244,7 +259,7 @@ function checkCombinationFields(data) {
       fail(`combination "${id}" is missing required field(s): ${missingFields.join(", ")}.`);
     }
     for (const versionField of ["requested", "resolved"]) {
-      const missingVersions = REQUIRED_VERSION_FIELDS.filter(
+      const missingVersions = REQUIRED_VERSION_FIELDS[appOf(combo)].filter(
         (f) => !(f in (combo[versionField] ?? {})),
       );
       if (missingVersions.length > 0) {
@@ -274,15 +289,28 @@ function buildTypecheckOutcome(combo) {
 function buildRows(data) {
   return data.combinations.map((combo) => {
     const floorSuffix = combo.role === "floor" ? " (declared floor)" : "";
-    return {
+    const common = {
       id: combo.id,
-      next: `${combo.resolved.next}${floorSuffix}`,
-      react: `${combo.resolved.react}${floorSuffix}`,
-      reactDom: combo.resolved.reactDom,
-      verifiedDate: data.generatedAt.slice(0, 10),
+      app: appOf(combo),
+      // Each row's own run date, not the file's: the file is re-aggregated when any one
+      // combination is re-run, and stamping every row with that date would claim a leg was
+      // verified on a day it did not run.
+      verifiedDate: combo.finishedAt.slice(0, 10),
       buildTypecheck: buildTypecheckOutcome(combo),
       ssr: combo.steps.ssrRender.outcome,
       behaviour: combo.steps.jsdomBehaviour.outcome,
+    };
+    if (common.app === "vue") {
+      return { ...common, vue: `${combo.resolved.vue}${floorSuffix}` };
+    }
+    if (common.app === "nuxt") {
+      return { ...common, nuxt: `${combo.resolved.nuxt}${floorSuffix}`, vue: combo.resolved.vue };
+    }
+    return {
+      ...common,
+      next: `${combo.resolved.next}${floorSuffix}`,
+      react: `${combo.resolved.react}${floorSuffix}`,
+      reactDom: combo.resolved.reactDom,
     };
   });
 }
@@ -295,7 +323,7 @@ function testPackageLink(fromFile) {
   return rel.startsWith(".") ? rel : `./${rel}`;
 }
 
-function renderMarkerBlock({ rows, coverageLimits, fromFile }) {
+function renderNextSection({ rows, testLink, rationaleLink }) {
   const header =
     "| Next.js | React | React DOM | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |\n" +
     "|---|---|---|---|---|---|---|";
@@ -305,23 +333,7 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile }) {
         `| ${r.next} | ${r.react} | ${r.reactDom} | ${r.verifiedDate} | ${r.buildTypecheck} | ${r.ssr} | ${r.behaviour} |`,
     )
     .join("\n");
-
-  const testLink = testPackageLink(fromFile);
-  const rationaleLink = "https://github.com/cookieyes/cookieyes#compatibility";
-
-  // Static claims this generator itself makes (things the verification depth structurally never
-  // covers, independent of any one matrix run) plus, dynamically, every limit the *producer*
-  // reported for this specific run (`coverageLimits`, §8) — so "no real browser paint/hydration"
-  // and "node dimension not varied" are sourced from the results file itself, not duplicated by
-  // hand here and left to drift out of sync with it.
-  const notVerifiedItems = [
-    "Any Next.js/React version outside the rows above.",
-    "npm/yarn as the install client.",
-    ...coverageLimits,
-  ];
-
   return [
-    MARKER_START,
     header,
     body,
     "",
@@ -329,6 +341,93 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile }) {
       `it and asserting the banner's HTML (and a returning visitor's cookie value) is correct, then ` +
       `running behaviour assertions in \`jsdom\` via [\`@cookieyes/test\`](${testLink}). Node 20, pnpm. ` +
       `See [rationale](${rationaleLink}) for why this stops short of a real browser.`,
+  ];
+}
+
+function renderVueSection({ rows, rationaleLink }) {
+  const header =
+    "| Vue | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |\n" +
+    "|---|---|---|---|---|";
+  const body = rows
+    .map(
+      (r) => `| ${r.vue} | ${r.verifiedDate} | ${r.buildTypecheck} | ${r.ssr} | ${r.behaviour} |`,
+    )
+    .join("\n");
+  return [
+    header,
+    body,
+    "",
+    `Verified by installing the exact Vue versions above, building a real Vite app, rendering it on ` +
+      `the server with \`vue/server-renderer\` and asserting the banner's HTML (and a returning ` +
+      `visitor's cookie value) is correct, then running behaviour and hydration assertions in ` +
+      `\`jsdom\`. Node 20, pnpm. See [rationale](${rationaleLink}) for why this stops short of a ` +
+      `real browser.`,
+  ];
+}
+
+function renderNuxtSection({ rows, rationaleLink }) {
+  const header =
+    "| Nuxt | Vue | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |\n" +
+    "|---|---|---|---|---|---|";
+  const body = rows
+    .map(
+      (r) =>
+        `| ${r.nuxt} | ${r.vue} | ${r.verifiedDate} | ${r.buildTypecheck} | ${r.ssr} | ${r.behaviour} |`,
+    )
+    .join("\n");
+  return [
+    header,
+    body,
+    "",
+    `Verified by installing the exact Nuxt versions above (Vue is the version Nuxt resolved), ` +
+      `building a real Nuxt app with the module, starting its server and asserting over HTTP the ` +
+      `banner's HTML for first-time, returning and California visitors (and the consent value ` +
+      `the server read for the returning one), then running behaviour assertions in Nuxt's test ` +
+      `environment in \`jsdom\`. Node 22, pnpm. See [rationale](${rationaleLink}) for why this ` +
+      `stops short of a real browser.`,
+  ];
+}
+
+function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
+  const testLink = testPackageLink(fromFile);
+  const rationaleLink = "https://github.com/cookieyes/cookieyes#compatibility";
+  const nextRows = rows.filter((r) => r.app === "next");
+  const vueRows = rows.filter((r) => r.app === "vue");
+  const nuxtRows = rows.filter((r) => r.app === "nuxt");
+
+  // Static claims this generator itself makes (things the verification depth structurally never
+  // covers, independent of any one matrix run) plus, dynamically, every limit the *producer*
+  // reported for this specific run (`coverageLimits`, §8) — so "no real browser paint/hydration"
+  // and "node dimension not varied" are sourced from the results file itself, not duplicated by
+  // hand here and left to drift out of sync with it.
+  const notVerifiedItems = [];
+  if (apps.includes("next")) {
+    notVerifiedItems.push("Any Next.js/React version outside the rows above.");
+  }
+  if (apps.includes("vue")) {
+    notVerifiedItems.push("Any Vue version outside the rows above.");
+  }
+  if (apps.includes("nuxt")) {
+    notVerifiedItems.push("Any Nuxt version outside the rows above.");
+  }
+  notVerifiedItems.push("npm/yarn as the install client.", ...coverageLimits);
+  if (apps.includes("vue")) {
+    notVerifiedItems.push(
+      "Server rendering of the Vue rows is asserted on the Vite SSR build's render function, " +
+        "not a live server, so it does not prove a particular server framework forwards the " +
+        "Cookie header.",
+    );
+  }
+
+  const sections = [];
+  if (apps.includes("next"))
+    sections.push(renderNextSection({ rows: nextRows, testLink, rationaleLink }));
+  if (apps.includes("vue")) sections.push(renderVueSection({ rows: vueRows, rationaleLink }));
+  if (apps.includes("nuxt")) sections.push(renderNuxtSection({ rows: nuxtRows, rationaleLink }));
+
+  return [
+    MARKER_START,
+    ...sections.flatMap((section, i) => (i === 0 ? section : ["", ...section])),
     "",
     "**Not verified by this table:**",
     ...notVerifiedItems.map((item) => `- ${item}`),
@@ -385,7 +484,12 @@ async function main() {
 
   for (const target of README_TARGETS) {
     const existing = readFileSync(target.path, "utf-8");
-    const block = renderMarkerBlock({ rows, coverageLimits, fromFile: target.path });
+    const block = renderMarkerBlock({
+      rows,
+      coverageLimits,
+      fromFile: target.path,
+      apps: target.apps,
+    });
     const updated = injectIntoContent(existing, block, target.kind);
 
     if (updated === existing) continue;

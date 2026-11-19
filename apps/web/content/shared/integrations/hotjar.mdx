@@ -10,7 +10,16 @@ It loads the classic Hotjar tracking code, `static.hotjar.com/c/hotjar-<siteId>.
 
 ## Set it up
 
+<Framework when="nextjs react core">
+
 Install the integrations package and add `hotjar()` to the `initCookieYes()` call you already have. The site ID is the `hjid` value in the snippet Hotjar gives you:
+
+</Framework>
+<Framework when="vue">
+
+Install the integrations package and add `hotjar()` to the config you pass to `app.use(CookieYes, config)`. The site ID is the `hjid` value in the snippet Hotjar gives you:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -51,7 +60,16 @@ initCookieYes({
 Hotjar has no stop command. After consent is withdrawn, it keeps recording until the page reloads. `reloadOnRevoke: true` reloads the page at once, so recording stops when the visitor says no.
 </Callout>
 
+<Framework when="nextjs react core">
+
 To let the visitor choose when to reload instead, mark Hotjar as needing a reload **before** `initCookieYes()`. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors:
+
+</Framework>
+<Framework when="vue">
+
+To let the visitor choose when to reload instead, mark Hotjar as needing a reload **before** `app.use(CookieYes, config)` runs. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors:
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -71,6 +89,30 @@ initCookieYes({
 ```
 
 Then render [`<ReloadNotice />`](/docs/components/reload-notice). It appears when a visitor withdraws analytics after Hotjar ran.
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig, registerStopHandler } from "@cookieyes/vue";
+import { hotjar } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+registerStopHandler({ id: "hotjar", category: "analytics", needsReload: true });
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [hotjar({ siteId: 1234567 })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+The `registerStopHandler()` line runs when the module loads, before `app.use(CookieYes, config)`. Then render [`<ReloadNotice />`](/docs/components/reload-notice). It appears when a visitor withdraws analytics after Hotjar ran.
 
 </Framework>
 <Framework when="core">

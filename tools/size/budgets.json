@@ -81,6 +81,38 @@
       "initial": 13650,
       "total": 19150
     },
+    "vue": {
+      "$comment": [
+        "@cookieyes/vue's three-file setup: the plugin, <CookieBanner />, <CookiePreferences />",
+        "and <RecallButton />. Measured 18683 / 19633. Its control is an empty Vite + Vue app",
+        "(`baseline-vue`), not the Next.js one, so it is not directly comparable with `interface`.",
+        "Of the gap to `interface`, about 1.8 KB is core's integration runner: core's root entry",
+        "re-exports `integrations.js` statically, so Vite keeps the runner in the initial bundle",
+        "where Next.js splits it out; that is a core packaging matter, not adapter code. About",
+        "1.5 KB is Vue runtime the adapter uses (Teleport, watchers, useId), which the tree-shaken",
+        "control does not carry, whereas React's whole runtime sits in the Next.js control. The",
+        "adapter's own code is about 0.5 KB above React's."
+      ],
+      "initial": 18900,
+      "total": 19850
+    },
+    "nuxt": {
+      "$comment": [
+        "@cookieyes/nuxt: the module in `modules` and <CookieYesRoot /> in app.vue. Measured",
+        "21999 / 20661. Its control is an empty Nuxt app (`baseline-nuxt`), and the page read is",
+        "the HTML the built server renders for /. Of the initial figure, about 17.3 KB is",
+        "@cookieyes/vue's own setup (plugin, banner, preferences, recall) as Nuxt bundles it,",
+        "about 0.9 KB under `vue` because Nuxt's control already carries Vue runtime the adapter",
+        "uses. About 1.4 KB is the provider and the opt-out dialog <CookieYesRoot /> adds: it",
+        "renders the opt-out only when a CCPA regulation can apply, but imports it statically.",
+        "About 2.2 KB is Nuxt's own runtime that the empty app loads only with its lazy error",
+        "page; the module's plugin uses it too, so the bundler moves it into the entry, which is",
+        "why `total` is below `initial`. The module's own client code (plugin, config merge,",
+        "<CookieYesRoot />) is about 0.3 KB."
+      ],
+      "initial": 22150,
+      "total": 20800
+    },
     "devtools": {
       "$comment": [
         "Amendment A2 (design doc §0, overrides AD-5's 'equality' rule for this one entry):",

@@ -1,0 +1,4 @@
+<template>
+  <CookieYesRoot />
+  <NuxtPage />
+</template>

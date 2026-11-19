@@ -101,3 +101,111 @@ describe("checkPeerDependencyMatrix", () => {
     expect(errors.some((e) => e.includes("@cookieyes/nextjs") && e.includes("14.0.0"))).toBe(true);
   });
 });
+
+/** A Vue-only fixture: one package, one combination, no React fields at all. */
+function vueFixture() {
+  return {
+    peerPackages: [
+      {
+        name: "@cookieyes/vue",
+        peerDependencies: { vue: ">=3.5.0" },
+      },
+    ],
+    combinations: [
+      {
+        id: "fixture-vue-3.5.0",
+        role: "floor",
+        app: "vue",
+        packagesUnderTest: ["@cookieyes/vue"],
+        versions: { vue: "3.5.0" },
+      },
+    ],
+  };
+}
+
+describe("checkPeerDependencyMatrix with a Vue combination", () => {
+  it("returns no violations for a consistent Vue fixture", () => {
+    expect(checkPeerDependencyMatrix(vueFixture())).toEqual([]);
+  });
+
+  it("does not throw on a combination that has no React fields", () => {
+    expect(() => checkPeerDependencyMatrix(vueFixture())).not.toThrow();
+  });
+
+  it("fails when the vue range is widened without a matching floor combination", () => {
+    const fixture = vueFixture();
+    fixture.peerPackages[0].peerDependencies.vue = ">=3.4.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes('"vue"') && e.includes("3.4.0"))).toBe(true);
+  });
+
+  it("does not require the optional devtools peer to have a matrix field", () => {
+    const fixture = vueFixture();
+    fixture.peerPackages[0].peerDependencies["@cookieyes/devtools"] = ">=0.1.0";
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+
+  it("leaves the React fixture's verdict unchanged when Vue legs sit beside it", () => {
+    const fixture = baseFixture();
+    const vue = vueFixture();
+    fixture.peerPackages.push(...vue.peerPackages);
+    fixture.combinations.push(...vue.combinations);
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+});
+
+/** A Nuxt fixture: Nuxt pinned, Vue left to Nuxt, as in matrix.config.mjs. */
+function nuxtFixture() {
+  return {
+    peerPackages: [
+      {
+        name: "@cookieyes/nuxt",
+        peerDependencies: { nuxt: "^4.0.0", vue: ">=3.5.0" },
+      },
+    ],
+    combinations: [
+      {
+        id: "fixture-nuxt-4.0.0",
+        role: "floor",
+        app: "nuxt",
+        packagesUnderTest: ["@cookieyes/nuxt"],
+        versions: { nuxt: "4.0.0" },
+      },
+    ],
+  };
+}
+
+describe("checkPeerDependencyMatrix with a Nuxt combination", () => {
+  it("returns no violations for a consistent Nuxt fixture", () => {
+    expect(checkPeerDependencyMatrix(nuxtFixture())).toEqual([]);
+  });
+
+  it("fails when the nuxt range is widened without a matching floor combination", () => {
+    const fixture = nuxtFixture();
+    fixture.peerPackages[0].peerDependencies.nuxt = "^3.0.0 || ^4.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes('"nuxt"') && e.includes("3.0.0"))).toBe(true);
+  });
+
+  it("fails the inverse check when a Nuxt combination pins a Vue outside the vue range", () => {
+    const fixture = nuxtFixture();
+    fixture.combinations[0].versions.vue = "3.4.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("does not satisfy") && e.includes(">=3.5.0"))).toBe(true);
+  });
+
+  it("still requires the vue floor of @cookieyes/vue when only Nuxt legs exist", () => {
+    const fixture = nuxtFixture();
+    fixture.peerPackages.push({ name: "@cookieyes/vue", peerDependencies: { vue: ">=3.5.0" } });
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("@cookieyes/vue") && e.includes("3.5.0"))).toBe(true);
+  });
+
+  it("leaves the Vue fixture's verdict unchanged when Nuxt legs sit beside it", () => {
+    const fixture = vueFixture();
+    const nuxt = nuxtFixture();
+    fixture.peerPackages.push(...nuxt.peerPackages);
+    fixture.combinations.push(...nuxt.combinations);
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+});

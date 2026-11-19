@@ -1,0 +1,19 @@
+{
+  "title": "Nuxt",
+  "root": true,
+  "pages": [
+    "getting-started",
+    "self-host",
+    "components",
+    "headless",
+    "hooks",
+    "styling",
+    "translations",
+    "accessibility",
+    "embeds",
+    "network-blocking",
+    "migration",
+    "troubleshooting",
+    "ai-agents"
+  ]
+}

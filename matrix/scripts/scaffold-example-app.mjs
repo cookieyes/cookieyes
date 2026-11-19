@@ -29,16 +29,31 @@
 import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { appOf } from "../matrix.config.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..");
-const templateDir = join(repoRoot, "matrix", "example-app");
+
+const TEMPLATE_DIRS = { next: "example-app", vue: "example-app-vue", nuxt: "example-app-nuxt" };
+
+/** The template directory for a combination: one self-contained example app per `app`. */
+function templateDirFor(combo) {
+  return join(repoRoot, "matrix", TEMPLATE_DIRS[appOf(combo)]);
+}
 
 /**
  * Directories/files never copied into a scratch instance — build output and
  * dependency trees from a previous local run of the template itself, if any.
  */
-const EXCLUDE = new Set(["node_modules", ".next", "tests/vitest.config.mts.timestamp"]);
+const EXCLUDE = new Set([
+  "node_modules",
+  ".next",
+  ".nuxt",
+  ".output",
+  "dist",
+  "dist-ssr",
+  "tests/vitest.config.mts.timestamp",
+]);
 
 /**
  * Plain `__X__` -> value substitution over a package.json's *text*, not a
@@ -47,24 +62,43 @@ const EXCLUDE = new Set(["node_modules", ".next", "tests/vitest.config.mts.times
  * exact and easy to unit test.
  *
  * @param {string} packageJsonText
- * @param {{ tarballs: Record<string, string>, versions: { next: string, react: string,
- *   reactDom: string, typesReact: string, typesReactDom: string } }} combo
+ * @param {{ tarballs: Record<string, string>, versions: import("../matrix.config.mjs").Combination["versions"],
+ *   app?: "next" | "vue" | "nuxt" }} combo
  * @returns {string}
  */
-export function renderPackageJson(packageJsonText, { tarballs, versions }) {
-  const replacements = {
-    __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
-    __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
-    __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
-    __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
-    __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
-    __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-    __NEXT_VERSION__: versions.next,
-    __REACT_VERSION__: versions.react,
-    __REACT_DOM_VERSION__: versions.reactDom,
-    __TYPES_REACT_VERSION__: versions.typesReact,
-    __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
-  };
+export function renderPackageJson(packageJsonText, { tarballs, versions, app = "next" }) {
+  const replacements =
+    app === "nuxt"
+      ? {
+          __TARBALL_NUXT__: `file:${tarballs["@cookieyes/nuxt"]}`,
+          __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+          __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+          __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+          __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+          __NUXT_VERSION__: versions.nuxt,
+        }
+      : app === "vue"
+        ? {
+            __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+            __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+            __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+            __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+            __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+            __VUE_VERSION__: versions.vue,
+          }
+        : {
+            __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
+            __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
+            __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+            __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+            __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+            __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+            __NEXT_VERSION__: versions.next,
+            __REACT_VERSION__: versions.react,
+            __REACT_DOM_VERSION__: versions.reactDom,
+            __TYPES_REACT_VERSION__: versions.typesReact,
+            __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
+          };
 
   let result = packageJsonText;
   for (const [placeholder, value] of Object.entries(replacements)) {
@@ -80,13 +114,14 @@ export function renderPackageJson(packageJsonText, { tarballs, versions }) {
 }
 
 /**
- * Copies the example-app template into `targetDir` and rewrites its
+ * Copies the combination's example-app template into `targetDir` and rewrites its
  * package.json for `combo`. Returns the scratch app's absolute path.
  *
  * @param {{ combo: import("../matrix.config.mjs").Combination, tarballs: Record<string, string>,
  *   targetDir: string }} options
  */
 export function scaffoldExampleApp({ combo, tarballs, targetDir }) {
+  const templateDir = templateDirFor(combo);
   rmSync(targetDir, { recursive: true, force: true });
   mkdirSync(targetDir, { recursive: true });
   cpSync(templateDir, targetDir, {
@@ -101,6 +136,7 @@ export function scaffoldExampleApp({ combo, tarballs, targetDir }) {
   const rendered = renderPackageJson(readFileSync(packageJsonPath, "utf8"), {
     tarballs,
     versions: combo.versions,
+    app: appOf(combo),
   });
   writeFileSync(packageJsonPath, rendered);
 

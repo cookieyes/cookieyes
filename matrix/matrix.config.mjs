@@ -9,13 +9,13 @@
 
 export const dimensions = {
   // Varied today.
-  framework: ["next", "react", "reactDom", "typesReact", "typesReactDom"],
+  framework: ["next", "react", "reactDom", "typesReact", "typesReactDom", "vue", "nuxt"],
   // Reserved — add a value here (and to one or more `combinations` entries) to
   // extend the matrix. No script or workflow file needs to change for this
   // (Story 1 AC3): `print-combinations.mjs` and `run-combination.mjs` both
   // read `node`/`packageManager`/`moduleResolution` off each combination
   // object, never off a hardcoded list.
-  node: ["20"],
+  node: ["20", "22"],
   packageManager: ["pnpm@10.22.0"],
   moduleResolution: ["bundler"],
 };
@@ -25,13 +25,16 @@ export const dimensions = {
  *   id: string,
  *   role: "floor" | "middle" | "newest",
  *   label: string,
+ *   app?: "next" | "vue" | "nuxt",
  *   packagesUnderTest: string[],
  *   versions: {
- *     next: string,
- *     react: string,
- *     reactDom: string,
- *     typesReact: string,
- *     typesReactDom: string,
+ *     next?: string,
+ *     react?: string,
+ *     reactDom?: string,
+ *     typesReact?: string,
+ *     typesReactDom?: string,
+ *     vue?: string,
+ *     nuxt?: string,
  *   },
  *   node: string,
  *   packageManager: string,
@@ -39,6 +42,17 @@ export const dimensions = {
  *   subsets: ("fast" | "full")[],
  * }} Combination
  */
+
+/**
+ * Which example app a combination runs. Read through this, never off `combo.app`, so the three
+ * Next.js combinations stay untouched: leaving `app` out means the Next.js app.
+ *
+ * @param {Combination} combo
+ * @returns {"next" | "vue" | "nuxt"}
+ */
+export function appOf(combo) {
+  return combo.app ?? "next";
+}
 
 /**
  * Exact pins, no `^`/`>=`, for `next`/`react`/`reactDom` on every leg
@@ -102,6 +116,64 @@ export const combinations = [
       typesReactDom: "^19.2.3",
     },
     node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["fast", "full"],
+  },
+  // The Vue legs pin only `vue`: Vite and the Vue plugin are fixed in
+  // matrix/example-app-vue, not a matrix dimension. The floor's version string is compared
+  // literally with `peerDependencies.vue` in sdk/vue/package.json by derive-check.mjs, and the
+  // newest leg must stay the newest Vue 3.5.x that is at least 72 hours old.
+  {
+    id: "vue-3.5.0",
+    role: "floor",
+    label: "Vue 3.5.0 (declared floor)",
+    app: "vue",
+    packagesUnderTest: ["@cookieyes/vue"],
+    versions: { vue: "3.5.0" },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "vue-3.5.45",
+    role: "newest",
+    label: "Vue 3.5.45",
+    app: "vue",
+    packagesUnderTest: ["@cookieyes/vue"],
+    versions: { vue: "3.5.45" },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["fast", "full"],
+  },
+  // The Nuxt legs pin only `nuxt`. Nuxt depends on Vue itself, so the Vue these legs run is the
+  // one Nuxt resolves, recorded in the result's `resolved.vue`; derive-check.mjs therefore does
+  // not ask a Nuxt leg to pin @cookieyes/nuxt's own `vue` floor. The floor's version string is
+  // compared literally with `peerDependencies.nuxt` in sdk/nuxt/package.json, and the newest leg
+  // must stay the newest Nuxt 4.x that is at least 72 hours old. They run on Node 22: Nuxt 4.6
+  // declares `node: ^22.22.3 || ^24.15.0 || >=26.0.0` and its typecheck and build fail on Node 20.
+  {
+    id: "nuxt-4.0.0",
+    role: "floor",
+    label: "Nuxt 4.0.0 (declared floor)",
+    app: "nuxt",
+    packagesUnderTest: ["@cookieyes/nuxt"],
+    versions: { nuxt: "4.0.0" },
+    node: "22",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "nuxt-4.6.4",
+    role: "newest",
+    label: "Nuxt 4.6.4",
+    app: "nuxt",
+    packagesUnderTest: ["@cookieyes/nuxt"],
+    versions: { nuxt: "4.6.4" },
+    node: "22",
     packageManager: "pnpm@10.22.0",
     moduleResolution: "bundler",
     subsets: ["fast", "full"],

@@ -1,7 +1,7 @@
 ---
 title: Google Analytics 4
 description: Load GA4 with one integration and let the SDK keep its Consent Mode signals up to date.
-frameworks: [nextjs, react, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 `ga4()` loads Google Analytics 4 and registers your measurement id. Consent reaches GA4 through Google Consent Mode: the SDK tells Google what the visitor allowed, on page load and on every change.
@@ -10,7 +10,21 @@ frameworks: [nextjs, react, core]
 
 First add the Consent Mode default, once, before any Google tag: [Google Consent Mode v2 → Add the default](/docs/integrations/google-consent-mode#add-the-default).
 
+<Framework when="nextjs react core">
+
 Then install the integrations package and add `ga4()` to the `initCookieYes()` call you already have:
+
+</Framework>
+<Framework when="vue">
+
+Then install the integrations package and add `ga4()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
+<Framework when="nuxt">
+
+Then install the integrations package and add `ga4()` to `cookieyes.integrations` in `app/app.config.ts`:
+
+</Framework>
 
 ```npm
 npm install @cookieyes/scripts
@@ -30,6 +44,43 @@ initCookieYes({
   integrations: [ga4({ measurementId: "G-XXXXXXX" })],
 });
 ```
+
+</Framework>
+<Framework when="vue">
+
+```ts title="src/consent-manager.ts"
+import type { App } from "vue";
+import { CookieYes, type CookieYesConfig } from "@cookieyes/vue";
+import { ga4 } from "@cookieyes/scripts";
+import "@cookieyes/vue/styles.css";
+
+const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ga4({ measurementId: "G-XXXXXXX" })],
+};
+
+export function setupConsent(app: App): void {
+  app.use(CookieYes, config);
+}
+```
+
+This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+import { ga4 } from "@cookieyes/scripts";
+
+export default defineAppConfig({
+  cookieyes: {
+    integrations: [ga4({ measurementId: "G-XXXXXXX" })],
+  },
+});
+```
+
+`integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
 <Framework when="core">

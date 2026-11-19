@@ -31,10 +31,11 @@
 // packed fresh (useful for a local, single-combination run).
 
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { appOf } from "../matrix.config.mjs";
 import { majorsMatch, readResolvedVersion } from "./lib/versions.mjs";
 import { packTarballs, resolveTarballsFromDir } from "./pack-tarballs.mjs";
 import { scaffoldExampleApp } from "./scaffold-example-app.mjs";
@@ -45,12 +46,31 @@ const resultsDir = join(repoRoot, "matrix", "results");
 const SERVER_PORT = 4100;
 const SERVER_READY_TIMEOUT_MS = 60_000;
 
-/** Maps vitest's test titles to the results schema's stable assertion names. */
-const JSDOM_ASSERTION_NAME_MAP = {
-  "Slot asChild forwards a real ref to the child DOM node":
-    "asChild-ref-populated-with-real-dom-node",
-  "Slot asChild composes the outer ref with the child's own ref":
-    "asChild-outer-and-inner-ref-composed",
+/** Maps vitest's test titles to the results schema's stable assertion names, per example app. */
+const JSDOM_ASSERTION_NAME_MAPS = {
+  next: {
+    "Slot asChild forwards a real ref to the child DOM node":
+      "asChild-ref-populated-with-real-dom-node",
+    "Slot asChild composes the outer ref with the child's own ref":
+      "asChild-outer-and-inner-ref-composed",
+  },
+  vue: {
+    "Banner asChild renders the developer's element with the part merged":
+      "asChild-renders-developer-element-with-part",
+    "Banner asChild runs the consent action when the developer's element is clicked":
+      "asChild-click-commits-consent",
+    "server-rendered markup hydrates without a mismatch warning":
+      "ssr-markup-hydrates-without-mismatch",
+  },
+  nuxt: {
+    "CookieYesRoot shows the banner to a first-time visitor": "root-shows-banner-to-fresh-visitor",
+    "accepting in the banner writes the consent cookie and hides the banner":
+      "accept-writes-cookie-and-hides-banner",
+    "Banner asChild renders the developer's element with the part merged":
+      "asChild-renders-developer-element-with-part",
+    "Banner asChild runs the consent action when the developer's element is clicked":
+      "asChild-click-commits-consent",
+  },
 };
 
 function nowIso() {
@@ -142,7 +162,7 @@ function killProcessTree(child) {
 }
 
 /** Runs the jsdom behaviour test (Test B) via vitest's JSON reporter, mapped to named assertions. */
-function runJsdomBehaviour(appDir, logPath) {
+function runJsdomBehaviour(appDir, logPath, nameMap) {
   const outputFile = join(appDir, ".vitest-behaviour-results.json");
   const result = run(
     "pnpm",
@@ -159,7 +179,7 @@ function runJsdomBehaviour(appDir, logPath) {
   );
   appendLog(logPath, "jsdomBehaviour (test:behaviour)", result.output);
 
-  const knownAssertionNames = Object.values(JSDOM_ASSERTION_NAME_MAP);
+  const knownAssertionNames = Object.values(nameMap);
   if (!existsSync(outputFile)) {
     return {
       outcome: "fail",
@@ -171,7 +191,7 @@ function runJsdomBehaviour(appDir, logPath) {
     const parsed = JSON.parse(readFileSync(outputFile, "utf8"));
     const assertionResults = (parsed.testResults ?? []).flatMap((f) => f.assertionResults ?? []);
     const assertions = assertionResults.map((a) => ({
-      name: JSDOM_ASSERTION_NAME_MAP[a.title] ?? a.fullName ?? a.title,
+      name: nameMap[a.title] ?? a.fullName ?? a.title,
       outcome: a.status === "passed" ? "pass" : "fail",
     }));
     const outcome =
@@ -186,6 +206,216 @@ function runJsdomBehaviour(appDir, logPath) {
 }
 
 /**
+ * Everything that differs between example apps. `runCombination` is the same sequence of six
+ * steps for every app; each strategy supplies what a step means for its app.
+ */
+const NEXT_STRATEGY = {
+  // Schema requires strings: "" means "install never completed", never `null`.
+  emptyResolved: { next: "", react: "", reactDom: "", typesReact: "", typesReactDom: "" },
+  assertionNames: JSDOM_ASSERTION_NAME_MAPS.next,
+
+  resolve(nodeModules) {
+    return {
+      next: readResolvedVersion(nodeModules, "next") ?? "",
+      react: readResolvedVersion(nodeModules, "react") ?? "",
+      reactDom: readResolvedVersion(nodeModules, "react-dom") ?? "",
+      typesReact: readResolvedVersion(nodeModules, "@types/react") ?? "",
+      typesReactDom: readResolvedVersion(nodeModules, "@types/react-dom") ?? "",
+    };
+  },
+
+  // The false-pass trap: a type package of the wrong major type-checks against the wrong React.
+  typePackageCheck(resolved) {
+    const reactTypesOk = resolved.typesReact
+      ? majorsMatch(resolved.react ?? "", resolved.typesReact)
+      : false;
+    const reactDomTypesOk = resolved.typesReactDom
+      ? majorsMatch(resolved.reactDom ?? "", resolved.typesReactDom)
+      : false;
+    if (reactTypesOk && reactDomTypesOk) return { ok: true };
+    const mismatch = !reactTypesOk
+      ? `resolved @types/react major (${resolved.typesReact}) does not match resolved react major (${resolved.react})`
+      : `resolved @types/react-dom major (${resolved.typesReactDom}) does not match resolved react-dom major (${resolved.reactDom})`;
+    return {
+      ok: false,
+      notes: `${mismatch} — matrix.config.mjs typesReact/typesReactDom range is wrong.`,
+    };
+  },
+
+  // Real HTTP against `next start`, so `await cookies()` is read from a real request.
+  async ssr({ appDir, logPath }) {
+    const serverProcess = spawn("pnpm", ["run", "start"], {
+      cwd: appDir,
+      stdio: ["ignore", "pipe", "pipe"],
+      // Process-group leader, so killProcessTree can signal `next start` too
+      // and not just the `pnpm run start` wrapper — see there for why.
+      detached: true,
+    });
+    try {
+      let serverLog = "";
+      serverProcess.stdout?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+      serverProcess.stderr?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+
+      const ready = await waitForServer(SERVER_PORT, SERVER_READY_TIMEOUT_MS);
+      appendLog(logPath, "next start", serverLog);
+      if (!ready) {
+        return {
+          outcome: "fail",
+          assertions: [],
+          notes: `next start did not become ready on port ${SERVER_PORT} within ${SERVER_READY_TIMEOUT_MS}ms.`,
+        };
+      }
+
+      const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+      return await runSsrAssertions({ baseUrl: `http://localhost:${SERVER_PORT}/` });
+    } finally {
+      killProcessTree(serverProcess);
+    }
+  },
+};
+
+const VUE_STRATEGY = {
+  emptyResolved: { vue: "" },
+  assertionNames: JSDOM_ASSERTION_NAME_MAPS.vue,
+
+  resolve(nodeModules) {
+    return { vue: readResolvedVersion(nodeModules, "vue") ?? "" };
+  },
+
+  // Dynamic proof that the leg tested the Vue it asked for: the exact pin must be what got
+  // installed, and no second copy of Vue may sit in the graph. Without it the floor leg could pass
+  // on a newer Vue that a peer range pulled in.
+  typePackageCheck(resolved, combo, appDir) {
+    if (resolved.vue !== combo.versions.vue) {
+      return {
+        ok: false,
+        notes: `resolved vue (${resolved.vue || "none"}) is not the requested ${combo.versions.vue}.`,
+      };
+    }
+    const pnpmDir = join(appDir, "node_modules", ".pnpm");
+    const copies = new Set();
+    if (existsSync(pnpmDir)) {
+      for (const entry of readdirSync(pnpmDir)) {
+        const match = /^vue@(\d+\.\d+\.\d+)/.exec(entry);
+        if (match) copies.add(match[1]);
+      }
+    }
+    if (copies.size > 1) {
+      return {
+        ok: false,
+        notes: `resolved ${copies.size} copies of vue (${[...copies].join(", ")}).`,
+      };
+    }
+    return { ok: true };
+  },
+
+  // `vite build --ssr` then `render` called directly: no live server, so this proves what
+  // renderToString produces on this Vue, not that a server framework forwards the Cookie header.
+  async ssr({ appDir, logPath }) {
+    const build = run("pnpm", ["run", "build:ssr"], { cwd: appDir });
+    appendLog(logPath, "build:ssr", build.output);
+    if (!build.ok) {
+      return {
+        outcome: "fail",
+        assertions: [],
+        notes: "build:ssr step failed, see logsArtifact.",
+      };
+    }
+    const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+    return await runSsrAssertions({ serverEntry: join(appDir, "dist-ssr", "entry-server.js") });
+  },
+};
+
+/** Every installed copy of vue, by version, read off pnpm's store layout. */
+function installedVueVersions(appDir) {
+  const pnpmDir = join(appDir, "node_modules", ".pnpm");
+  const copies = new Set();
+  if (existsSync(pnpmDir)) {
+    for (const entry of readdirSync(pnpmDir)) {
+      const match = /^vue@(\d+\.\d+\.\d+)/.exec(entry);
+      if (match) copies.add(match[1]);
+    }
+  }
+  return [...copies];
+}
+
+const NUXT_STRATEGY = {
+  emptyResolved: { nuxt: "", vue: "" },
+  assertionNames: JSDOM_ASSERTION_NAME_MAPS.nuxt,
+
+  // Nuxt depends on Vue itself and the app does not declare it, so vue is not linked at the top
+  // of node_modules: the copy Nuxt resolved is read off the store instead.
+  resolve(nodeModules) {
+    const vue = installedVueVersions(dirname(nodeModules));
+    return {
+      nuxt: readResolvedVersion(nodeModules, "nuxt") ?? "",
+      vue: vue.length === 1 ? (vue[0] ?? "") : "",
+    };
+  },
+
+  // The exact Nuxt pin must be what got installed, and exactly one Vue may sit in the graph: a
+  // second copy would split the runtime the module and the app share.
+  typePackageCheck(resolved, combo, appDir) {
+    if (resolved.nuxt !== combo.versions.nuxt) {
+      return {
+        ok: false,
+        notes: `resolved nuxt (${resolved.nuxt || "none"}) is not the requested ${combo.versions.nuxt}.`,
+      };
+    }
+    const copies = installedVueVersions(appDir);
+    if (copies.length !== 1) {
+      return {
+        ok: false,
+        notes: `resolved ${copies.length} copies of vue (${copies.join(", ") || "none"}).`,
+      };
+    }
+    return { ok: true };
+  },
+
+  // Real HTTP against the built Nitro server, so the module reads the Cookie and geo headers from
+  // a real request.
+  async ssr({ appDir, logPath }) {
+    const serverProcess = spawn(process.execPath, [join(".output", "server", "index.mjs")], {
+      cwd: appDir,
+      env: { ...process.env, PORT: String(SERVER_PORT) },
+      stdio: ["ignore", "pipe", "pipe"],
+      // Process-group leader, so killProcessTree can signal everything it starts.
+      detached: true,
+    });
+    try {
+      let serverLog = "";
+      serverProcess.stdout?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+      serverProcess.stderr?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+
+      const ready = await waitForServer(SERVER_PORT, SERVER_READY_TIMEOUT_MS);
+      appendLog(logPath, "nitro server", serverLog);
+      if (!ready) {
+        return {
+          outcome: "fail",
+          assertions: [],
+          notes: `the Nitro server did not become ready on port ${SERVER_PORT} within ${SERVER_READY_TIMEOUT_MS}ms.`,
+        };
+      }
+
+      const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+      return await runSsrAssertions({ baseUrl: `http://localhost:${SERVER_PORT}/` });
+    } finally {
+      killProcessTree(serverProcess);
+    }
+  },
+};
+
+const STRATEGIES = { next: NEXT_STRATEGY, vue: VUE_STRATEGY, nuxt: NUXT_STRATEGY };
+
+/**
  * @param {{ id: string, resultsOverride?: object }} params
  */
 export async function runCombination({ comboId, tarballsPath, tarballsDir, logsArtifact }) {
@@ -195,6 +425,7 @@ export async function runCombination({ comboId, tarballsPath, tarballsDir, logsA
     throw new Error(`[run-combination] Unknown combination id "${comboId}".`);
   }
 
+  const strategy = STRATEGIES[appOf(combo)];
   const startedAt = nowIso();
   const startedAtMs = Date.now();
   const comboScratchDir = join(scratchRoot(), comboId);
@@ -211,161 +442,108 @@ export async function runCombination({ comboId, tarballsPath, tarballsDir, logsA
     jsdomBehaviour: { outcome: "skipped", assertions: [] },
   };
   let notes = null;
-  let serverProcess;
 
-  try {
-    // --- scaffold + tarballs -------------------------------------------------
-    let tarballs;
-    if (tarballsPath) {
-      tarballs = JSON.parse(readFileSync(tarballsPath, "utf8"));
-    } else if (tarballsDir) {
-      tarballs = resolveTarballsFromDir(tarballsDir);
-    } else {
-      tarballs = packTarballs(join(comboScratchDir, "tarballs"));
-    }
-    scaffoldExampleApp({ combo, tarballs, targetDir: appDir });
+  // --- scaffold + tarballs -------------------------------------------------
+  let tarballs;
+  if (tarballsPath) {
+    tarballs = JSON.parse(readFileSync(tarballsPath, "utf8"));
+  } else if (tarballsDir) {
+    tarballs = resolveTarballsFromDir(tarballsDir);
+  } else {
+    tarballs = packTarballs(join(comboScratchDir, "tarballs"));
+  }
+  scaffoldExampleApp({ combo, tarballs, targetDir: appDir });
 
-    // --- install (D2: --ignore-workspace, fresh scratch node_modules) -------
-    const install = run("pnpm", ["install", "--ignore-workspace", "--no-frozen-lockfile"], {
-      cwd: appDir,
-    });
-    appendLog(logPath, "install", install.output);
-    steps.install.outcome = install.ok ? "pass" : "fail";
-    if (!install.ok) {
-      notes = "install step failed — see logsArtifact.";
-      return finalize();
-    }
+  // --- install (D2: --ignore-workspace, fresh scratch node_modules) -------
+  const install = run("pnpm", ["install", "--ignore-workspace", "--no-frozen-lockfile"], {
+    cwd: appDir,
+  });
+  appendLog(logPath, "install", install.output);
+  steps.install.outcome = install.ok ? "pass" : "fail";
+  if (!install.ok) {
+    notes = "install step failed — see logsArtifact.";
+    return finalize();
+  }
 
-    // --- dynamic type-package check (§5.4 — the false-pass trap) ------------
-    const nodeModules = join(appDir, "node_modules");
-    // Schema requires strings — "" means "not resolvable on disk", never `null`.
-    const resolved = {
-      next: readResolvedVersion(nodeModules, "next") ?? "",
-      react: readResolvedVersion(nodeModules, "react") ?? "",
-      reactDom: readResolvedVersion(nodeModules, "react-dom") ?? "",
-      typesReact: readResolvedVersion(nodeModules, "@types/react") ?? "",
-      typesReactDom: readResolvedVersion(nodeModules, "@types/react-dom") ?? "",
+  // --- dynamic type-package check (§5.4 — the false-pass trap) ------------
+  const nodeModules = join(appDir, "node_modules");
+  const resolved = strategy.resolve(nodeModules);
+  const typePackages = strategy.typePackageCheck(resolved, combo, appDir);
+  if (!typePackages.ok) {
+    steps.typePackageCheck.outcome = "fail";
+    notes = typePackages.notes;
+    appendLog(logPath, "typePackageCheck", notes);
+    return finalize(resolved);
+  }
+  steps.typePackageCheck.outcome = "pass";
+
+  // --- typecheck (a real tsc --noEmit — a build alone can't be trusted; §1) -
+  const typecheck = run("pnpm", ["run", "typecheck"], { cwd: appDir });
+  appendLog(logPath, "typecheck", typecheck.output);
+  steps.typecheck.outcome = typecheck.ok ? "pass" : "fail";
+  if (!typecheck.ok) {
+    notes = "typecheck step failed — see logsArtifact.";
+    return finalize(resolved);
+  }
+
+  // --- build ----------------------------------------------------------------
+  const build = run("pnpm", ["run", "build"], { cwd: appDir });
+  appendLog(logPath, "build", build.output);
+  steps.build.outcome = build.ok ? "pass" : "fail";
+  if (!build.ok) {
+    notes = "build step failed — see logsArtifact.";
+    return finalize(resolved);
+  }
+
+  // --- SSR render (Test A) ---------------------------------------------------
+  const ssrResult = await strategy.ssr({ appDir, logPath });
+  steps.ssrRender = { outcome: ssrResult.outcome, assertions: ssrResult.assertions };
+  if (ssrResult.notes) notes = ssrResult.notes;
+
+  if (ssrResult.outcome !== "pass") {
+    return finalize(resolved);
+  }
+
+  // --- jsdom behaviour (Test B) -----------------------------------------------
+  const jsdomResult = runJsdomBehaviour(appDir, logPath, strategy.assertionNames);
+  steps.jsdomBehaviour = jsdomResult;
+
+  return finalize(resolved);
+
+  function finalize(resolvedVersions) {
+    const finishedAt = nowIso();
+    // A "skipped" step only ever happens on an early return (a prior step
+    // failed), so this is equivalent to "every step actually ran and
+    // passed" — never silently treats an unattempted step as a pass.
+    const outcome = Object.values(steps).every((s) => s.outcome === "pass") ? "pass" : "fail";
+
+    const result = {
+      id: combo.id,
+      role: combo.role,
+      label: combo.label,
+      // Only the Vue and Nuxt combinations name their app; the Next.js results keep their shape.
+      ...(combo.app ? { app: combo.app } : {}),
+      packagesUnderTest: combo.packagesUnderTest,
+      requested: combo.versions,
+      // Schema requires strings (matrix-results.schema.json); an empty
+      // string means "install never completed, so nothing was resolved
+      // yet" — distinguishable from a real resolved version, never `null`.
+      resolved: resolvedVersions ?? strategy.emptyResolved,
+      node: combo.node,
+      packageManager: combo.packageManager,
+      moduleResolution: combo.moduleResolution,
+      outcome,
+      startedAt,
+      finishedAt,
+      durationMs: Date.now() - startedAtMs,
+      steps,
+      notes,
+      logsArtifact: logsArtifact ?? `local/${combo.id}.log`,
     };
 
-    const reactTypesOk = resolved.typesReact
-      ? majorsMatch(resolved.react ?? "", resolved.typesReact)
-      : false;
-    const reactDomTypesOk = resolved.typesReactDom
-      ? majorsMatch(resolved.reactDom ?? "", resolved.typesReactDom)
-      : false;
-
-    if (!reactTypesOk || !reactDomTypesOk) {
-      steps.typePackageCheck.outcome = "fail";
-      const mismatch = !reactTypesOk
-        ? `resolved @types/react major (${resolved.typesReact}) does not match resolved react major (${resolved.react})`
-        : `resolved @types/react-dom major (${resolved.typesReactDom}) does not match resolved react-dom major (${resolved.reactDom})`;
-      notes = `${mismatch} — matrix.config.mjs typesReact/typesReactDom range is wrong.`;
-      appendLog(logPath, "typePackageCheck", notes);
-      return finalize(resolved);
-    }
-    steps.typePackageCheck.outcome = "pass";
-
-    // --- typecheck (a real tsc --noEmit — a build alone can't be trusted; §1) -
-    const typecheck = run("pnpm", ["run", "typecheck"], { cwd: appDir });
-    appendLog(logPath, "typecheck", typecheck.output);
-    steps.typecheck.outcome = typecheck.ok ? "pass" : "fail";
-    if (!typecheck.ok) {
-      notes = "typecheck step failed — see logsArtifact.";
-      return finalize(resolved);
-    }
-
-    // --- build ----------------------------------------------------------------
-    const build = run("pnpm", ["run", "build"], { cwd: appDir });
-    appendLog(logPath, "build", build.output);
-    steps.build.outcome = build.ok ? "pass" : "fail";
-    if (!build.ok) {
-      notes = "build step failed — see logsArtifact.";
-      return finalize(resolved);
-    }
-
-    // --- SSR render (Test A) ---------------------------------------------------
-    serverProcess = spawn("pnpm", ["run", "start"], {
-      cwd: appDir,
-      stdio: ["ignore", "pipe", "pipe"],
-      // Process-group leader, so killProcessTree can signal `next start` too
-      // and not just the `pnpm run start` wrapper — see there for why.
-      detached: true,
-    });
-    let serverLog = "";
-    serverProcess.stdout?.on("data", (d) => {
-      serverLog += d.toString();
-    });
-    serverProcess.stderr?.on("data", (d) => {
-      serverLog += d.toString();
-    });
-
-    const ready = await waitForServer(SERVER_PORT, SERVER_READY_TIMEOUT_MS);
-    appendLog(logPath, "next start", serverLog);
-    if (!ready) {
-      steps.ssrRender.outcome = "fail";
-      notes = `next start did not become ready on port ${SERVER_PORT} within ${SERVER_READY_TIMEOUT_MS}ms.`;
-      return finalize(resolved);
-    }
-
-    const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
-    const ssrResult = await runSsrAssertions({ baseUrl: `http://localhost:${SERVER_PORT}/` });
-    steps.ssrRender = { outcome: ssrResult.outcome, assertions: ssrResult.assertions };
-    if (ssrResult.notes) notes = ssrResult.notes;
-
-    killProcessTree(serverProcess);
-    serverProcess = undefined;
-
-    if (ssrResult.outcome !== "pass") {
-      return finalize(resolved);
-    }
-
-    // --- jsdom behaviour (Test B) -----------------------------------------------
-    const jsdomResult = runJsdomBehaviour(appDir, logPath);
-    steps.jsdomBehaviour = jsdomResult;
-
-    return finalize(resolved);
-
-    function finalize(resolvedVersions) {
-      const finishedAt = nowIso();
-      // A "skipped" step only ever happens on an early return (a prior step
-      // failed), so this is equivalent to "every step actually ran and
-      // passed" — never silently treats an unattempted step as a pass.
-      const outcome = Object.values(steps).every((s) => s.outcome === "pass") ? "pass" : "fail";
-
-      const result = {
-        id: combo.id,
-        role: combo.role,
-        label: combo.label,
-        packagesUnderTest: combo.packagesUnderTest,
-        requested: combo.versions,
-        // Schema requires strings (matrix-results.schema.json); an empty
-        // string means "install never completed, so nothing was resolved
-        // yet" — distinguishable from a real resolved version, never `null`.
-        resolved: resolvedVersions ?? {
-          next: "",
-          react: "",
-          reactDom: "",
-          typesReact: "",
-          typesReactDom: "",
-        },
-        node: combo.node,
-        packageManager: combo.packageManager,
-        moduleResolution: combo.moduleResolution,
-        outcome,
-        startedAt,
-        finishedAt,
-        durationMs: Date.now() - startedAtMs,
-        steps,
-        notes,
-        logsArtifact: logsArtifact ?? `local/${combo.id}.log`,
-      };
-
-      mkdirSync(resultsDir, { recursive: true });
-      writeFileSync(join(resultsDir, `${combo.id}.json`), `${JSON.stringify(result, null, 2)}\n`);
-      return result;
-    }
-  } finally {
-    killProcessTree(serverProcess);
+    mkdirSync(resultsDir, { recursive: true });
+    writeFileSync(join(resultsDir, `${combo.id}.json`), `${JSON.stringify(result, null, 2)}\n`);
+    return result;
   }
 }
 
