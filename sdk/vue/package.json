@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/vue",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Vue adapter for the CookieYes consent SDK: a plugin, components and composables",
   "keywords": [
     "cookie consent",
