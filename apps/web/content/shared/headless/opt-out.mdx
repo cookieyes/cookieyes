@@ -1,7 +1,7 @@
 ---
 title: OptOut
 description: Build the CCPA Do Not Sell dialog with your own markup.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -12,7 +12,17 @@ Use it only when [`CookieOptOut`](/docs/components/cookie-opt-out) cannot produc
 
 ## Build a dialog
 
+<Framework when="nextjs react vue">
+
 Render this in place of `<CookieOptOut />`. `OptOut.Root` renders nothing while the dialog is closed, so keep it as the outer element.
+
+</Framework>
+
+<Framework when="nuxt">
+
+Write the dialog as a component, then render it in place of `<CookieOptOut />` inside `<CookieYesRoot>`. `OptOut.Root` renders nothing while the dialog is closed, so keep it as the outer element.
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -78,13 +88,60 @@ import { OptOut } from "@cookieyes/vue";
 
 </Framework>
 
+<Framework when="nuxt">
+
+```vue title="app/components/ConsentOptOut.vue" group="dialog"
+<script setup lang="ts">
+import { OptOut } from "#imports";
+</script>
+
+<template>
+  <OptOut.Root class="overlay">
+    <div class="dialog">
+      <OptOut.Title class="dialog-title" />
+      <OptOut.Close class="dialog-close" />
+      <OptOut.Description class="dialog-text" />
+
+      <div class="opt-out-row">
+        <OptOut.Checkbox id="do-not-sell" />
+        <OptOut.CheckboxLabel for="do-not-sell" />
+      </div>
+
+      <OptOut.Buttons class="dialog-actions">
+        <OptOut.Cancel class="btn" />
+        <OptOut.Save class="btn btn-primary" />
+      </OptOut.Buttons>
+      <OptOut.Success class="dialog-success" />
+    </div>
+  </OptOut.Root>
+</template>
+```
+
+`OptOut` is imported from `#imports`, Nuxt's own import path: a template sees `OptOut.Root` and the other pieces only when `OptOut` is a binding of the component.
+
+The slot of `<CookieYesRoot>` replaces everything it renders by default, so list the other components you still want:
+
+```vue title="app/app.vue" group="dialog"
+<template>
+  <CookieYesRoot>
+    <CookieBanner />
+    <CookiePreferences />
+    <ConsentOptOut />
+    <RecallButton />
+  </CookieYesRoot>
+  <NuxtPage />
+</template>
+```
+
+</Framework>
+
 <Framework when="nextjs react">
 
 Give the checkbox an `id` and the label the matching `htmlFor`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after an opt-out, the buttons disappear and the confirmation takes their place. Saving without an opt-out closes the dialog at once.
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Give the checkbox an `id` and the label the matching `for`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after an opt-out, the buttons disappear and the confirmation takes their place. Saving without an opt-out closes the dialog at once.
 
@@ -112,7 +169,7 @@ Every piece takes `className`, `style` and the other props of the element it ren
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Every piece takes `class`, `style` and the other attributes of the element it renders, and renders the translated text for the active language; put your own content in its default slot to replace it. `Close`, `Cancel` and `Save` accept `as-child` for your own button component, the same way as on [Banner](/docs/headless/banner#use-your-own-button-component).
 
@@ -137,7 +194,7 @@ The checkbox `id` and the label `htmlFor` do not match.
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **Clicking the label does not tick the box.**
 The checkbox `id` and the label `for` do not match.

@@ -1,7 +1,7 @@
 ---
 title: Self-hosted mode
 description: Send each consent decision to your own server as a record, and keep it as proof.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 In `mode: "self-hosted"`, every decision a visitor makes is also sent to your server as a consent record, so you can keep proof of it. The choice is still kept in the browser cookie too.
@@ -35,6 +35,20 @@ export function setupConsent(app: App): void {
 
 </Framework>
 
+<Framework when="nuxt">
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    mode: "self-hosted",
+    apiUrl: "https://example.com/api/consent", // your server's endpoint
+  },
+});
+```
+
+</Framework>
+
 Each decision is sent as one `POST` with a JSON body. If you set `apiKey`, it goes in an `Authorization: Bearer` header; anyone can see it in the browser, so never treat it as a secret.
 
 ## Receive it
@@ -57,6 +71,25 @@ export async function POST(request: Request) {
   if (!records.has(record.recordId)) records.set(record.recordId, record);
   return new Response(null, { status: 204 });
 }
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+For example, a Nuxt server route at `/api/consent`, the path in `apiUrl` above:
+
+```ts title="server/api/consent.post.ts"
+// A stand-in for your database.
+const records = new Map<string, unknown>();
+
+export default defineEventHandler(async (event) => {
+  const record = await readBody<{ recordId: string }>(event);
+  // A record can arrive twice, with the same recordId. Keep the first.
+  if (!records.has(record.recordId)) records.set(record.recordId, record);
+  setResponseStatus(event, 204);
+  return null;
+});
 ```
 
 </Framework>
@@ -167,6 +200,25 @@ export function setupConsent(app: App): void {
 
 </Framework>
 
+<Framework when="nuxt">
+
+`persist` is a function, so `backend` goes in `app/app.config.ts`; keep `mode: "self-hosted"` in `nuxt.config.ts`, and the module merges the two:
+
+```ts title="app/app.config.ts"
+export default defineAppConfig({
+  cookieyes: {
+    backend: {
+      async persist(record) {
+        const res = await fetch("/api/consent", { method: "POST", body: JSON.stringify(record) });
+        if (!res.ok) throw new Error(`Consent record not stored: HTTP ${res.status}`);
+      },
+    },
+  },
+});
+```
+
+</Framework>
+
 ## Common mistakes
 
 **Your server has the same decision twice.**
@@ -194,6 +246,14 @@ Add your `apiUrl` origin to `connect-src`.
 
 - [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
 - [Configuration](/docs/getting-started/configuration): every other option the plugin takes
+- [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
+
+</Framework>
+
+<Framework when="nuxt">
+
+- [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
+- [Configuration](/docs/getting-started/configuration): every other option of the `cookieyes` key
 - [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
 
 </Framework>

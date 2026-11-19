@@ -1,7 +1,7 @@
 ---
 title: CSP
 description: The SDK works under a strict Content-Security-Policy without unsafe-inline or a nonce.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -12,6 +12,8 @@ This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-starte
 
 ## What you need
 
+<Framework when="nextjs react vue core">
+
 The SDK's stylesheet is a normal file and its theme colours are applied as CSS variables on the elements, not as inline `<style>` blocks. This policy is enough:
 
 ```http title="Response header"
@@ -19,6 +21,14 @@ Content-Security-Policy: default-src 'self'; style-src 'self'; script-src 'self'
 ```
 
 No `'unsafe-inline'`, no nonce. The banner, both dialogs, the recall button and your `theme` colours all work.
+
+</Framework>
+
+<Framework when="nuxt">
+
+The full stylesheet is a normal file served from your own origin, and theme colours are applied as CSS variables on the elements. The one inline block is `critical.css`, which the module writes into every page's `<head>`, so `style-src` needs `'self'` plus that block's hash. See [Critical CSS](#critical-css) below. No `'unsafe-inline'` and no nonce for styles.
+
+</Framework>
 
 | Directive | Add | When |
 | --- | --- | --- |
@@ -51,6 +61,30 @@ If you already use nonces, pass yours instead: `<CookieYesStyles nonce={nonce} /
 
 </Framework>
 
+<Framework when="nuxt">
+
+## Critical CSS
+
+The module always inlines `critical.css`, so its hash belongs in `style-src`. It is exported ready to paste. The module adds no nonce to its tags, so use the hash even if you use nonces elsewhere.
+
+```ts title="nuxt.config.ts"
+import { CRITICAL_CSS_HASH } from "@cookieyes/nuxt";
+
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  routeRules: {
+    "/**": {
+      // Add the hash to the style-src of the policy you already send.
+      headers: { "Content-Security-Policy": `style-src 'self' ${CRITICAL_CSS_HASH}` },
+    },
+  },
+});
+```
+
+With `googleConsentMode` set, the module also writes Google's Consent Mode default as an inline `<script>` right after `<meta charset>`. No hash is exported for it, so `script-src` must allow that script some other way, for example with the hash of the snippet as your page serves it.
+
+</Framework>
+
 <Framework when="react vue core">
 
 ## Critical CSS
@@ -61,7 +95,17 @@ If you inline `critical.css` in your `<head>`, that one block needs its hash in 
 
 ## For a security review
 
+<Framework when="nextjs react vue core">
+
 CookieYes's interface loads as a normal stylesheet file, never as an inline `<style>` block, and theme colours are applied as CSS custom properties directly on the elements. It therefore needs neither `'unsafe-inline'` nor a nonce for `style-src`, and its own code is a normal script bundle under `script-src 'self'`.
+
+</Framework>
+
+<Framework when="nuxt">
+
+The Nuxt module inlines one `<style>` block, the SDK's `critical.css` byte for byte, whose hash it exports as `CRITICAL_CSS_HASH`. The full stylesheet loads as a normal file from your own origin, and theme colours are applied as CSS custom properties directly on the elements. `style-src` therefore needs `'self'` and that hash, never `'unsafe-inline'`. The SDK's code is part of your Nuxt bundle. With `googleConsentMode` set, the module adds one inline `<script>`: Google's Consent Mode default.
+
+</Framework>
 
 ## Common mistakes
 

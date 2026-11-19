@@ -1,7 +1,7 @@
 ---
 title: GatedScript
 description: Load a third-party script only after the visitor consents.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -18,7 +18,7 @@ Anywhere inside your client tree, for example next to the banner:
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 In any component of your app, for example next to the banner:
 
@@ -36,7 +36,7 @@ In any component of your app, for example next to the banner:
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 ```vue check="false"
 <GatedScript

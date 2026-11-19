@@ -37,20 +37,21 @@ Setting up consent by hand means installing the right package, creating a `"use 
 consent-manager module, calling `initCookieYes(...)`, and mounting the components in your
 layout or entry file. The CLI does all of that in ~30 seconds:
 
-- **Detects your framework** — Next.js (App or Pages Router), React (Vite/CRA), Vue 3 (Vite), or vanilla JS. A Nuxt project is not set up as Vue yet.
+- **Detects your framework** — Next.js (App or Pages Router), React (Vite/CRA), Vue 3 (Vite), Nuxt 4, or vanilla JS.
 - **Detects your package manager** — npm, pnpm, yarn, or bun.
-- **Installs the right adapter** — `@cookieyes/nextjs`, `@cookieyes/react`, `@cookieyes/vue`, or `@cookieyes/core`.
+- **Installs the right adapter** — `@cookieyes/nextjs`, `@cookieyes/react`, `@cookieyes/vue`, `@cookieyes/nuxt`, or `@cookieyes/core`.
 - **Scaffolds a working consent manager** — using the canonical `initCookieYes({...})` config (for
-  Vue, `app.use(CookieYes, {...})` with the same config), so freshly generated code is already on
-  the current API (no deprecation warnings).
-- **Wires it in** — patches your `layout.tsx` / `_app.tsx` / entry file (for Vue, `src/main.ts` and `src/App.vue`) to render the banner.
+  Vue, `app.use(CookieYes, {...})` with the same config; for Nuxt, the same options under
+  `cookieyes` in `app/app.config.ts`), so freshly generated code is already on the current API (no
+  deprecation warnings).
+- **Wires it in** — patches your `layout.tsx` / `_app.tsx` / entry file (for Vue, `src/main.ts` and `src/App.vue`; for Nuxt, the `modules` in `nuxt.config.ts` and `app/app.vue`) to render the banner.
 
 Prefer to wire it yourself? Every adapter README has a manual quick start.
 
 ## Prerequisites
 
 - **Node.js** ≥ 20
-- An existing project (Next.js, React, Vue, or vanilla). The CLI adds consent to a project you
+- An existing project (Next.js, React, Vue, Nuxt, or vanilla). The CLI adds consent to a project you
   already have — it does not scaffold a new app.
 
 ## Quick start
@@ -94,7 +95,7 @@ npx @cookieyes/cli init --framework react --regulation CCPA --locales es,fr --in
 
 | Flag | Values | Default with `--yes` |
 |------|--------|----------------------|
-| `--framework` | `nextjs`, `react`, `vue`, `vanilla` | the detected framework, else `nextjs` |
+| `--framework` | `nextjs`, `react`, `vue`, `nuxt`, `vanilla` | the detected framework, else `nextjs` |
 | `--mode` | `cookie-only`, `self-hosted` | `cookie-only` |
 | `--api-url` | a URL or a path such as `/api/consent`; implies `self-hosted` | none: `self-hosted` with `--yes` needs it |
 | `--regulation` | `GDPR`, `CCPA` | `GDPR` |
@@ -119,6 +120,7 @@ $ npx @cookieyes/cli init
 │  ● Next.js (detected)
 │  ○ React
 │  ○ Vue
+│  ○ Nuxt
 │  ○ Vanilla JS / Other
 │
 ◆  Backend mode?

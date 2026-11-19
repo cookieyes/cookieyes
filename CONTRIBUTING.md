@@ -3,8 +3,8 @@
 Thanks for your interest in contributing! This document explains how to set up the
 project, the standards we hold code to, and how releases work. It applies across all
 CookieYes packages in this monorepo (`@cookieyes/core`, `@cookieyes/react`,
-`@cookieyes/nextjs`, `@cookieyes/vue`, `@cookieyes/scripts`, `@cookieyes/cli`, `@cookieyes/translations`,
-`@cookieyes/test`) — the process is the same no matter which package you're working on.
+`@cookieyes/nextjs`, `@cookieyes/vue`, `@cookieyes/nuxt`, `@cookieyes/scripts`, `@cookieyes/cli`,
+`@cookieyes/translations`, `@cookieyes/test`): the process is the same no matter which package you're working on.
 
 ## Ways to contribute
 

@@ -1,7 +1,7 @@
 ---
 title: Quick start
 description: "A working cookie consent banner in about a minute: one CLI command detects your framework and writes the setup for you."
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 One command in your existing project. The CLI detects your framework, asks a few questions and writes the setup for you, including the stylesheet import that is easy to forget. It runs locally and collects no data.
@@ -62,6 +62,14 @@ The banner appears at the bottom of the page. Click **Accept All** and reload: i
 
 </Framework>
 
+<Framework when="nuxt">
+
+- `nuxt.config.ts`: `@cookieyes/nuxt` added to `modules`.
+- `app/app.config.ts` (`.js` in a JavaScript project): the configuration, under the `cookieyes` key.
+- `app/app.vue`: `<CookieYesRoot />` added before your page content.
+
+</Framework>
+
 <Framework when="nextjs react">
 
 Files that already exist are left alone. If the CLI cannot find where to add `<CookieYesRoot />`, it prints the lines to paste under "Manual step needed".
@@ -76,7 +84,15 @@ Files that already exist are left alone. If the CLI cannot find where to add `se
 
 To change anything later, edit `src/consent-manager.ts`: every option is on [Configuration](/docs/getting-started/configuration).
 
-A Nuxt project is not set up as Vue yet: the CLI writes nothing and prints where to start. Add the plugin yourself, as in [Installation](/docs/getting-started/installation).
+In a Nuxt project, choose Nuxt instead: the CLI then sets up `@cookieyes/nuxt`. See the [Nuxt quick start](/docs/nuxt/getting-started/quick-start).
+
+</Framework>
+
+<Framework when="nuxt">
+
+Files that already exist are left alone. An `app.config.ts` you already have is not changed: the CLI prints the `cookieyes` key to add under "Manual step needed", and does the same when it cannot add the module or `<CookieYesRoot />`.
+
+To change anything later, edit `app/app.config.ts`: every option is on [Configuration](/docs/getting-started/configuration). Options there are merged with any `cookieyes` key in `nuxt.config.ts`, and `app.config.ts` wins.
 
 </Framework>
 
@@ -99,6 +115,13 @@ The stylesheet import was removed from `src/consent-manager.ts`. Put it back.
 
 </Framework>
 
+<Framework when="nuxt">
+
+**`Failed to resolve component: CookieYesRoot` in the console.**
+`@cookieyes/nuxt` is missing from `modules` in `nuxt.config.ts`. Add it back.
+
+</Framework>
+
 **"Manual step needed" was printed.**
 Paste the printed lines into your layout or entry file. Nothing else is missing.
 
@@ -115,6 +138,14 @@ Paste the printed lines into your layout or entry file. Nothing else is missing.
 <Framework when="vue">
 
 - [Configuration](/docs/getting-started/configuration): every option the plugin takes
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="nuxt">
+
+- [Configuration](/docs/getting-started/configuration): every option of the `cookieyes` key
 - [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
 - [Styling](/docs/styling/overview): match the banner to your brand
 

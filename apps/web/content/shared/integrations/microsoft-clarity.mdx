@@ -1,7 +1,7 @@
 ---
 title: Microsoft Clarity
 description: Load Microsoft Clarity only after analytics consent, and switch it to cookie-free mode when consent is withdrawn.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 `clarity()` loads Microsoft Clarity after the visitor grants the analytics category and tells Clarity that cookies are allowed. When consent is withdrawn, it tells Clarity that consent is denied: Clarity then deletes its `_clck` and `_clsk` cookies and keeps running without cookies.
@@ -18,6 +18,11 @@ Then install the integrations package and add `clarity()` to the `initCookieYes(
 <Framework when="vue">
 
 Then install the integrations package and add `clarity()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
+<Framework when="nuxt">
+
+Then install the integrations package and add `clarity()` to `cookieyes.integrations` in `app/app.config.ts`:
 
 </Framework>
 
@@ -61,6 +66,21 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+import { clarity } from "@cookieyes/scripts";
+
+export default defineAppConfig({
+  cookieyes: {
+    integrations: [clarity({ projectId: "abcd123xyz" })],
+  },
+});
+```
+
+`integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
 <Framework when="core">

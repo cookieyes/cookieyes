@@ -1,7 +1,7 @@
 ---
 title: CookieBanner
 description: The consent banner a visitor sees on their first visit.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -26,6 +26,23 @@ You already render it if you followed [Installation](/docs/getting-started/insta
 
 </Framework>
 
+<Framework when="nuxt">
+
+In Nuxt, `<CookieYesRoot />` renders it for you. To render it yourself, for example to pass it props, list the components inside `<CookieYesRoot>`: its slot replaces the default contents, so keep the others you need.
+
+```vue title="app/app.vue"
+<template>
+  <CookieYesRoot>
+    <CookieBanner class="my-banner" />
+    <CookiePreferences />
+    <RecallButton />
+  </CookieYesRoot>
+  <NuxtPage />
+</template>
+```
+
+</Framework>
+
 ## Change what it shows
 
 <Framework when="nextjs react">
@@ -37,6 +54,12 @@ Nothing on the banner is set through props. Everything comes from `initCookieYes
 <Framework when="vue">
 
 Nothing on the banner is set through props. Everything comes from the config you pass to `app.use(CookieYes, config)`, so the banner, the dialogs and the recall button always match.
+
+</Framework>
+
+<Framework when="nuxt">
+
+Nothing on the banner is set through props. Everything comes from the `cookieyes` key in `nuxt.config.ts` and `app/app.config.ts`, so the banner, the dialogs and the recall button always match.
 
 </Framework>
 
@@ -55,7 +78,7 @@ It accepts `className` and `style` like any element; they are added to the banne
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 It accepts `class` and `style` like any element; they land on the banner card and are added to its own styling, not replacing it. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`root`, `title`, `description`, `actions`, `acceptAll`, `rejectAll`, `customise`, `doNotSell`, `close`, `branding`), for example `:class-names="{ acceptAll: 'my-accept' }"`. Or use its `data-cy-part` in your CSS:
 
@@ -95,13 +118,28 @@ Do Not Sell opens the opt-out dialog, so render it next to the banner:
 
 </Framework>
 
+<Framework when="nuxt">
+
+`<CookieYesRoot />` renders it for you whenever a CCPA regulation can apply: `regulation: "CCPA"`, `region.strictest: "CCPA"` or a `"CCPA"` value in `region.map`. If you list the components in its slot yourself, add it there:
+
+```vue check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+</Framework>
+
 ## Common mistakes
 
 **The banner never appears.**
 You already chose in this browser. Delete the `cookieyes-consent` cookie and reload.
 
+<Framework when="nextjs react vue">
+
 **The banner is unstyled text.**
 The stylesheet import is missing. See [Installation](/docs/getting-started/installation).
+
+</Framework>
 
 **Do Not Sell does nothing.**
 `<CookieOptOut />` is not rendered.

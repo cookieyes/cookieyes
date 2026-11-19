@@ -1,7 +1,7 @@
 ---
 title: Preferences
 description: Build the consent preferences dialog with your own markup, keeping the category switches, saving, focus handling and Escape to close.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -12,7 +12,17 @@ Use it only when [`CookiePreferences`](/docs/components/cookie-preferences) cann
 
 ## Build a dialog
 
+<Framework when="nextjs react vue">
+
 Render this in place of `<CookiePreferences />`. `Preferences.Root` is the overlay: it renders nothing while the dialog is closed, so keep it as the outer element.
+
+</Framework>
+
+<Framework when="nuxt">
+
+Write the dialog as a component, then render it in place of `<CookiePreferences />` inside `<CookieYesRoot>`. `Preferences.Root` is the overlay: it renders nothing while the dialog is closed, so keep it as the outer element.
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -110,6 +120,66 @@ import { Preferences } from "@cookieyes/vue";
 
 </Framework>
 
+<Framework when="nuxt">
+
+```vue title="app/components/ConsentPreferences.vue" group="dialog"
+<script setup lang="ts">
+import { Preferences } from "#imports";
+</script>
+
+<template>
+  <Preferences.Root class="overlay">
+    <div class="dialog">
+      <Preferences.Title class="dialog-title" />
+      <Preferences.Close class="dialog-close" />
+      <Preferences.Intro class="dialog-text" />
+
+      <Preferences.Categories v-slot="{ category }" class="category-list">
+        <Preferences.Category
+          v-slot="{ label, description, checked, disabled, toggle }"
+          :category="category"
+          class="category-row"
+        >
+          <label class="category">
+            <input
+              type="checkbox"
+              :checked="checked"
+              :disabled="disabled"
+              @change="toggle(($event.target as HTMLInputElement).checked)"
+            />
+            <span>{{ label }}</span>
+            <small>{{ description }}</small>
+          </label>
+        </Preferences.Category>
+      </Preferences.Categories>
+
+      <div class="dialog-actions">
+        <Preferences.RejectAll class="btn" />
+        <Preferences.AcceptAll class="btn" />
+        <Preferences.Save class="btn btn-primary" />
+      </div>
+    </div>
+  </Preferences.Root>
+</template>
+```
+
+`Preferences` is imported from `#imports`, Nuxt's own import path: a template sees `Preferences.Root` and the other pieces only when `Preferences` is a binding of the component. `Categories` renders its slot once per category in your `categories` list, so custom categories appear without any change here. `Category` gives its slot the resolved text and state for one row; you decide how the row looks.
+
+The slot of `<CookieYesRoot>` replaces everything it renders by default, so list the other components you still want:
+
+```vue title="app/app.vue" group="dialog"
+<template>
+  <CookieYesRoot>
+    <CookieBanner />
+    <ConsentPreferences />
+    <RecallButton />
+  </CookieYesRoot>
+  <NuxtPage />
+</template>
+```
+
+</Framework>
+
 ## The pieces
 
 <Framework when="nextjs react">
@@ -131,7 +201,7 @@ Every piece takes `className`, `style` and the other props of the element it ren
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 | Piece | Renders | What it does |
 | --- | --- | --- |
@@ -162,7 +232,7 @@ Every piece takes `class`, `style` and the other attributes of the element it re
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **`toggle` takes the new value, not the event.** Write `@change="toggle(($event.target as HTMLInputElement).checked)"`. A component whose change handler already gives you a boolean, such as a Switch, can take `toggle` directly.
 
@@ -182,7 +252,7 @@ Add `asChild` to `Close`, `AcceptAll`, `RejectAll` or `Save` and pass one elemen
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Add `as-child` to `Close`, `AcceptAll`, `RejectAll` or `Save` and pass one element:
 
@@ -203,7 +273,7 @@ Add `as-child` to `Close`, `AcceptAll`, `RejectAll` or `Save` and pass one eleme
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **Switches turn on but never off.**
 `@change="toggle"` passes the event, which counts as `true`. Use `@change="toggle(($event.target as HTMLInputElement).checked)"`.

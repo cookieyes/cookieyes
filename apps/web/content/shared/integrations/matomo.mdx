@@ -1,7 +1,7 @@
 ---
 title: Matomo
 description: Load Matomo only after analytics consent, or count visits without cookies until the visitor decides, and stop at once when consent is withdrawn.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 `matomoAnalytics()` loads Matomo after the visitor grants the analytics category. When consent is withdrawn, Matomo stops sending and its cookies are deleted at once, with no page reload. A second mode counts visits without cookies until the visitor decides; see [Consent modes](#consent-modes).
@@ -16,6 +16,11 @@ Install the integrations package and add `matomoAnalytics()` to the `initCookieY
 <Framework when="vue">
 
 Install the integrations package and add `matomoAnalytics()` to the config you pass to `app.use(CookieYes, config)`. `matomoUrl` is the `u` value in the snippet Matomo gives you, and `siteId` the `setSiteId` value:
+
+</Framework>
+<Framework when="nuxt">
+
+Install the integrations package and add `matomoAnalytics()` to `cookieyes.integrations` in `app/app.config.ts`. `matomoUrl` is the `u` value in the snippet Matomo gives you, and `siteId` the `setSiteId` value:
 
 </Framework>
 
@@ -59,6 +64,21 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+import { matomoAnalytics } from "@cookieyes/scripts";
+
+export default defineAppConfig({
+  cookieyes: {
+    integrations: [matomoAnalytics({ matomoUrl: "https://example.matomo.cloud", siteId: 1 })],
+  },
+});
+```
+
+`integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
 <Framework when="core">
@@ -157,6 +177,29 @@ watch(
 ```
 
 Render `<MatomoPageViews />` once in `App.vue`, next to `<RouterView />`.
+
+</Framework>
+<Framework when="nuxt">
+
+With Nuxt's router:
+
+```vue title="app/components/MatomoPageViews.vue"
+<script setup lang="ts">
+import { matomoPageView } from "@cookieyes/scripts";
+
+const route = useRoute();
+
+// A watcher does not run for the first page: the integration counts it.
+watch(
+  () => route.path,
+  () => matomoPageView(),
+);
+</script>
+
+<template></template>
+```
+
+Render `<MatomoPageViews />` once in `app/app.vue`, next to `<NuxtPage />`.
 
 </Framework>
 <Framework when="core">

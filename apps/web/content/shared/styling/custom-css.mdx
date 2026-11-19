@@ -1,7 +1,7 @@
 ---
 title: Custom CSS
 description: Change the width, spacing or any single element with a CSS rule on its part name.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -50,7 +50,38 @@ Every element the SDK renders carries a `data-cy-part` attribute: `banner`, `acc
 
 </Framework>
 
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+Add it to the `css` option. The module writes the SDK's stylesheet right after `<meta charset>`, ahead of every other tag in `<head>`, so your file always comes after it and your rules win:
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  css: ["~/assets/css/consent.css"],
+});
+```
+
+</Framework>
+
+<Framework when="nextjs react vue core">
+
 Import it after the SDK's stylesheet, so your rules win:
+
+</Framework>
 
 <Framework when="nextjs">
 
@@ -114,6 +145,16 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 </Framework>
 
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: #15803d;
+}
+```
+
+</Framework>
+
 ## Good to know
 
 <Framework when="nextjs react core">
@@ -122,7 +163,7 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **Global CSS only.** The banner, dialogs and recall button render into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing, and a `<style scoped>` block or CSS Modules in one of your components does not reach them.
 
@@ -136,8 +177,19 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 ## Common mistakes
 
+<Framework when="nextjs react vue core">
+
 **A rule does nothing.**
 Your stylesheet loads before the SDK's. Import it after `styles.css`, or add the parent part to the selector.
+
+</Framework>
+
+<Framework when="nuxt">
+
+**A rule does nothing.**
+The file is missing from the `css` option, or the selector is weaker than the SDK's own rule. Add it to `css`, or add the parent part to the selector.
+
+</Framework>
 
 **A scoped selector matches nothing.**
 The components are under `<body>`, outside your app's element. Drop the ancestor.

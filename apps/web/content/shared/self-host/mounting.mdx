@@ -1,7 +1,7 @@
 ---
 title: Mount the backend
 description: Serve @cookieyes/backend from Next.js, Hono, Express, Fastify, node:http, Bun, Deno or Cloudflare Workers.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 `backend.handler` takes a web `Request` and returns a `Response`, so any server that speaks them mounts it with no adapter. Send every method under your `basePath` to it: `POST` saves, `GET` reads, `DELETE` deletes and `OPTIONS` answers the browser's CORS check.

@@ -1,14 +1,14 @@
 ---
 title: Network blocking
 description: Block a third-party tool's requests until its category is granted, when you cannot gate the tool itself.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 ## What it does
 
 `networkBlocker` stops `fetch`, `XMLHttpRequest` and `sendBeacon` requests to the domains you list until the visitor grants the matching category. It is a last resort for code you do not control: a tag hard-coded in a template you cannot edit, a request fired from inside another vendor's script, a beacon sent when the page unloads.
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 If you can reference the tag in your own code, use [`GatedScript`](/docs/components/gated-script) or an [integration](/docs/integrations) instead: they load nothing until consent, so there is nothing to block.
 
@@ -24,7 +24,31 @@ It cannot stop a `<script src="...">` tag. Browsers load those on a path the blo
 
 ## Set it up
 
+<Framework when="nextjs react vue core">
+
 Two steps: register the blocker once, then list your rules. The blocker is a separate import so that sites that do not use it do not download it. Hotjar below is only an example; put your own vendor's domain in the rule.
+
+</Framework>
+
+<Framework when="nuxt">
+
+List your rules under `cookieyes` in `nuxt.config.ts`, not `app.config.ts`: the module looks for them there when it builds, registers the blocker itself, and adds it to the bundle only then, so a site without rules does not download it. Hotjar below is only an example; put your own vendor's domain in the rule.
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    mode: "cookie-only",
+    networkBlocker: {
+      rules: [{ id: "hotjar", domain: "static.hotjar.com", category: "analytics" }],
+    },
+  },
+});
+```
+
+`onRequestBlocked` is a function, so it goes under `cookieyes.networkBlocker` in `app/app.config.ts` instead. The module merges the two files.
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -119,8 +143,12 @@ A blocked `fetch` fails like a network error; a blocked `XMLHttpRequest` is abor
 
 ## Common mistakes
 
+<Framework when="nextjs react vue core">
+
 **Rules are configured but nothing is blocked.**
 `registerNetworkBlocker()` was never called. Check the console for the error.
+
+</Framework>
 
 **A `<script src="...">` tag still loads.**
 The blocker cannot stop script tags. Gate the script itself instead, as described at the top.

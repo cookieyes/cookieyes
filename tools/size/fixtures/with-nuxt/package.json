@@ -1,0 +1,15 @@
+{
+  "name": "@cookieyes/size-fixture-with-nuxt",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Size-measurement fixture. Not published. See tools/size/README.md.",
+  "scripts": {
+    "build": "nuxi build"
+  },
+  "dependencies": {
+    "@cookieyes/nuxt": "__TARBALL_NUXT__",
+    "nuxt": "4.6.4",
+    "vue": "3.5.45"
+  }
+}

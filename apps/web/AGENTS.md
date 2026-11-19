@@ -6,16 +6,16 @@ else. The root `AGENTS.md` still applies here.
 
 ## Where things live
 
-- `content/shared/**` is the only hand-written docs source. `content/docs/{nextjs,react,vue,core}`
+- `content/shared/**` is the only hand-written docs source. `content/docs/{nextjs,react,vue,nuxt,core}`
   are generated from it and committed; never edit them, the generator deletes hand-placed files.
 - A page is published to each framework named in its frontmatter: `frameworks: [nextjs, react,
-  vue, core]`. A page without `frameworks:` fails the build.
+  vue, nuxt, core]`. A page without `frameworks:` fails the build.
 - Section order: `content/shared/_root-order.json`. Pages inside a section: that folder's
   `meta.json`.
 - How fenced code is rewritten per framework (`@cookieyes/react` to `@cookieyes/nextjs`, never
-  applied to Vue pages, which are written by hand; `"use client"` dropped, `app/` to `src/`,
-  `frameworkSwap=false`, `<Framework when="...">`): `content/shared/README.md`. Read it before
-  writing a page.
+  applied to Vue or Nuxt pages, which are written by hand; `"use client"` dropped, `app/` to
+  `src/` except on Nuxt pages, `frameworkSwap=false`, `<Framework when="...">`):
+  `content/shared/README.md`. Read it before writing a page.
 - Links are framework-relative: `/docs/hooks/use-consent`.
 - The skills for SDK users live in the repo root `skills/` and are served at
   `/.well-known/agent-skills` (`src/lib/agent-skills.ts`). They are not the contributor skills
@@ -47,7 +47,8 @@ else. The root `AGENTS.md` still applies here.
 ## Checks that fail the build
 
 - `scripts/check-examples.mjs` type-checks every `ts` and `tsx` fence against the built SDK, once
-  per framework (Vue pages: `ts` and `vue` fences, with `vue-tsc`). Use `check="false"` only for
+  per framework (Vue pages: `ts` and `vue` fences, with `vue-tsc`; Nuxt pages: the same fences, inside a
+  prepared Nuxt app that installs `@cookieyes/nuxt`). Use `check="false"` only for
   a fragment that cannot compile alone (for example a single `window.*` call), never to silence a
   real error.
 - The config, component and CSS-variable reference generators fail when a sidecar entry is

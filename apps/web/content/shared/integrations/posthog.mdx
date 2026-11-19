@@ -1,7 +1,7 @@
 ---
 title: PostHog
 description: Load PostHog with consent, or keep a PostHog you already load in sync with the visitor's choice.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 Two integrations cover PostHog. `posthog()` loads PostHog for you from your project key. `posthogSync()` leaves loading to you and only turns capture on and off with consent.
@@ -22,6 +22,11 @@ Then add one of the two to the `initCookieYes()` call you already have. `onRejec
 <Framework when="vue">
 
 Then add one of the two to the config you pass to `app.use(CookieYes, config)`. `onReject` is required. It decides what a "no" means, and PostHog has no safe default for that:
+
+</Framework>
+<Framework when="nuxt">
+
+Then add one of the two to `cookieyes.integrations` in `app/app.config.ts`. `onReject` is required. It decides what a "no" means, and PostHog has no safe default for that:
 
 </Framework>
 
@@ -64,6 +69,21 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="nuxt">
+
+```ts title="app/app.config.ts"
+import { posthog } from "@cookieyes/scripts";
+
+export default defineAppConfig({
+  cookieyes: {
+    integrations: [posthog({ apiKey: "phc_XXXXXXXX", onReject: "stop" })],
+  },
+});
+```
+
+`integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
 <Framework when="core">
@@ -114,6 +134,11 @@ Keep your own `posthog.init()` and add `posthogSync()` instead. It injects nothi
 Keep your own `posthog.init()` and add `posthogSync()` instead. It injects nothing: on withdrawal it calls `posthog.opt_out_capturing()`, on grant `posthog.opt_in_capturing()`. Initialise PostHog before `app.use(CookieYes, config)` runs, and start it opted out, so nothing is captured before consent:
 
 </Framework>
+<Framework when="nuxt">
+
+Keep your own `posthog.init()` and add `posthogSync()` to `cookieyes.integrations` in `app/app.config.ts` instead. It injects nothing: on withdrawal it calls `posthog.opt_out_capturing()`, on grant `posthog.opt_in_capturing()`. The module starts the SDK in its own plugin, before any plugin of yours, so initialise PostHog in the page `<head>`, with PostHog's snippet, and start it opted out, so nothing is captured before consent:
+
+</Framework>
 
 ```ts check="false"
 posthog.init("phc_XXXXXXXX", { opt_out_capturing_by_default: true });
@@ -133,7 +158,7 @@ The call ran before consent. Use `safeCall()` as shown above.
 **With `"anonymous"`, no visits are counted before consent.**
 Cookieless tracking is off in your PostHog project. Turn it on under Settings, Web analytics.
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue nuxt">
 
 **The banner never shows, or shows again for a visitor who decided.**
 Your code reads consent from `posthog.has_opted_in_capturing()`. Read it from the SDK instead: see [useConsent](/docs/hooks/use-consent).

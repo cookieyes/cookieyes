@@ -92,6 +92,13 @@ await check("@cookieyes/vue exposes the plugin and getCookieYes", async () => {
   if (typeof vue.getCookieYes !== "function") throw new Error("getCookieYes is missing");
 });
 
+await check("@cookieyes/nuxt exposes a Nuxt module under the cookieyes key", async () => {
+  const nuxt = await import("@cookieyes/nuxt");
+  if (typeof nuxt.default !== "function") throw new Error("the default export is not a module");
+  const meta = await nuxt.default.getMeta?.();
+  if (meta?.configKey !== "cookieyes") throw new Error("the module's config key is not cookieyes");
+});
+
 console.log(`${passed} checks passed`);
 if (failures.length) {
   for (const failure of failures) console.error(`✗ ${failure}`);

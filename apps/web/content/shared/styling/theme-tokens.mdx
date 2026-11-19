@@ -1,7 +1,7 @@
 ---
 title: Theme tokens
 description: Set the brand colour, corner radius and font once; every CookieYes surface follows.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -49,6 +49,23 @@ export function setupConsent(app: App): void {
     },
   });
 }
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    theme: {
+      primaryColor: "#1863dc",
+      borderRadius: "8px",
+      fontFamily: "'Inter', sans-serif",
+    },
+  },
+});
 ```
 
 </Framework>
@@ -117,6 +134,18 @@ Every variable with its light and dark default is on the [CSS variables referenc
   --cy-primary: #1863dc;
 }
 ```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```css title="app/assets/css/consent.css"
+:root {
+  --cy-primary: #1863dc;
+}
+```
+
+The server HTML carries the stylesheet's defaults too: the theme is applied in the browser, once the page has hydrated.
 
 </Framework>
 

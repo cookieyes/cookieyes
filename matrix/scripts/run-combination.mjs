@@ -62,6 +62,15 @@ const JSDOM_ASSERTION_NAME_MAPS = {
     "server-rendered markup hydrates without a mismatch warning":
       "ssr-markup-hydrates-without-mismatch",
   },
+  nuxt: {
+    "CookieYesRoot shows the banner to a first-time visitor": "root-shows-banner-to-fresh-visitor",
+    "accepting in the banner writes the consent cookie and hides the banner":
+      "accept-writes-cookie-and-hides-banner",
+    "Banner asChild renders the developer's element with the part merged":
+      "asChild-renders-developer-element-with-part",
+    "Banner asChild runs the consent action when the developer's element is clicked":
+      "asChild-click-commits-consent",
+  },
 };
 
 function nowIso() {
@@ -198,7 +207,7 @@ function runJsdomBehaviour(appDir, logPath, nameMap) {
 
 /**
  * Everything that differs between example apps. `runCombination` is the same sequence of six
- * steps for both; each strategy supplies what a step means for its app.
+ * steps for every app; each strategy supplies what a step means for its app.
  */
 const NEXT_STRATEGY = {
   // Schema requires strings: "" means "install never completed", never `null`.
@@ -321,7 +330,90 @@ const VUE_STRATEGY = {
   },
 };
 
-const STRATEGIES = { next: NEXT_STRATEGY, vue: VUE_STRATEGY };
+/** Every installed copy of vue, by version, read off pnpm's store layout. */
+function installedVueVersions(appDir) {
+  const pnpmDir = join(appDir, "node_modules", ".pnpm");
+  const copies = new Set();
+  if (existsSync(pnpmDir)) {
+    for (const entry of readdirSync(pnpmDir)) {
+      const match = /^vue@(\d+\.\d+\.\d+)/.exec(entry);
+      if (match) copies.add(match[1]);
+    }
+  }
+  return [...copies];
+}
+
+const NUXT_STRATEGY = {
+  emptyResolved: { nuxt: "", vue: "" },
+  assertionNames: JSDOM_ASSERTION_NAME_MAPS.nuxt,
+
+  // Nuxt depends on Vue itself and the app does not declare it, so vue is not linked at the top
+  // of node_modules: the copy Nuxt resolved is read off the store instead.
+  resolve(nodeModules) {
+    const vue = installedVueVersions(dirname(nodeModules));
+    return {
+      nuxt: readResolvedVersion(nodeModules, "nuxt") ?? "",
+      vue: vue.length === 1 ? (vue[0] ?? "") : "",
+    };
+  },
+
+  // The exact Nuxt pin must be what got installed, and exactly one Vue may sit in the graph: a
+  // second copy would split the runtime the module and the app share.
+  typePackageCheck(resolved, combo, appDir) {
+    if (resolved.nuxt !== combo.versions.nuxt) {
+      return {
+        ok: false,
+        notes: `resolved nuxt (${resolved.nuxt || "none"}) is not the requested ${combo.versions.nuxt}.`,
+      };
+    }
+    const copies = installedVueVersions(appDir);
+    if (copies.length !== 1) {
+      return {
+        ok: false,
+        notes: `resolved ${copies.length} copies of vue (${copies.join(", ") || "none"}).`,
+      };
+    }
+    return { ok: true };
+  },
+
+  // Real HTTP against the built Nitro server, so the module reads the Cookie and geo headers from
+  // a real request.
+  async ssr({ appDir, logPath }) {
+    const serverProcess = spawn(process.execPath, [join(".output", "server", "index.mjs")], {
+      cwd: appDir,
+      env: { ...process.env, PORT: String(SERVER_PORT) },
+      stdio: ["ignore", "pipe", "pipe"],
+      // Process-group leader, so killProcessTree can signal everything it starts.
+      detached: true,
+    });
+    try {
+      let serverLog = "";
+      serverProcess.stdout?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+      serverProcess.stderr?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+
+      const ready = await waitForServer(SERVER_PORT, SERVER_READY_TIMEOUT_MS);
+      appendLog(logPath, "nitro server", serverLog);
+      if (!ready) {
+        return {
+          outcome: "fail",
+          assertions: [],
+          notes: `the Nitro server did not become ready on port ${SERVER_PORT} within ${SERVER_READY_TIMEOUT_MS}ms.`,
+        };
+      }
+
+      const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+      return await runSsrAssertions({ baseUrl: `http://localhost:${SERVER_PORT}/` });
+    } finally {
+      killProcessTree(serverProcess);
+    }
+  },
+};
+
+const STRATEGIES = { next: NEXT_STRATEGY, vue: VUE_STRATEGY, nuxt: NUXT_STRATEGY };
 
 /**
  * @param {{ id: string, resultsOverride?: object }} params
@@ -429,7 +521,7 @@ export async function runCombination({ comboId, tarballsPath, tarballsDir, logsA
       id: combo.id,
       role: combo.role,
       label: combo.label,
-      // Only the Vue combinations name their app; the Next.js results keep their shape.
+      // Only the Vue and Nuxt combinations name their app; the Next.js results keep their shape.
       ...(combo.app ? { app: combo.app } : {}),
       packagesUnderTest: combo.packagesUnderTest,
       requested: combo.versions,

@@ -18,7 +18,8 @@ request and by `release.yml` before publishing.
      tarball, and so is every source a sourcemap names
    - every exported stylesheet has at least ten selectors with the package's class prefix
      (`.cy-`, or `.cyd-` for devtools), so an empty or wrong file fails, not just a missing one
-   - publint in strict mode, and attw with the `node16` profile
+   - publint in strict mode, and attw with the `node16` profile (`esm-only` for `@cookieyes/nuxt`,
+     a Nuxt module that Nuxt loads with `import` and that needs `import.meta.url`)
    - the file list matches `tools/package-gate/contents.json`
 2. **Install and start** (`install.mjs` and `smoke.mjs`, one fresh `node:22` container per
    package manager): npm, pnpm, yarn and bun each install all tarballs into an empty project,

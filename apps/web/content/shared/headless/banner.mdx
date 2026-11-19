@@ -1,7 +1,7 @@
 ---
 title: Banner
 description: Build the consent banner with your own markup and classes, keeping CookieYes behaviour for showing, accepting, rejecting and translated text.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -12,7 +12,17 @@ Use it only when `CookieBanner` cannot produce the markup your design needs. For
 
 ## Build a banner
 
+<Framework when="nextjs react vue">
+
 Render this in place of `<CookieBanner />`. `Banner.Root` decides when the banner shows and hides, so keep it as the outer element.
+
+</Framework>
+
+<Framework when="nuxt">
+
+Write the banner as a component, then render it in place of `<CookieBanner />` inside `<CookieYesRoot>`. `Banner.Root` decides when the banner shows and hides, so keep it as the outer element.
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -73,13 +83,58 @@ const regulation = useRegulation();
 
 </Framework>
 
+<Framework when="nuxt">
+
+```vue title="app/components/ConsentBanner.vue" group="banner"
+<script setup lang="ts">
+import { Banner } from "#imports";
+
+const regulation = useRegulation();
+</script>
+
+<template>
+  <Banner.Root class="banner">
+    <Banner.Title class="banner-title" />
+    <Banner.Description class="banner-text" />
+    <Banner.Actions class="banner-actions">
+      <Banner.DoNotSell v-if="regulation === 'CCPA'" class="btn" />
+      <template v-else>
+        <Banner.AcceptAll class="btn btn-primary" />
+        <Banner.RejectAll class="btn" />
+      </template>
+      <Banner.OpenPreferences class="btn btn-link" />
+    </Banner.Actions>
+  </Banner.Root>
+</template>
+```
+
+Nuxt imports `Banner` for you in script, but a template only sees `Banner.Root` and the other pieces when `Banner` is a binding of the component, so import it from `#imports`, as above. `useRegulation()` needs no import.
+
+The slot of `<CookieYesRoot>` replaces everything it renders by default, so list the other components you still want:
+
+```vue title="app/app.vue" group="banner"
+<template>
+  <CookieYesRoot>
+    <ConsentBanner />
+    <CookiePreferences />
+    <CookieOptOut />
+    <RecallButton />
+  </CookieYesRoot>
+  <NuxtPage />
+</template>
+```
+
+Inside the slot your banner gets the consent the module read from the request, so a returning visitor gets no banner in the server HTML.
+
+</Framework>
+
 <Framework when="nextjs react">
 
 Each piece renders with the translated text for the active language. Pass `children` to replace it with your own text.
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Each piece renders with the translated text for the active language. Put your own content in its default slot to replace it.
 
@@ -106,7 +161,7 @@ Every piece takes `className`, `style` and the other props of the element it ren
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Every piece takes `class`, `style` and the other attributes of the element it renders. The part names for CSS are the same as on [`CookieBanner`](/docs/components/cookie-banner#restyle-it).
 
@@ -126,7 +181,7 @@ Add `asChild` to a button piece and pass one element. The piece puts its behavio
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Add `as-child` to a button piece and pass one element. The piece puts its behaviour on your element instead of rendering its own `<button>`. It throws if the slot holds anything other than exactly one element:
 
@@ -150,7 +205,7 @@ Your component already renders a `<button>`. Add `asChild`.
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **A button renders inside another button.**
 Your component already renders a `<button>`. Add `as-child`.
@@ -159,6 +214,13 @@ Your component already renders a `<button>`. Add `as-child`.
 
 **Customise does nothing.**
 `CookiePreferences` is not rendered. `Banner.OpenPreferences` only opens it.
+
+<Framework when="nuxt">
+
+**Nothing renders, and the console says it failed to resolve `Banner.Root`.**
+`Banner` is not imported in the component. Add `import { Banner } from "#imports";` to its `<script setup>`.
+
+</Framework>
 
 **The banner sits behind a sticky header.**
 Raise the `z-index` on your `Banner.Root` class.

@@ -1,7 +1,7 @@
 ---
 title: Data subject requests
 description: Show a visitor every consent record you hold about them, or delete them all, with one call each.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 When someone asks to see or delete their data, the backend answers with one call. Both routes need an owner key, so set `apiKeys` first.
@@ -45,6 +45,22 @@ export function YourConsentId() {
 <script setup lang="ts">
 import { useConsent } from "@cookieyes/vue";
 
+const consent = useConsent();
+</script>
+
+<template>
+  <p>
+    Your consent id: <code>{{ consent.consentId }}</code>
+  </p>
+</template>
+```
+
+</Framework>
+
+<Framework when="nuxt">
+
+```vue title="app/components/YourConsentId.vue"
+<script setup lang="ts">
 const consent = useConsent();
 </script>
 

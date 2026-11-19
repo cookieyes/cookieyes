@@ -10,6 +10,7 @@ const SECTIONS: Record<string, string> = {
   nextjs: "Next.js",
   react: "React",
   vue: "Vue",
+  nuxt: "Nuxt",
   core: "JavaScript",
   changelog: "Changelog",
 };

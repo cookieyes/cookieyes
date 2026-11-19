@@ -1,7 +1,7 @@
 ---
 title: Critical CSS
 description: Paint the banner on the first frame by inlining its rules in the HTML.
-frameworks: [nextjs, react, vue, core]
+frameworks: [nextjs, react, vue, nuxt, core]
 ---
 
 <Framework when="core">
@@ -12,16 +12,30 @@ This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-starte
 
 ## What it does
 
+<Framework when="nuxt">
+
+The Nuxt module does all of this for you; there is nothing to set up. The rest of the page explains what it does.
+
+</Framework>
+
 The normal stylesheet import puts the stylesheet on the critical path: the browser waits for it before painting anything. On a slow connection that delay is longer than everything else the SDK does. `critical.css` is the small part of the stylesheet that paints the banner; put it inline in `<head>` and load the full stylesheet without blocking, and the banner is styled on the first frame.
 
+<Framework when="nextjs react vue core">
+
 This is an optimisation. If your first-paint numbers are fine, skip it.
+
+</Framework>
 
 | File | Contents | Size |
 | --- | --- | --- |
 | `styles.css` | Everything: banner, dialogs, toggles, recall button, reload notice | about 3.8 KB gzipped |
 | `critical.css` | Only what the banner needs to paint | about 1.8 KB gzipped |
 
+<Framework when="nextjs react vue core">
+
 Always load `styles.css` too. `critical.css` alone leaves the preferences dialog unstyled.
+
+</Framework>
 
 ## Set it up
 
@@ -64,6 +78,23 @@ Copy the contents of `@cookieyes/vue/critical.css` into a `<style>` in your HTML
 
 </Framework>
 
+<Framework when="nuxt">
+
+Nothing to do. On every page the module writes `critical.css` inline right after `<meta charset>`, ahead of every other tag in `<head>`, and links the full stylesheet so it loads without blocking; the SDK switches it on once it starts. A route the module adds serves that stylesheet at `/cookieyes/styles.css`, under your app's base URL (`app.baseURL`, or `NUXT_APP_BASE_URL` at run time), compressed and cached for a year under a versioned address. To serve it from another path, set `stylesHref`:
+
+```ts title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ["@cookieyes/nuxt"],
+  cookieyes: {
+    stylesHref: "/assets/cookieyes.css",
+  },
+});
+```
+
+The tags are written into the HTML Nuxt sends, so they are also there with `ssr: false`, on prerendered pages and on routes with `swr`, `isr` or `cache` route rules. `nuxt generate` writes the stylesheet as a static file next to your pages, since there is no server to answer the route.
+
+</Framework>
+
 <Framework when="core">
 
 Copy the contents of `@cookieyes/vanilla/critical.css` into a `<style>` in your HTML `<head>` and keep the `styles.css` import. To have the banner itself in the first frame, not only its styles, put the output of `renderShell(config)` at the start of `<body>`: see [Banner with no framework](/docs/getting-started/vanilla#show-the-banner-before-any-script-runs).
@@ -74,8 +105,19 @@ If you send a `Content-Security-Policy`, the inline block needs its hash in `sty
 
 ## Common mistakes
 
+<Framework when="nextjs react vue core">
+
 **The preferences dialog is unstyled, the banner is fine.**
 Only `critical.css` is loaded. Load `styles.css` too.
+
+</Framework>
+
+<Framework when="nuxt">
+
+**The preferences dialog is unstyled, the banner is fine.**
+The full stylesheet did not load. In the Network tab, `/cookieyes/styles.css`, or your `stylesHref`, must return CSS.
+
+</Framework>
 
 <Framework when="nextjs react core">
 
@@ -94,4 +136,14 @@ The full stylesheet is still imported in `consent-manager.ts`. Remove that impor
 ## Next steps
 
 - [CSP](/docs/styling/csp): the `style-src` hash for the inline block
+<Framework when="nextjs react vue core">
+
 - [Installation](/docs/getting-started/installation): the normal stylesheet import this replaces
+
+</Framework>
+
+<Framework when="nuxt">
+
+- [Configuration](/docs/getting-started/configuration#module-options): `stylesHref` and the other module options
+
+</Framework>

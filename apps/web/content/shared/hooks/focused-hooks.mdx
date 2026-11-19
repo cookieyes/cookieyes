@@ -1,7 +1,7 @@
 ---
 title: Focused hooks
 description: "Ten small hooks that each answer one question: is this category granted, which law applies, is the banner showing, and more."
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What they are
@@ -15,6 +15,12 @@ frameworks: [nextjs, react, vue]
 <Framework when="vue">
 
 [`useConsent()`](/docs/hooks/use-consent) gives you everything and updates on every change. The composables on this page each answer one question and change only when that answer changes. They return computed refs, so read `.value` in script and use them directly in templates; the Returns column is the type of that value. `useLanguage()` and `useReloadNotice()` return an object whose fields are refs, plus functions. Every one of them throws if `app.use(CookieYes, config)` has not run, and must be called inside `setup()`.
+
+</Framework>
+
+<Framework when="nuxt">
+
+[`useConsent()`](/docs/hooks/use-consent) gives you everything and updates on every change. The composables on this page each answer one question and change only when that answer changes. They return computed refs, so read `.value` in script and use them directly in templates; the Returns column is the type of that value. `useLanguage()` and `useReloadNotice()` return an object whose fields are refs, plus functions. Nuxt imports every one of them for you; call them inside `setup()` or `<script setup>`.
 
 </Framework>
 
@@ -67,6 +73,23 @@ The category can also be a ref or a getter, such as `useConsentCategory(() => pr
 
 </Framework>
 
+<Framework when="nuxt">
+
+```vue title="app/components/AnalyticsWidget.vue"
+<script setup lang="ts">
+const allowed = useConsentCategory("analytics");
+</script>
+
+<template>
+  <iframe v-if="allowed" title="Dashboard" src="https://analytics.example.com/embed" />
+  <p v-else>Enable analytics cookies to see your dashboard.</p>
+</template>
+```
+
+The category can also be a ref or a getter, such as `useConsentCategory(() => props.category)`.
+
+</Framework>
+
 `useConsentCategory` reads the **saved** value, so a switch flipped in the dialog but not saved changes nothing here. For an `<iframe>` with a ready-made placeholder, [`GatedFrame`](/docs/components/gated-frame) does this for you.
 
 ## Which law applies, and why
@@ -83,7 +106,7 @@ The category can also be a ref or a getter, such as `useConsentCategory(() => pr
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 `useCategories()` returns your configured categories in order (`list`), their ids, the ids that are always on (`requiredIds`), and `isDefault`, which is `true` when the built-in five are in effect. Render from `list` rather than writing the five names by hand, so custom categories appear automatically. The list is fixed when the runtime starts, so it never changes.
 
@@ -103,7 +126,7 @@ The category can also be a ref or a getter, such as `useConsentCategory(() => pr
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 `useTranslations()` returns the text for the active language, the same strings the components show, and updates when the language changes. `useLanguage()` returns the active `language`, its `direction` for right-to-left layouts and the loaded `languages` as computed refs, plus `setLanguage(tag)`, which returns a promise. [Translations](/docs/translations) has a picker built on it.
 

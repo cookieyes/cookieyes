@@ -1,7 +1,7 @@
 ---
 title: useConsentActions
 description: Accept, reject, save or reset consent, and open the dialogs, from your own buttons.
-frameworks: [nextjs, react, vue]
+frameworks: [nextjs, react, vue, nuxt]
 ---
 
 ## What it does
@@ -12,7 +12,7 @@ Returns the functions that change consent or open a dialog. Use it to build your
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 Returns the functions that change consent or open a dialog. Use it to build your own controls: a "Cookie settings" link in the footer, an accept button in a custom banner, a reset button on a settings page. It only writes, so it does not track consent changes. To read consent, use [`useConsent()`](/docs/hooks/use-consent).
 
@@ -59,6 +59,20 @@ const { showPreferences } = useConsentActions();
 
 </Framework>
 
+<Framework when="nuxt">
+
+```vue title="app/components/CookieSettingsLink.vue"
+<script setup lang="ts">
+const { showPreferences } = useConsentActions();
+</script>
+
+<template>
+  <button type="button" @click="showPreferences">Cookie settings</button>
+</template>
+```
+
+</Framework>
+
 Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can reach it. The dialog moves focus into itself when it opens and back to your button when it closes.
 
 ## The actions
@@ -87,7 +101,7 @@ Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can 
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue nuxt">
 
 **Tell the consent record where your controls are.** In `mode: "self-hosted"` every decision is sent as a [consent record](/docs/getting-started/self-hosted) with a `source`. Pass it once, `useConsentActions("banner")` (or `"preferences"`, `"optout"`), and every action from that hook records it. Without it, decisions are recorded as `"api"`. The actions still take no arguments, so `@click="acceptAll"` works as before.
 
@@ -102,6 +116,12 @@ Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can 
 <Framework when="vue">
 
 **Without the plugin it throws.** If `app.use(CookieYes, config)` has not run, calling `useConsentActions()` throws "could not find CookieYes". Call it inside `setup()`.
+
+</Framework>
+
+<Framework when="nuxt">
+
+**Call it inside `setup()` or `<script setup>`.** The module installs the plugin before any component renders, so there is nothing else to set up.
 
 </Framework>
 
@@ -127,6 +147,13 @@ You called `updateCategory()` without `save()`.
 
 **It throws "could not find CookieYes".**
 `app.use(CookieYes, config)` did not run before the app mounted. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
+
+</Framework>
+
+<Framework when="nuxt">
+
+**`useConsentActions is not defined`.**
+`@cookieyes/nuxt` is missing from `modules` in `nuxt.config.ts`. See [Installation](/docs/getting-started/installation).
 
 </Framework>
 

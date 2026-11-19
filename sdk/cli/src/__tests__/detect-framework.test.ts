@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { detectFramework, isNuxtProject } from "../utils/detect-framework.js";
+import { detectFramework } from "../utils/detect-framework.js";
 
 let dir: string;
 
@@ -57,25 +57,18 @@ describe("detectFramework", () => {
     expect(detectFramework(dir)).toBe("react");
   });
 
-  it("never takes a Nuxt project for plain Vue", () => {
+  it("detects Nuxt before Vue, which every Nuxt app depends on", () => {
     writePkg({ dependencies: { nuxt: "4.0.0", vue: "3.5.0" } });
-    expect(detectFramework(dir)).toBe("vanilla");
-  });
-});
-
-describe("isNuxtProject", () => {
-  it("is true when nuxt is a dependency or a devDependency", () => {
-    writePkg({ dependencies: { nuxt: "4.0.0" } });
-    expect(isNuxtProject(dir)).toBe(true);
-    writePkg({ devDependencies: { nuxt: "4.0.0" } });
-    expect(isNuxtProject(dir)).toBe(true);
+    expect(detectFramework(dir)).toBe("nuxt");
   });
 
-  it("is false without nuxt, without package.json and with a malformed one", () => {
-    expect(isNuxtProject(dir)).toBe(false);
-    writePkg({ dependencies: { vue: "3.5.0" } });
-    expect(isNuxtProject(dir)).toBe(false);
-    writeFileSync(join(dir, "package.json"), "{ not json", "utf-8");
-    expect(isNuxtProject(dir)).toBe(false);
+  it("detects Nuxt from a devDependency", () => {
+    writePkg({ devDependencies: { nuxt: "4.0.0" }, dependencies: { vue: "3.5.0" } });
+    expect(detectFramework(dir)).toBe("nuxt");
+  });
+
+  it("takes a project with nuxt and react for Nuxt", () => {
+    writePkg({ dependencies: { nuxt: "4.0.0", react: "19.0.0" } });
+    expect(detectFramework(dir)).toBe("nuxt");
   });
 });
