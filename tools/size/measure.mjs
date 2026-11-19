@@ -361,11 +361,11 @@ function viteChunkSets(appDir) {
   }
   const source = readFileSync(indexHtml, "utf8");
   const initial = new Set();
-  for (const tag of source.match(/<(?:script|link)\b[^>]*>/g) ?? []) {
+  for (const tag of source.match(/<(?:script|link)\b[^>]*>/gi) ?? []) {
     const eager =
-      (tag.startsWith("<script") && /\btype="module"/.test(tag)) ||
-      (tag.startsWith("<link") && /\brel="modulepreload"/.test(tag));
-    const reference = /\b(?:src|href)="([^"]+\.js)"/.exec(tag)?.[1];
+      (/^<script/i.test(tag) && /\btype="module"/i.test(tag)) ||
+      (/^<link/i.test(tag) && /\brel="modulepreload"/i.test(tag));
+    const reference = /\b(?:src|href)="([^"]+\.js)"/i.exec(tag)?.[1];
     if (!eager || !reference) continue;
     const file = join(dist, reference.replace(/^\//, ""));
     if (!existsSync(file)) {
