@@ -27,6 +27,7 @@ Open-source cookie consent SDK for developers. Build consent banners and manage 
 | [`@cookieyes/scripts`](./sdk/scripts) | Ready-made, consent-gated third-party integrations (Segment, custom scripts, …) | [![npm](https://img.shields.io/npm/v/@cookieyes/scripts)](https://www.npmjs.com/package/@cookieyes/scripts) |
 | [`@cookieyes/nextjs`](./sdk/nextjs) | Next.js App Router adapter | [![npm](https://img.shields.io/npm/v/@cookieyes/nextjs)](https://www.npmjs.com/package/@cookieyes/nextjs) |
 | [`@cookieyes/nuxt`](./sdk/nuxt) | Nuxt 4 module over the Vue adapter, with server-rendered consent | [![npm](https://img.shields.io/npm/v/@cookieyes/nuxt)](https://www.npmjs.com/package/@cookieyes/nuxt) |
+| [`@cookieyes/svelte`](./sdk/svelte) | Svelte 5 adapter: a provider, components and hooks | [![npm](https://img.shields.io/npm/v/@cookieyes/svelte)](https://www.npmjs.com/package/@cookieyes/svelte) |
 | [`@cookieyes/translations`](./sdk/translations) | Curated, per-locale translation catalog | [![npm](https://img.shields.io/npm/v/@cookieyes/translations)](https://www.npmjs.com/package/@cookieyes/translations) |
 | [`@cookieyes/backend`](./sdk/backend) | Self-hosted consent server: stores each consent record once, in your own database | [![npm](https://img.shields.io/npm/v/@cookieyes/backend)](https://www.npmjs.com/package/@cookieyes/backend) |
 | [`@cookieyes/cli`](./sdk/cli) | Scaffolder — wire the SDK into an existing app | [![npm](https://img.shields.io/npm/v/@cookieyes/cli)](https://www.npmjs.com/package/@cookieyes/cli) |
@@ -183,6 +184,7 @@ sdk/
   scripts/       @cookieyes/scripts      consent-gated third-party integrations
   nextjs/        @cookieyes/nextjs       Next.js App Router adapter
   nuxt/          @cookieyes/nuxt         Nuxt 4 module
+  svelte/        @cookieyes/svelte       Svelte 5 provider + components + hooks
   translations/  @cookieyes/translations per-locale catalog
   backend/       @cookieyes/backend      self-hosted consent server
   cli/           @cookieyes/cli          scaffolder

@@ -37,7 +37,7 @@ the other: fix the docs or the rules, never leave both.
 | Gate a script with no ready-made integration | `customScript({ id, src, category })`, or an `Integration` with `load: "afterConsent"` | `load: "immediately"` |
 | Use CookieYes in a Vue 3 app | `@cookieyes/vue`, `app.use(CookieYes, config)`, `@cookieyes/vue/styles.css` | `@cookieyes/react` |
 | Use CookieYes in a Nuxt 4 app | `@cookieyes/nuxt` in `modules`, `cookieyes` options, `<CookieYesRoot />` in `app.vue` | `@cookieyes/vue` plugin wired by hand |
-| Use CookieYes in Svelte | `@cookieyes/core`, UI built from `consentStore` | `@cookieyes/react` |
+| Use CookieYes in a Svelte 5 app | `@cookieyes/svelte`, `<CookieYesProvider {config}>`, `@cookieyes/svelte/styles.css` | `@cookieyes/react`, or `@cookieyes/core` with a hand-built banner |
 | Opt-out consent for California | `regulation: "CCPA"` | A custom category list |
 | Unit-test that analytics loads only after consent | `createConsentTest()` from `@cookieyes/test`, reset after each test | Hand-writing the consent cookie |
 | Test a React component that reads consent | `createReactConsentTest()` from `@cookieyes/test/react`, one harness per file | Both harnesses in one file |
