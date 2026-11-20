@@ -73,8 +73,14 @@ export function stopServer(): void {
 /**
  * Starts the server before the file's tests, with room for a slow machine: starting Vite takes
  * longer than a test's own timeout when every package's tests run at once. Stops it afterwards.
+ * It also renders the page once, because Vite compiles the fixture and every component it
+ * imports on the first request. That took just over 5 s on a busy CI runner and failed the
+ * first test of a file, which should time only its own render.
  */
 export function useServerRenderer(): void {
-  beforeAll(start, 60_000);
+  beforeAll(async () => {
+    await start();
+    await renderOnServer({ parts: [] });
+  }, 60_000);
   afterAll(stopServer);
 }
