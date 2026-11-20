@@ -1,0 +1,10 @@
+export { default as AcceptAll } from "./AcceptAll.svelte";
+export { default as Actions } from "./Actions.svelte";
+export { default as Branding } from "./Branding.svelte";
+export { default as Close } from "./Close.svelte";
+export { default as Description } from "./Description.svelte";
+export { default as DoNotSell } from "./DoNotSell.svelte";
+export { default as OpenPreferences } from "./OpenPreferences.svelte";
+export { default as RejectAll } from "./RejectAll.svelte";
+export { default as Root } from "./Root.svelte";
+export { default as Title } from "./Title.svelte";

@@ -49,8 +49,9 @@ const outDir = resolve(outArg === -1 ? join(tmpdir(), "cookieyes-package-gate") 
  * Packages that ship ES modules only, checked by attw's `esm-only` profile instead of `node16`.
  * `@cookieyes/nuxt` is a Nuxt module: Nuxt loads modules with `import`, never `require`, and the
  * module finds its runtime files through `import.meta.url`, which a CommonJS build would not have.
+ * `@cookieyes/svelte` ships `.svelte` component files, which have no CommonJS form.
  */
-const ESM_ONLY = new Set(["@cookieyes/nuxt"]);
+const ESM_ONLY = new Set(["@cookieyes/nuxt", "@cookieyes/svelte"]);
 
 /** Class prefix each stylesheet must contain. A package not listed ships no CSS. */
 const CSS_PREFIX = {
@@ -58,6 +59,7 @@ const CSS_PREFIX = {
   "@cookieyes/react": ".cy-",
   "@cookieyes/vanilla": ".cy-",
   "@cookieyes/vue": ".cy-",
+  "@cookieyes/svelte": ".cy-",
   "@cookieyes/nuxt": ".cy-",
   "@cookieyes/nextjs": ".cy-",
   "@cookieyes/devtools": ".cyd-",
@@ -256,6 +258,14 @@ for (const { dir, manifest } of packages) {
       // The JSON report lists every resolution whatever the profile; `esm-only` means a
       // CommonJS `require` is not supported, so its problems are not ours to fix.
       if (ESM_ONLY.has(name) && problem.resolutionKind === "node16-cjs") continue;
+      // attw cannot resolve a `.svelte` specifier, which the declarations of a Svelte package
+      // use for every component. Svelte's own tooling resolves them, and `svelte-check` in the
+      // package's typecheck exercises exactly that.
+      if (
+        problem.kind === "InternalResolutionError" &&
+        /\.svelte$/.test(problem.moduleSpecifier ?? "")
+      )
+        continue;
       // Resolution problems name a sub-path; file problems (such as FalseESM) name files.
       const where = problem.entrypoint
         ? `"${problem.entrypoint}" under ${problem.resolutionKind}`

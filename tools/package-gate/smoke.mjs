@@ -3,15 +3,17 @@
 // nothing in the workspace can satisfy an import the installed packages cannot.
 //
 // For every published package:
-//   - every JS sub-path in "exports" loads with `import` and with `require`
+//   - every JS sub-path in "exports" loads with `import` and with `require` (for a package that
+//     ships `.svelte` files, which Node cannot load, it resolves to a file that exists instead)
 //   - every stylesheet sub-path resolves to a file
 //   - the copy that resolves, and the copy each sibling @cookieyes package resolves, is
 //     the tarball under test and not a registry copy of the same version
 // Then `initCookieYes()` runs with the documented minimal config, both ways.
 
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
 const expected = JSON.parse(readFileSync(new URL("./gate-expected.json", import.meta.url), "utf8"));
@@ -29,6 +31,12 @@ function fingerprint(entryPath, entry) {
   for (const file of [`${root}package.json`, entryPath]) hash.update(readFileSync(file));
   return hash.digest("hex");
 }
+/**
+ * Packages whose entry imports `.svelte` files. Node has no loader for them, so loading the
+ * entry fails however correct the package is; they are checked by resolving instead, and by
+ * the `svelte` export condition, which is what Svelte's tooling follows.
+ */
+const SVELTE_COMPONENTS = new Set(["@cookieyes/svelte"]);
 const firstLine = (error) => String(error?.message ?? error).split("\n")[0];
 
 async function check(label, fn) {
@@ -47,6 +55,19 @@ for (const [name, pkg] of Object.entries(expected.packages)) {
       await check(`resolve ${spec}`, () => {
         if (readFileSync(require.resolve(spec)).length === 0) {
           throw new Error("resolved to an empty file");
+        }
+      });
+      continue;
+    }
+    if (SVELTE_COMPONENTS.has(name)) {
+      await check(`resolve ${spec}`, () => {
+        const entry = fileURLToPath(import.meta.resolve(spec));
+        if (!existsSync(entry)) throw new Error(`${entry} does not exist`);
+        const root = entry.slice(0, -pkg.requireEntry.length);
+        const target = JSON.parse(readFileSync(`${root}package.json`, "utf8")).exports[subpath];
+        const component = target?.svelte;
+        if (!component || !existsSync(`${root}${component.replace(/^\.\//, "")}`)) {
+          throw new Error(`the "svelte" condition of ${subpath} does not point at a file`);
         }
       });
       continue;
