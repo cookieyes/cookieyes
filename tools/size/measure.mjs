@@ -139,6 +139,18 @@ const DEFAULT_APPS = [
     label: "@cookieyes/vue: banner + preferences + recall (three-file setup)",
   },
   {
+    dir: "baseline-svelte",
+    key: "baseline-svelte",
+    control: null,
+    label: "empty Vite + Svelte app (control for the Svelte adapter)",
+  },
+  {
+    dir: "with-svelte",
+    key: "svelte",
+    control: "baseline-svelte",
+    label: "@cookieyes/svelte: banner + preferences + recall (README setup)",
+  },
+  {
     dir: "baseline-nuxt",
     key: "baseline-nuxt",
     control: null,
@@ -467,7 +479,8 @@ function installFixture(appDir, name, tarballs) {
     .replace("__TARBALL_DEVTOOLS__", `file:${tarballs["@cookieyes/devtools"]}`)
     .replace("__TARBALL_VANILLA__", `file:${tarballs["@cookieyes/vanilla"]}`)
     .replace("__TARBALL_VUE__", `file:${tarballs["@cookieyes/vue"]}`)
-    .replace("__TARBALL_NUXT__", `file:${tarballs["@cookieyes/nuxt"]}`);
+    .replace("__TARBALL_NUXT__", `file:${tarballs["@cookieyes/nuxt"]}`)
+    .replace("__TARBALL_SVELTE__", `file:${tarballs["@cookieyes/svelte"]}`);
   if (resolved.includes("__TARBALL_")) {
     throw new Error(`fixture "${name}" has an unresolved tarball placeholder in package.json`);
   }
@@ -548,6 +561,7 @@ function installFixture(appDir, name, tarballs) {
     "vanilla",
     "vue",
     "nuxt",
+    "svelte",
     "scripts",
     "devtools",
   ]) {
@@ -566,6 +580,7 @@ function installFixture(appDir, name, tarballs) {
   for (const [framework, label] of [
     ["react", "React"],
     ["vue", "Vue"],
+    ["svelte", "Svelte"],
   ]) {
     const seen = new Set();
     if (existsSync(pnpmDir)) {
@@ -692,6 +707,7 @@ const TARBALL_PACKAGES = [
   "@cookieyes/vanilla",
   "@cookieyes/vue",
   "@cookieyes/nuxt",
+  "@cookieyes/svelte",
 ];
 
 /** Bytes of file content inside a `.tgz`, read from the tar headers. */
@@ -785,6 +801,7 @@ if (doBuild) {
     "vanilla",
     "vue",
     "nuxt",
+    "svelte",
     "scripts",
     "test",
     "devtools",
@@ -915,6 +932,7 @@ const report = {
       "is reported alongside. 'initial' counts only scripts the prerendered HTML references; " +
       "'total' counts every emitted client chunk including dynamic ones. The Vue entry is " +
       "measured the same way against an empty Vite + Vue app, so Vue's runtime is in its control, " +
+      "the Svelte entry against an empty Vite + Svelte app, " +
       "and the Nuxt entry against an empty Nuxt app, reading the HTML its server renders for /.",
     compression: { headline: "gzip", gzipLevel: 9, brotliQuality: 11 },
     next: "16.3.0",
@@ -922,6 +940,7 @@ const report = {
     vite: "8.3.6",
     vue: "3.5.45",
     nuxt: "4.6.4",
+    svelte: "5.57.3",
   },
   measuredAt: new Date().toISOString(),
   node: process.version,

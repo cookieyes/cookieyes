@@ -1,0 +1,19 @@
+{
+  "name": "@cookieyes/size-fixture-with-svelte",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Size-measurement fixture. Not published. See tools/size/README.md.",
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@cookieyes/svelte": "__TARBALL_SVELTE__",
+    "svelte": "5.57.3"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.6"
+  }
+}
