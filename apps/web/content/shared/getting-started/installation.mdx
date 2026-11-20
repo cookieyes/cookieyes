@@ -1,7 +1,7 @@
 ---
 title: Installation
 description: Install the CookieYes SDK and get a working banner in three steps.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 <Framework when="nextjs react">
@@ -19,6 +19,12 @@ Three steps, about five minutes: install the package, add the plugin to your app
 <Framework when="nuxt">
 
 Three steps, about five minutes: install the module, add it to `nuxt.config.ts`, and render `<CookieYesRoot />` once. If you would rather have the files written for you, run `npx @cookieyes/cli init`. See [Quick start](/docs/getting-started/quick-start).
+
+</Framework>
+
+<Framework when="svelte">
+
+Three steps, about five minutes: install the package, write the configuration, and wrap your app in the provider once.
 
 </Framework>
 
@@ -72,6 +78,17 @@ The rest of this page sets up `@cookieyes/core`. Two steps, about five minutes.
 | Node.js | 20, or the newer version your Nuxt release requires |
 | Nuxt | 4 |
 | Vue | 3.5 |
+
+</Framework>
+
+<Framework when="svelte">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20 |
+| Svelte | 5.20 |
+
+The components are written in runes mode and ship as `.svelte` source, so your Svelte toolchain (`@sveltejs/vite-plugin-svelte`) compiles them.
 
 </Framework>
 
@@ -129,6 +146,16 @@ npm install @cookieyes/nuxt
 ```
 
 This is the only package you install. `nuxt` and `vue` are peer dependencies, so the copies your app already has are the ones used. `npx nuxi module add @cookieyes/nuxt` installs it and adds it to `modules` in one go.
+
+</Framework>
+
+<Framework when="svelte">
+
+```npm
+npm install @cookieyes/svelte
+```
+
+This is the only package you install. `svelte` is a peer dependency, so the copy your app already has is the one used.
 
 </Framework>
 
@@ -352,6 +379,78 @@ Done. Reload the page and the banner appears. It is already in the server HTML, 
 
 </Framework>
 
+<Framework when="svelte">
+
+## 2. Write the configuration
+
+Put the configuration in a module of its own, so every render reuses one object instead of starting a new runtime:
+
+```ts title="src/lib/cookieyes.ts" group="setup"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only", // no backend needed
+  regulation: "GDPR", // "GDPR" | "CCPA"
+};
+```
+
+`<CookieYesProvider>` takes the same configuration as `initCookieYes()` in the other packages, so a configuration copies across unchanged.
+
+## 3. Render it once
+
+A component starts the SDK and renders the banner, the preferences dialog and the recall button. Everything inside it can use the hooks:
+
+```svelte title="src/lib/CookieYesRoot.svelte" group="setup"
+<script lang="ts">
+  import type { Snippet } from "svelte";
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesProvider,
+    RecallButton,
+  } from "@cookieyes/svelte";
+  import { config } from "./cookieyes";
+
+  let { children }: { children?: Snippet } = $props();
+</script>
+
+<CookieYesProvider {config}>
+  <CookieBanner />
+  <CookiePreferences />
+  <RecallButton />
+  {@render children?.()}
+</CookieYesProvider>
+```
+
+Wrap your app in it once. Keep the banner before your page content, so it is early in the DOM: screen readers announce it first, and it paints before the rest of the page.
+
+```svelte title="src/App.svelte" group="setup"
+<script lang="ts">
+  import CookieYesRoot from "./lib/CookieYesRoot.svelte";
+</script>
+
+<CookieYesRoot>
+  <h1>Your app</h1>
+</CookieYesRoot>
+```
+
+Load the stylesheet where the app starts:
+
+```ts title="src/main.ts" group="setup"
+import "@cookieyes/svelte/styles.css";
+import { mount } from "svelte";
+import App from "./App.svelte";
+
+const target = document.getElementById("app");
+if (target) mount(App, { target });
+```
+
+The stylesheet import is required. The components ship no inline styling, so without it they render as plain text, with no error to tell you why.
+
+Done. Reload the page and the banner appears. If it does not, see [Common mistakes](#common-mistakes).
+
+</Framework>
+
 <Framework when="core">
 
 ## 2. Initialise the runtime
@@ -407,6 +506,19 @@ It is in `nuxt.config.ts`, where options become runtime config, which is JSON an
 
 </Framework>
 
+<Framework when="svelte">
+
+**The banner renders as unstyled text.**
+The stylesheet import is missing. Keep the `@cookieyes/svelte/styles.css` import in `src/main.ts`, where the example above has it.
+
+**A component or hook throws "could not find CookieYes".**
+It is not inside `<CookieYesProvider>`, or a hook was called outside component initialisation, for example in an event handler. Render it inside `<CookieYesRoot>`, as in step 3, and call hooks at the top of a component's `<script>`.
+
+**A warning that `<CookieYesProvider>` ran again with a different config.**
+The config is written inline, so each render builds a new object and replaces the runtime. Import the one object from `src/lib/cookieyes.ts`, as in step 2.
+
+</Framework>
+
 <Framework when="nextjs">
 
 **`You're importing a component that needs "use client"`**
@@ -427,7 +539,7 @@ The module that calls it is imported from two places under a bundler that duplic
 
 </Framework>
 
-<Framework when="nextjs react vue nuxt core">
+<Framework when="nextjs react vue nuxt svelte core">
 
 ## Next steps
 
@@ -452,6 +564,14 @@ The module that calls it is imported from two places under a bundler that duplic
 <Framework when="nuxt">
 
 - [Configuration](/docs/getting-started/configuration): every option of the `cookieyes` key, including CCPA and languages
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="svelte">
+
+- [Configuration](/docs/getting-started/configuration): every option the provider takes, including CCPA and languages
 - [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
 - [Styling](/docs/styling/overview): match the banner to your brand
 

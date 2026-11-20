@@ -1,7 +1,7 @@
 ---
 title: CookiePreferences
 description: The dialog where a visitor turns each cookie category on or off.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte]
 ---
 
 ## What it does
@@ -45,6 +45,15 @@ In Nuxt, `<CookieYesRoot />` renders it for you. If you list the components insi
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte check="false"
+<CookieBanner />
+<CookiePreferences />
+```
+
+</Framework>
+
 ## Change what it shows
 
 <Framework when="nextjs react">
@@ -62,6 +71,12 @@ Nothing on the dialog is set through props. Everything comes from the config you
 <Framework when="nuxt">
 
 Nothing on the dialog is set through props. Everything comes from the `cookieyes` key in `nuxt.config.ts` and `app/app.config.ts`:
+
+</Framework>
+
+<Framework when="svelte">
+
+Nothing on the dialog is set through props. Everything comes from the `config` you pass to `<CookieYesProvider>`:
 
 </Framework>
 
@@ -126,6 +141,22 @@ const { showPreferences } = useConsentActions();
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte title="src/lib/CookieSettingsLink.svelte"
+<script lang="ts">
+  import { useConsentActions } from "@cookieyes/svelte";
+
+  const { showPreferences } = useConsentActions();
+</script>
+
+<button type="button" onclick={showPreferences}>Cookie settings</button>
+```
+
+Render it anywhere inside `<CookieYesProvider>`: `useConsentActions` runs while the component initialises and throws without a provider above it.
+
+</Framework>
+
 ## Restyle it
 
 <Framework when="nextjs react">
@@ -134,7 +165,7 @@ It accepts `className` and `style` like any element; they are added to the dialo
 
 </Framework>
 
-<Framework when="vue nuxt">
+<Framework when="vue nuxt svelte">
 
 It accepts `class` and `style` like any element; they land on the dialog card and are added to its own styling. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`overlay`, `root`, `title`, `close`, `intro`, `category`, `categoryLabel`, `categoryDescription`, `toggle`, `acceptAll`, `rejectAll`, `save`, `branding`). Or use its `data-cy-part` in your CSS:
 

@@ -1,7 +1,7 @@
 ---
 title: Ahrefs Web Analytics
 description: Load Ahrefs Web Analytics only after analytics consent, and stop it sending when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 `ahrefsAnalytics()` loads Ahrefs Web Analytics after the visitor grants the analytics category. When consent is withdrawn, Ahrefs stops sending page views and events straight away, with no reload. Ahrefs sets no cookies, so there is nothing to delete.
@@ -21,6 +21,11 @@ Install the integrations package and add `ahrefsAnalytics()` to the config you p
 <Framework when="nuxt">
 
 Install the integrations package and add `ahrefsAnalytics()` to `cookieyes.integrations` in `app/app.config.ts`. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+</Framework>
+<Framework when="svelte">
+
+Install the integrations package and add `ahrefsAnalytics()` to the config you pass to `<CookieYesProvider>`. The key is the `data-key` value in the snippet Ahrefs gives you:
 
 </Framework>
 
@@ -79,6 +84,22 @@ export default defineAppConfig({
 ```
 
 `integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
+
+</Framework>
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">

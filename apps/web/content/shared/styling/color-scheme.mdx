@@ -1,7 +1,7 @@
 ---
 title: Colour scheme
 description: Show the consent banner and dialogs in light or dark colours, or follow the visitor's device setting, with the colorScheme option.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 <Framework when="core">
@@ -64,6 +64,19 @@ export default defineNuxtConfig({
 
 </Framework>
 
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  colorScheme: "light",
+};
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -98,7 +111,7 @@ The brand colour does not switch. A `primaryColor` that reads well on white can 
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue svelte">
 
 ```css title="src/consent.css"
 @media (prefers-color-scheme: dark) {
@@ -145,7 +158,7 @@ html.dark [data-cy-part="optout"] {
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue svelte">
 
 ```css title="src/consent.css"
 html.dark [data-cy-part="banner"],

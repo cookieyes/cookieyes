@@ -1,7 +1,7 @@
 ---
 title: Data subject requests
 description: Show a visitor every consent record you hold about them, or delete them all, with one call each.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 When someone asks to see or delete their data, the backend answers with one call. Both routes need an owner key, so set `apiKeys` first.
@@ -69,6 +69,22 @@ const consent = useConsent();
     Your consent id: <code>{{ consent.consentId }}</code>
   </p>
 </template>
+```
+
+</Framework>
+
+<Framework when="svelte">
+
+```svelte title="src/lib/YourConsentId.svelte"
+<script lang="ts">
+  import { useConsent } from "@cookieyes/svelte";
+
+  const consent = useConsent();
+</script>
+
+<p>
+  Your consent id: <code>{consent.consentId}</code>
+</p>
 ```
 
 </Framework>

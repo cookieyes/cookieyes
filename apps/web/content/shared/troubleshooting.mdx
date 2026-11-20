@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Common CookieYes setup problems, like a banner that never shows or scripts loading before consent, and the one line to check for each.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte]
 ---
 
 Most problems here are a setup detail, and several show no error at all. Find what you see in the table; each row is one line to check.
@@ -86,6 +86,34 @@ Most problems here are a setup detail, and several show no error at all. Find wh
 
 </Framework>
 
+<Framework when="svelte">
+
+| What you see | Cause | Fix |
+| --- | --- | --- |
+| The banner never appears | You already chose in this browser, or closed it in this page view | Delete the `cookieyes-consent` cookie and reload, see [Reset and re-test](#reset-and-re-test) |
+| The banner never appears, no error anywhere | No page renders the component that holds `<CookieBanner />` | See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes) |
+| A component or hook throws `could not find CookieYes` | It is not inside `<CookieYesProvider>`, or a hook was called outside a component's initialisation, such as in an event handler | Render it inside the provider, and call hooks at the top of a component's `<script>`, see [Console messages](#console-messages) |
+| The banner is unstyled text | The stylesheet import is missing | Keep `import "@cookieyes/svelte/styles.css"` in `src/main.ts` |
+| The preferences dialog is unstyled, the banner is fine | Only `critical.css` is loaded | Load `styles.css` too, see [Critical CSS](/docs/styling/critical-css) |
+| Do Not Sell does nothing | `<CookieOptOut />` is not rendered | Render it next to the banner |
+| Customise or your own "Cookie settings" link does nothing | `<CookiePreferences />` is not rendered | Render it next to the banner |
+| A tracker loads when a switch is flipped, before Save | You read the live values | Use `useConsentCategory()` or `committedCategories`, see [useConsent](/docs/hooks/use-consent#saved-values-vs-live-values) |
+| A value from a hook never updates | You destructured the object a hook returned, which reads each field once | Read the fields in the template or a `$derived`, see [useConsent](/docs/hooks/use-consent) |
+| A custom category is missing | Your `categories` list was rejected; the console says why | See [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories) |
+| The banner is in English although you set a language | The language is not in `i18n.messages` | Import the catalogue, see [Translations](/docs/translations) |
+| The recall button is an unstyled circle | `class` replaced its default class | Add `cy-widget` to your class |
+| The banner flashes and vanishes for returning visitors | The server did not know their choice | Pass `initialConsent` to `CookieYesProvider`, see [Runtime and server helpers](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server) |
+| Svelte warns about a hydration mismatch in the banner | The server and the browser gave `CookieYesProvider` different `region`, `regulation` or `initialConsent` | Pass the same values on the server and in the browser |
+| Your CSS rule does nothing | Your stylesheet loads before the SDK's, or a `theme` value sets the same property inline | Import yours after `styles.css`; see [Custom CSS](/docs/styling/custom-css) |
+| A rule in a component's `<style>` block never reaches the banner | Svelte scopes that block to the component's own elements | Use a global stylesheet with `data-cy-part` selectors, or `:global(...)` |
+| Tracking continues after the visitor withdraws consent | A script that already ran cannot be unloaded | Render [`ReloadNotice`](/docs/components/reload-notice) |
+| Every returning visitor is asked again | You changed a category id, or which one is required | Expected. See [CookiePreferences](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) |
+| A checkbox in your own dialog turns on but never off | `onchange={toggle}` passes the event | Use `onchange={(e) => toggle(e.currentTarget.checked)}` |
+| Focus jumps to the top of the page when a dialog closes | The dialog was opened through the runtime directly | Open it with `useConsentActions().showPreferences()` |
+| The banner is not where you put it in your code | It moves to the top of `<body>` so keyboard users reach it first | Expected. See [Accessibility](/docs/accessibility) |
+
+</Framework>
+
 ## Console messages
 
 <Framework when="nextjs react">
@@ -139,6 +167,22 @@ You passed text, a fragment or two elements to a piece with `asChild`. Pass exac
 
 </Framework>
 
+<Framework when="svelte">
+
+**`[cookieyes] useConsent() could not find CookieYes. Wrap the app in <CookieYesProvider config={...}> and call hooks while a component initialises.`**
+Thrown by every hook and component when no `<CookieYesProvider>` is above it; the name at the start is the one that threw, such as `useConsent()` or `<CookieBanner>`. It is also thrown when a hook runs after the component initialised, for example inside an event handler. Render the component inside the provider, and call hooks at the top of its `<script>`.
+
+**`[cookieyes] getCookieYes() found no runtime. Mount <CookieYesProvider config={...}> first.`**
+Thrown by `getCookieYes()` when it runs before the provider. Every hook throws the message above instead. See [Runtime and server helpers](/docs/hooks/low-level-hooks).
+
+**`[cookieyes] <CookieYesProvider> ran again with a different config. Replacing the previous runtime.`**
+The provider rendered a second time in the browser with another config object. Import one module-level `config`, as in `src/lib/cookieyes.ts`, instead of writing it inline.
+
+**`[cookieyes] OptOut.* sub-components must be rendered inside <OptOut.Root>.`**
+An `OptOut.*` piece sits outside `OptOut.Root`. Move it inside. `Preferences.*` pieces give the same message about `<Preferences.Root>`.
+
+</Framework>
+
 **`[cookieyes] Invalid categories config (...). Falling back to the default five`**
 Your `categories` list broke a rule; the reason is in the brackets. The built-in five are shown until you fix it.
 
@@ -148,7 +192,7 @@ You set both `regulation` and `region`. Keep one.
 **`[cookieyes] no translations for language "..."; staying on "..."`**
 You switched to a language that is not in `i18n.messages` and has no `loadLanguage`. Add the catalogue.
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue svelte">
 
 **`[cookieyes] blocked POST https://... (rule "...", category: ...)`**
 Not an error: network blocking stopped a request, as configured. Set `logBlockedRequests: false` to silence it.
@@ -197,5 +241,12 @@ The SDK sets this in the browser on every page where it starts, whether or not t
 
 - [Installation](/docs/getting-started/installation): the three-step setup, with its own common mistakes
 - [Configuration](/docs/getting-started/configuration): every option of the `cookieyes` key
+
+</Framework>
+
+<Framework when="svelte">
+
+- [Installation](/docs/getting-started/installation): the three-step setup, with its own common mistakes
+- [Configuration](/docs/getting-started/configuration): every option of the `config` you pass to `<CookieYesProvider>`
 
 </Framework>

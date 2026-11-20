@@ -1,7 +1,7 @@
 ---
 title: Self-hosted mode
 description: Send each consent decision to your own server as a record, and keep it as proof.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 In `mode: "self-hosted"`, every decision a visitor makes is also sent to your server as a consent record, so you can keep proof of it. The choice is still kept in the browser cookie too.
@@ -45,6 +45,19 @@ export default defineNuxtConfig({
     apiUrl: "https://example.com/api/consent", // your server's endpoint
   },
 });
+```
+
+</Framework>
+
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "self-hosted",
+  apiUrl: "https://example.com/api/consent", // your server's endpoint
+};
 ```
 
 </Framework>
@@ -94,7 +107,7 @@ export default defineEventHandler(async (event) => {
 
 </Framework>
 
-<Framework when="react vue core">
+<Framework when="react vue svelte core">
 
 For example, a handler for `POST /api/consent`, the path in `apiUrl` above, written with the standard `Request` and `Response` most servers use:
 
@@ -219,6 +232,24 @@ export default defineAppConfig({
 
 </Framework>
 
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "self-hosted",
+  backend: {
+    async persist(record) {
+      const res = await fetch("/api/consent", { method: "POST", body: JSON.stringify(record) });
+      if (!res.ok) throw new Error(`Consent record not stored: HTTP ${res.status}`);
+    },
+  },
+};
+```
+
+</Framework>
+
 ## Common mistakes
 
 **Your server has the same decision twice.**
@@ -254,6 +285,14 @@ Add your `apiUrl` origin to `connect-src`.
 
 - [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
 - [Configuration](/docs/getting-started/configuration): every other option of the `cookieyes` key
+- [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
+
+</Framework>
+
+<Framework when="svelte">
+
+- [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
+- [Configuration](/docs/getting-started/configuration): every other option the provider takes
 - [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
 
 </Framework>

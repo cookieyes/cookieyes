@@ -1,7 +1,7 @@
 ---
 title: Critical CSS
 description: Paint the banner on the first frame by inlining its rules in the HTML.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 <Framework when="core">
@@ -20,7 +20,7 @@ The Nuxt module does all of this for you; there is nothing to set up. The rest o
 
 The normal stylesheet import puts the stylesheet on the critical path: the browser waits for it before painting anything. On a slow connection that delay is longer than everything else the SDK does. `critical.css` is the small part of the stylesheet that paints the banner; put it inline in `<head>` and load the full stylesheet without blocking, and the banner is styled on the first frame.
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 This is an optimisation. If your first-paint numbers are fine, skip it.
 
@@ -31,7 +31,7 @@ This is an optimisation. If your first-paint numbers are fine, skip it.
 | `styles.css` | Everything: banner, dialogs, toggles, recall button, reload notice | about 3.8 KB gzipped |
 | `critical.css` | Only what the banner needs to paint | about 1.8 KB gzipped |
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 Always load `styles.css` too. `critical.css` alone leaves the preferences dialog unstyled.
 
@@ -78,6 +78,12 @@ Copy the contents of `@cookieyes/vue/critical.css` into a `<style>` in your HTML
 
 </Framework>
 
+<Framework when="svelte">
+
+Copy the contents of `@cookieyes/svelte/critical.css` into a `<style>` in your HTML `<head>`, and load `styles.css` without blocking, for example with `<link rel="preload" as="style" onload="this.rel='stylesheet'">`. Then remove `import "@cookieyes/svelte/styles.css"` from `src/main.ts`; otherwise the stylesheet is back on the critical path.
+
+</Framework>
+
 <Framework when="nuxt">
 
 Nothing to do. On every page the module writes `critical.css` inline right after `<meta charset>`, ahead of every other tag in `<head>`, and links the full stylesheet so it loads without blocking; the SDK switches it on once it starts. A route the module adds serves that stylesheet at `/cookieyes/styles.css`, under your app's base URL (`app.baseURL`, or `NUXT_APP_BASE_URL` at run time), compressed and cached for a year under a versioned address. To serve it from another path, set `stylesHref`:
@@ -105,7 +111,7 @@ If you send a `Content-Security-Policy`, the inline block needs its hash in `sty
 
 ## Common mistakes
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 **The preferences dialog is unstyled, the banner is fine.**
 Only `critical.css` is loaded. Load `styles.css` too.
@@ -133,10 +139,17 @@ The full stylesheet is still imported in `consent-manager.ts`. Remove that impor
 
 </Framework>
 
+<Framework when="svelte">
+
+**Nothing got faster.**
+The full stylesheet is still imported in `src/main.ts`. Remove that import.
+
+</Framework>
+
 ## Next steps
 
 - [CSP](/docs/styling/csp): the `style-src` hash for the inline block
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 - [Installation](/docs/getting-started/installation): the normal stylesheet import this replaces
 

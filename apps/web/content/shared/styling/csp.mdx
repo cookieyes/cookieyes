@@ -1,7 +1,7 @@
 ---
 title: CSP
 description: The SDK works under a strict Content-Security-Policy without unsafe-inline or a nonce.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 <Framework when="core">
@@ -12,7 +12,7 @@ This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-starte
 
 ## What you need
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 The SDK's stylesheet is a normal file and its theme colours are applied as CSS variables on the elements, not as inline `<style>` blocks. This policy is enough:
 
@@ -85,7 +85,7 @@ With `googleConsentMode` set, the module also writes Google's Consent Mode defau
 
 </Framework>
 
-<Framework when="react vue core">
+<Framework when="react vue svelte core">
 
 ## Critical CSS
 
@@ -95,7 +95,7 @@ If you inline `critical.css` in your `<head>`, that one block needs its hash in 
 
 ## For a security review
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 CookieYes's interface loads as a normal stylesheet file, never as an inline `<style>` block, and theme colours are applied as CSS custom properties directly on the elements. It therefore needs neither `'unsafe-inline'` nor a nonce for `style-src`, and its own code is a normal script bundle under `script-src 'self'`.
 

@@ -1,7 +1,7 @@
 ---
 title: Store consent records on your server
 description: Run @cookieyes/backend in your own app and keep every consent decision as proof, in about fifteen minutes.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 `@cookieyes/backend` receives the record the SDK sends for each consent decision and stores it once, in your own database. Use it when you need to show later what a visitor agreed to, or to answer a request to see or delete their data.
@@ -53,7 +53,7 @@ export const { GET, POST, DELETE, OPTIONS } = backend.routes;
 
 </Framework>
 
-<Framework when="react vue core">
+<Framework when="react vue svelte core">
 
 Your site needs a server for it. With Hono:
 
@@ -65,7 +65,7 @@ Mount it on any server that hands it a web-standard `Request`. With Hono:
 
 </Framework>
 
-<Framework when="react vue nuxt core">
+<Framework when="react vue nuxt svelte core">
 
 ```ts title="server/index.ts" group="quickstart"
 import { type Context, Hono } from "hono";
@@ -128,6 +128,19 @@ export default defineNuxtConfig({
     apiUrl: "/api/consent",
   },
 });
+```
+
+</Framework>
+
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "self-hosted",
+  apiUrl: "/api/consent",
+};
 ```
 
 </Framework>
