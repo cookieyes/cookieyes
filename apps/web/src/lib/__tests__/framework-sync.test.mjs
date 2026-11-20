@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
-// The framework set and the Vue guard (which also covers Nuxt pages) are restated in plain
+// The framework set, the Vue guard (which also covers Nuxt pages) and the Svelte guard are restated in plain
 // scripts that cannot import the TypeScript modules. This keeps every restatement identical, so adding a framework in one
 // place and forgetting another fails here, not in front of a reader.
 
@@ -23,6 +23,7 @@ describe("framework set", () => {
     const expected = listAfterFrameworks(read("src/lib/framework-docs.ts"));
     assert.ok(expected.includes("vue"));
     assert.ok(expected.includes("nuxt"));
+    assert.ok(expected.includes("svelte"));
     for (const file of ["src/lib/remark-framework-docs.ts", "scripts/check-examples.mjs"]) {
       assert.deepEqual(listAfterFrameworks(read(file)), expected, file);
     }
@@ -43,6 +44,19 @@ describe("Vue guard", () => {
   it("is the same pattern in the plugin, the composer and the checker", () => {
     const pattern = (file) => {
       const match = /const VUE_FORBIDDEN = (\/.*\/);/.exec(read(file));
+      assert.ok(match, file);
+      return match[1];
+    };
+    const expected = pattern("src/lib/framework-docs.ts");
+    assert.equal(pattern("src/lib/remark-framework-docs.ts"), expected);
+    assert.equal(pattern("scripts/check-examples.mjs"), expected);
+  });
+});
+
+describe("Svelte guard", () => {
+  it("is the same pattern in the plugin, the composer and the checker", () => {
+    const pattern = (file) => {
+      const match = /const SVELTE_FORBIDDEN =\s*(\/.*\/);/.exec(read(file));
       assert.ok(match, file);
       return match[1];
     };

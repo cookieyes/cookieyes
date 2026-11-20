@@ -99,6 +99,9 @@ importers:
       '@cookieyes/scripts':
         specifier: workspace:*
         version: link:../../sdk/scripts
+      '@cookieyes/svelte':
+        specifier: workspace:*
+        version: link:../../sdk/svelte
       '@cookieyes/test':
         specifier: workspace:*
         version: link:../../sdk/test
@@ -129,6 +132,12 @@ importers:
       postcss:
         specifier: ^8.5.26
         version: 8.5.29
+      svelte:
+        specifier: ^5.57.3
+        version: 5.57.3
+      svelte-check:
+        specifier: ^4.7.8
+        version: 4.7.8(picomatch@4.0.7)(svelte@5.57.3)(typescript@6.0.3)
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3

@@ -7,8 +7,9 @@
 // (scripts/generate-framework-docs.mjs). A body is therefore checked once per framework it
 // is published under, after the same two transformations the build applies for that
 // framework — <Framework when="…"> blocks resolved, `@cookieyes/nextjs|react` swapped to the
-// framework's package (src/lib/remark-framework-docs.ts). A Vue or Nuxt page is never swapped,
-// and fails here if a React fence is left in it. A swap that produced code which
+// framework's package (src/lib/remark-framework-docs.ts). A Vue, Nuxt or Svelte page is never
+// swapped, and fails here if a React fence (or, on a Svelte page, a Vue one) is left in it. A
+// swap that produced code which
 // does not compile fails here, not in front of a reader.
 //
 // Usage: node scripts/check-examples.mjs [--framework <name>]... [<page under content/shared>]...
@@ -104,13 +105,16 @@ const ATTR_RE = /(?<name>[a-zA-Z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'))?/g;
 // Keep them identical.
 // ---------------------------------------------------------------------------------------
 
-const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "core"];
+const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "svelte", "core"];
 const SWAPPABLE = /@cookieyes\/(react|nextjs)(\/styles\.css|\/critical\.css)?(?![\w/-])/g;
 const OPT_OUT = /(^|\s)frameworkSwap=false(\s|$)/;
 const USE_CLIENT = /^"use client";\n\n?/;
 const APP_DIR_TITLE = /title="app\//;
 // Kept identical to VUE_FORBIDDEN in src/lib/framework-docs.ts; a test compares the two.
 const VUE_FORBIDDEN = /@cookieyes\/(react|nextjs)(?![\w-])|"use client"|useSyncExternalStore/;
+// Kept identical to SVELTE_FORBIDDEN in src/lib/framework-docs.ts; a test compares the two.
+const SVELTE_FORBIDDEN =
+  /@cookieyes\/(react|nextjs|vue|nuxt)(?![\w-])|"use client"|useSyncExternalStore/;
 const BLOCK = /<Framework when="([^"]*)">\s*\n((?:(?!<Framework)[\s\S])*?)\n\s*<\/Framework>\n?/g;
 const FENCE = /^(```[^\n]*)\n([\s\S]*?)^```[ \t]*$/gm;
 
@@ -137,9 +141,18 @@ function composeFor(source, framework) {
   }
   out = out.replace(FENCE, (_m, opener, code) => {
     let swapped = code;
-    const handWritten = framework === "vue" || framework === "nuxt";
-    if (handWritten) {
-      const lang = /^```(\w*)/.exec(opener)?.[1];
+    const handWritten = framework === "vue" || framework === "nuxt" || framework === "svelte";
+    const lang = /^```(\w*)/.exec(opener)?.[1];
+    if (framework === "svelte") {
+      if (lang === "tsx" || lang === "vue" || SVELTE_FORBIDDEN.test(code)) {
+        throw new Error(
+          `[check-examples] a Svelte page has a React or Vue fence (tsx, vue, a @cookieyes/react, ` +
+            `@cookieyes/nextjs, @cookieyes/vue or @cookieyes/nuxt import, a "use client" line or ` +
+            `useSyncExternalStore). Wrap it in <Framework when="...">:\n` +
+            code.split("\n").slice(0, 3).join("\n"),
+        );
+      }
+    } else if (handWritten) {
       if (lang === "tsx" || VUE_FORBIDDEN.test(code)) {
         throw new Error(
           `[check-examples] a ${framework === "vue" ? "Vue" : "Nuxt"} page has a React fence (tsx, a @cookieyes/react or ` +
@@ -173,11 +186,12 @@ function parseMeta(meta) {
 }
 
 /**
- * Splits a composed page into the groups of files that compile together. `withVue` adds `vue`
- * fences (Vue and Nuxt pages). `untitledDir` is where a fence without a title is written: a Nuxt
- * file must sit in the app's source folder to get its auto-imports.
+ * Splits a composed page into the groups of files that compile together. `componentLang` adds
+ * the fences of that language (`vue` on Vue and Nuxt pages, `svelte` on Svelte pages).
+ * `untitledDir` is where a fence without a title is written: a Nuxt file must sit in the app's
+ * source folder to get its auto-imports.
  */
-function extractGroups(mdxSource, withVue = false, untitledDir = "") {
+function extractGroups(mdxSource, componentLang = null, untitledDir = "") {
   const lines = mdxSource.split("\n");
   const groups = [];
   let currentGroup = null;
@@ -206,9 +220,13 @@ function extractGroups(mdxSource, withVue = false, untitledDir = "") {
     }
     if (inFence && line.trim() === "```") {
       inFence = false;
-      // `vue` fences are single-file components. They join the groups of the Vue and Nuxt
-      // variants only, where vue-tsc compiles them next to the `ts` fences that import them.
-      const isTs = fenceLang === "ts" || fenceLang === "tsx" || (withVue && fenceLang === "vue");
+      // `vue` and `svelte` fences are single-file components. They join the groups of their own
+      // variants only, where vue-tsc or svelte-check compiles them next to the `ts` fences that
+      // import them.
+      const isTs =
+        fenceLang === "ts" ||
+        fenceLang === "tsx" ||
+        (componentLang !== null && fenceLang === componentLang);
       const skipped = fenceMeta.check === "false";
       if (isTs && !skipped) {
         // Fences under one heading compile together, so they can import each other. A
@@ -281,6 +299,34 @@ function writeVueTsconfig() {
     },
   };
   const path = join(runDir, "tsconfig.vue.json");
+  writeFileSync(path, JSON.stringify(base, null, 2));
+  return path;
+}
+
+/**
+ * The Svelte variant's compiler settings: no Next types and no JSX. `verbatimModuleSyntax` is on,
+ * as in a new Svelte project, so an example that imports a type without `import type` fails
+ * here and not in the reader's editor. As for Vue, `*.css` is declared per group by the harness.
+ */
+function writeSvelteTsconfig() {
+  const base = {
+    compilerOptions: {
+      target: "ESNext",
+      lib: ["dom", "dom.iterable", "esnext"],
+      module: "esnext",
+      moduleResolution: "bundler",
+      strict: true,
+      noEmit: true,
+      esModuleInterop: true,
+      forceConsistentCasingInFileNames: true,
+      skipLibCheck: true,
+      isolatedModules: true,
+      verbatimModuleSyntax: true,
+      resolveJsonModule: true,
+      types: ["node"],
+    },
+  };
+  const path = join(runDir, "tsconfig.svelte.json");
   writeFileSync(path, JSON.stringify(base, null, 2));
   return path;
 }
@@ -366,8 +412,9 @@ function reportFailure(error, relFile, variant, group) {
 function checkVariant(relFile, variant, source, baseTsconfigPath) {
   const variantId = `${relFile.replace(/[\\/]/g, "__")}__${variant}`;
   const isVue = variant === "vue";
+  const isSvelte = variant === "svelte";
   let ok = true;
-  extractGroups(source, isVue).forEach((group, idx) => {
+  extractGroups(source, isVue ? "vue" : isSvelte ? "svelte" : null).forEach((group, idx) => {
     const groupDir = join(runDir, variantId, `group-${idx}`);
     mkdirSync(groupDir, { recursive: true });
     for (const f of group.files) {
@@ -378,24 +425,35 @@ function checkVariant(relFile, variant, source, baseTsconfigPath) {
 
     writeFileSync(join(groupDir, "reader-tooling.d.ts"), READER_TOOLING);
     // The stylesheet import (`@cookieyes/vue/styles.css`) is resolved by the reader's bundler.
-    // Next's own types declare `*.css` for the other variants; the Vue variant needs it said
-    // here, and only here, so the user-facing example stays exactly what a reader writes.
-    if (isVue) writeFileSync(join(groupDir, "harness-env.d.ts"), 'declare module "*.css";\n');
+    // Next's own types declare `*.css` for the other variants; the Vue and Svelte variants need
+    // it said here, and only here, so the user-facing example stays exactly what a reader writes.
+    if (isVue || isSvelte) {
+      writeFileSync(join(groupDir, "harness-env.d.ts"), 'declare module "*.css";\n');
+    }
     writeFileSync(
       join(groupDir, "tsconfig.json"),
       JSON.stringify(
         {
           extends: baseTsconfigPath,
-          // A bare `**/*` leaves `.vue` files out of the program.
-          include: isVue ? ["**/*.ts", "**/*.vue"] : ["**/*"],
+          // A bare `**/*` leaves `.vue` and `.svelte` files out of the program.
+          include: isVue
+            ? ["**/*.ts", "**/*.vue"]
+            : isSvelte
+              ? ["**/*.ts", "**/*.svelte"]
+              : ["**/*"],
         },
         null,
         2,
       ),
     );
 
+    // svelte-check compiles `.svelte` files and the `.ts` files next to them in one program,
+    // as vue-tsc does for `.vue` files. Warnings (accessibility hints) do not fail the check.
+    const command = isSvelte
+      ? ["svelte-check", "--workspace", groupDir, "--tsconfig", join(groupDir, "tsconfig.json")]
+      : [isVue ? "vue-tsc" : "tsc", "--noEmit", "-p", groupDir];
     try {
-      execFileSync("pnpm", ["exec", isVue ? "vue-tsc" : "tsc", "--noEmit", "-p", groupDir], {
+      execFileSync("pnpm", ["exec", ...command], {
         cwd: webRoot,
         stdio: ["ignore", "pipe", "pipe"],
       });
@@ -452,7 +510,7 @@ function checkNuxtVariant(relFile, source) {
   nuxtHarness ??= prepareNuxtHarness();
   const appDir = nuxtHarness;
   let ok = true;
-  for (const group of extractGroups(source, true, "app/")) {
+  for (const group of extractGroups(source, "vue", "app/")) {
     for (const entry of readdirSync(appDir)) {
       if (!NUXT_KEEP.has(entry)) rmSync(join(appDir, entry), { recursive: true, force: true });
     }
@@ -505,6 +563,7 @@ function main() {
   mkdirSync(runDir, { recursive: true });
   const reactTsconfigPath = writeBaseTsconfig();
   const vueTsconfigPath = writeVueTsconfig();
+  const svelteTsconfigPath = writeSvelteTsconfig();
 
   let checkedFiles = 0;
   let checkedVariants = 0;
@@ -539,7 +598,11 @@ function main() {
               relFile,
               framework,
               composed,
-              framework === "vue" ? vueTsconfigPath : reactTsconfigPath,
+              framework === "vue"
+                ? vueTsconfigPath
+                : framework === "svelte"
+                  ? svelteTsconfigPath
+                  : reactTsconfigPath,
             );
       if (!ok) failed = true;
       checkedVariants++;

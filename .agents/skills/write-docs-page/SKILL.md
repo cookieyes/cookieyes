@@ -47,6 +47,8 @@ it is hand-written inside `<Framework when="vue">` in `ts` and `vue` fences (rul
 `apps/web/content/shared/README.md`).
 Include `nuxt` when `@cookieyes/nuxt` has the feature; Nuxt code is hand-written the same way,
 inside `<Framework when="nuxt">`, with no imports for what the module auto-imports.
+Include `svelte` when `@cookieyes/svelte` has the feature; Svelte code is hand-written inside
+`<Framework when="svelte">` in `ts` and `svelte` fences, in Svelte 5 runes syntax.
 
 ## 3. Structure
 

@@ -1,8 +1,8 @@
 # Docs content
 
 The docs are written **once**, here, and published **once per framework** under
-`content/docs/nextjs`, `content/docs/react`, `content/docs/vue`, `content/docs/nuxt` and
-`content/docs/core`. Those directories are generated (`pnpm generate:framework-docs`, also run
+`content/docs/nextjs`, `content/docs/react`, `content/docs/vue`, `content/docs/nuxt`,
+`content/docs/svelte` and `content/docs/core`. Those directories are generated (`pnpm generate:framework-docs`, also run
 by `dev` and `build`) and must not be edited by hand.
 
 ## Publishing a page
@@ -10,7 +10,7 @@ by `dev` and `build`) and must not be edited by hand.
 A body opts in to each framework it applies to, in its frontmatter:
 
 ```yaml
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ```
 
 Nothing is published by default. A page with no `frameworks:` fails the generator, so
@@ -79,6 +79,19 @@ Nuxt example imports none of them; types come from `@cookieyes/nuxt`. The headle
 (`Banner`, `Preferences`, `OptOut`) are the exception: a template only sees `Banner.Root` when the
 component imports `Banner`, from `#imports`.
 
+### Svelte
+
+`@cookieyes/svelte` has its own API too (a `<CookieYesProvider>` component, components that take
+`class` and snippets, hooks that return `{ current }` for a single value), so Svelte code is
+written by hand inside `<Framework when="svelte">`, in `ts` fences and in `svelte` fences
+(components, in Svelte 5 runes syntax). Nothing in a fence is rewritten. Title each file
+(`title="src/App.svelte"`) the way a React example is titled.
+
+The guard is wider than Vue's: a Svelte page whose composed output has a `tsx` or `vue` fence, an
+`@cookieyes/react`, `@cookieyes/nextjs`, `@cookieyes/vue` or `@cookieyes/nuxt` import, a
+`"use client"` line or `useSyncExternalStore` fails the build. Pages with no code add `svelte`
+to their frontmatter and need no block.
+
 Blocks may nest, and a heading may sit inside one when the whole section belongs to one
 framework: the table of contents is built after the blocks are resolved, so each framework
 sees only its own headings. `@cookieyes/core` has no components and no hooks, so its examples are
@@ -104,6 +117,11 @@ On a Nuxt page the `ts` and `vue` fences are checked inside a small Nuxt app tha
 `@cookieyes/nuxt`, prepared once with `nuxi prepare`, so auto-imports and the `cookieyes` keys
 are typed. Each file is written under its `title`: a fence titled `nuxt.config.ts` or
 `app/app.config.ts` is checked as that file, and an untitled fence lands in `app/`.
+
+On a Svelte page the `ts` fences and the `svelte` fences compile together with `svelte-check`,
+against the built `@cookieyes/svelte`, the same way: each file under its `title`, and the
+`@cookieyes/svelte/styles.css` import declared by the harness. `verbatimModuleSyntax` is on, as
+in a new Svelte project, so a type is imported with `import type`.
 
 Fences under one heading compile together, so a layout can import the module the fence above
 it defines. When the files of one walkthrough sit under separate step headings, give each fence
