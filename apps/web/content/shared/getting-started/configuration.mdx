@@ -1,7 +1,7 @@
 ---
 title: Configuration
 description: Every option of initCookieYes(), grouped by what it changes.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 <Framework when="nextjs react core">
@@ -34,6 +34,24 @@ export function setupConsent(app: App): void {
   });
 }
 ```
+
+</Framework>
+
+<Framework when="svelte">
+
+The `config` you pass to `<CookieYesProvider>` is the one place you configure CookieYes. `mode` is the only required option; everything else has a sensible default. The config is the same `CookieYesConfig` that `initCookieYes()` takes in the other packages.
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  theme: { primaryColor: "#1863dc" },
+};
+```
+
+The provider reads the config once, when it starts the runtime. Keep it in this module and import it, rather than writing it inline in a component.
 
 </Framework>
 
@@ -104,7 +122,7 @@ Two options exist only in the Nuxt module, under `cookieyes` in `nuxt.config.ts`
 
 ### `theme`
 
-<Framework when="nextjs react vue nuxt">
+<Framework when="nextjs react vue nuxt svelte">
 
 Nine keys for colour, corner radius and font. Each is listed with its default on [Theme tokens](/docs/styling/theme-tokens).
 
@@ -128,7 +146,7 @@ Put `region.map` in `nuxt.config.ts`. On a page the server renders per request, 
 
 ### `i18n`
 
-<Framework when="nextjs react vue nuxt">
+<Framework when="nextjs react vue nuxt svelte">
 
 `messages` per language, `locale`, `detectBrowserLanguage` and `loadLanguage`. See [Translations](/docs/translations).
 
@@ -154,6 +172,12 @@ Put `region.map` in `nuxt.config.ts`. On a page the server renders per request, 
 
 </Framework>
 
+<Framework when="svelte">
+
+`rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Needs `registerNetworkBlocker()` called once before `<CookieYesProvider>` starts the runtime. See [Network blocking](/docs/network-blocking).
+
+</Framework>
+
 <Framework when="nuxt">
 
 `rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Put `rules` in `nuxt.config.ts`: the module finds them there when it builds, registers the blocker itself and bundles it only then. `onRequestBlocked` is a function, so it goes in `app/app.config.ts`. See [Network blocking](/docs/network-blocking).
@@ -172,7 +196,7 @@ Set the strictest law your visitors fall under, `"GDPR"` for most sites, and shi
 
 Under `"CCPA"`, a browser that sends Global Privacy Control starts the visitor opted out until they choose; `region.honorGpc: false` turns this off. The signal never changes which banner shows. To read it yourself, `readGpc()` returns `true` while the browser is sending it, and every [consent record](/docs/getting-started/self-hosted) carries it as `gpc`.
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue svelte">
 
 Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens it.
 
@@ -225,6 +249,23 @@ export function setupConsent(app: App): void {
 
 </Framework>
 
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  categories: [
+    { id: "necessary", required: true, label: "Essential" },
+    { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+    { id: "marketing", label: "Marketing", gcm: ["ad_storage", "ad_user_data"] },
+  ],
+};
+```
+
+</Framework>
+
 <Framework when="nuxt">
 
 ```ts title="nuxt.config.ts"
@@ -263,7 +304,7 @@ Your `categories` list broke one of the rules above; the console warning says wh
 
 ## Next steps
 
-<Framework when="nextjs react vue nuxt">
+<Framework when="nextjs react vue nuxt svelte">
 
 - [Translations](/docs/translations): every text in every language, through `i18n`
 - [Theme tokens](/docs/styling/theme-tokens): what each `theme` value changes

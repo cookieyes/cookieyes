@@ -34,6 +34,8 @@ one component that mounts the SDK:
 | `with-vanilla` | `vanilla` | `@cookieyes/vanilla`'s `start()`: banner and recall button, dialogs on first open |
 | `baseline-vue` | `baseline-vue` | nothing: the control for the Vue fixture |
 | `with-vue` | `vue` | `@cookieyes/vue`'s plugin, `<CookieBanner />`, `<CookiePreferences />` and `<RecallButton />` (the README's three-file setup) |
+| `baseline-svelte` | `baseline-svelte` | nothing: the control for the Svelte fixture |
+| `with-svelte` | `svelte` | `@cookieyes/svelte`'s `<CookieYesProvider>`, `<CookieBanner />`, `<CookiePreferences />` and `<RecallButton />` (the README's quick start) |
 | `baseline-nuxt` | `baseline-nuxt` | nothing: the control for the Nuxt fixture |
 | `with-nuxt` | `nuxt` | `@cookieyes/nuxt` in `modules` and `<CookieYesRoot />` in `app/app.vue` |
 
@@ -61,6 +63,18 @@ Its **initial** set is every `<script type="module">` and `<link rel="moduleprel
 page, so there is no other route to exclude from `total`. Vite, `@vitejs/plugin-vue` and Vue are
 pinned exactly in both fixtures, and `measure.mjs` fails if two copies of Vue resolve, as it does
 for React.
+
+### The Svelte fixtures
+
+`with-svelte` is measured against `baseline-svelte`, an empty Vite + Svelte app, for the same
+reason as Vue. Both are plain Vite apps with `@sveltejs/vite-plugin-svelte`, so they use the Vite
+path above. Svelte's runtime is tree-shaken too: the control holds only what an empty app uses,
+and the runtime the adapter's components need counts in `svelte`. `@cookieyes/svelte` ships
+`.svelte` source, so the fixture's own build compiles it, and the figure includes that compiled
+output. Vite, the plugin and Svelte are pinned exactly in both fixtures, and `measure.mjs` fails
+if two copies of Svelte resolve. The package's tarball is packed by `measure.mjs` itself when the
+peer-dependency matrix has not packed it. The report's fingerprint covers `.svelte` sources, the
+package's `svelte.config.js` and its two build scripts, since they decide what reaches `dist`.
 
 ### The Nuxt fixtures
 

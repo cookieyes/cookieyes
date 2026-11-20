@@ -5,6 +5,7 @@
     "react",
     "vue",
     "nuxt",
+    "svelte",
     "core",
     "changelog"
   ]

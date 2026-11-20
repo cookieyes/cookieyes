@@ -55,14 +55,16 @@ These run in the ordinary `pnpm test` job — no browser needed.
 | A throwing third-party tag cannot strand the banner or block mounting | same file |
 | `readServerConsent` agrees with the client about the same cookie | `core/src/__tests__/server-consent.test.ts` |
 | The server-rendered banner carries no inline `style` attribute, so a strict `style-src` cannot strip its screen-reader styling | `react/src/__tests__/ssr-first-paint.test.tsx` |
+| Svelte hydrates the server's banner into the same DOM for a first visit, a returning visitor, CCPA and GPC. Svelte repairs a mismatch silently, so the test compares the DOM right after `hydrate()` with the server's HTML instead of waiting for a warning, and a control case proves it sees a difference | `svelte/src/__tests__/hydration.test.ts` |
 
 These checks run in a real browser, in the CI job `conformance` (`pnpm test:browser`):
 
 | Invariant | Guard |
 |---|---|
-| Every adapter's banner has the same parts, focus, keyboard and announcement as React's | `@cookieyes/test/conformance`, run by `test/src/__tests__/conformance-react.browser.test.tsx`, `vanilla/src/__tests__/conformance.browser.test.ts` and `vue/src/__tests__/conformance.browser.test.ts` |
+| Every adapter's banner has the same parts, focus, keyboard and announcement as React's | `@cookieyes/test/conformance`, run by `test/src/__tests__/conformance-react.browser.test.tsx`, `vanilla/src/__tests__/conformance.browser.test.ts`, `vue/src/__tests__/conformance.browser.test.ts` and `svelte/src/__tests__/conformance.browser.test.ts` |
 | The vanilla first-paint snippet (`renderShell` plus `critical.css`) is styled, fixed and visible with no script running | `vanilla/src/__tests__/first-paint.browser.test.ts` |
 | The Vue server-rendered banner plus `critical.css` is styled and visible with no script, and hydration keeps the same node | `vue/src/__tests__/first-paint.browser.test.ts` |
+| The Svelte server-rendered banner plus `critical.css` is styled and visible with no script, and hydration keeps the same node | `svelte/src/__tests__/first-paint.browser.test.ts` |
 | A Nuxt production build: the banner in a first visit's HTML and none in a returning visitor's, the CCPA banner from the geo headers, the head opening with the Consent Mode default and `critical.css`, no hydration mismatch for any of them (with a control page proving a mismatch is caught), and the stylesheet switched on | `nuxt/src/__tests__/ssr.browser.test.ts` |
 
 ## Nuxt: head tags outside unhead

@@ -36,6 +36,8 @@ const PACKAGES = [
   { name: "@cookieyes/vue", dir: join(repoRoot, "sdk", "vue") },
   // The Nuxt legs' example app (matrix/example-app-nuxt) installs it.
   { name: "@cookieyes/nuxt", dir: join(repoRoot, "sdk", "nuxt") },
+  // The Svelte legs' example app (matrix/example-app-svelte) installs it.
+  { name: "@cookieyes/svelte", dir: join(repoRoot, "sdk", "svelte") },
   // Packed so tools/size's with-vanilla fixture installs it from a tarball like
   // every other fixture; the matrix's own example app does not use it.
   { name: "@cookieyes/vanilla", dir: join(repoRoot, "sdk", "vanilla") },

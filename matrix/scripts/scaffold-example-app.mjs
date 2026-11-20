@@ -34,7 +34,12 @@ import { appOf } from "../matrix.config.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..");
 
-const TEMPLATE_DIRS = { next: "example-app", vue: "example-app-vue", nuxt: "example-app-nuxt" };
+const TEMPLATE_DIRS = {
+  next: "example-app",
+  vue: "example-app-vue",
+  nuxt: "example-app-nuxt",
+  svelte: "example-app-svelte",
+};
 
 /** The template directory for a combination: one self-contained example app per `app`. */
 function templateDirFor(combo) {
@@ -63,7 +68,7 @@ const EXCLUDE = new Set([
  *
  * @param {string} packageJsonText
  * @param {{ tarballs: Record<string, string>, versions: import("../matrix.config.mjs").Combination["versions"],
- *   app?: "next" | "vue" | "nuxt" }} combo
+ *   app?: "next" | "vue" | "nuxt" | "svelte" }} combo
  * @returns {string}
  */
 export function renderPackageJson(packageJsonText, { tarballs, versions, app = "next" }) {
@@ -77,28 +82,39 @@ export function renderPackageJson(packageJsonText, { tarballs, versions, app = "
           __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
           __NUXT_VERSION__: versions.nuxt,
         }
-      : app === "vue"
+      : app === "svelte"
         ? {
-            __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+            __TARBALL_SVELTE__: `file:${tarballs["@cookieyes/svelte"]}`,
             __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
             __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
             __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
             __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-            __VUE_VERSION__: versions.vue,
+            __SVELTE_VERSION__: versions.svelte,
+            __VITE_VERSION__: versions.vite,
+            __VITE_PLUGIN_SVELTE_VERSION__: versions.vitePluginSvelte,
           }
-        : {
-            __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
-            __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
-            __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
-            __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
-            __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
-            __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-            __NEXT_VERSION__: versions.next,
-            __REACT_VERSION__: versions.react,
-            __REACT_DOM_VERSION__: versions.reactDom,
-            __TYPES_REACT_VERSION__: versions.typesReact,
-            __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
-          };
+        : app === "vue"
+          ? {
+              __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+              __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+              __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+              __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+              __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+              __VUE_VERSION__: versions.vue,
+            }
+          : {
+              __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
+              __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
+              __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+              __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+              __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+              __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+              __NEXT_VERSION__: versions.next,
+              __REACT_VERSION__: versions.react,
+              __REACT_DOM_VERSION__: versions.reactDom,
+              __TYPES_REACT_VERSION__: versions.typesReact,
+              __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
+            };
 
   let result = packageJsonText;
   for (const [placeholder, value] of Object.entries(replacements)) {

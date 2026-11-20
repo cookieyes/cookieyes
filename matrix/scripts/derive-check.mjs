@@ -30,6 +30,7 @@ export const PEER_FIELD_MAP = {
   "react-dom": "reactDom",
   vue: "vue",
   nuxt: "nuxt",
+  svelte: "svelte",
 };
 
 /**
@@ -170,6 +171,7 @@ async function main() {
     { name: "@cookieyes/nextjs", path: join(repoRoot, "sdk", "nextjs", "package.json") },
     { name: "@cookieyes/vue", path: join(repoRoot, "sdk", "vue", "package.json") },
     { name: "@cookieyes/nuxt", path: join(repoRoot, "sdk", "nuxt", "package.json") },
+    { name: "@cookieyes/svelte", path: join(repoRoot, "sdk", "svelte", "package.json") },
   ].map(({ name, path }) => {
     const pkg = JSON.parse(readFileSync(path, "utf8"));
     return { name, peerDependencies: pkg.peerDependencies ?? {} };

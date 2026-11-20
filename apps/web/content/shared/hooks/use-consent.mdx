@@ -1,7 +1,7 @@
 ---
 title: useConsent
 description: Read the visitor's current consent state in a component, re-rendering whenever it changes, for settings pages and status displays.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte]
 ---
 
 ## What it does
@@ -15,6 +15,12 @@ Returns the visitor's current consent as a plain object and re-renders your comp
 <Framework when="vue nuxt">
 
 Returns the visitor's current consent as a computed ref and updates your component whenever it changes. Use it to show state: a settings page, a "your choices" panel, a status line. To change consent, use [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+</Framework>
+
+<Framework when="svelte">
+
+Returns the visitor's current consent as a reactive object and updates your component whenever it changes. Use it to show state: a settings page, a "your choices" panel, a status line. To change consent, use [`useConsentActions()`](/docs/hooks/use-consent-actions).
 
 </Framework>
 
@@ -88,11 +94,39 @@ Nuxt imports `useConsent` for you, and `<ConsentStatus />` from `app/components`
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte title="src/lib/ConsentStatus.svelte"
+<script lang="ts">
+  import { useConsent } from "@cookieyes/svelte";
+
+  const consent = useConsent();
+</script>
+
+{#if !consent.hasActed}
+  <p>No choice made yet.</p>
+{:else}
+  <ul>
+    {#each Object.entries(consent.committedCategories) as [id, granted] (id)}
+      <li>{id}: {granted ? "allowed" : "blocked"}</li>
+    {/each}
+  </ul>
+{/if}
+```
+
+</Framework>
+
 ## What it returns
 
 <Framework when="vue nuxt">
 
 The fields below are on the ref's `.value`. In a template Vue unwraps the ref, so you write `consent.hasActed`.
+
+</Framework>
+
+<Framework when="svelte">
+
+Read the fields where Svelte tracks them: in the template, as above, or in a `$derived`. Destructuring, as in `const { hasActed } = useConsent()`, reads the value once and never updates; write `const hasActed = $derived(consent.hasActed)` instead.
 
 </Framework>
 
@@ -119,7 +153,7 @@ Load anything from the saved values, `committedCategories`: scripts, embeds, tra
 
 </Framework>
 
-<Framework when="vue nuxt">
+<Framework when="vue nuxt svelte">
 
 Load anything from the saved values, `committedCategories`: scripts, embeds, trackers. Or use [`useConsentCategory(id)`](/docs/hooks/focused-hooks), which reads the saved value for one category and only changes when that one does. Use the live values, `categories`, only to drive the checkboxes of your own dialog.
 
@@ -155,6 +189,16 @@ Call it inside `setup()` or `<script setup>`.
 
 </Framework>
 
+<Framework when="svelte">
+
+It updates on every consent change, including a dialog opening or closing. Call it in the component that shows the state, not at the top of your app.
+
+When the page was rendered on the server, the server render and the hydrating render return a fresh-visitor snapshot: `hasActed: false`, only required categories granted (under CCPA, every category, since consent there is opt-out). If the [`CookieYesProvider`](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server) above it was given `initialConsent`, the snapshot carries that visitor's saved choice instead. It switches to the live state once the provider has mounted. A plain client-side app reads the live state at once.
+
+It throws if no `<CookieYesProvider>` is above the component, and must be called while the component initialises, not in an event handler.
+
+</Framework>
+
 ## Common mistakes
 
 <Framework when="nextjs react">
@@ -184,6 +228,19 @@ You read `categories`. Read `committedCategories`, or use `useConsentCategory()`
 
 **`useConsent is not defined`.**
 `@cookieyes/nuxt` is missing from `modules` in `nuxt.config.ts`, so nothing is imported for you. See [Installation](/docs/getting-started/installation).
+
+</Framework>
+
+<Framework when="svelte">
+
+**A tracker loads the moment someone flips a switch.**
+You read `categories`. Read `committedCategories`, or use `useConsentCategory()`.
+
+**The status never updates.**
+You destructured the result. Keep the object and read `consent.hasActed` in the template, or wrap it in `$derived`.
+
+**It throws "could not find CookieYes".**
+The component is not inside `<CookieYesProvider>`, or you called the hook outside component initialisation. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
 
 </Framework>
 **`hasActed` is `true` but every category is `false`.**

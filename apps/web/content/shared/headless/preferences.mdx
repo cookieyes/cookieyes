@@ -1,7 +1,7 @@
 ---
 title: Preferences
 description: Build the consent preferences dialog with your own markup, keeping the category switches, saving, focus handling and Escape to close.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte]
 ---
 
 ## What it does
@@ -12,7 +12,7 @@ Use it only when [`CookiePreferences`](/docs/components/cookie-preferences) cann
 
 ## Build a dialog
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue svelte">
 
 Render this in place of `<CookiePreferences />`. `Preferences.Root` is the overlay: it renders nothing while the dialog is closed, so keep it as the outer element.
 
@@ -180,6 +180,53 @@ The slot of `<CookieYesRoot>` replaces everything it renders by default, so list
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte title="src/lib/ConsentPreferences.svelte"
+<script lang="ts">
+  import { Preferences } from "@cookieyes/svelte";
+</script>
+
+<Preferences.Root class="overlay">
+  <div class="dialog">
+    <Preferences.Title class="dialog-title" />
+    <Preferences.Close class="dialog-close" />
+    <Preferences.Intro class="dialog-text" />
+
+    <Preferences.Categories class="category-list">
+      {#snippet children(category)}
+        <Preferences.Category {category} class="category-row">
+          {#snippet children({ label, description, checked, disabled, toggle })}
+            <label class="category">
+              <input
+                type="checkbox"
+                {checked}
+                {disabled}
+                onchange={(event) => toggle(event.currentTarget.checked)}
+              />
+              <span>{label}</span>
+              <small>{description}</small>
+            </label>
+          {/snippet}
+        </Preferences.Category>
+      {/snippet}
+    </Preferences.Categories>
+
+    <div class="dialog-actions">
+      <Preferences.RejectAll class="btn" />
+      <Preferences.AcceptAll class="btn" />
+      <Preferences.Save class="btn btn-primary" />
+    </div>
+  </div>
+</Preferences.Root>
+```
+
+`Categories` renders its `children` snippet once per category in your `categories` list, passing the category id, so custom categories appear without any change here. `Category` passes its `children` snippet the resolved text and state for one row; you decide how the row looks. Every piece is also exported on its own, as `PreferencesRoot`, `PreferencesCategory` and so on.
+
+Unlike `Banner.Root`, `Preferences.Root` renders where you put it; it is not moved into the portal root.
+
+</Framework>
+
 ## The pieces
 
 <Framework when="nextjs react">
@@ -220,6 +267,25 @@ Every piece takes `class`, `style` and the other attributes of the element it re
 
 </Framework>
 
+<Framework when="svelte">
+
+| Piece | Renders | What it does |
+| --- | --- | --- |
+| `Preferences.Root` | `<div>` | The overlay. Opens and closes the dialog, traps focus, closes on `Escape`. Keep it as the wrapper |
+| `Preferences.Title` | `<h2>` | The dialog heading |
+| `Preferences.Intro` | `<p>` | The dialog text |
+| `Preferences.Close` | `<button>` | Closes without saving |
+| `Preferences.Categories` | `<div role="list">` | Renders its `children` snippet once per category, with the category id |
+| `Preferences.Category` | `<div>` | One row. Takes the `category` prop and passes its `children` snippet `category`, `label`, `description`, `checked`, `disabled` and `toggle(next)` |
+| `Preferences.AcceptAll` | `<button>` | Accepts every category and saves |
+| `Preferences.RejectAll` | `<button>` | Rejects every optional category and saves |
+| `Preferences.Save` | `<button>` | Saves the switches as they are |
+| `Preferences.Branding` | `<a>` | The "Powered by" link |
+
+Every piece takes `class`, `style` and the other attributes of the element it renders, and renders the translated text for the active language; put your own content between its tags to replace it. The part names for CSS are the same as on [`CookiePreferences`](/docs/components/cookie-preferences#restyle-it).
+
+</Framework>
+
 ## Good to know
 
 **A switch changes nothing until Save.** `toggle` updates the row; `Save`, `AcceptAll` or `RejectAll` records the choice. Always render at least one of them.
@@ -235,6 +301,12 @@ Every piece takes `class`, `style` and the other attributes of the element it re
 <Framework when="vue nuxt">
 
 **`toggle` takes the new value, not the event.** Write `@change="toggle(($event.target as HTMLInputElement).checked)"`. A component whose change handler already gives you a boolean, such as a Switch, can take `toggle` directly.
+
+</Framework>
+
+<Framework when="svelte">
+
+**`toggle` takes the new value, not the event.** Write `onchange={(event) => toggle(event.currentTarget.checked)}`. A component whose change handler already gives you a boolean, such as a Switch, can take `toggle` directly.
 
 </Framework>
 
@@ -264,6 +336,24 @@ Add `as-child` to `Close`, `AcceptAll`, `RejectAll` or `Save` and pass one eleme
 
 </Framework>
 
+<Framework when="svelte">
+
+Give `Close`, `AcceptAll`, `RejectAll` or `Save` a `child` snippet and spread its `props` onto your own element:
+
+```svelte title="src/lib/SaveButton.svelte"
+<script lang="ts">
+  import { Preferences } from "@cookieyes/svelte";
+</script>
+
+<Preferences.Save>
+  {#snippet child({ props })}
+    <button {...props} class="my-button">Save preferences</button>
+  {/snippet}
+</Preferences.Save>
+```
+
+</Framework>
+
 ## Common mistakes
 
 <Framework when="nextjs react">
@@ -277,6 +367,13 @@ Add `as-child` to `Close`, `AcceptAll`, `RejectAll` or `Save` and pass one eleme
 
 **Switches turn on but never off.**
 `@change="toggle"` passes the event, which counts as `true`. Use `@change="toggle(($event.target as HTMLInputElement).checked)"`.
+
+</Framework>
+
+<Framework when="svelte">
+
+**Switches turn on but never off.**
+`onchange={toggle}` passes the event, which counts as `true`. Use `onchange={(event) => toggle(event.currentTarget.checked)}`.
 
 </Framework>
 

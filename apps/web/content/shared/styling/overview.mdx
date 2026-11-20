@@ -1,7 +1,7 @@
 ---
 title: Styling
 description: Change the colours, font and layout of the banner and dialogs, and know which tool to use for each.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 <Framework when="core">
@@ -48,6 +48,18 @@ The components look finished out of the box. To make them match your site, pick 
 
 </Framework>
 
+<Framework when="svelte">
+
+| You want to change | Use | Page |
+| --- | --- | --- |
+| Brand colour, corner radius, font, backgrounds | `theme` in the `config` you pass to `<CookieYesProvider>` | [Theme tokens](/docs/styling/theme-tokens) |
+| Light, dark, or follow the device | `colorScheme` in the `config` you pass to `<CookieYesProvider>` | [Colour scheme](/docs/styling/color-scheme) |
+| Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
+| The same, with utility classes | `class` and `@apply` | [Tailwind](/docs/styling/tailwind) |
+| The markup itself | Primitives | [Banner primitives](/docs/headless/banner) |
+
+</Framework>
+
 <Framework when="core">
 
 | You want to change | Use | Page |
@@ -66,7 +78,7 @@ Most sites stop at the first row.
 
 ## Two rules
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 1. **Load your CSS after the SDK's stylesheet.** The SDK's rules are plain single-class rules, so a rule of yours with the same selector strength wins only if it comes later. Import `styles.css` first and your own stylesheet after it. You never need `!important`.
 

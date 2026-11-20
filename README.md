@@ -27,6 +27,7 @@ Open-source cookie consent SDK for developers. Build consent banners and manage 
 | [`@cookieyes/scripts`](./sdk/scripts) | Ready-made, consent-gated third-party integrations (Segment, custom scripts, …) | [![npm](https://img.shields.io/npm/v/@cookieyes/scripts)](https://www.npmjs.com/package/@cookieyes/scripts) |
 | [`@cookieyes/nextjs`](./sdk/nextjs) | Next.js App Router adapter | [![npm](https://img.shields.io/npm/v/@cookieyes/nextjs)](https://www.npmjs.com/package/@cookieyes/nextjs) |
 | [`@cookieyes/nuxt`](./sdk/nuxt) | Nuxt 4 module over the Vue adapter, with server-rendered consent | [![npm](https://img.shields.io/npm/v/@cookieyes/nuxt)](https://www.npmjs.com/package/@cookieyes/nuxt) |
+| [`@cookieyes/svelte`](./sdk/svelte) | Svelte 5 adapter: a provider, components and hooks | [![npm](https://img.shields.io/npm/v/@cookieyes/svelte)](https://www.npmjs.com/package/@cookieyes/svelte) |
 | [`@cookieyes/translations`](./sdk/translations) | Curated, per-locale translation catalog | [![npm](https://img.shields.io/npm/v/@cookieyes/translations)](https://www.npmjs.com/package/@cookieyes/translations) |
 | [`@cookieyes/backend`](./sdk/backend) | Self-hosted consent server: stores each consent record once, in your own database | [![npm](https://img.shields.io/npm/v/@cookieyes/backend)](https://www.npmjs.com/package/@cookieyes/backend) |
 | [`@cookieyes/cli`](./sdk/cli) | Scaffolder — wire the SDK into an existing app | [![npm](https://img.shields.io/npm/v/@cookieyes/cli)](https://www.npmjs.com/package/@cookieyes/cli) |
@@ -75,14 +76,23 @@ Verified by installing the exact Vue versions above, building a real Vite app, r
 
 Verified by installing the exact Nuxt versions above (Vue is the version Nuxt resolved), building a real Nuxt app with the module, starting its server and asserting over HTTP the banner's HTML for first-time, returning and California visitors (and the consent value the server read for the returning one), then running behaviour assertions in Nuxt's test environment in `jsdom`. Node 22, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
 
+| Svelte | Vite | Vite plugin | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |
+|---|---|---|---|---|---|---|
+| 5.20.0 (declared floor) | 7.3.8 | 6.2.4 | 2026-11-20 | pass | pass | pass |
+| 5.57.3 | 8.3.7 | 7.3.1 | 2026-11-20 | pass | pass | pass |
+
+Verified by installing the exact Svelte versions above, building a real Vite app, rendering it on the server with `svelte/server` and asserting the banner's HTML (and a returning visitor's cookie value) is correct, then running behaviour and hydration assertions in `jsdom`. Node 20, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
+
 **Not verified by this table:**
 - Any Next.js/React version outside the rows above.
 - Any Vue version outside the rows above.
 - Any Nuxt version outside the rows above.
+- Any Svelte version outside the rows above.
 - npm/yarn as the install client.
 - No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).
-- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, all with pnpm and moduleResolution=bundler.
+- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, all with pnpm and moduleResolution=bundler.
 - Server rendering of the Vue rows is asserted on the Vite SSR build's render function, not a live server, so it does not prove a particular server framework forwards the Cookie header.
+- Server rendering of the Svelte rows is asserted on the Vite SSR build's render function, not a live server, so it does not prove a particular server framework forwards the Cookie header.
 <!-- PEER-MATRIX:END -->
 
 ## Quick start
@@ -174,6 +184,7 @@ sdk/
   scripts/       @cookieyes/scripts      consent-gated third-party integrations
   nextjs/        @cookieyes/nextjs       Next.js App Router adapter
   nuxt/          @cookieyes/nuxt         Nuxt 4 module
+  svelte/        @cookieyes/svelte       Svelte 5 provider + components + hooks
   translations/  @cookieyes/translations per-locale catalog
   backend/       @cookieyes/backend      self-hosted consent server
   cli/           @cookieyes/cli          scaffolder

@@ -62,6 +62,13 @@ const JSDOM_ASSERTION_NAME_MAPS = {
     "server-rendered markup hydrates without a mismatch warning":
       "ssr-markup-hydrates-without-mismatch",
   },
+  svelte: {
+    "Banner child snippet renders the developer's element with the part merged":
+      "child-snippet-renders-developer-element-with-part",
+    "Banner child snippet runs the consent action when the developer's element is clicked":
+      "child-snippet-click-commits-consent",
+    "server-rendered markup hydrates into the same DOM": "ssr-markup-hydrates-into-same-dom",
+  },
   nuxt: {
     "CookieYesRoot shows the banner to a first-time visitor": "root-shows-banner-to-fresh-visitor",
     "accepting in the banner writes the consent cookie and hides the banner":
@@ -330,6 +337,65 @@ const VUE_STRATEGY = {
   },
 };
 
+const SVELTE_STRATEGY = {
+  emptyResolved: { svelte: "", vite: "", vitePluginSvelte: "" },
+  assertionNames: JSDOM_ASSERTION_NAME_MAPS.svelte,
+
+  resolve(nodeModules) {
+    return {
+      svelte: readResolvedVersion(nodeModules, "svelte") ?? "",
+      vite: readResolvedVersion(nodeModules, "vite") ?? "",
+      vitePluginSvelte: readResolvedVersion(nodeModules, "@sveltejs/vite-plugin-svelte") ?? "",
+    };
+  },
+
+  // Dynamic proof that the leg tested the Svelte it asked for: every exact pin must be what got
+  // installed, and no second copy of Svelte may sit in the graph. Without it the floor leg could
+  // pass on a newer Svelte that a peer range pulled in.
+  typePackageCheck(resolved, combo, appDir) {
+    for (const field of ["svelte", "vite", "vitePluginSvelte"]) {
+      if (resolved[field] !== combo.versions[field]) {
+        return {
+          ok: false,
+          notes: `resolved ${field} (${resolved[field] || "none"}) is not the requested ${combo.versions[field]}.`,
+        };
+      }
+    }
+    const copies = new Set();
+    const pnpmDir = join(appDir, "node_modules", ".pnpm");
+    if (existsSync(pnpmDir)) {
+      for (const entry of readdirSync(pnpmDir)) {
+        const match = /^svelte@(\d+\.\d+\.\d+)/.exec(entry);
+        if (match) copies.add(match[1]);
+      }
+    }
+    if (copies.size > 1) {
+      return {
+        ok: false,
+        notes: `resolved ${copies.size} copies of svelte (${[...copies].join(", ")}).`,
+      };
+    }
+    return { ok: true };
+  },
+
+  // `vite build --ssr` then `render` called directly: no live server, so this proves what
+  // `svelte/server` produces on this Svelte, not that a server framework forwards the Cookie
+  // header.
+  async ssr({ appDir, logPath }) {
+    const build = run("pnpm", ["run", "build:ssr"], { cwd: appDir });
+    appendLog(logPath, "build:ssr", build.output);
+    if (!build.ok) {
+      return {
+        outcome: "fail",
+        assertions: [],
+        notes: "build:ssr step failed, see logsArtifact.",
+      };
+    }
+    const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+    return await runSsrAssertions({ serverEntry: join(appDir, "dist-ssr", "entry-server.js") });
+  },
+};
+
 /** Every installed copy of vue, by version, read off pnpm's store layout. */
 function installedVueVersions(appDir) {
   const pnpmDir = join(appDir, "node_modules", ".pnpm");
@@ -413,7 +479,12 @@ const NUXT_STRATEGY = {
   },
 };
 
-const STRATEGIES = { next: NEXT_STRATEGY, vue: VUE_STRATEGY, nuxt: NUXT_STRATEGY };
+const STRATEGIES = {
+  next: NEXT_STRATEGY,
+  vue: VUE_STRATEGY,
+  nuxt: NUXT_STRATEGY,
+  svelte: SVELTE_STRATEGY,
+};
 
 /**
  * @param {{ id: string, resultsOverride?: object }} params
@@ -521,7 +592,7 @@ export async function runCombination({ comboId, tarballsPath, tarballsDir, logsA
       id: combo.id,
       role: combo.role,
       label: combo.label,
-      // Only the Vue and Nuxt combinations name their app; the Next.js results keep their shape.
+      // Only the Vue, Nuxt and Svelte combinations name their app; the Next.js results keep their shape.
       ...(combo.app ? { app: combo.app } : {}),
       packagesUnderTest: combo.packagesUnderTest,
       requested: combo.versions,

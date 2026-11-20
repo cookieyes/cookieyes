@@ -9,7 +9,7 @@
 
 export const dimensions = {
   // Varied today.
-  framework: ["next", "react", "reactDom", "typesReact", "typesReactDom", "vue", "nuxt"],
+  framework: ["next", "react", "reactDom", "typesReact", "typesReactDom", "vue", "nuxt", "svelte"],
   // Reserved — add a value here (and to one or more `combinations` entries) to
   // extend the matrix. No script or workflow file needs to change for this
   // (Story 1 AC3): `print-combinations.mjs` and `run-combination.mjs` both
@@ -25,7 +25,7 @@ export const dimensions = {
  *   id: string,
  *   role: "floor" | "middle" | "newest",
  *   label: string,
- *   app?: "next" | "vue" | "nuxt",
+ *   app?: "next" | "vue" | "nuxt" | "svelte",
  *   packagesUnderTest: string[],
  *   versions: {
  *     next?: string,
@@ -35,6 +35,9 @@ export const dimensions = {
  *     typesReactDom?: string,
  *     vue?: string,
  *     nuxt?: string,
+ *     svelte?: string,
+ *     vite?: string,
+ *     vitePluginSvelte?: string,
  *   },
  *   node: string,
  *   packageManager: string,
@@ -48,7 +51,7 @@ export const dimensions = {
  * Next.js combinations stay untouched: leaving `app` out means the Next.js app.
  *
  * @param {Combination} combo
- * @returns {"next" | "vue" | "nuxt"}
+ * @returns {"next" | "vue" | "nuxt" | "svelte"}
  */
 export function appOf(combo) {
   return combo.app ?? "next";
@@ -174,6 +177,36 @@ export const combinations = [
     packagesUnderTest: ["@cookieyes/nuxt"],
     versions: { nuxt: "4.6.4" },
     node: "22",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["fast", "full"],
+  },
+  // The Svelte legs pin `svelte` as the framework under test, plus `vite` and `vitePluginSvelte`
+  // as tool pins: the floor's Vite 7 and plugin 6 are the newest pair that still accept the
+  // floor, while the newest leg runs the current pair, so the two legs also cover both toolchains.
+  // The floor's `svelte` is compared literally with `peerDependencies.svelte` in
+  // sdk/svelte/package.json by derive-check.mjs, and the newest leg must stay the newest Svelte
+  // 5.x that is at least 72 hours old.
+  {
+    id: "svelte-5.20.0",
+    role: "floor",
+    label: "Svelte 5.20.0 (declared floor)",
+    app: "svelte",
+    packagesUnderTest: ["@cookieyes/svelte"],
+    versions: { svelte: "5.20.0", vite: "7.3.8", vitePluginSvelte: "6.2.4" },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "svelte-5.57.3",
+    role: "newest",
+    label: "Svelte 5.57.3",
+    app: "svelte",
+    packagesUnderTest: ["@cookieyes/svelte"],
+    versions: { svelte: "5.57.3", vite: "8.3.7", vitePluginSvelte: "7.3.1" },
+    node: "20",
     packageManager: "pnpm@10.22.0",
     moduleResolution: "bundler",
     subsets: ["fast", "full"],

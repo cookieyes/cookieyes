@@ -209,3 +209,51 @@ describe("checkPeerDependencyMatrix with a Nuxt combination", () => {
     expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
   });
 });
+
+/** A Svelte fixture: Svelte pinned, with the Vite toolchain pins that are not peers. */
+function svelteFixture() {
+  return {
+    peerPackages: [
+      {
+        name: "@cookieyes/svelte",
+        peerDependencies: { svelte: ">=5.20.0" },
+      },
+    ],
+    combinations: [
+      {
+        id: "fixture-svelte-5.20.0",
+        role: "floor",
+        app: "svelte",
+        packagesUnderTest: ["@cookieyes/svelte"],
+        versions: { svelte: "5.20.0", vite: "7.3.8", vitePluginSvelte: "6.2.4" },
+      },
+    ],
+  };
+}
+
+describe("checkPeerDependencyMatrix with a Svelte combination", () => {
+  it("returns no violations for a consistent Svelte fixture", () => {
+    expect(checkPeerDependencyMatrix(svelteFixture())).toEqual([]);
+  });
+
+  it("fails when the svelte range is widened without a matching floor combination", () => {
+    const fixture = svelteFixture();
+    fixture.peerPackages[0].peerDependencies.svelte = ">=5.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes('"svelte"') && e.includes("5.0.0"))).toBe(true);
+  });
+
+  it("fails the inverse check when a Svelte combination pins a version outside the range", () => {
+    const fixture = svelteFixture();
+    fixture.combinations[0].versions.svelte = "5.19.0";
+    expect(checkPeerDependencyMatrix(fixture).length).toBeGreaterThan(0);
+  });
+
+  it("leaves the Vue fixture's verdict unchanged when Svelte legs sit beside it", () => {
+    const fixture = vueFixture();
+    const svelte = svelteFixture();
+    fixture.peerPackages.push(...svelte.peerPackages);
+    fixture.combinations.push(...svelte.combinations);
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+});

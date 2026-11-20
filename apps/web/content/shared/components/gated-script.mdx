@@ -1,7 +1,7 @@
 ---
 title: GatedScript
 description: Load a third-party script only after the visitor consents.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte]
 ---
 
 ## What it does
@@ -24,6 +24,12 @@ In any component of your app, for example next to the banner:
 
 </Framework>
 
+<Framework when="svelte">
+
+In any component inside `<CookieYesProvider>`, for example next to the banner:
+
+</Framework>
+
 <Framework when="nextjs react">
 
 ```tsx check="false"
@@ -39,6 +45,18 @@ In any component of your app, for example next to the banner:
 <Framework when="vue nuxt">
 
 ```vue check="false"
+<GatedScript
+  id="my-chat-widget"
+  src="https://widget.example.com/loader.js"
+  category="functional"
+/>
+```
+
+</Framework>
+
+<Framework when="svelte">
+
+```svelte check="false"
 <GatedScript
   id="my-chat-widget"
   src="https://widget.example.com/loader.js"

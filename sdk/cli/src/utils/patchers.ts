@@ -135,6 +135,55 @@ export function patchNuxtApp(src: string): string | null {
   return renderRootFirst(src);
 }
 
+const SVELTE_STYLES_IMPORT = "@cookieyes/svelte/styles.css";
+const SVELTE_ROOT_IMPORT = "./lib/CookieYesRoot.svelte";
+
+/**
+ * Import the stylesheet in a Svelte entry file. A missing import leaves the banner unstyled and
+ * nothing warns, so the file is only edited when it is recognisably an entry (it imports a
+ * `.svelte` component). Returns null when already patched or when it is not, so the caller prints
+ * the manual step instead of guessing.
+ */
+export function patchSvelteMain(src: string): string | null {
+  if (src.includes(SVELTE_STYLES_IMPORT)) return null;
+  if (hasMultilineImport(src)) return null;
+  if (!/^import\s.+\.svelte["'`]/m.test(src)) return null;
+  const { quote, semi } = importStyle(src);
+  return insertImport(src, `import ${quote}${SVELTE_STYLES_IMPORT}${quote}${semi}`);
+}
+
+/**
+ * Import `CookieYesRoot` in a Svelte root component's instance `<script>` and render it last in
+ * the markup, before a trailing `<style>` block. A `<script module>` is skipped: the import
+ * belongs with the component's own. Returns null when already patched or when there is no
+ * instance script to put the import in, so the caller prints the manual step.
+ */
+export function patchSvelteApp(src: string): string | null {
+  if (src.includes("CookieYesRoot")) return null;
+  const scripts = src.matchAll(/(<script\b([^>]*)>)([\s\S]*?)(<\/script>)/g);
+  const script = [...scripts].find((m) => !/\b(?:module|context\s*=)/.test(m[2] ?? ""));
+  if (!script) return null;
+  const [whole, open = "", , body = "", close = ""] = script;
+  // Script contents are indented, so the Vue helpers, which expect imports at column 0, do not
+  // see them.
+  if (/^[ \t]*import\s*(?:type\s+)?[\w$]*\s*,?\s*\{[^}\n]*$/m.test(body)) return null;
+
+  const imports = [...body.matchAll(/^([ \t]*)import\s.+$/gm)];
+  const last = imports[imports.length - 1];
+  const { quote, semi } = importStyle(last?.[0].trim() ?? "");
+  const importLine = `import CookieYesRoot from ${quote}${SVELTE_ROOT_IMPORT}${quote}${semi}`;
+  const newBody = last
+    ? `${body.slice(0, last.index + last[0].length)}\n${last[1]}${importLine}${body.slice(last.index + last[0].length)}`
+    : `\n  ${importLine}${body.startsWith("\n") ? body : `\n${body}`}`;
+  const withScript = src.replace(whole, () => `${open}${newBody}${close}`);
+
+  const style = /^<style\b/m.exec(withScript);
+  if (style) {
+    return `${withScript.slice(0, style.index)}<CookieYesRoot />\n\n${withScript.slice(style.index)}`;
+  }
+  return `${withScript.trimEnd()}\n\n<CookieYesRoot />\n`;
+}
+
 const NUXT_MODULE = "@cookieyes/nuxt";
 
 /** Index just past the string or comment that starts at `i`, or `i` when none starts there. */

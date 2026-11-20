@@ -1,7 +1,7 @@
 ---
 title: Google Tag Manager
 description: Load your GTM container after the Consent Mode default and let the SDK keep its signals up to date.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, core]
 ---
 
 `googleTagManager()` loads your container. The tags inside it follow Google Consent Mode: the SDK tells Google what the visitor allowed, on page load and on every change, and each tag fires only when its consent settings allow it.
@@ -23,6 +23,11 @@ Then install the integrations package and add `googleTagManager()` to the config
 <Framework when="nuxt">
 
 Then install the integrations package and add `googleTagManager()` to `cookieyes.integrations` in `app/app.config.ts`:
+
+</Framework>
+<Framework when="svelte">
+
+Then install the integrations package and add `googleTagManager()` to the config you pass to `<CookieYesProvider>`:
 
 </Framework>
 
@@ -81,6 +86,22 @@ export default defineAppConfig({
 ```
 
 `integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
+
+</Framework>
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+import { googleTagManager } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [googleTagManager({ containerId: "GTM-XXXXXXX" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export type Framework = "nextjs" | "react" | "vue" | "nuxt" | "vanilla";
+export type Framework = "nextjs" | "react" | "vue" | "nuxt" | "svelte" | "vanilla";
 
 function readDeps(cwd: string): Record<string, string> | null {
   const pkgPath = join(cwd, "package.json");
@@ -27,5 +27,9 @@ export function detectFramework(cwd = process.cwd()): Framework | null {
   if ("nuxt" in deps) return "nuxt";
   if ("react" in deps) return "react";
   if ("vue" in deps) return "vue";
+  // The Svelte setup patches `src/main.ts` and `App.svelte`, which a SvelteKit app does not have
+  // (it renders from `src/routes`), so a Kit project is not taken for plain Svelte. It falls
+  // through to vanilla until Kit has a setup of its own.
+  if ("svelte" in deps && !("@sveltejs/kit" in deps)) return "svelte";
   return "vanilla";
 }
