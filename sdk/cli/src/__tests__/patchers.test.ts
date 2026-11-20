@@ -5,6 +5,8 @@ import {
   patchNextjsPagesApp,
   patchNuxtApp,
   patchNuxtConfig,
+  patchSvelteApp,
+  patchSvelteMain,
   patchVueApp,
   patchVueMain,
 } from "../utils/patchers.js";
@@ -399,5 +401,96 @@ describe("patchNuxtApp", () => {
   it("returns null when already patched or when there is no template", () => {
     expect(patchNuxtApp(`<template>\n  <CookieYesRoot />\n</template>\n`)).toBeNull();
     expect(patchNuxtApp(`<script setup>\nconst n = 1\n</script>\n`)).toBeNull();
+  });
+});
+
+describe("patchSvelteMain", () => {
+  const viteMain = `import { mount } from 'svelte'\nimport './app.css'\nimport App from './App.svelte'\n\nconst app = mount(App, { target: document.getElementById('app')! })\n\nexport default app\n`;
+
+  it("adds the stylesheet import after the last import, in the file's quote style", () => {
+    expect(patchSvelteMain(viteMain)).toBe(
+      `import { mount } from 'svelte'\nimport './app.css'\nimport App from './App.svelte'\nimport '@cookieyes/svelte/styles.css'\n\nconst app = mount(App, { target: document.getElementById('app')! })\n\nexport default app\n`,
+    );
+  });
+
+  it("uses double quotes and semicolons when the file does", () => {
+    const out = patchSvelteMain(`import App from "./App.svelte";\nmount(App);\n`);
+    expect(out).toContain(`import "@cookieyes/svelte/styles.css";`);
+  });
+
+  it("returns null when the stylesheet is already imported", () => {
+    expect(patchSvelteMain(`${viteMain}import "@cookieyes/svelte/styles.css";\n`)).toBeNull();
+  });
+
+  it("returns null for a file that does not import a Svelte component", () => {
+    expect(patchSvelteMain(`import { start } from "./start";\nstart();\n`)).toBeNull();
+  });
+
+  it("returns null when an import spans several lines", () => {
+    expect(
+      patchSvelteMain(`import {\n  mount,\n} from 'svelte'\nimport App from './App.svelte'\n`),
+    ).toBeNull();
+  });
+});
+
+describe("patchSvelteApp", () => {
+  const viteApp = `<script lang="ts">\n  import Counter from './lib/Counter.svelte'\n</script>\n\n<main>\n  <Counter />\n</main>\n\n<style>\n  main { color: red; }\n</style>\n`;
+
+  it("imports the root in the script and renders it before the style block", () => {
+    expect(patchSvelteApp(viteApp)).toBe(
+      `<script lang="ts">\n  import Counter from './lib/Counter.svelte'\n  import CookieYesRoot from './lib/CookieYesRoot.svelte'\n</script>\n\n<main>\n  <Counter />\n</main>\n\n<CookieYesRoot />\n\n<style>\n  main { color: red; }\n</style>\n`,
+    );
+  });
+
+  it("appends the element at the end when there is no style block", () => {
+    const out = patchSvelteApp(`<script>\n  import A from "./A.svelte";\n</script>\n\n<A />\n`);
+    expect(out).toBe(
+      `<script>\n  import A from "./A.svelte";\n  import CookieYesRoot from "./lib/CookieYesRoot.svelte";\n</script>\n\n<A />\n\n<CookieYesRoot />\n`,
+    );
+  });
+
+  it("puts the import on its own line when the script has no imports", () => {
+    const out = patchSvelteApp(`<script lang="ts">\n  let n = 0;\n</script>\n<p>{n}</p>\n`);
+    expect(out).toContain(
+      `<script lang="ts">\n  import CookieYesRoot from "./lib/CookieYesRoot.svelte";\n  let n = 0;\n</script>`,
+    );
+    expect(out?.endsWith("<p>{n}</p>\n\n<CookieYesRoot />\n")).toBe(true);
+  });
+
+  it("handles a script that starts on the same line as its content", () => {
+    const out = patchSvelteApp(`<script>let n = 0;</script>\n<p>{n}</p>\n`);
+    expect(out).toContain(
+      `<script>\n  import CookieYesRoot from "./lib/CookieYesRoot.svelte";\nlet n = 0;</script>`,
+    );
+  });
+
+  it("skips a module script and edits the instance script", () => {
+    const out = patchSvelteApp(
+      `<script module>\n  export const x = 1;\n</script>\n\n<script>\n  import A from './A.svelte'\n</script>\n\n<A />\n`,
+    );
+    expect(out).toContain(`<script module>\n  export const x = 1;\n</script>`);
+    expect(out).toContain(`import A from './A.svelte'\n  import CookieYesRoot from`);
+  });
+
+  it("skips a legacy context=module script too", () => {
+    expect(
+      patchSvelteApp(`<script context="module">\n  export const x = 1;\n</script>\n<p />\n`),
+    ).toBeNull();
+  });
+
+  it("returns null when already patched", () => {
+    expect(
+      patchSvelteApp(`<script>\n  import CookieYesRoot from './x.svelte'\n</script>\n`),
+    ).toBeNull();
+  });
+
+  it("returns null when there is no script block", () => {
+    expect(patchSvelteApp(`<main />\n`)).toBeNull();
+  });
+
+  it("returns null when an import in the script spans several lines", () => {
+    expect(
+      patchSvelteApp(`<script>\n  import {\n    a,\n  } from './a'\n</script>\n<p />\n`),
+    ).toBeNull();
   });
 });

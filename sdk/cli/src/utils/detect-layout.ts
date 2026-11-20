@@ -114,6 +114,32 @@ export function vueProjectPaths(cwd: string): VueProjectPaths {
   };
 }
 
+export type SvelteProjectPaths = {
+  /** Whether the project's entry file is TypeScript; JavaScript only when `main.js` alone exists. */
+  typescript: boolean;
+  configPath: string;
+  configLabel: string;
+  rootPath: string;
+  entryPath: string;
+  entryLabel: string;
+  appPath: string;
+};
+
+export function svelteProjectPaths(cwd: string): SvelteProjectPaths {
+  const src = join(cwd, "src");
+  const typescript = existsSync(join(src, "main.ts")) || !existsSync(join(src, "main.js"));
+  const ext = typescript ? "ts" : "js";
+  return {
+    typescript,
+    configPath: join(src, "lib", `cookieyes.${ext}`),
+    configLabel: `src/lib/cookieyes.${ext}`,
+    rootPath: join(src, "lib", "CookieYesRoot.svelte"),
+    entryPath: join(src, `main.${ext}`),
+    entryLabel: `src/main.${ext}`,
+    appPath: join(src, "App.svelte"),
+  };
+}
+
 export type NuxtProjectPaths = {
   /** The existing `nuxt.config.*`, or null when the project has none. */
   configPath: string | null;

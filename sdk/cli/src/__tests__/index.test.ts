@@ -41,10 +41,10 @@ describe("cli entry", () => {
     expect(runInit).not.toHaveBeenCalled();
   });
 
-  it("lists vue and nuxt among the --framework values in the help", async () => {
+  it("lists vue, nuxt and svelte among the --framework values in the help", async () => {
     await runCli("--help");
     expect(String(logSpy.mock.calls[0]?.[0])).toContain(
-      "--framework <nextjs|react|vue|nuxt|vanilla>",
+      "--framework <nextjs|react|vue|nuxt|svelte|vanilla>",
     );
   });
 

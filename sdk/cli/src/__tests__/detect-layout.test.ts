@@ -9,6 +9,7 @@ import {
   nextProjectPaths,
   nuxtProjectPaths,
   reactProjectPaths,
+  svelteProjectPaths,
   vueProjectPaths,
 } from "../utils/detect-layout.js";
 
@@ -208,6 +209,30 @@ describe("vueProjectPaths", () => {
 
   it("defaults to TypeScript when there is no entry file", () => {
     expect(vueProjectPaths(tmp).typescript).toBe(true);
+  });
+});
+
+describe("svelteProjectPaths", () => {
+  it("uses TypeScript files when src/main.ts exists", () => {
+    touch("src/main.ts");
+    const p = svelteProjectPaths(tmp);
+    expect(p.typescript).toBe(true);
+    expect(p.entryPath).toBe(join(tmp, "src", "main.ts"));
+    expect(p.configLabel).toBe("src/lib/cookieyes.ts");
+    expect(p.rootPath).toBe(join(tmp, "src", "lib", "CookieYesRoot.svelte"));
+    expect(p.appPath).toBe(join(tmp, "src", "App.svelte"));
+  });
+
+  it("uses JavaScript files when only src/main.js exists", () => {
+    touch("src/main.js");
+    const p = svelteProjectPaths(tmp);
+    expect(p.typescript).toBe(false);
+    expect(p.entryLabel).toBe("src/main.js");
+    expect(p.configPath).toBe(join(tmp, "src", "lib", "cookieyes.js"));
+  });
+
+  it("defaults to TypeScript when there is no entry file", () => {
+    expect(svelteProjectPaths(tmp).typescript).toBe(true);
   });
 });
 
