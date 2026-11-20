@@ -3,9 +3,10 @@
 // `matrix/matrix.config.mjs` (the latter only to know which combination IDs *should* be present),
 // then writes `apps/web/.generated/peer-matrix-reference.json` and injects marker-delimited
 // markdown compatibility tables into `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md`,
-// `sdk/vue/README.md` and `sdk/nuxt/README.md`. Combinations are split by `app`: the
+// `sdk/vue/README.md`, `sdk/nuxt/README.md` and `sdk/svelte/README.md`. Combinations are split by `app`: the
 // Next.js/React table goes to the root and the React and Next.js READMEs, the Vue table to the
-// root and the Vue README, the Nuxt table to the root and the Nuxt README.
+// root and the Vue README, the Nuxt table to the root and the Nuxt README, the Svelte table to the root and the Svelte
+// README.
 //
 // Sibling to `generate-config-reference.mjs` / `generate-component-reference.mjs` /
 // `generate-css-variables-reference.mjs` — same fail-closed discipline, adapted to this contract's
@@ -56,11 +57,12 @@ const outDir = join(webRoot, ".generated");
 const outFile = join(outDir, "peer-matrix-reference.json");
 
 const README_TARGETS = [
-  { path: join(repoRoot, "README.md"), kind: "root", apps: ["next", "vue", "nuxt"] },
+  { path: join(repoRoot, "README.md"), kind: "root", apps: ["next", "vue", "nuxt", "svelte"] },
   { path: join(repoRoot, "sdk", "react", "README.md"), kind: "package", apps: ["next"] },
   { path: join(repoRoot, "sdk", "nextjs", "README.md"), kind: "package", apps: ["next"] },
   { path: join(repoRoot, "sdk", "vue", "README.md"), kind: "package", apps: ["vue"] },
   { path: join(repoRoot, "sdk", "nuxt", "README.md"), kind: "package", apps: ["nuxt"] },
+  { path: join(repoRoot, "sdk", "svelte", "README.md"), kind: "package", apps: ["svelte"] },
 ];
 
 /** `generatedAt` older than this many days is treated as "the workflow stopped running." */
@@ -93,6 +95,7 @@ const REQUIRED_VERSION_FIELDS = {
   vue: ["vue"],
   // Only `nuxt` is requested; the Vue a Nuxt row shows is the one Nuxt resolved.
   nuxt: ["nuxt"],
+  svelte: ["svelte", "vite", "vitePluginSvelte"],
 };
 
 /** A combination without an `app` field is a Next.js one, as in matrix.config.mjs. */
@@ -306,6 +309,14 @@ function buildRows(data) {
     if (common.app === "nuxt") {
       return { ...common, nuxt: `${combo.resolved.nuxt}${floorSuffix}`, vue: combo.resolved.vue };
     }
+    if (common.app === "svelte") {
+      return {
+        ...common,
+        svelte: `${combo.resolved.svelte}${floorSuffix}`,
+        vite: combo.resolved.vite,
+        vitePluginSvelte: combo.resolved.vitePluginSvelte,
+      };
+    }
     return {
       ...common,
       next: `${combo.resolved.next}${floorSuffix}`,
@@ -388,12 +399,35 @@ function renderNuxtSection({ rows, rationaleLink }) {
   ];
 }
 
+function renderSvelteSection({ rows, rationaleLink }) {
+  const header =
+    "| Svelte | Vite | Vite plugin | Verified | Build + typecheck | SSR (HTML + cookie value) | Behaviour (jsdom) |\n" +
+    "|---|---|---|---|---|---|---|";
+  const body = rows
+    .map(
+      (r) =>
+        `| ${r.svelte} | ${r.vite} | ${r.vitePluginSvelte} | ${r.verifiedDate} | ${r.buildTypecheck} | ${r.ssr} | ${r.behaviour} |`,
+    )
+    .join("\n");
+  return [
+    header,
+    body,
+    "",
+    `Verified by installing the exact Svelte versions above, building a real Vite app, rendering it ` +
+      `on the server with \`svelte/server\` and asserting the banner's HTML (and a returning ` +
+      `visitor's cookie value) is correct, then running behaviour and hydration assertions in ` +
+      `\`jsdom\`. Node 20, pnpm. See [rationale](${rationaleLink}) for why this stops short of a ` +
+      `real browser.`,
+  ];
+}
+
 function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
   const testLink = testPackageLink(fromFile);
   const rationaleLink = "https://github.com/cookieyes/cookieyes#compatibility";
   const nextRows = rows.filter((r) => r.app === "next");
   const vueRows = rows.filter((r) => r.app === "vue");
   const nuxtRows = rows.filter((r) => r.app === "nuxt");
+  const svelteRows = rows.filter((r) => r.app === "svelte");
 
   // Static claims this generator itself makes (things the verification depth structurally never
   // covers, independent of any one matrix run) plus, dynamically, every limit the *producer*
@@ -410,10 +444,20 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
   if (apps.includes("nuxt")) {
     notVerifiedItems.push("Any Nuxt version outside the rows above.");
   }
+  if (apps.includes("svelte")) {
+    notVerifiedItems.push("Any Svelte version outside the rows above.");
+  }
   notVerifiedItems.push("npm/yarn as the install client.", ...coverageLimits);
   if (apps.includes("vue")) {
     notVerifiedItems.push(
       "Server rendering of the Vue rows is asserted on the Vite SSR build's render function, " +
+        "not a live server, so it does not prove a particular server framework forwards the " +
+        "Cookie header.",
+    );
+  }
+  if (apps.includes("svelte")) {
+    notVerifiedItems.push(
+      "Server rendering of the Svelte rows is asserted on the Vite SSR build's render function, " +
         "not a live server, so it does not prove a particular server framework forwards the " +
         "Cookie header.",
     );
@@ -424,6 +468,8 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
     sections.push(renderNextSection({ rows: nextRows, testLink, rationaleLink }));
   if (apps.includes("vue")) sections.push(renderVueSection({ rows: vueRows, rationaleLink }));
   if (apps.includes("nuxt")) sections.push(renderNuxtSection({ rows: nuxtRows, rationaleLink }));
+  if (apps.includes("svelte"))
+    sections.push(renderSvelteSection({ rows: svelteRows, rationaleLink }));
 
   return [
     MARKER_START,

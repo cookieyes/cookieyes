@@ -18,6 +18,7 @@ on:
       - "sdk/nextjs/**"
       - "sdk/vue/**"
       - "sdk/nuxt/**"
+      - "sdk/svelte/**"
       - "sdk/core/**"
       - "matrix/**"
   schedule:

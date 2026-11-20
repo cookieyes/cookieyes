@@ -47,7 +47,7 @@ Verified by installing the exact Vue versions above, building a real Vite app, r
 - Any Vue version outside the rows above.
 - npm/yarn as the install client.
 - No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).
-- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, all with pnpm and moduleResolution=bundler.
+- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, all with pnpm and moduleResolution=bundler.
 - Server rendering of the Vue rows is asserted on the Vite SSR build's render function, not a live server, so it does not prove a particular server framework forwards the Cookie header.
 <!-- PEER-MATRIX:END -->
 
