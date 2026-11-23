@@ -13,6 +13,7 @@
   "@cookieyes/cli@0.3.5": "2026-10-30",
   "@cookieyes/cli@0.4.0": "2026-11-02",
   "@cookieyes/cli@0.5.0": "2026-11-16",
+  "@cookieyes/cli@0.6.0": "2026-11-19",
   "@cookieyes/core@0.1.1": "2026-06-25",
   "@cookieyes/core@0.10.0": "2026-10-07",
   "@cookieyes/core@0.11.0": "2026-10-08",
@@ -57,6 +58,7 @@
   "@cookieyes/nextjs@0.8.6": "2026-11-02",
   "@cookieyes/nextjs@0.8.7": "2026-11-10",
   "@cookieyes/nextjs@0.9.0": "2026-11-16",
+  "@cookieyes/nuxt@0.1.0": "2026-11-19",
   "@cookieyes/react@0.1.0": "2026-06-02",
   "@cookieyes/react@0.10.0": "2026-09-25",
   "@cookieyes/react@0.11.0": "2026-09-30",
@@ -114,5 +116,6 @@
   "@cookieyes/ui@0.2.0": "2026-11-16",
   "@cookieyes/vanilla@0.1.0": "2026-10-30",
   "@cookieyes/vanilla@0.1.1": "2026-11-02",
-  "@cookieyes/vanilla@0.2.0": "2026-11-16"
+  "@cookieyes/vanilla@0.2.0": "2026-11-16",
+  "@cookieyes/vue@0.1.0": "2026-11-19"
 }
