@@ -84,13 +84,23 @@ Verified by installing the exact Nuxt versions above (Vue is the version Nuxt re
 Verified by installing the exact Svelte versions above, building a real Vite app, rendering it on the server with `svelte/server` and asserting the banner's HTML (and a returning visitor's cookie value) is correct, then running behaviour and hydration assertions in `jsdom`. Node 20, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
 
 **Not verified by this table:**
+| SvelteKit | Svelte | Vite | Vite plugin | Verified | Build + typecheck | SSR (HTTP + static build) | Behaviour (jsdom) |
+|---|---|---|---|---|---|---|---|
+| 2.62.0 (declared floor) | 5.20.0 | 7.3.8 | 6.2.4 | 2026-11-20 | pass | pass | pass |
+| 2.70.4 | 5.57.3 | 8.3.7 | 7.3.1 | 2026-11-20 | pass | pass | pass |
+| 3.2.0 | 5.57.3 | 8.3.7 | 7.3.1 | 2026-11-20 | pass | pass | pass |
+
+Verified by installing the exact SvelteKit and Svelte versions above, building a real SvelteKit app with the package and its adapter-node server, starting it and asserting over HTTP the banner's HTML for first-time, returning and California visitors (the consent value the server read for the returning one, the order of the head tags and the stylesheet route), then building the same app once with adapter-static and checking its prerendered page and stylesheet file, and running behaviour assertions in `jsdom`. Node 20 for SvelteKit 2 and Node 22 for SvelteKit 3, pnpm. See [rationale](https://github.com/cookieyes/cookieyes#compatibility) for why this stops short of a real browser.
+
 - Any Next.js/React version outside the rows above.
 - Any Vue version outside the rows above.
 - Any Nuxt version outside the rows above.
 - Any Svelte version outside the rows above.
 - npm/yarn as the install client.
+- Any SvelteKit or Svelte version outside the rows above.
+- Any SvelteKit adapter other than adapter-node and adapter-static, and any host.
 - No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).
-- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, all with pnpm and moduleResolution=bundler.
+- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, SvelteKit on Node 20 and 22, all with pnpm and moduleResolution=bundler.
 - Server rendering of the Vue rows is asserted on the Vite SSR build's render function, not a live server, so it does not prove a particular server framework forwards the Cookie header.
 - Server rendering of the Svelte rows is asserted on the Vite SSR build's render function, not a live server, so it does not prove a particular server framework forwards the Cookie header.
 <!-- PEER-MATRIX:END -->

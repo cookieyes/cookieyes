@@ -1,0 +1,37 @@
+{
+  "name": "peer-matrix-example-app-sveltekit",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "build": "vite build",
+    "test:behaviour": "vitest run --config tests/vitest.config.mts"
+  },
+  "dependencies": {
+    "@cookieyes/sveltekit": "__TARBALL_SVELTEKIT__",
+    "@cookieyes/core": "__TARBALL_CORE__",
+    "@sveltejs/kit": "__KIT_VERSION__",
+    "svelte": "__SVELTE_VERSION__"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@sveltejs/adapter-node": "__ADAPTER_NODE_VERSION__",
+    "@sveltejs/adapter-static": "__ADAPTER_STATIC_VERSION__",
+    "@sveltejs/vite-plugin-svelte": "__VITE_PLUGIN_SVELTE_VERSION__",
+    "jsdom": "29.1.1",
+    "svelte-check": "4.7.8",
+    "typescript": "6.0.3",
+    "vite": "__VITE_VERSION__",
+    "vitest": "4.1.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "@cookieyes/core": "__TARBALL_CORE__",
+      "@cookieyes/ui": "__TARBALL_UI__",
+      "@cookieyes/svelte": "__TARBALL_SVELTE__",
+      "@cookieyes/sveltekit": "__TARBALL_SVELTEKIT__",
+      "@cookieyes/scripts": "__TARBALL_SCRIPTS__"
+    }
+  }
+}
