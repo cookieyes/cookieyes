@@ -49,9 +49,10 @@ const outDir = resolve(outArg === -1 ? join(tmpdir(), "cookieyes-package-gate") 
  * Packages that ship ES modules only, checked by attw's `esm-only` profile instead of `node16`.
  * `@cookieyes/nuxt` is a Nuxt module: Nuxt loads modules with `import`, never `require`, and the
  * module finds its runtime files through `import.meta.url`, which a CommonJS build would not have.
- * `@cookieyes/svelte` ships `.svelte` component files, which have no CommonJS form.
+ * `@cookieyes/svelte` and `@cookieyes/sveltekit` ship `.svelte` component files, which have no
+ * CommonJS form.
  */
-const ESM_ONLY = new Set(["@cookieyes/nuxt", "@cookieyes/svelte"]);
+const ESM_ONLY = new Set(["@cookieyes/nuxt", "@cookieyes/svelte", "@cookieyes/sveltekit"]);
 
 /** Class prefix each stylesheet must contain. A package not listed ships no CSS. */
 const CSS_PREFIX = {
@@ -60,6 +61,7 @@ const CSS_PREFIX = {
   "@cookieyes/vanilla": ".cy-",
   "@cookieyes/vue": ".cy-",
   "@cookieyes/svelte": ".cy-",
+  "@cookieyes/sveltekit": ".cy-",
   "@cookieyes/nuxt": ".cy-",
   "@cookieyes/nextjs": ".cy-",
   "@cookieyes/devtools": ".cyd-",

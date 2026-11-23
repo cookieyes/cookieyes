@@ -1,7 +1,7 @@
 ---
 title: Mixpanel
 description: Load Mixpanel only after analytics consent, or keep it silent until then, and stop it with its data removed when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, svelte, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 `mixpanel()` loads Mixpanel after the visitor grants the analytics category. When consent is withdrawn, it uses Mixpanel's own opt-out, which stops events and throws away unsent ones, and removes everything Mixpanel stored in the browser, with no page reload. A second mode keeps Mixpanel on every page, opted out until consent. `mixpanelSync()` does the same for a Mixpanel you load yourself.
@@ -26,6 +26,11 @@ Install the integrations package and add `mixpanel()` to `cookieyes.integrations
 <Framework when="svelte">
 
 Install the integrations package and add `mixpanel()` to the config you pass to `<CookieYesProvider>`. `token` is the project token from `mixpanel.init("…")` in Mixpanel's snippet, 32 hexadecimal characters:
+
+</Framework>
+<Framework when="sveltekit">
+
+Install the integrations package and add `mixpanel()` to the config in `src/lib/cookieyes.ts`. `token` is the project token from `mixpanel.init("…")` in Mixpanel's snippet, 32 hexadecimal characters:
 
 </Framework>
 
@@ -90,6 +95,22 @@ export default defineAppConfig({
 
 ```ts title="src/lib/cookieyes.ts"
 import type { CookieYesConfig } from "@cookieyes/svelte";
+import { mixpanel } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [mixpanel({ token: "0123456789abcdef0123456789abcdef" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
 import { mixpanel } from "@cookieyes/scripts";
 
 export const config: CookieYesConfig = {
@@ -199,6 +220,11 @@ Keep your own `mixpanel.init()` and add `mixpanelSync()` to `cookieyes.integrati
 <Framework when="svelte">
 
 Keep your own `mixpanel.init()` and add `mixpanelSync()` instead. It injects nothing: on grant it calls `opt_in_tracking()`, on withdrawal `opt_out_tracking()` with the same cleanup as above. Initialise Mixpanel before `<CookieYesProvider>` runs, and start it opted out, or it tracks from the moment it loads:
+
+</Framework>
+<Framework when="sveltekit">
+
+Keep your own `mixpanel.init()` and add `mixpanelSync()` instead. It injects nothing: on grant it calls `opt_in_tracking()`, on withdrawal `opt_out_tracking()` with the same cleanup as above. `<CookieYesRoot>` starts the SDK when the root layout first renders in the browser, so initialise Mixpanel in the `<head>` of `src/app.html`, with Mixpanel's snippet, and start it opted out, or it tracks from the moment it loads:
 
 </Framework>
 

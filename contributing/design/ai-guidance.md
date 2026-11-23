@@ -38,6 +38,7 @@ the other: fix the docs or the rules, never leave both.
 | Use CookieYes in a Vue 3 app | `@cookieyes/vue`, `app.use(CookieYes, config)`, `@cookieyes/vue/styles.css` | `@cookieyes/react` |
 | Use CookieYes in a Nuxt 4 app | `@cookieyes/nuxt` in `modules`, `cookieyes` options, `<CookieYesRoot />` in `app.vue` | `@cookieyes/vue` plugin wired by hand |
 | Use CookieYes in a Svelte 5 app | `@cookieyes/svelte`, `<CookieYesProvider {config}>`, `@cookieyes/svelte/styles.css` | `@cookieyes/react`, or `@cookieyes/core` with a hand-built banner |
+| Use CookieYes in a SvelteKit app | `@cookieyes/sveltekit`: `cookieyesHandle` in `hooks.server.ts`, `loadConsent` in `+layout.server.ts`, `<CookieYesRoot {config} state={data.consent}>` in `+layout.svelte` | `@cookieyes/svelte` provider wired by hand |
 | Opt-out consent for California | `regulation: "CCPA"` | A custom category list |
 | Unit-test that analytics loads only after consent | `createConsentTest()` from `@cookieyes/test`, reset after each test | Hand-writing the consent cookie |
 | Test a React component that reads consent | `createReactConsentTest()` from `@cookieyes/test/react`, one harness per file | Both harnesses in one file |

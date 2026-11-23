@@ -3,13 +3,22 @@
  * the sidebar switcher, the header, search and the raw-Markdown route.
  *
  * The docs are written once in content/shared and published under `/docs/nextjs`,
- * `/docs/react`, `/docs/vue`, `/docs/nuxt`, `/docs/svelte` and `/docs/core` (scripts/generate-framework-docs.mjs). A page's framework
+ * `/docs/react`, `/docs/vue`, `/docs/nuxt`, `/docs/svelte`, `/docs/sveltekit` and `/docs/core`
+ * (scripts/generate-framework-docs.mjs). A page's framework
  * is therefore the first path segment, and nothing else — no stored preference decides
  * what a URL shows, which is what makes a docs link mean the same thing for everyone who
  * opens it.
  */
 
-export const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "svelte", "core"] as const;
+export const FRAMEWORKS = [
+  "nextjs",
+  "react",
+  "vue",
+  "nuxt",
+  "svelte",
+  "sveltekit",
+  "core",
+] as const;
 
 export type Framework = (typeof FRAMEWORKS)[number];
 
@@ -23,6 +32,7 @@ export const FRAMEWORK_LABEL: Record<Framework, string> = {
   vue: "Vue",
   nuxt: "Nuxt",
   svelte: "Svelte",
+  sveltekit: "SvelteKit",
   core: "JavaScript",
 };
 
@@ -45,7 +55,7 @@ export function frameworkOf(slugsOrPath: readonly string[] | string): Framework 
  * `index.mdx`, which is why this works from the file path and not from the URL.
  */
 export function sharedPath(wrapperPath: string): string {
-  return wrapperPath.replace(/^(nextjs|react|vue|nuxt|svelte|core)\//, "");
+  return wrapperPath.replace(/^(nextjs|react|vue|nuxt|svelte|sveltekit|core)\//, "");
 }
 
 /**
@@ -81,6 +91,7 @@ export function resolveDocsHref(
       "vue",
       "nuxt",
       "svelte",
+      "sveltekit",
       "core",
     ]),
   ];
@@ -116,6 +127,14 @@ const VUE_FORBIDDEN = /@cookieyes\/(react|nextjs)(?![\w-])|"use client"|useSyncE
  */
 const SVELTE_FORBIDDEN =
   /@cookieyes\/(react|nextjs|vue|nuxt)(?![\w-])|"use client"|useSyncExternalStore/;
+/**
+ * What must never reach a SvelteKit page's code: everything the Svelte guard rejects, plus an
+ * `@cookieyes/svelte` import. `@cookieyes/sveltekit` re-exports what an app needs from it, and
+ * under pnpm's strict layout an app that installed only `@cookieyes/sveltekit` cannot import
+ * `@cookieyes/svelte` at all.
+ */
+const SVELTEKIT_FORBIDDEN =
+  /@cookieyes\/(react|nextjs|vue|nuxt|svelte)(?![\w-])|"use client"|useSyncExternalStore/;
 /** An innermost block: one whose body opens no further <Framework>. Resolved repeatedly. */
 const BLOCK = /<Framework when="([^"]*)">\s*\n((?:(?!<Framework)[\s\S])*?)\n\s*<\/Framework>\n?/g;
 const FENCE = /^(```[^\n]*)\n([\s\S]*?)^```[ \t]*$/gm;
@@ -137,14 +156,19 @@ export function composeMarkdown(body: string, framework: Framework): string {
 
   out = out.replace(FENCE, (_m, opener: string, code: string) => {
     let swapped = code;
-    const handWritten = framework === "vue" || framework === "nuxt" || framework === "svelte";
+    const handWritten =
+      framework === "vue" ||
+      framework === "nuxt" ||
+      framework === "svelte" ||
+      framework === "sveltekit";
     const lang = /^```(\w*)/.exec(opener)?.[1];
-    if (framework === "svelte") {
-      if (lang === "tsx" || lang === "vue" || SVELTE_FORBIDDEN.test(code)) {
+    if (framework === "svelte" || framework === "sveltekit") {
+      const forbidden = framework === "svelte" ? SVELTE_FORBIDDEN : SVELTEKIT_FORBIDDEN;
+      if (lang === "tsx" || lang === "vue" || forbidden.test(code)) {
         throw new Error(
-          "A Svelte page has a React or Vue fence (tsx, vue, a @cookieyes/react, @cookieyes/nextjs, " +
-            '@cookieyes/vue or @cookieyes/nuxt import, a "use client" line or useSyncExternalStore). ' +
-            'Wrap it in <Framework when="...">.',
+          `A ${FRAMEWORK_LABEL[framework]} page has a React or Vue fence (tsx, vue, a @cookieyes/react, @cookieyes/nextjs, ` +
+            `@cookieyes/vue or @cookieyes/nuxt import${framework === "sveltekit" ? ", a @cookieyes/svelte import" : ""}, ` +
+            'a "use client" line or useSyncExternalStore). Wrap it in <Framework when="...">.',
         );
       }
     } else if (handWritten) {

@@ -69,6 +69,15 @@ const JSDOM_ASSERTION_NAME_MAPS = {
       "child-snippet-click-commits-consent",
     "server-rendered markup hydrates into the same DOM": "ssr-markup-hydrates-into-same-dom",
   },
+  sveltekit: {
+    "CookieYesRoot shows the banner to a first-time visitor": "root-shows-banner-to-fresh-visitor",
+    "accepting in the banner writes the consent cookie and hides the banner":
+      "accept-writes-cookie-and-hides-banner",
+    "Banner child snippet renders the developer's element with the part merged":
+      "child-snippet-renders-developer-element-with-part",
+    "Banner child snippet runs the consent action when the developer's element is clicked":
+      "child-snippet-click-commits-consent",
+  },
   nuxt: {
     "CookieYesRoot shows the banner to a first-time visitor": "root-shows-banner-to-fresh-visitor",
     "accepting in the banner writes the consent cookie and hides the banner":
@@ -479,11 +488,151 @@ const NUXT_STRATEGY = {
   },
 };
 
+/** Every installed copy of a package, by version, read off pnpm's store layout. */
+function installedCopies(appDir, packageName) {
+  const pnpmDir = join(appDir, "node_modules", ".pnpm");
+  const prefix = `${packageName.replace("/", "+")}@`;
+  const copies = new Set();
+  if (existsSync(pnpmDir)) {
+    for (const entry of readdirSync(pnpmDir)) {
+      const match = entry.startsWith(prefix)
+        ? /^(\d+\.\d+\.\d+)(?![\d.])/.exec(entry.slice(prefix.length))
+        : null;
+      if (match) copies.add(match[1]);
+    }
+  }
+  return [...copies];
+}
+
+/**
+ * The extra adapter-static build of the same app (design decision: no separate leg). The README's
+ * recipe for a build with no server is applied to a copy of the app's own routes: no
+ * `+layout.server.ts`, everything prerendered, and the stylesheet route prerendered so it is
+ * written as a file.
+ */
+function buildStatic(appDir, logPath) {
+  const routes = join(appDir, "src", "routes");
+  rmSync(join(routes, "+layout.server.ts"), { force: true });
+  writeFileSync(join(routes, "+layout.ts"), "export const prerender = true;\n");
+  writeFileSync(
+    join(routes, "cookieyes", "styles.css", "+server.ts"),
+    'export { GET } from "@cookieyes/sveltekit/styles-route";\nexport const prerender = true;\n',
+  );
+  const build = run("pnpm", ["exec", "vite", "build"], {
+    cwd: appDir,
+    env: { ...process.env, CY_ADAPTER: "static", NODE_ENV: "production" },
+  });
+  appendLog(logPath, "adapter-static build", build.output);
+  return build.ok;
+}
+
+const SVELTEKIT_STRATEGY = {
+  emptyResolved: {
+    kit: "",
+    svelte: "",
+    vite: "",
+    vitePluginSvelte: "",
+    adapterNode: "",
+    adapterStatic: "",
+  },
+  assertionNames: JSDOM_ASSERTION_NAME_MAPS.sveltekit,
+
+  resolve(nodeModules) {
+    return {
+      kit: readResolvedVersion(nodeModules, "@sveltejs/kit") ?? "",
+      svelte: readResolvedVersion(nodeModules, "svelte") ?? "",
+      vite: readResolvedVersion(nodeModules, "vite") ?? "",
+      vitePluginSvelte: readResolvedVersion(nodeModules, "@sveltejs/vite-plugin-svelte") ?? "",
+      adapterNode: readResolvedVersion(nodeModules, "@sveltejs/adapter-node") ?? "",
+      adapterStatic: readResolvedVersion(nodeModules, "@sveltejs/adapter-static") ?? "",
+    };
+  },
+
+  // Dynamic proof that the leg tested the SvelteKit and Svelte it asked for: every exact pin must be
+  // what got installed, and no second copy of either may sit in the graph. Without it the floor leg
+  // could pass on a newer Kit or Svelte that a peer range pulled in.
+  typePackageCheck(resolved, combo, appDir) {
+    for (const field of Object.keys(this.emptyResolved)) {
+      if (resolved[field] !== combo.versions[field]) {
+        return {
+          ok: false,
+          notes: `resolved ${field} (${resolved[field] || "none"}) is not the requested ${combo.versions[field]}.`,
+        };
+      }
+    }
+    for (const name of ["svelte", "@sveltejs/kit"]) {
+      const copies = installedCopies(appDir, name);
+      if (copies.length > 1) {
+        return {
+          ok: false,
+          notes: `resolved ${copies.length} copies of ${name} (${copies.join(", ")}).`,
+        };
+      }
+    }
+    return { ok: true };
+  },
+
+  // Real HTTP against the built adapter-node server, so the handle reads the Cookie and geo headers
+  // from a real request; then the one adapter-static build of the same app.
+  async ssr({ appDir, logPath }) {
+    const serverProcess = spawn(process.execPath, [join("build", "index.js")], {
+      cwd: appDir,
+      env: { ...process.env, PORT: String(SERVER_PORT), NODE_ENV: "production" },
+      stdio: ["ignore", "pipe", "pipe"],
+      // Process-group leader, so killProcessTree can signal everything it starts.
+      detached: true,
+    });
+    let served;
+    try {
+      let serverLog = "";
+      serverProcess.stdout?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+      serverProcess.stderr?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+
+      const ready = await waitForServer(SERVER_PORT, SERVER_READY_TIMEOUT_MS);
+      appendLog(logPath, "adapter-node server", serverLog);
+      if (!ready) {
+        return {
+          outcome: "fail",
+          assertions: [],
+          notes: `the adapter-node server did not become ready on port ${SERVER_PORT} within ${SERVER_READY_TIMEOUT_MS}ms.`,
+        };
+      }
+
+      const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+      served = await runSsrAssertions({ baseUrl: `http://localhost:${SERVER_PORT}/` });
+    } finally {
+      killProcessTree(serverProcess);
+    }
+
+    if (!buildStatic(appDir, logPath)) {
+      return {
+        outcome: "fail",
+        assertions: served.assertions,
+        notes: [served.notes, "the adapter-static build failed, see logsArtifact."]
+          .filter(Boolean)
+          .join(" "),
+      };
+    }
+    const { runStaticAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+    const prerendered = runStaticAssertions({ buildDir: join(appDir, "build-static") });
+    return {
+      outcome: served.outcome === "pass" && prerendered.outcome === "pass" ? "pass" : "fail",
+      assertions: [...served.assertions, ...prerendered.assertions],
+      notes: [served.notes, prerendered.notes].filter(Boolean).join(" ") || null,
+    };
+  },
+};
+
 const STRATEGIES = {
   next: NEXT_STRATEGY,
   vue: VUE_STRATEGY,
   nuxt: NUXT_STRATEGY,
   svelte: SVELTE_STRATEGY,
+  sveltekit: SVELTEKIT_STRATEGY,
 };
 
 /**
@@ -592,7 +741,7 @@ export async function runCombination({ comboId, tarballsPath, tarballsDir, logsA
       id: combo.id,
       role: combo.role,
       label: combo.label,
-      // Only the Vue, Nuxt and Svelte combinations name their app; the Next.js results keep their shape.
+      // Only the Vue, Nuxt, Svelte and SvelteKit combinations name their app; the Next.js results keep their shape.
       ...(combo.app ? { app: combo.app } : {}),
       packagesUnderTest: combo.packagesUnderTest,
       requested: combo.versions,

@@ -1,7 +1,7 @@
 ---
 title: Critical CSS
 description: Paint the banner on the first frame by inlining its rules in the HTML.
-frameworks: [nextjs, react, vue, nuxt, svelte, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="core">
@@ -15,6 +15,12 @@ This page applies to the banner from [`@cookieyes/vanilla`](/docs/getting-starte
 <Framework when="nuxt">
 
 The Nuxt module does all of this for you; there is nothing to set up. The rest of the page explains what it does.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+`cookieyesHandle` does all of this for you; there is nothing to set up beyond the stylesheet route from [Installation](/docs/getting-started/installation). The rest of the page explains what it does.
 
 </Framework>
 
@@ -84,6 +90,27 @@ Copy the contents of `@cookieyes/svelte/critical.css` into a `<style>` in your H
 
 </Framework>
 
+<Framework when="sveltekit">
+
+Nothing to do. On every page the handle writes `critical.css` inline right after `<meta charset>`, ahead of every other tag in `<head>`, and links the full stylesheet so it loads without blocking; the SDK switches it on once it starts. The stylesheet route serves it at `/cookieyes/styles.css`, under your app's base path, compressed and cached for a year under a versioned address:
+
+```ts title="src/routes/cookieyes/styles.css/+server.ts"
+export { GET } from "@cookieyes/sveltekit/styles-route";
+```
+
+To mount the route at another path, move the file there and set `stylesHref` on the handle:
+
+```ts title="src/hooks.server.ts"
+import { cookieyesHandle } from "@cookieyes/sveltekit";
+import { config } from "./lib/cookieyes";
+
+export const handle = cookieyesHandle({ ...config, stylesHref: "/assets/cookieyes.css" });
+```
+
+The tags are written into the HTML SvelteKit sends, so they are also there on routes with `ssr = false` and on prerendered pages. In a build with no server, such as `adapter-static`, add `export const prerender = true;` to the stylesheet route so it is written as a file.
+
+</Framework>
+
 <Framework when="nuxt">
 
 Nothing to do. On every page the module writes `critical.css` inline right after `<meta charset>`, ahead of every other tag in `<head>`, and links the full stylesheet so it loads without blocking; the SDK switches it on once it starts. A route the module adds serves that stylesheet at `/cookieyes/styles.css`, under your app's base URL (`app.baseURL`, or `NUXT_APP_BASE_URL` at run time), compressed and cached for a year under a versioned address. To serve it from another path, set `stylesHref`:
@@ -118,7 +145,7 @@ Only `critical.css` is loaded. Load `styles.css` too.
 
 </Framework>
 
-<Framework when="nuxt">
+<Framework when="nuxt sveltekit">
 
 **The preferences dialog is unstyled, the banner is fine.**
 The full stylesheet did not load. In the Network tab, `/cookieyes/styles.css`, or your `stylesHref`, must return CSS.
@@ -158,5 +185,11 @@ The full stylesheet is still imported in `src/main.ts`. Remove that import.
 <Framework when="nuxt">
 
 - [Configuration](/docs/getting-started/configuration#module-options): `stylesHref` and the other module options
+
+</Framework>
+
+<Framework when="sveltekit">
+
+- [Configuration](/docs/getting-started/configuration#handle-options): `stylesHref` and the other handle options
 
 </Framework>

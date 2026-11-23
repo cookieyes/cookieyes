@@ -1,7 +1,7 @@
 ---
 title: Quick start
 description: "A working cookie consent banner in about a minute: one CLI command detects your framework and writes the setup for you."
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 One command in your existing project. The CLI detects your framework, asks a few questions and writes the setup for you, including the stylesheet import that is easy to forget. It runs locally and collects no data.
@@ -71,6 +71,19 @@ The banner appears at the bottom of the page. Click **Accept All** and reload: i
 
 </Framework>
 
+<Framework when="sveltekit">
+
+- `src/lib/cookieyes.ts` (`.js` in a JavaScript project): the configuration.
+- `src/hooks.server.ts`: `export const handle = cookieyesHandle(config)`, or `cookieyesHandle(config)` added to the `sequence()` of a handle you already have.
+- `src/routes/+layout.server.ts`: `export const load = loadConsent`.
+- `src/routes/cookieyes/styles.css/+server.ts`: the stylesheet route.
+- `src/routes/+layout.svelte`: your page wrapped in `<CookieYesRoot {config} state={data.consent}>`.
+- `src/app.d.ts`: the `/// <reference types="@cookieyes/sveltekit" />` line.
+
+With `adapter-static` there is no server to read requests: the CLI then writes no `+layout.server.ts`, renders `<CookieYesRoot {config}>` without `state`, and adds `export const prerender = true;` to the stylesheet route.
+
+</Framework>
+
 <Framework when="nuxt">
 
 - `nuxt.config.ts`: `@cookieyes/nuxt` added to `modules`.
@@ -105,7 +118,7 @@ The hooks work only inside `<CookieYesRoot>`. To use them in your own components
 
 To change anything later, edit `src/lib/cookieyes.ts`: every option is on [Configuration](/docs/getting-started/configuration).
 
-The CLI does not set up SvelteKit projects yet.
+In a SvelteKit project, choose SvelteKit instead: the CLI then sets up `@cookieyes/sveltekit`. See the [SvelteKit quick start](/docs/sveltekit/getting-started/quick-start).
 
 </Framework>
 
@@ -114,6 +127,14 @@ The CLI does not set up SvelteKit projects yet.
 Files that already exist are left alone. An `app.config.ts` you already have is not changed: the CLI prints the `cookieyes` key to add under "Manual step needed", and does the same when it cannot add the module or `<CookieYesRoot />`.
 
 To change anything later, edit `app/app.config.ts`: every option is on [Configuration](/docs/getting-started/configuration). Options there are merged with any `cookieyes` key in `nuxt.config.ts`, and `app.config.ts` wins.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Files that already exist are left alone. If the CLI cannot add the handle, the `load` or `<CookieYesRoot>` to a file you already have, it prints the lines to paste under "Manual step needed". An existing `+layout.server.ts` is never changed: return `...loadConsent(event)` from its `load`.
+
+To change anything later, edit `src/lib/cookieyes.ts`: every option is on [Configuration](/docs/getting-started/configuration).
 
 </Framework>
 
@@ -153,6 +174,16 @@ A component outside `<CookieYesRoot>` uses a hook. Move it inside.
 
 </Framework>
 
+<Framework when="sveltekit">
+
+**The banner is unstyled text.**
+The stylesheet route `src/routes/cookieyes/styles.css/+server.ts` was removed or moved. Put it back, or set `stylesHref` on the handle to where it lives now.
+
+**`loadConsent() found no event.locals.cookieyes` in the server log.**
+`cookieyesHandle(config)` is no longer in `src/hooks.server.ts`. Add it back.
+
+</Framework>
+
 **"Manual step needed" was printed.**
 Paste the printed lines into your layout or entry file. Nothing else is missing.
 
@@ -185,6 +216,14 @@ Paste the printed lines into your layout or entry file. Nothing else is missing.
 <Framework when="nuxt">
 
 - [Configuration](/docs/getting-started/configuration): every option of the `cookieyes` key
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="sveltekit">
+
+- [Configuration](/docs/getting-started/configuration): every option of `src/lib/cookieyes.ts`
 - [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
 - [Styling](/docs/styling/overview): match the banner to your brand
 

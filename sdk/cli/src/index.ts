@@ -29,7 +29,7 @@ async function main() {
     -h, --help       Print this help message
 
   init options (each one skips its question)
-    --framework <nextjs|react|vue|nuxt|svelte|vanilla>
+    --framework <nextjs|react|vue|nuxt|svelte|sveltekit|vanilla>
     --mode <cookie-only|self-hosted>
     --api-url <url>          Where records are sent (implies self-hosted)
     --regulation <GDPR|CCPA>

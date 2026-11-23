@@ -11,6 +11,8 @@ const SECTIONS: Record<string, string> = {
   react: "React",
   vue: "Vue",
   nuxt: "Nuxt",
+  svelte: "Svelte",
+  sveltekit: "SvelteKit",
   core: "JavaScript",
   changelog: "Changelog",
 };

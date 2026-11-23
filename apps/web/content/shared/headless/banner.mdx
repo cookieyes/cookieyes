@@ -1,7 +1,7 @@
 ---
 title: Banner
 description: Build the consent banner with your own markup and classes, keeping CookieYes behaviour for showing, accepting, rejecting and translated text.
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -21,6 +21,12 @@ Render this in place of `<CookieBanner />`. `Banner.Root` decides when the banne
 <Framework when="nuxt">
 
 Write the banner as a component, then render it in place of `<CookieBanner />` inside `<CookieYesRoot>`. `Banner.Root` decides when the banner shows and hides, so keep it as the outer element.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Write the banner as a component, then render it in place of `<CookieBanner />` in the `ui` snippet of `<CookieYesRoot>`. `Banner.Root` decides when the banner shows and hides, so keep it as the outer element.
 
 </Framework>
 
@@ -158,6 +164,63 @@ Every piece is also exported on its own, as `BannerRoot`, `BannerTitle`, `Banner
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/lib/ConsentBanner.svelte"
+<script lang="ts">
+  import { Banner, useRegulation } from "@cookieyes/sveltekit";
+
+  const regulation = useRegulation();
+</script>
+
+<Banner.Root class="banner">
+  <Banner.Title class="banner-title" />
+  <Banner.Description class="banner-text" />
+  <Banner.Actions class="banner-actions">
+    {#if regulation.current === "CCPA"}
+      <Banner.DoNotSell class="btn" />
+    {:else}
+      <Banner.AcceptAll class="btn btn-primary" />
+      <Banner.RejectAll class="btn" />
+    {/if}
+    <Banner.OpenPreferences class="btn btn-link" />
+  </Banner.Actions>
+</Banner.Root>
+```
+
+Every piece is also exported on its own, as `BannerRoot`, `BannerTitle`, `BannerAcceptAll` and so on. Both name the same component; use whichever reads better.
+
+The `ui` snippet of `<CookieYesRoot>` replaces everything it renders by default, so list the other components you still want:
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieOptOut,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+  } from "@cookieyes/sveltekit";
+  import ConsentBanner from "../lib/ConsentBanner.svelte";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <ConsentBanner />
+    <CookiePreferences />
+    <CookieOptOut />
+    <RecallButton />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+Inside `<CookieYesRoot>` your banner gets the consent the handle read from the request, so a returning visitor gets no banner in the server HTML. `Banner.Root` moves itself into `#cookieyes-portal-root`, a child of `<body>`, once mounted.
+
+</Framework>
+
 <Framework when="nextjs react">
 
 Each piece renders with the translated text for the active language. Pass `children` to replace it with your own text.
@@ -170,7 +233,7 @@ Each piece renders with the translated text for the active language. Put your ow
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 Each piece renders with the translated text for the active language. Put your own content between its tags (its `children` snippet) to replace it.
 
@@ -197,7 +260,7 @@ Every piece takes `className`, `style` and the other props of the element it ren
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 Every piece takes `class`, `style` and the other attributes of the element it renders. The part names for CSS are the same as on [`CookieBanner`](/docs/components/cookie-banner#restyle-it).
 
@@ -249,6 +312,26 @@ Your own click handler, passed as `onclick`, runs first; call `event.preventDefa
 
 </Framework>
 
+<Framework when="sveltekit">
+
+Give a button piece a `child` snippet. It receives `{ props }`: the attributes and click handler of the piece. Spread them onto your own element, and the piece renders that instead of its own `<button>`:
+
+```svelte title="src/lib/AcceptLink.svelte"
+<script lang="ts">
+  import { Banner } from "@cookieyes/sveltekit";
+</script>
+
+<Banner.AcceptAll>
+  {#snippet child({ props })}
+    <a {...props} href="#accepted">Accept all</a>
+  {/snippet}
+</Banner.AcceptAll>
+```
+
+Your own click handler, passed as `onclick`, runs first; call `event.preventDefault()` in it to stop the consent action.
+
+</Framework>
+
 ## Common mistakes
 
 **The banner shows for visitors who already chose.**
@@ -268,7 +351,7 @@ Your component already renders a `<button>`. Add `as-child`.
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 **A button renders inside another button.**
 You put your button component between the piece's tags. Use a `child` snippet and spread `props` onto it.

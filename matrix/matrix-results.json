@@ -1,9 +1,9 @@
 {
   "$schema": "https://cookieyes.dev/schemas/peer-matrix-results.schema.json",
   "schemaVersion": 1,
-  "generatedAt": "2026-11-20T05:58:35.807Z",
-  "commit": "1f44002334bcf0e430b4b91100ba28b751db67df",
-  "matrixConfigHash": "sha256:d6cbd522e4b90dba5d776e7a2036e22d9a49f247be6bdfd2e43a2aff573360e4",
+  "generatedAt": "2026-11-20T10:53:39.002Z",
+  "commit": "a1ea05622a9199f9fbe44ef9c91e5526d17b9322",
+  "matrixConfigHash": "sha256:0860185dd0947135c5069cc19696dfd8239fb8cb5d84c2cd488ebc9b12c5d30b",
   "subset": "full",
   "dimensions": {
     "varied": ["framework"],
@@ -718,16 +718,352 @@
       },
       "notes": null,
       "logsArtifact": "local/svelte-5.57.3.log"
+    },
+    {
+      "id": "sveltekit-2.62.0-svelte-5.20.0",
+      "role": "floor",
+      "label": "SvelteKit 2.62.0 + Svelte 5.20.0 (declared floor)",
+      "app": "sveltekit",
+      "packagesUnderTest": ["@cookieyes/svelte", "@cookieyes/sveltekit"],
+      "requested": {
+        "kit": "2.62.0",
+        "svelte": "5.20.0",
+        "vite": "7.3.8",
+        "vitePluginSvelte": "6.2.4",
+        "adapterNode": "5.5.8",
+        "adapterStatic": "3.0.11"
+      },
+      "resolved": {
+        "kit": "2.62.0",
+        "svelte": "5.20.0",
+        "vite": "7.3.8",
+        "vitePluginSvelte": "6.2.4",
+        "adapterNode": "5.5.8",
+        "adapterStatic": "3.0.11"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-20T10:52:36.438Z",
+      "finishedAt": "2026-11-20T10:52:56.598Z",
+      "durationMs": 20160,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            },
+            {
+              "name": "stylesheet-route-serves-css",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-prerenders-banner-html",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-writes-stylesheet-file",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "root-shows-banner-to-fresh-visitor",
+              "outcome": "pass"
+            },
+            {
+              "name": "accept-writes-cookie-and-hides-banner",
+              "outcome": "pass"
+            },
+            {
+              "name": "child-snippet-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "child-snippet-click-commits-consent",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/sveltekit-2.62.0-svelte-5.20.0.log"
+    },
+    {
+      "id": "sveltekit-2.70.4-svelte-5.57.3",
+      "role": "middle",
+      "label": "SvelteKit 2.70.4 + Svelte 5.57.3",
+      "app": "sveltekit",
+      "packagesUnderTest": ["@cookieyes/svelte", "@cookieyes/sveltekit"],
+      "requested": {
+        "kit": "2.70.4",
+        "svelte": "5.57.3",
+        "vite": "8.3.7",
+        "vitePluginSvelte": "7.3.1",
+        "adapterNode": "5.5.8",
+        "adapterStatic": "3.0.11"
+      },
+      "resolved": {
+        "kit": "2.70.4",
+        "svelte": "5.57.3",
+        "vite": "8.3.7",
+        "vitePluginSvelte": "7.3.1",
+        "adapterNode": "5.5.8",
+        "adapterStatic": "3.0.11"
+      },
+      "node": "20",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-20T10:52:57.516Z",
+      "finishedAt": "2026-11-20T10:53:16.421Z",
+      "durationMs": 18904,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            },
+            {
+              "name": "stylesheet-route-serves-css",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-prerenders-banner-html",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-writes-stylesheet-file",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "root-shows-banner-to-fresh-visitor",
+              "outcome": "pass"
+            },
+            {
+              "name": "accept-writes-cookie-and-hides-banner",
+              "outcome": "pass"
+            },
+            {
+              "name": "child-snippet-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "child-snippet-click-commits-consent",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/sveltekit-2.70.4-svelte-5.57.3.log"
+    },
+    {
+      "id": "sveltekit-3.2.0-svelte-5.57.3",
+      "role": "newest",
+      "label": "SvelteKit 3.2.0 + Svelte 5.57.3",
+      "app": "sveltekit",
+      "packagesUnderTest": ["@cookieyes/svelte", "@cookieyes/sveltekit"],
+      "requested": {
+        "kit": "3.2.0",
+        "svelte": "5.57.3",
+        "vite": "8.3.7",
+        "vitePluginSvelte": "7.3.1",
+        "adapterNode": "6.0.2",
+        "adapterStatic": "4.0.1"
+      },
+      "resolved": {
+        "kit": "3.2.0",
+        "svelte": "5.57.3",
+        "vite": "8.3.7",
+        "vitePluginSvelte": "7.3.1",
+        "adapterNode": "6.0.2",
+        "adapterStatic": "4.0.1"
+      },
+      "node": "22",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-20T10:53:17.463Z",
+      "finishedAt": "2026-11-20T10:53:33.725Z",
+      "durationMs": 16262,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            },
+            {
+              "name": "stylesheet-route-serves-css",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-prerenders-banner-html",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "static-build-writes-stylesheet-file",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "root-shows-banner-to-fresh-visitor",
+              "outcome": "pass"
+            },
+            {
+              "name": "accept-writes-cookie-and-hides-banner",
+              "outcome": "pass"
+            },
+            {
+              "name": "child-snippet-renders-developer-element-with-part",
+              "outcome": "pass"
+            },
+            {
+              "name": "child-snippet-click-commits-consent",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/sveltekit-3.2.0-svelte-5.57.3.log"
     }
   ],
   "summary": {
-    "total": 9,
-    "pass": 9,
+    "total": 12,
+    "pass": 12,
     "fail": 0,
     "outcome": "pass"
   },
   "coverageLimits": [
     "No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).",
-    "Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, all with pnpm and moduleResolution=bundler."
+    "Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, SvelteKit on Node 20 and 22, all with pnpm and moduleResolution=bundler."
   ]
 }

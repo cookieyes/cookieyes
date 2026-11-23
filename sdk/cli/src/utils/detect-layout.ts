@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export type Layout = "src" | "root";
@@ -174,5 +174,62 @@ export function nuxtProjectPaths(cwd: string): NuxtProjectPaths {
     existingAppConfigLabel: existing === undefined ? null : `${prefix}${existing}`,
     appPath: join(cwd, prefix, "app.vue"),
     appLabel: `${prefix}app.vue`,
+  };
+}
+
+export type SveltekitProjectPaths = {
+  /** Whether the new files are TypeScript; decided by the hooks file or, failing that, a tsconfig. */
+  typescript: boolean;
+  configPath: string;
+  configLabel: string;
+  /** The `hooks.server.*` the project has, or the one to create. */
+  hooksPath: string;
+  hooksLabel: string;
+  hooksExists: boolean;
+  /** The `+layout.server.*` the project already has, which is never overwritten. */
+  existingLayoutServerLabel: string | null;
+  layoutServerPath: string;
+  layoutServerLabel: string;
+  stylesRoutePath: string;
+  stylesRouteLabel: string;
+  layoutPath: string;
+  appDtsPath: string;
+  /** Whether `svelte.config.*` names `adapter-static`, so no server runs and the page is built once. */
+  staticAdapter: boolean;
+};
+
+const SVELTEKIT_CONFIG_FILES = ["svelte.config.js", "svelte.config.ts", "svelte.config.mjs"];
+
+export function sveltekitProjectPaths(cwd: string): SveltekitProjectPaths {
+  const src = join(cwd, "src");
+  const hooks = ["ts", "js"].find((e) => existsSync(join(src, `hooks.server.${e}`)));
+  const typescript = hooks === undefined ? existsSync(join(cwd, "tsconfig.json")) : hooks === "ts";
+  const ext = typescript ? "ts" : "js";
+  const routes = join(src, "routes");
+  const existingLayoutServer = ["ts", "js"].find((e) =>
+    existsSync(join(routes, `+layout.server.${e}`)),
+  );
+  const staticAdapter = SVELTEKIT_CONFIG_FILES.some((f) => {
+    const path = join(cwd, f);
+    return existsSync(path) && /adapter-static/.test(readFileSync(path, "utf-8"));
+  });
+  return {
+    typescript,
+    configPath: join(src, "lib", `cookieyes.${ext}`),
+    configLabel: `src/lib/cookieyes.${ext}`,
+    hooksPath: join(src, `hooks.server.${hooks ?? ext}`),
+    hooksLabel: `src/hooks.server.${hooks ?? ext}`,
+    hooksExists: hooks !== undefined,
+    existingLayoutServerLabel:
+      existingLayoutServer === undefined
+        ? null
+        : `src/routes/+layout.server.${existingLayoutServer}`,
+    layoutServerPath: join(routes, `+layout.server.${ext}`),
+    layoutServerLabel: `src/routes/+layout.server.${ext}`,
+    stylesRoutePath: join(routes, "cookieyes", "styles.css", `+server.${ext}`),
+    stylesRouteLabel: `src/routes/cookieyes/styles.css/+server.${ext}`,
+    layoutPath: join(routes, "+layout.svelte"),
+    appDtsPath: join(src, "app.d.ts"),
+    staticAdapter,
   };
 }

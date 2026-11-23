@@ -40,8 +40,11 @@ next-env.d.ts
 .output-static/
 sdk/nuxt/test/fixtures/*/dist
 
-# `svelte-package` stages its output here before writing `dist` (sdk/svelte)
+# `svelte-package` stages its output here before writing `dist` (sdk/svelte), and Kit writes its
+# build state here (sdk/sveltekit test fixtures)
 .svelte-kit/
+# The adapter-node build of the sdk/sveltekit test fixture
+sdk/sveltekit/test/fixtures/*/build
 
 # Fumadocs generated content index (apps/web)
 .source/

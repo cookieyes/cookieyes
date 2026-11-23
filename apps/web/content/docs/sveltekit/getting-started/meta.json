@@ -1,0 +1,12 @@
+{
+  "title": "Getting Started",
+  "pages": [
+    "installation",
+    "quick-start",
+    "configuration",
+    "self-hosted",
+    "which-api"
+  ],
+  "defaultOpen": true,
+  "collapsible": false
+}

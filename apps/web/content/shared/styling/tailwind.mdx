@@ -1,7 +1,7 @@
 ---
 title: Tailwind
 description: Use Tailwind utilities with the banner and dialogs, in the right order.
-frameworks: [nextjs, react, vue, nuxt, svelte, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="core">
@@ -38,6 +38,17 @@ Import the SDK's stylesheet **after** Tailwind. Tailwind's preflight resets butt
 @import "tailwindcss";
 @import "@cookieyes/svelte/styles.css";
 ```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```css title="src/app.css"
+@import "tailwindcss";
+@import "@cookieyes/sveltekit/styles.css";
+```
+
+Import the file in `src/routes/+layout.svelte`. The handle still writes the SDK's critical CSS and stylesheet link right after `<meta charset>`, before Tailwind. The copy imported here comes after Tailwind, which is the order that counts; both copies hold the same rules.
 
 </Framework>
 
@@ -145,6 +156,39 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
+<Framework when="sveltekit">
+
+## Three ways to use utilities
+
+**On a component.** `class` is added to the component's own classes. Pass the components to `<CookieYesRoot>` in a `ui` snippet, which replaces the ones it renders by default, so list each one you want, and `<CookieOptOut />` too if a CCPA regulation can apply:
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+  } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <CookieBanner class="shadow-2xl ring-1 ring-black/5" />
+    <CookiePreferences />
+    <RecallButton />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+`RecallButton` is the exception: its `class` replaces the default class. Keep `cy-widget` if you want the default look: `<RecallButton class="cy-widget ring-2" />`.
+
+</Framework>
+
 <Framework when="nuxt">
 
 ## Three ways to use utilities
@@ -225,6 +269,23 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```css title="src/app.css"
+@import "tailwindcss";
+@import "@cookieyes/sveltekit/styles.css";
+
+[data-cy-part="banner"] {
+  @apply max-w-lg rounded-xl p-6 shadow-2xl;
+}
+
+[data-cy-part="accept-all"] {
+  @apply font-semibold;
+}
+```
+
+</Framework>
+
 <Framework when="nuxt">
 
 ```css title="app/assets/css/main.css"
@@ -259,7 +320,7 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
-<Framework when="nextjs react vue nuxt svelte">
+<Framework when="nextjs react vue nuxt svelte sveltekit">
 
 **On primitives.** Build the banner from [primitives](/docs/headless/banner) and put utilities straight on your elements.
 
@@ -276,7 +337,7 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 - Arbitrary values set the SDK's variables: `<CookieBanner class="[--cy-primary:#7c3aed]" />`. This works only while `primaryColor` is not set in `theme`.
 
@@ -298,7 +359,7 @@ Your CSS comes before `styles.css`, or the value is set in `theme`.
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 **A utility on `<CookieBanner>` does nothing.**
 Your CSS comes before `styles.css`, or the value is set in `theme`.
