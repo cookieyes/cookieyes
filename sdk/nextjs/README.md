@@ -372,7 +372,7 @@ there is nothing further to configure.
 
 This package re-exports the entire `@cookieyes/react` surface — the setup function
 (`initCookieYes`), components (`CookieBanner`, `CookiePreferences`, `CookieOptOut`,
-`RecallButton`, `GatedScript`, `GatedFrame`), headless primitives (`Banner`, `Preferences`,
+`RecallButton`, `GatedScript`, `GatedFrame`, `YouTubeEmbed`), headless primitives (`Banner`, `Preferences`,
 `OptOut`), and all hooks (`useConsent`, `useConsentActions`, …). `blockIframes()` blocks
 iframes in HTML you do not render yourself, such as CMS content; see
 [Block embeds](https://developers.cookieyes.com/docs/nextjs/embeds).

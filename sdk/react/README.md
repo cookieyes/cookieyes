@@ -222,6 +222,8 @@ full option reference (modes, `theme`, `i18n`, self-hosted persistence, callback
   ```
 
 - **`<GatedFrame />`** — blocks an iframe until its category is granted, showing a placeholder otherwise.
+- **`<YouTubeEmbed />`**: a YouTube video that contacts YouTube only after consent, with a placeholder
+  that looks like a video. See [YouTube](https://developers.cookieyes.com/docs/react/integrations/youtube).
 - **`blockIframes(manager, runtime)`**: does the same for iframes in HTML you do not render yourself
   (CMS or Markdown content), marked with `data-cy-src` and `data-cy-category`. See
   [Block embeds](https://developers.cookieyes.com/docs/react/embeds).

@@ -149,6 +149,8 @@ guard.
 
 `GatedScript` loads a script only after its category is granted. `GatedFrame` renders an embed
 the same way, and shows its `placeholder` slot until then.
+`YouTubeEmbed` is the ready-made version for a YouTube video; see
+[YouTube](https://developers.cookieyes.com/docs/vue/integrations/youtube).
 
 ## Styling and text
 
