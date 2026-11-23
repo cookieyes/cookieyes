@@ -160,7 +160,7 @@ export function patchSvelteMain(src: string): string | null {
  */
 export function patchSvelteApp(src: string): string | null {
   if (src.includes("CookieYesRoot")) return null;
-  const scripts = src.matchAll(/(<script\b([^>]*)>)([\s\S]*?)(<\/script\s*>)/gi);
+  const scripts = src.matchAll(/(<script\b([^>]*)>)([\s\S]*?)(<\/script\b[^>]*>)/gi);
   const script = [...scripts].find((m) => !/\b(?:module|context\s*=)/.test(m[2] ?? ""));
   if (!script) return null;
   const [whole, open = "", , body = "", close = ""] = script;
@@ -344,7 +344,7 @@ export function patchSveltekitHooks(src: string): string | null {
  */
 export function patchSveltekitLayout(src: string, withState: boolean): string | null {
   if (src.includes("CookieYesRoot")) return null;
-  const scripts = [...src.matchAll(/(<script\b([^>]*)>)([\s\S]*?)(<\/script\s*>)/gi)];
+  const scripts = [...src.matchAll(/(<script\b([^>]*)>)([\s\S]*?)(<\/script\b[^>]*>)/gi)];
   const script = scripts.find((m) => !/\b(?:module|context\s*=)/.test(m[2] ?? ""));
   if (!script) return null;
   const [whole, open = "", , body = "", close = ""] = script;
