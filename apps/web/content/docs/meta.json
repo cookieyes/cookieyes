@@ -6,6 +6,7 @@
     "vue",
     "nuxt",
     "svelte",
+    "sveltekit",
     "core",
     "changelog"
   ]

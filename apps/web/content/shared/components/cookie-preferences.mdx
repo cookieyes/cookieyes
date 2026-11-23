@@ -1,7 +1,7 @@
 ---
 title: CookiePreferences
 description: The dialog where a visitor turns each cookie category on or off.
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -54,6 +54,35 @@ In Nuxt, `<CookieYesRoot />` renders it for you. If you list the components insi
 
 </Framework>
 
+<Framework when="sveltekit">
+
+In SvelteKit, `<CookieYesRoot>` renders it for you. If you render the components in a `ui` snippet of `<CookieYesRoot>` yourself, the snippet replaces the stock contents, so keep the dialog there:
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+  } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <CookieBanner />
+    <CookiePreferences />
+    <RecallButton />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+</Framework>
+
 ## Change what it shows
 
 <Framework when="nextjs react">
@@ -77,6 +106,12 @@ Nothing on the dialog is set through props. Everything comes from the `cookieyes
 <Framework when="svelte">
 
 Nothing on the dialog is set through props. Everything comes from the `config` you pass to `<CookieYesProvider>`:
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Nothing on the dialog is set through props. Everything comes from the config in `src/lib/cookieyes.ts`:
 
 </Framework>
 
@@ -157,6 +192,22 @@ Render it anywhere inside `<CookieYesProvider>`: `useConsentActions` runs while 
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/lib/CookieSettingsLink.svelte"
+<script lang="ts">
+  import { useConsentActions } from "@cookieyes/sveltekit";
+
+  const { showPreferences } = useConsentActions();
+</script>
+
+<button type="button" onclick={showPreferences}>Cookie settings</button>
+```
+
+Render it in any page or layout inside `<CookieYesRoot>`: `useConsentActions` runs while the component initialises and throws without `<CookieYesRoot>` above it.
+
+</Framework>
+
 ## Restyle it
 
 <Framework when="nextjs react">
@@ -165,7 +216,7 @@ It accepts `className` and `style` like any element; they are added to the dialo
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 It accepts `class` and `style` like any element; they land on the dialog card and are added to its own styling. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`overlay`, `root`, `title`, `close`, `intro`, `category`, `categoryLabel`, `categoryDescription`, `toggle`, `acceptAll`, `rejectAll`, `save`, `branding`). Or use its `data-cy-part` in your CSS:
 

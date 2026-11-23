@@ -1,14 +1,14 @@
 ---
 title: Block embeds
 description: Load YouTube videos, maps and other iframes only after the visitor consents, on any site.
-frameworks: [nextjs, react, vue, nuxt, svelte, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 ## What it does
 
 `blockIframes()` keeps an iframe empty until the visitor grants its category, and shows a placeholder in its place. It works on any HTML: your own templates, CMS content, Markdown, or a page with no framework at all.
 
-<Framework when="nextjs react vue nuxt svelte">
+<Framework when="nextjs react vue nuxt svelte sveltekit">
 
 For an iframe you render in a component, [`GatedFrame`](/docs/components/gated-frame) is simpler. Use `blockIframes()` for iframes in HTML you do not render yourself, such as CMS or Markdown content.
 
@@ -148,6 +148,24 @@ Render `<EmbedBlocker />` once, inside `<CookieYesProvider>` next to `<CookieBan
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/lib/EmbedBlocker.svelte"
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { blockIframes, getCookieYes } from "@cookieyes/sveltekit";
+
+  onMount(() => {
+    const cookieYes = getCookieYes();
+    return blockIframes(cookieYes.manager, cookieYes);
+  });
+</script>
+```
+
+Render `<EmbedBlocker />` once in `src/routes/+layout.svelte`, inside `<CookieYesRoot>` next to `{@render children()}`, so it stays mounted across navigation. `onMount` runs only in the browser, so the blocker never starts during server rendering, and the function it returns stops the blocker when the component is destroyed. Apps that never import `blockIframes` do not download it.
+
+</Framework>
+
 Each marked iframe loads once its category is granted, and is emptied again if the visitor withdraws consent. The blocker watches the page, so iframes added later, by a client-side route or content loaded on scroll, are handled too.
 
 ## The placeholder
@@ -228,9 +246,16 @@ The address is in `src`. Move it to `data-cy-src`. The blocker stops the rest of
 
 </Framework>
 
+<Framework when="sveltekit">
+
+**Nothing is blocked and no placeholder appears.**
+`<EmbedBlocker />` is not rendered. Render it once in `src/routes/+layout.svelte`, inside `<CookieYesRoot>`.
+
+</Framework>
+
 ## Next steps
 
-<Framework when="nextjs react vue svelte">
+<Framework when="nextjs react vue svelte sveltekit">
 
 - [GatedFrame](/docs/components/gated-frame): an iframe you render in a component
 - [Network blocking](/docs/network-blocking): requests that scripts make on their own

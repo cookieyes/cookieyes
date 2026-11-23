@@ -1,7 +1,7 @@
 ---
 title: Focused hooks
 description: "Ten small hooks that each answer one question: is this category granted, which law applies, is the banner showing, and more."
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What they are
@@ -27,6 +27,12 @@ frameworks: [nextjs, react, vue, nuxt, svelte]
 <Framework when="svelte">
 
 [`useConsent()`](/docs/hooks/use-consent) gives you everything and updates on every change. The hooks on this page each answer one question. A hook that answers with one value (`useConsentCategory`, `useRegulation`, `useBannerVisibility`, `usePreferencesOpen`, `useOptOutOpen`) returns it as `{ current }`, because a function cannot return a reactive value; the Returns column is the type of `current`. The others return an object whose fields stay reactive when read in a template or a `$derived`; destructuring reads them once. Every one of them throws if no `<CookieYesProvider>` is above the component, and must be called while the component initialises.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+[`useConsent()`](/docs/hooks/use-consent) gives you everything and updates on every change. The hooks on this page each answer one question. A hook that answers with one value (`useConsentCategory`, `useRegulation`, `useBannerVisibility`, `usePreferencesOpen`, `useOptOutOpen`) returns it as `{ current }`, because a function cannot return a reactive value; the Returns column is the type of `current`. The others return an object whose fields stay reactive when read in a template or a `$derived`; destructuring reads them once. Every one of them throws if the component is not rendered inside `<CookieYesRoot>`, and must be called while the component initialises.
 
 </Framework>
 
@@ -116,6 +122,26 @@ The category can also be a getter, such as `useConsentCategory(() => category)` 
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/lib/AnalyticsWidget.svelte"
+<script lang="ts">
+  import { useConsentCategory } from "@cookieyes/sveltekit";
+
+  const allowed = useConsentCategory("analytics");
+</script>
+
+{#if allowed.current}
+  <iframe title="Dashboard" src="https://analytics.example.com/embed"></iframe>
+{:else}
+  <p>Enable analytics cookies to see your dashboard.</p>
+{/if}
+```
+
+The category can also be a getter, such as `useConsentCategory(() => category)` for a `category` prop, so it stays reactive.
+
+</Framework>
+
 `useConsentCategory` reads the **saved** value, so a switch flipped in the dialog but not saved changes nothing here. For an `<iframe>` with a ready-made placeholder, [`GatedFrame`](/docs/components/gated-frame) does this for you.
 
 ## Which law applies, and why
@@ -138,7 +164,7 @@ The category can also be a getter, such as `useConsentCategory(() => category)` 
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 `useCategories()` returns your configured categories in order (`list`), their ids, the ids that are always on (`requiredIds`), and `isDefault`, which is `true` when the built-in five are in effect. Render from `list` rather than writing the five names by hand, so custom categories appear automatically. The list is fixed when the runtime starts, so it is a plain object that never changes.
 
@@ -164,7 +190,7 @@ The category can also be a getter, such as `useConsentCategory(() => category)` 
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 `useTranslations()` returns the text for the active language, the same strings the components show, and updates when the language changes. `useLanguage()` returns the active `language`, its `direction` for right-to-left layouts and the loaded `languages` as reactive fields, plus `setLanguage(tag)`, which returns a promise. [Translations](/docs/translations) has a picker built on it.
 

@@ -1,7 +1,7 @@
 ---
 title: Configuration
 description: Every option of initCookieYes(), grouped by what it changes.
-frameworks: [nextjs, react, vue, nuxt, svelte, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="nextjs react core">
@@ -55,6 +55,24 @@ The provider reads the config once, when it starts the runtime. Keep it in this 
 
 </Framework>
 
+<Framework when="sveltekit">
+
+`src/lib/cookieyes.ts` is the one place you configure CookieYes. `mode` is the only required option; everything else has a sensible default. The config is the same `CookieYesConfig` that `initCookieYes()` takes in the other packages.
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  theme: { primaryColor: "#1863dc" },
+};
+```
+
+`cookieyesHandle(config)` in `src/hooks.server.ts` and `<CookieYesRoot {config}>` in `src/routes/+layout.svelte` both import this object, so the server and the browser run the same options. The config never travels in `data`: SvelteKit serialises what a server `load` returns, so `loadConsent` hands over only what the server read, and options that hold functions, such as `integrations` and callbacks, come from this module on each side.
+
+</Framework>
+
 <Framework when="nuxt">
 
 The `cookieyes` key in `nuxt.config.ts` is where you configure CookieYes. It takes the same `CookieYesConfig` that `initCookieYes()` takes in the other packages. `mode` defaults to `"cookie-only"` here, so no option is required.
@@ -100,6 +118,28 @@ Two options exist only in the Nuxt module, under `cookieyes` in `nuxt.config.ts`
 
 </Framework>
 
+<Framework when="sveltekit">
+
+### Handle options
+
+Two options exist only in `cookieyesHandle`. Pass them next to the shared config:
+
+```ts title="src/hooks.server.ts"
+import { cookieyesHandle } from "@cookieyes/sveltekit";
+import { config } from "./lib/cookieyes";
+
+export const handle = cookieyesHandle({ ...config, googleConsentMode: true });
+```
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `stylesHref` | `"/cookieyes/styles.css"` | The path the stylesheet route is mounted at. The handle links the full stylesheet from there. |
+| `googleConsentMode` | not set | `true`, or Consent Mode options, adds Google's deny-by-default snippet right after `<meta charset>`, before any Google tag. See [Google Consent Mode](/docs/integrations/google-consent-mode). |
+
+The handle composes with your own: `export const handle = sequence(cookieyesHandle(config), yourHandle)`, with `sequence` from `@sveltejs/kit/hooks`. A `transformPageChunk` of yours still runs.
+
+</Framework>
+
 ### Setup
 
 <ConfigOptionsTable group="setup" />
@@ -122,7 +162,7 @@ Two options exist only in the Nuxt module, under `cookieyes` in `nuxt.config.ts`
 
 ### `theme`
 
-<Framework when="nextjs react vue nuxt svelte">
+<Framework when="nextjs react vue nuxt svelte sveltekit">
 
 Nine keys for colour, corner radius and font. Each is listed with its default on [Theme tokens](/docs/styling/theme-tokens).
 
@@ -144,9 +184,15 @@ Put `region.map` in `nuxt.config.ts`. On a page the server renders per request, 
 
 </Framework>
 
+<Framework when="sveltekit">
+
+On a page the server renders per request, the handle reads the region from the Vercel (`x-vercel-ip-country`, `x-vercel-ip-country-region`) or Cloudflare (`cf-ipcountry`) geo headers, and those headers are the only region source, for the banner and for the browser alike. A `region.detect` of yours is used only where the server reads nothing (a prerendered page, or `<CookieYesRoot>` rendered without `state`), once the page has loaded. Until then such a page shows the banner of the strictest regulation.
+
+</Framework>
+
 ### `i18n`
 
-<Framework when="nextjs react vue nuxt svelte">
+<Framework when="nextjs react vue nuxt svelte sveltekit">
 
 `messages` per language, `locale`, `detectBrowserLanguage` and `loadLanguage`. See [Translations](/docs/translations).
 
@@ -178,6 +224,12 @@ Put `region.map` in `nuxt.config.ts`. On a page the server renders per request, 
 
 </Framework>
 
+<Framework when="sveltekit">
+
+`rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Needs `registerNetworkBlocker()` called once in `src/lib/cookieyes.ts`, before `<CookieYesRoot>` starts the runtime. See [Network blocking](/docs/network-blocking).
+
+</Framework>
+
 <Framework when="nuxt">
 
 `rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Put `rules` in `nuxt.config.ts`: the module finds them there when it builds, registers the blocker itself and bundles it only then. `onRequestBlocked` is a function, so it goes in `app/app.config.ts`. See [Network blocking](/docs/network-blocking).
@@ -202,7 +254,7 @@ Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens 
 
 </Framework>
 
-<Framework when="nuxt">
+<Framework when="nuxt sveltekit">
 
 Under `"CCPA"`, `<CookieYesRoot />` renders `<CookieOptOut />` for you, and so it does when `region` can resolve to `"CCPA"`: Do Not Sell opens it.
 
@@ -266,6 +318,23 @@ export const config: CookieYesConfig = {
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  categories: [
+    { id: "necessary", required: true, label: "Essential" },
+    { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+    { id: "marketing", label: "Marketing", gcm: ["ad_storage", "ad_user_data"] },
+  ],
+};
+```
+
+</Framework>
+
 <Framework when="nuxt">
 
 ```ts title="nuxt.config.ts"
@@ -304,7 +373,7 @@ Your `categories` list broke one of the rules above; the console warning says wh
 
 ## Next steps
 
-<Framework when="nextjs react vue nuxt svelte">
+<Framework when="nextjs react vue nuxt svelte sveltekit">
 
 - [Translations](/docs/translations): every text in every language, through `i18n`
 - [Theme tokens](/docs/styling/theme-tokens): what each `theme` value changes

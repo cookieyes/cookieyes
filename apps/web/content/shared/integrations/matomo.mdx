@@ -1,7 +1,7 @@
 ---
 title: Matomo
 description: Load Matomo only after analytics consent, or count visits without cookies until the visitor decides, and stop at once when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, svelte, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 `matomoAnalytics()` loads Matomo after the visitor grants the analytics category. When consent is withdrawn, Matomo stops sending and its cookies are deleted at once, with no page reload. A second mode counts visits without cookies until the visitor decides; see [Consent modes](#consent-modes).
@@ -26,6 +26,11 @@ Install the integrations package and add `matomoAnalytics()` to `cookieyes.integ
 <Framework when="svelte">
 
 Install the integrations package and add `matomoAnalytics()` to the config you pass to `<CookieYesProvider>`. `matomoUrl` is the `u` value in the snippet Matomo gives you, and `siteId` the `setSiteId` value:
+
+</Framework>
+<Framework when="sveltekit">
+
+Install the integrations package and add `matomoAnalytics()` to the config in `src/lib/cookieyes.ts`. `matomoUrl` is the `u` value in the snippet Matomo gives you, and `siteId` the `setSiteId` value:
 
 </Framework>
 
@@ -90,6 +95,22 @@ export default defineAppConfig({
 
 ```ts title="src/lib/cookieyes.ts"
 import type { CookieYesConfig } from "@cookieyes/svelte";
+import { matomoAnalytics } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [matomoAnalytics({ matomoUrl: "https://example.matomo.cloud", siteId: 1 })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
 import { matomoAnalytics } from "@cookieyes/scripts";
 
 export const config: CookieYesConfig = {
@@ -226,6 +247,25 @@ Render `<MatomoPageViews />` once in `app/app.vue`, next to `<NuxtPage />`.
 <Framework when="svelte">
 
 Svelte has no router of its own. Call `matomoPageView()` from your router's navigation callback, after each client-side route change. Skip the first page: the integration counts it.
+
+</Framework>
+<Framework when="sveltekit">
+
+With SvelteKit's router:
+
+```svelte title="src/lib/MatomoPageViews.svelte"
+<script lang="ts">
+  import { afterNavigate } from "$app/navigation";
+  import { matomoPageView } from "@cookieyes/scripts";
+
+  afterNavigate(({ type }) => {
+    // "enter" is the first page, which the integration counts.
+    if (type !== "enter") matomoPageView();
+  });
+</script>
+```
+
+Render `<MatomoPageViews />` once in `src/routes/+layout.svelte`, inside `<CookieYesRoot>`.
 
 </Framework>
 <Framework when="core">
