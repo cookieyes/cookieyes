@@ -32,7 +32,7 @@
 You probably do not need to install this package yourself.
 
 - **React or Next.js:** use `@cookieyes/react` or `@cookieyes/nextjs`. They are built on this package.
-- **No framework, or a framework without an adapter yet:** use `@cookieyes/vanilla`, which draws the banner from this package. Vue 3 has its own adapter, `@cookieyes/vue`, and Nuxt 4 a module over it, `@cookieyes/nuxt`. Svelte 5 has `@cookieyes/svelte`.
+- **No framework, or a framework without an adapter yet:** use `@cookieyes/vanilla`, which draws the banner from this package. Vue 3 has its own adapter, `@cookieyes/vue`, and Nuxt 4 a module over it, `@cookieyes/nuxt`. Svelte 5 has `@cookieyes/svelte`, and SvelteKit a package over it, `@cookieyes/sveltekit`.
 - **Building an adapter for another framework:** this package is for you.
 
 Consent decisions (what is granted, what loads, what is stored) are not here. They live in

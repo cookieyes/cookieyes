@@ -1,20 +1,20 @@
 ---
 name: install-consent-banner
-description: "Add the CookieYes consent banner to a Next.js, React, Vue, Nuxt, Svelte or plain JavaScript site with the open-source @cookieyes packages: install, initialise, render, verify."
+description: "Add the CookieYes consent banner to a Next.js, React, Vue, Nuxt, Svelte, SvelteKit or plain JavaScript site with the open-source @cookieyes packages: install, initialise, render, verify."
 ---
 
 # Install the CookieYes consent banner
 
-Use this when someone wants a cookie consent banner in a Next.js, React, Vue, Nuxt, Svelte or plain JavaScript project, without a hosted service or an account. The packages are open source (Apache-2.0), run in the frontend and store the visitor's choice in a cookie. Full docs: https://developers.cookieyes.com/docs/nextjs (switch the framework in the sidebar).
+Use this when someone wants a cookie consent banner in a Next.js, React, Vue, Nuxt, Svelte, SvelteKit or plain JavaScript project, without a hosted service or an account. The packages are open source (Apache-2.0), run in the frontend and store the visitor's choice in a cookie. Full docs: https://developers.cookieyes.com/docs/nextjs (switch the framework in the sidebar).
 
 ## Decide two things first
 
-1. **Regulation**: `"GDPR"` (opt-in, most sites) or `"CCPA"` (California-style opt-out). It applies to every visitor, so pick the strictest law your visitors fall under. To choose per visitor by country, set the `region` option instead (see the configuration docs); a manual `regulation` always wins over `region`. Under `"CCPA"` in React, Next.js or Svelte, also render `<CookieOptOut />` next to `<CookieBanner />`: the Do Not Sell button opens it.
+1. **Regulation**: `"GDPR"` (opt-in, most sites) or `"CCPA"` (California-style opt-out). It applies to every visitor, so pick the strictest law your visitors fall under. To choose per visitor by country, set the `region` option instead (see the configuration docs); a manual `regulation` always wins over `region`. Under `"CCPA"` in React, Next.js or Svelte (not SvelteKit, whose root adds it), also render `<CookieOptOut />` next to `<CookieBanner />`: the Do Not Sell button opens it.
 2. **Mode**: `"cookie-only"` (default, no backend) or `"self-hosted"` with an `apiUrl`, only if a server-side record of each consent is required; `@cookieyes/backend` is a ready-made server that receives those records.
 
 ## Fastest path: the CLI
 
-In an existing Next.js, React, Vue, Nuxt or Svelte (Vite) project, run:
+In an existing Next.js, React, Vue, Nuxt, Svelte (Vite) or SvelteKit project, run:
 
 ```bash
 npx @cookieyes/cli init
@@ -177,7 +177,49 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 </CookieYesProvider>
 ```
 
-In an existing Svelte project built with Vite, `npx @cookieyes/cli init` writes these files and wires them in (it does not set up SvelteKit). Otherwise add `import "@cookieyes/svelte/styles.css";` to `src/main.ts` and wrap the page content in `<CookieYesRoot>` once in `src/App.svelte`, so components inside it can use the hooks. Under `"CCPA"`, also render `<CookieOptOut />` next to `<CookieBanner />`.
+In an existing Svelte project built with Vite, `npx @cookieyes/cli init` writes these files and wires them in. Otherwise add `import "@cookieyes/svelte/styles.css";` to `src/main.ts` and wrap the page content in `<CookieYesRoot>` once in `src/App.svelte`, so components inside it can use the hooks. Under `"CCPA"`, also render `<CookieOptOut />` next to `<CookieBanner />`.
+
+### SvelteKit
+
+```bash
+npm install @cookieyes/sveltekit
+```
+
+Needs SvelteKit 2.62 or later (or 3) and Svelte 5.20 or later. One shared config module, read by the server and the browser:
+
+```ts title="src/lib/cookieyes.ts" check="false"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+
+export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR" };
+```
+
+```ts title="src/hooks.server.ts" check="false"
+import { cookieyesHandle } from "@cookieyes/sveltekit";
+import { config } from "./lib/cookieyes";
+
+export const handle = cookieyesHandle(config);
+```
+
+```ts title="src/routes/+layout.server.ts" check="false"
+import { loadConsent } from "@cookieyes/sveltekit";
+
+export const load = loadConsent;
+```
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import { CookieYesRoot } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {@render children()}
+</CookieYesRoot>
+```
+
+Also add `src/routes/cookieyes/styles.css/+server.ts` containing `export { GET } from "@cookieyes/sveltekit/styles-route";` (plus `export const prerender = true;` with `adapter-static`), and `/// <reference types="@cookieyes/sveltekit" />` in `src/app.d.ts`. There is no stylesheet import: the handle writes the critical CSS into the head and links the route. The handle reads the consent cookie and the Vercel and Cloudflare geo headers, so a returning visitor gets no banner in the HTML. If a `handle` already exists, combine them with `sequence(cookieyesHandle(config), handle)`. `npx @cookieyes/cli init` sets all of this up in an existing SvelteKit project.
 
 ### Plain JavaScript, Angular
 
@@ -206,7 +248,7 @@ Import this file once from the page's entry script. `start` draws the same banne
 ## Common mistakes
 
 - **Banner renders as plain text**: the `styles.css` import is missing.
-- **Nothing renders and no error**: `<CookieYesRoot />` is not rendered anywhere, so `initCookieYes()` never ran. In Vue the composables throw instead if `app.use(CookieYes, config)` never ran, and in Svelte the hooks throw if no `<CookieYesProvider>` is above the component.
+- **Nothing renders and no error**: `<CookieYesRoot />` is not rendered anywhere, so `initCookieYes()` never ran. In Vue the composables throw instead if `app.use(CookieYes, config)` never ran, and in Svelte the hooks throw if no `<CookieYesProvider>` is above the component (in SvelteKit, if the page is rendered outside `<CookieYesRoot>`).
 - **An integration or callback set in `nuxt.config.ts` silently does nothing** (Nuxt): runtime config drops functions. Move it under `cookieyes` in `app/app.config.ts`; the module warns about this in development.
 - **"You're importing a component that needs use client"** (Next.js): the consent file lost its `"use client"` line, or `initCookieYes()` was called in the layout.
 - **Set `regulation` to `"GDPR"` or `"CCPA"`**, or leave it out to behave as GDPR.
