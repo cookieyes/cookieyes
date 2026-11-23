@@ -61,13 +61,10 @@ export function GatedFrame({ src, category, placeholder, ...rest }: GatedFramePr
     }, [src, category]);
   }
 
-  // Latch: once loaded under a committed grant, keep the iframe for the rest of
-  // the session. Revoking doesn't swap it back to the placeholder mid-session;
-  // the block takes effect on the next page load (when `allowed` starts false).
-  const everAllowed = useRef(false);
-  if (mounted && allowed) everAllowed.current = true;
-
-  if (mounted && everAllowed.current) return <iframe src={src} {...rest} />;
+  // Follows the saved choice in both directions: withdrawing the category
+  // swaps the iframe back to the placeholder, which unloads the embed at once,
+  // the same as `blockIframes()` in core.
+  if (mounted && allowed) return <iframe src={src} {...rest} />;
 
   return (
     <div ref={containerRef} className="cy-frame-placeholder">

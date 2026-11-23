@@ -242,7 +242,9 @@ To only change the default text, set `gatedFrame.placeholder` and `gatedFrame.ac
 
 ## Good to know
 
-Give the placeholder the same size as the iframe, or the page jumps when it swaps. Once the iframe has appeared, withdrawing consent does not remove it in the current page; it is blocked again on the next page load.
+Give the placeholder the same size as the iframe, or the page jumps when it swaps.
+
+When the visitor withdraws the category, the iframe is removed and the placeholder comes back, without a page reload. Cookies and other data the embed already stored in the browser stay: they belong to the embed's site, and your page cannot delete them. If the visitor accepts again, the embed loads again from the start.
 
 ## Common mistakes
 
