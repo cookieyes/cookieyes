@@ -1,6 +1,6 @@
 import { readServerConsent } from "@cookieyes/svelte";
 import type { hydrate } from "svelte";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CookieYesRequestState } from "../server-consent.js";
 import { type PageSpec, renderOnServer, useServerRenderer } from "./ssr-render.js";
 
@@ -15,6 +15,10 @@ const mounted: { app: ReturnType<typeof hydrate>; unmount: (app: never) => unkno
 const tick = async () => (await import("svelte")).tick();
 
 useServerRenderer();
+
+// The worker compiles the client fixture on its first import, which used to land inside the first
+// test's timeout. `vi.resetModules` keeps Vite's compiled modules, so the later tests skip it.
+beforeAll(load, 60_000);
 
 beforeEach(() => {
   vi.resetModules();
