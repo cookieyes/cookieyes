@@ -23,7 +23,7 @@ Put the address in `data-cy-src` instead of `src`, and the category in `data-cy-
 ```html
 <iframe
   data-cy-src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
-  data-cy-category="functional"
+  data-cy-category="advertisement"
   width="560"
   height="315"
   title="Product tour"
@@ -35,7 +35,7 @@ Keep the address out of `src`. The browser starts loading `src` as soon as it re
 | Attribute | | What it does |
 | --- | --- | --- |
 | `data-cy-src` | Required | The iframe's address, loaded only after consent |
-| `data-cy-category` | Required | The category the visitor must grant, such as `functional` |
+| `data-cy-category` | Required | The category the visitor must grant, such as `advertisement` |
 | `data-cy-provider` | Optional | The provider's name in the [placeholder](#the-placeholder). Not needed for YouTube and Vimeo |
 | `data-cy-privacy-url` | Optional | A link to the provider's privacy policy in the placeholder. Not needed for YouTube and Vimeo |
 
@@ -179,7 +179,7 @@ The placeholder is drawn inside the iframe, so your page's CSS cannot restyle it
 ```html
 <iframe
   data-cy-src="https://www.youtube-nocookie.com/embed/VIDEO_ID"
-  data-cy-category="functional"
+  data-cy-category="advertisement"
   width="560"
   height="315"
   title="Video title"
@@ -189,7 +189,26 @@ The placeholder is drawn inside the iframe, so your page's CSS cannot restyle it
 ```
 
 - Use `youtube-nocookie.com`, YouTube's privacy-enhanced mode. It stores less about the visitor before they press play, but it still stores data in the browser and contacts Google, so it still needs consent.
+- Use the `advertisement` category: YouTube's player can set advertising cookies.
 - Copy `allow` and `allowfullscreen` from YouTube's own embed code. Without them, full screen and some player features do not work.
+
+<Framework when="nextjs react vue svelte">
+
+`youTubeEmbedUrl({ videoId: "VIDEO_ID" })` returns this address, for a video, a Short or a playlist. It is exported from the same package as `blockIframes`. For a video you render in a component, [YouTubeEmbed](/docs/integrations/youtube) does all of this for you.
+
+</Framework>
+
+<Framework when="nuxt">
+
+`youTubeEmbedUrl({ videoId: "VIDEO_ID" })` returns this address, for a video, a Short or a playlist. It is auto-imported. For a video you render in a component, [YouTubeEmbed](/docs/integrations/youtube) does all of this for you.
+
+</Framework>
+
+<Framework when="core">
+
+`youTubeEmbedUrl({ videoId: "VIDEO_ID" })` from `@cookieyes/core` returns this address, for a video, a Short or a playlist.
+
+</Framework>
 
 ## Good to know
 

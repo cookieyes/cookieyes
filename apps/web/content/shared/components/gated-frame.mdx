@@ -8,7 +8,7 @@ frameworks: [nextjs, react, vue, nuxt, svelte]
 
 Renders a placeholder instead of the iframe until its category is granted. The placeholder says which cookies are needed and has a button that opens the preferences dialog. Once the visitor agrees, the iframe appears in its place, without a reload.
 
-Use it for embeds that set cookies: YouTube, Vimeo, Google Maps, Spotify, social posts, Calendly. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds).
+Use it for embeds that set cookies: YouTube, Vimeo, Google Maps, Spotify, social posts, Calendly. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds). For a YouTube video, [YouTubeEmbed](/docs/integrations/youtube) adds a placeholder that looks like a video and YouTube's own settings on top of this component.
 
 ## Add it
 
@@ -22,8 +22,8 @@ import { GatedFrame } from "@cookieyes/react";
 export function VideoEmbed() {
   return (
     <GatedFrame
-      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-      category="functional"
+      src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+      category="advertisement"
       width={560}
       height={315}
       title="Product tour"
@@ -43,8 +43,8 @@ import { GatedFrame } from "@cookieyes/vue";
 
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-    category="functional"
+    src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+    category="advertisement"
     :width="560"
     :height="315"
     title="Product tour"
@@ -59,8 +59,8 @@ import { GatedFrame } from "@cookieyes/vue";
 ```vue title="app/components/VideoEmbed.vue"
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-    category="functional"
+    src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+    category="advertisement"
     :width="560"
     :height="315"
     title="Product tour"
@@ -80,8 +80,8 @@ import { GatedFrame } from "@cookieyes/vue";
 </script>
 
 <GatedFrame
-  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-  category="functional"
+  src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  category="advertisement"
   width={560}
   height={315}
   title="Product tour"
@@ -92,7 +92,7 @@ Render `<VideoEmbed />` inside `<CookieYesProvider>`.
 
 </Framework>
 
-Video and map embeds are usually `functional`; social and ad embeds are usually `advertisement`. The category must exist in your `categories` list.
+Embeds that can set advertising cookies, such as YouTube, social posts and ad players, are `advertisement`. Embeds that only need to work, such as a map or a calendar, are `functional`. The category must exist in your `categories` list.
 
 ## Props
 
@@ -131,7 +131,7 @@ function VideoPlaceholder() {
   const { showPreferences } = useConsentActions();
   return (
     <div className="video-placeholder">
-      <p>This video is hosted by YouTube and needs functional cookies.</p>
+      <p>This video is hosted by YouTube and needs advertisement cookies.</p>
       <button type="button" onClick={showPreferences}>
         Cookie settings
       </button>
@@ -142,8 +142,8 @@ function VideoPlaceholder() {
 export function VideoEmbed() {
   return (
     <GatedFrame
-      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-      category="functional"
+      src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+      category="advertisement"
       width={560}
       height={315}
       title="Product tour"
@@ -166,15 +166,15 @@ const { showPreferences } = useConsentActions();
 
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-    category="functional"
+    src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+    category="advertisement"
     :width="560"
     :height="315"
     title="Product tour"
   >
     <template #placeholder>
       <div class="video-placeholder">
-        <p>This video is hosted by YouTube and needs functional cookies.</p>
+        <p>This video is hosted by YouTube and needs advertisement cookies.</p>
         <button type="button" @click="showPreferences">Cookie settings</button>
       </div>
     </template>
@@ -193,15 +193,15 @@ const { showPreferences } = useConsentActions();
 
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-    category="functional"
+    src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+    category="advertisement"
     :width="560"
     :height="315"
     title="Product tour"
   >
     <template #placeholder>
       <div class="video-placeholder">
-        <p>This video is hosted by YouTube and needs functional cookies.</p>
+        <p>This video is hosted by YouTube and needs advertisement cookies.</p>
         <button type="button" @click="showPreferences">Cookie settings</button>
       </div>
     </template>
@@ -221,15 +221,15 @@ const { showPreferences } = useConsentActions();
 </script>
 
 <GatedFrame
-  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-  category="functional"
+  src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  category="advertisement"
   width={560}
   height={315}
   title="Product tour"
 >
   {#snippet placeholder()}
     <div class="video-placeholder">
-      <p>This video is hosted by YouTube and needs functional cookies.</p>
+      <p>This video is hosted by YouTube and needs advertisement cookies.</p>
       <button type="button" onclick={showPreferences}>Cookie settings</button>
     </div>
   {/snippet}

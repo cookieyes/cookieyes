@@ -17,6 +17,8 @@
     "posthog",
     "segment",
     "tiktok-pixel",
+    "--- Embeds ---",
+    "youtube",
     "--- Build your own ---",
     "custom-integration"
   ]

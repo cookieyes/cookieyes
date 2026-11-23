@@ -87,6 +87,7 @@ const ENABLED_FILES = [
   "integrations/matomo.mdx",
   "integrations/microsoft-uet.mdx",
   "integrations/tiktok-pixel.mdx",
+  "integrations/youtube.mdx",
   "integrations/mixpanel.mdx",
   "integrations/meta-pixel.mdx",
   "integrations/microsoft-clarity.mdx",
