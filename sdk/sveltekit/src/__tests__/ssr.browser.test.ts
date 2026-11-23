@@ -89,9 +89,16 @@ async function consentMarkup(page: Page): Promise<string> {
   return page.evaluate(() => {
     const parts = document.querySelectorAll('.cy-banner-wrap, [data-cy-part="recall"]');
     return Array.from(parts)
-      .map((el) => el.outerHTML)
+      .map((el) => {
+        // Removed as nodes from a copy: a regex over the HTML misses a comment that spans lines.
+        const copy = el.cloneNode(true) as Element;
+        const walker = document.createTreeWalker(copy, NodeFilter.SHOW_COMMENT);
+        const comments: Node[] = [];
+        while (walker.nextNode()) comments.push(walker.currentNode);
+        for (const comment of comments) comment.parentNode?.removeChild(comment);
+        return copy.outerHTML;
+      })
       .join("")
-      .replace(/<!--.*?-->/g, "")
       .replace(' data-cy-entered=""', "");
   });
 }
