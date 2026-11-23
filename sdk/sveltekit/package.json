@@ -1,0 +1,93 @@
+{
+  "name": "@cookieyes/sveltekit",
+  "version": "0.0.0",
+  "description": "SvelteKit adapter for the CookieYes consent SDK: the banner in the server HTML, a handle, a load helper and a root component",
+  "keywords": [
+    "cookie consent",
+    "GDPR",
+    "CCPA",
+    "cookie banner",
+    "consent management",
+    "privacy",
+    "compliance",
+    "SvelteKit",
+    "Svelte",
+    "TypeScript",
+    "open source"
+  ],
+  "homepage": "https://developers.cookieyes.com/docs/sveltekit/getting-started/quick-start",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/sveltekit"
+  },
+  "license": "Apache-2.0",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.svelte"
+  ],
+  "type": "module",
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./styles-route": {
+      "types": "./dist/styles-route.d.ts",
+      "default": "./dist/styles-route.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./critical.css": "./dist/critical.css"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && svelte-package -i src -o dist && node scripts/prune-dist.mjs && node scripts/inject-css.mjs && node scripts/copy-styles.mjs",
+    "dev": "svelte-package -i src -o dist -w",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run --coverage",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "@sveltejs/kit": "^2.62.0 || ^3.0.0",
+    "svelte": ">=5.20.0"
+  },
+  "dependencies": {
+    "@cookieyes/scripts": "workspace:*",
+    "@cookieyes/svelte": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-node": "^5.5.8",
+    "@sveltejs/kit": "^2.70.4",
+    "@sveltejs/package": "^2.5.8",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "playwright": "^1.61.1",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8",
+    "vitest": "^4.1.10"
+  }
+}

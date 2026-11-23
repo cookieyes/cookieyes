@@ -4,7 +4,8 @@
 //
 // For every published package:
 //   - every JS sub-path in "exports" loads with `import` and with `require` (for a package that
-//     ships `.svelte` files, which Node cannot load, it resolves to a file that exists instead)
+//     ships `.svelte` files, which Node cannot load, it resolves to a file that exists instead,
+//     and `@cookieyes/sveltekit/styles-route` to a file that exports `GET`)
 //   - every stylesheet sub-path resolves to a file
 //   - the copy that resolves, and the copy each sibling @cookieyes package resolves, is
 //     the tarball under test and not a registry copy of the same version
@@ -33,10 +34,11 @@ function fingerprint(entryPath, entry) {
 }
 /**
  * Packages whose entry imports `.svelte` files. Node has no loader for them, so loading the
- * entry fails however correct the package is; they are checked by resolving instead, and by
- * the `svelte` export condition, which is what Svelte's tooling follows.
+ * entry fails however correct the package is (and `@cookieyes/sveltekit` imports `$app/*`,
+ * which only a SvelteKit build provides); they are checked by resolving instead, and by the
+ * `svelte` export condition, which is what Svelte's tooling follows.
  */
-const SVELTE_COMPONENTS = new Set(["@cookieyes/svelte"]);
+const SVELTE_COMPONENTS = new Set(["@cookieyes/svelte", "@cookieyes/sveltekit"]);
 const firstLine = (error) => String(error?.message ?? error).split("\n")[0];
 
 async function check(label, fn) {
@@ -63,7 +65,16 @@ for (const [name, pkg] of Object.entries(expected.packages)) {
       await check(`resolve ${spec}`, () => {
         const entry = fileURLToPath(import.meta.resolve(spec));
         if (!existsSync(entry)) throw new Error(`${entry} does not exist`);
-        const root = entry.slice(0, -pkg.requireEntry.length);
+        // The route is plain JavaScript that a SvelteKit app re-exports from a `+server` file.
+        if (subpath === "./styles-route") {
+          if (
+            !/export (async )?function GET|export \{[^}]*\bGET\b/.test(readFileSync(entry, "utf8"))
+          ) {
+            throw new Error("the styles route does not export GET");
+          }
+          return;
+        }
+        const root = fileURLToPath(import.meta.resolve(name)).slice(0, -pkg.requireEntry.length);
         const target = JSON.parse(readFileSync(`${root}package.json`, "utf8")).exports[subpath];
         const component = target?.svelte;
         if (!component || !existsSync(`${root}${component.replace(/^\.\//, "")}`)) {

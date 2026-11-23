@@ -20,14 +20,16 @@ request and by `release.yml` before publishing.
      (`.cy-`, or `.cyd-` for devtools), so an empty or wrong file fails, not just a missing one
    - publint in strict mode, and attw with the `node16` profile (`esm-only` for `@cookieyes/nuxt`,
      a Nuxt module that Nuxt loads with `import` and that needs `import.meta.url`, and for
-     `@cookieyes/svelte`, whose `.svelte` files have no CommonJS form)
+     `@cookieyes/svelte` and `@cookieyes/sveltekit`, whose `.svelte` files have no CommonJS form)
    - the file list matches `tools/package-gate/contents.json`
 2. **Install and start** (`install.mjs` and `smoke.mjs`, one fresh `node:22` container per
    package manager): npm, pnpm, yarn and bun each install all tarballs into an empty project,
-   then every `exports` sub-path is loaded with `import` and `require` (`@cookieyes/svelte` is
-   resolved instead, and its `svelte` condition checked, because Node cannot load `.svelte`
-   files), every stylesheet path resolves, the CLI's `--help` runs, and `initCookieYes()` runs with the documented minimal
-   config both ways.
+   then every `exports` sub-path is loaded with `import` and `require` (`@cookieyes/svelte` and
+   `@cookieyes/sveltekit` are resolved instead, and their `svelte` condition checked, because Node
+   cannot load `.svelte` files and the SvelteKit entry imports `$app/*`, which only a SvelteKit
+   build provides; `@cookieyes/sveltekit/styles-route` is resolved and must export `GET`), every
+   stylesheet path resolves, the CLI's `--help` runs, and `initCookieYes()` runs with the
+   documented minimal config both ways.
 3. **Accessibility**: the existing axe test (`sdk/react/src/__tests__/a11y.test.tsx`).
 
 ## What to protect
