@@ -47,6 +47,7 @@ export type {
   TextDirection,
   ThemeConfig,
   TranslationMap,
+  YouTubeEmbedUrlOptions,
 } from "@cookieyes/core";
 export {
   DEFAULT_CATEGORIES,
@@ -63,6 +64,7 @@ export {
   resolveCategories,
   resolveRegion,
   resolveTranslations,
+  youTubeEmbedUrl,
 } from "@cookieyes/core";
 /**
  * Re-exported from `@cookieyes/core/network-blocker` so the `networkBlocker`
@@ -97,6 +99,7 @@ export { GatedFrame, type GatedFrameProps } from "./controls/GatedFrame.js";
 export { GatedScript, type GatedScriptProps } from "./controls/GatedScript.js";
 // Controls — standalone helpers
 export { RecallButton, type RecallButtonProps } from "./controls/RecallButton.js";
+export { YouTubeEmbed, type YouTubeEmbedProps } from "./controls/YouTubeEmbed.js";
 // Hooks
 export {
   type ConsentActions,

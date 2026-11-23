@@ -1,6 +1,7 @@
 import { cleanup, render } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { YouTubeEmbed } from "../controls/YouTubeEmbed.js";
 import { CookieBanner } from "../presets/CookieBanner.js";
 import { CookieOptOut } from "../presets/CookieOptOut.js";
 import { CookiePreferences } from "../presets/CookiePreferences.js";
@@ -54,6 +55,14 @@ describe("accessibility — automated (axe-core, jsdom-scoped)", () => {
     const rt = mountOffline("CCPA");
     rt.showOptOut();
     const { container } = render(<CookieOptOut />);
+    await expectNoViolations(container);
+  });
+
+  it("YouTube placeholder has no axe violations", async () => {
+    mountOffline("GDPR");
+    const { container } = render(
+      <YouTubeEmbed videoId="jNQXAC9IVRw" title="Me at the zoo" poster="/posters/zoo.jpg" />,
+    );
     await expectNoViolations(container);
   });
 });

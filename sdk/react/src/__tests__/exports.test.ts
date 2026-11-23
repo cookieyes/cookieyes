@@ -29,6 +29,8 @@ describe("@cookieyes/react public exports", () => {
     "RecallButton",
     "GatedScript",
     "GatedFrame",
+    "YouTubeEmbed",
+    "youTubeEmbedUrl",
     "blockIframes",
     "useConsent",
     "useConsentActions",

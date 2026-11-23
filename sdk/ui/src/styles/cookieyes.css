@@ -1065,6 +1065,89 @@
   min-height: 120px;
 }
 
+/* ── YouTube embed ───────────────────────────────────────────────── */
+
+/* One box for the placeholder and the player, so nothing moves when they swap.
+   The placeholder is a grid item, so it fills the box, and a long text on a
+   narrow screen makes the box taller instead of being cut off. */
+.cy-youtube {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  container-type: inline-size;
+}
+.cy-youtube > iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* Always dark, like a video that has not started, whatever the banner theme. */
+.cy-youtube > .cy-frame-placeholder {
+  position: relative;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #1a1a1a;
+  color: #fff;
+}
+.cy-youtube-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* The dark layer keeps the text readable over any poster. */
+.cy-youtube-content {
+  position: relative;
+  flex: 1;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.6);
+}
+.cy-youtube-play {
+  width: 48px;
+  height: 48px;
+}
+.cy-youtube-content p {
+  margin: 0;
+  max-width: 40em;
+}
+/* .cy-btn grows to fill a row of banner buttons; in this column it would grow tall. */
+.cy-youtube-content .cy-btn {
+  flex: none;
+}
+.cy-youtube-content a {
+  color: inherit;
+}
+/* White, not --cy-focus: the box is always dark, so a dark brand colour would
+   leave the button and the link with a focus ring nobody can see. */
+.cy-youtube-content .cy-btn:focus-visible,
+.cy-youtube-content a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+/* On a phone-sized box the text needs the room the icon takes, or the box would
+   grow past 16:9 and jump back when the player replaces it. */
+@container (max-width: 400px) {
+  .cy-youtube-play {
+    display: none;
+  }
+  .cy-youtube-content {
+    gap: 8px;
+    padding: 12px;
+  }
+}
+
 /* ── Responsive ──────────────────────────────────────────────────── */
 
 /* Banner: full-width + stacked buttons at <=440px (matches reference) */

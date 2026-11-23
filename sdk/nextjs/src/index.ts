@@ -65,6 +65,8 @@ export type {
   TranslationMap,
   UseLanguageResult,
   UseReloadNoticeResult,
+  YouTubeEmbedProps,
+  YouTubeEmbedUrlOptions,
 } from "@cookieyes/react";
 // Runtime — builder + module-level registry
 // Hooks
@@ -126,4 +128,6 @@ export {
   useRegulation,
   useReloadNotice,
   useTranslations,
+  YouTubeEmbed,
+  youTubeEmbedUrl,
 } from "@cookieyes/react";
