@@ -49,6 +49,9 @@ Include `nuxt` when `@cookieyes/nuxt` has the feature; Nuxt code is hand-written
 inside `<Framework when="nuxt">`, with no imports for what the module auto-imports.
 Include `svelte` when `@cookieyes/svelte` has the feature; Svelte code is hand-written inside
 `<Framework when="svelte">` in `ts` and `svelte` fences, in Svelte 5 runes syntax.
+Include `sveltekit` when `@cookieyes/sveltekit` has the feature; SvelteKit code is hand-written
+inside `<Framework when="sveltekit">`, imports only from `@cookieyes/sveltekit`, and keeps the
+config in `src/lib/cookieyes.ts`.
 
 ## 3. Structure
 
