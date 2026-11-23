@@ -444,6 +444,11 @@ describe("patchSvelteApp", () => {
     );
   });
 
+  it("finds a script block whose closing tag has a space before the bracket", () => {
+    const out = patchSvelteApp(`<script>\n  import A from "./A.svelte";\n</script >\n\n<A />\n`);
+    expect(out).toContain(`import CookieYesRoot from "./lib/CookieYesRoot.svelte";\n</script >`);
+  });
+
   it("appends the element at the end when there is no style block", () => {
     const out = patchSvelteApp(`<script>\n  import A from "./A.svelte";\n</script>\n\n<A />\n`);
     expect(out).toBe(
@@ -565,6 +570,11 @@ describe("patchSveltekitLayout", () => {
     expect(patchSveltekitLayout(kitLayout, true)).toBe(
       `<script lang="ts">\n  import favicon from '$lib/assets/favicon.svg';\n  import { CookieYesRoot } from '@cookieyes/sveltekit';\n  import { config } from '../lib/cookieyes';\n\n  let { data, children } = $props();\n</script>\n\n<svelte:head>\n  <link rel="icon" href={favicon} />\n</svelte:head>\n\n<CookieYesRoot {config} state={data.consent}>\n  {@render children()}\n</CookieYesRoot>\n`,
     );
+  });
+
+  it("finds a script block whose closing tag has a space before the bracket", () => {
+    const out = patchSveltekitLayout(kitLayout.replace("</script>", "</script >"), true);
+    expect(out).toContain("let { data, children } = $props();\n</script >");
   });
 
   it("leaves out data and state when withState is false", () => {
