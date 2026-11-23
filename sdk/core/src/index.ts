@@ -140,3 +140,5 @@ export type {
   TranslationMap,
 } from "./types.js";
 export { CORE_VERSION } from "./version.js";
+export type { YouTubeEmbedUrlOptions } from "./youtube.js";
+export { youTubeEmbedUrl } from "./youtube.js";

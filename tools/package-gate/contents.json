@@ -127,7 +127,8 @@
     "src/sync.ts",
     "src/translations/en.ts",
     "src/types.ts",
-    "src/version.ts"
+    "src/version.ts",
+    "src/youtube.ts"
   ],
   "@cookieyes/devtools": [
     "LICENSE",
