@@ -1,6 +1,7 @@
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { nextTick } from "vue";
+import { h, nextTick } from "vue";
+import { YouTubeEmbed } from "../controls/YouTubeEmbed.js";
 import { CookieBanner } from "../presets/CookieBanner.js";
 import { CookieOptOut } from "../presets/CookieOptOut.js";
 import { CookiePreferences } from "../presets/CookiePreferences.js";
@@ -64,5 +65,14 @@ describe("accessibility: automated (axe-core, jsdom-scoped)", () => {
     getCookieYes().showOptOut();
     await settle();
     await expectNoViolations(query('[data-cy-part="optout"]'));
+  });
+
+  it("YouTube placeholder has no axe violations", { timeout: 30_000 }, async () => {
+    mountWith(cookieOnly("GDPR"), {
+      render: () =>
+        h(YouTubeEmbed, { videoId: "jNQXAC9IVRw", title: "Me at the zoo", poster: "/zoo.jpg" }),
+    });
+    await settle();
+    await expectNoViolations(query(".cy-youtube"));
   });
 });

@@ -28,6 +28,8 @@ describe("@cookieyes/svelte public exports", () => {
     "RecallButton",
     "GatedScript",
     "GatedFrame",
+    "YouTubeEmbed",
+    "youTubeEmbedUrl",
     "BannerRoot",
     "BannerTitle",
     "BannerDescription",

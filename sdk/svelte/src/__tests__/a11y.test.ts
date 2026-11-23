@@ -1,5 +1,6 @@
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import YouTubeEmbed from "../controls/YouTubeEmbed.svelte";
 import CookieBanner from "../presets/CookieBanner.svelte";
 import CookieOptOut from "../presets/CookieOptOut.svelte";
 import CookiePreferences from "../presets/CookiePreferences.svelte";
@@ -59,5 +60,15 @@ describe("accessibility: automated (axe-core, jsdom-scoped)", () => {
     getCookieYes().showOptOut();
     await settle();
     await expectNoViolations(query('[data-cy-part="optout"]'));
+  });
+
+  it("YouTube placeholder has no axe violations", { timeout: 30_000 }, async () => {
+    mountWith(cookieOnly("GDPR"), YouTubeEmbed, {
+      videoId: "jNQXAC9IVRw",
+      title: "Me at the zoo",
+      poster: "/zoo.jpg",
+    });
+    await settle();
+    await expectNoViolations(query(".cy-youtube"));
   });
 });

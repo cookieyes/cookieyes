@@ -46,6 +46,7 @@ const COMPONENTS = [
   "ReloadNotice",
   "GatedFrame",
   "GatedScript",
+  "YouTubeEmbed",
 ] as const;
 
 /** Composables, functions and headless part namespaces the module auto-imports. */
@@ -67,6 +68,7 @@ const IMPORTS = [
   "getCookieYes",
   // Called from an app plugin with an `order` below -20, which runs before this module's plugin.
   "registerStopHandler",
+  "youTubeEmbedUrl",
   "Banner",
   "Preferences",
   "OptOut",
