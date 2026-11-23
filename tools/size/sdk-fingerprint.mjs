@@ -6,7 +6,18 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** Packages whose code the measurement covers. */
-const PACKAGES = ["core", "ui", "react", "nextjs", "vanilla", "vue", "nuxt", "svelte", "devtools"];
+const PACKAGES = [
+  "core",
+  "ui",
+  "react",
+  "nextjs",
+  "vanilla",
+  "vue",
+  "nuxt",
+  "svelte",
+  "sveltekit",
+  "devtools",
+];
 
 /**
  * A short hash of everything that determines the measured bundle.
@@ -31,7 +42,7 @@ const PACKAGES = ["core", "ui", "react", "nextjs", "vanilla", "vue", "nuxt", "sv
  * ## What it covers
  *
  * Sources and stylesheets (`.svelte` files included), each package's Rollup config
- * (`@cookieyes/svelte`: its `svelte.config.js` and build scripts), the shared Rollup
+ * (`@cookieyes/svelte` and `@cookieyes/sveltekit`: their `svelte.config.js` and build scripts), the shared Rollup
  * config, and the manifest fields that drive externalisation and tree-shaking
  * (`exports`, `sideEffects`, `dependencies`, `peerDependencies`). A change to
  * any of those can move the measured figure; a change to anything else cannot.
@@ -54,12 +65,19 @@ export function sdkFingerprint() {
   for (const pkg of PACKAGES) {
     const src = join(REPO, "sdk", pkg, "src");
     if (existsSync(src)) walk(src);
-    // The Svelte package is built by svelte-package, not Rollup. Its config and the two scripts
+    // The Svelte packages are built by svelte-package, not Rollup. Their config and the scripts
     // that run after it decide what reaches `dist`, so they are build inputs like a Rollup config.
     const configs =
       pkg === "svelte"
         ? ["svelte.config.js", "scripts/copy-styles.mjs", "scripts/prune-dist.mjs"]
-        : ["rollup.config.mjs"];
+        : pkg === "sveltekit"
+          ? [
+              "svelte.config.js",
+              "scripts/copy-styles.mjs",
+              "scripts/inject-css.mjs",
+              "scripts/prune-dist.mjs",
+            ]
+          : ["rollup.config.mjs"];
     for (const name of configs) {
       const config = join(REPO, "sdk", pkg, name);
       if (existsSync(config)) files.push(config);
