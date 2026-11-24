@@ -1,7 +1,7 @@
 ---
 title: GatedFrame
 description: Show a third-party iframe only after the visitor consents, with a placeholder until then.
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -92,6 +92,26 @@ Render `<VideoEmbed />` inside `<CookieYesProvider>`.
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/lib/VideoEmbed.svelte"
+<script lang="ts">
+  import { GatedFrame } from "@cookieyes/sveltekit";
+</script>
+
+<GatedFrame
+  src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  category="advertisement"
+  width={560}
+  height={315}
+  title="Product tour"
+/>
+```
+
+Render `<VideoEmbed />` in any page: every page is inside `<CookieYesRoot>` in your root layout. The server always renders the placeholder; the iframe appears once the page has loaded in the browser.
+
+</Framework>
+
 Embeds that can set advertising cookies, such as YouTube, social posts and ad players, are `advertisement`. Embeds that only need to work, such as a map or a calendar, are `functional`. The category must exist in your `categories` list.
 
 ## Props
@@ -114,7 +134,7 @@ Fill the `placeholder` slot with your own content. It is rendered inside the pla
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 Pass a `placeholder` snippet with your own content. It is rendered inside the placeholder box, `.cy-frame-placeholder`:
 
@@ -216,6 +236,33 @@ const { showPreferences } = useConsentActions();
 ```svelte title="src/lib/VideoEmbed.svelte"
 <script lang="ts">
   import { GatedFrame, useConsentActions } from "@cookieyes/svelte";
+
+  const { showPreferences } = useConsentActions();
+</script>
+
+<GatedFrame
+  src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"
+  category="advertisement"
+  width={560}
+  height={315}
+  title="Product tour"
+>
+  {#snippet placeholder()}
+    <div class="video-placeholder">
+      <p>This video is hosted by YouTube and needs advertisement cookies.</p>
+      <button type="button" onclick={showPreferences}>Cookie settings</button>
+    </div>
+  {/snippet}
+</GatedFrame>
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```svelte title="src/lib/VideoEmbed.svelte"
+<script lang="ts">
+  import { GatedFrame, useConsentActions } from "@cookieyes/sveltekit";
 
   const { showPreferences } = useConsentActions();
 </script>

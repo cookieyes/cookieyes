@@ -1,0 +1,18 @@
+{
+  "title": "SvelteKit",
+  "root": true,
+  "pages": [
+    "getting-started",
+    "self-host",
+    "components",
+    "headless",
+    "hooks",
+    "styling",
+    "translations",
+    "accessibility",
+    "embeds",
+    "network-blocking",
+    "troubleshooting",
+    "ai-agents"
+  ]
+}

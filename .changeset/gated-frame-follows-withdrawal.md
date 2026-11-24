@@ -4,6 +4,7 @@
 "@cookieyes/vue": minor
 "@cookieyes/nuxt": minor
 "@cookieyes/svelte": minor
+"@cookieyes/sveltekit": minor
 ---
 
 `GatedFrame` now removes its embed as soon as the visitor withdraws the category, without a page reload.

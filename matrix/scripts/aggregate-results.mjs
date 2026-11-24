@@ -97,7 +97,13 @@ export function buildAggregateResult({
 
   // The Nuxt legs run on a newer Node than the rest, so the Node each framework ran on is stated
   // per framework rather than as one value for the whole matrix.
-  const appNames = { next: "Next.js", vue: "Vue", nuxt: "Nuxt", svelte: "Svelte" };
+  const appNames = {
+    next: "Next.js",
+    vue: "Vue",
+    nuxt: "Nuxt",
+    svelte: "Svelte",
+    sveltekit: "SvelteKit",
+  };
   const nodeByApp = new Map();
   for (const r of orderedResults) {
     const name = appNames[r.app ?? "next"];

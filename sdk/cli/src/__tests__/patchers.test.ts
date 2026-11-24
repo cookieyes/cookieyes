@@ -6,6 +6,8 @@ import {
   patchNuxtApp,
   patchNuxtConfig,
   patchSvelteApp,
+  patchSveltekitHooks,
+  patchSveltekitLayout,
   patchSvelteMain,
   patchVueApp,
   patchVueMain,
@@ -442,6 +444,15 @@ describe("patchSvelteApp", () => {
     );
   });
 
+  it("finds a script block whose closing tag has more before the bracket", () => {
+    const out = patchSvelteApp(
+      `<script>\n  import A from "./A.svelte";\n</script\t\n bar>\n\n<A />\n`,
+    );
+    expect(out).toContain(
+      `import CookieYesRoot from "./lib/CookieYesRoot.svelte";\n</script\t\n bar>`,
+    );
+  });
+
   it("appends the element at the end when there is no style block", () => {
     const out = patchSvelteApp(`<script>\n  import A from "./A.svelte";\n</script>\n\n<A />\n`);
     expect(out).toBe(
@@ -491,6 +502,155 @@ describe("patchSvelteApp", () => {
   it("returns null when an import in the script spans several lines", () => {
     expect(
       patchSvelteApp(`<script>\n  import {\n    a,\n  } from './a'\n</script>\n<p />\n`),
+    ).toBeNull();
+  });
+});
+
+describe("patchSveltekitHooks", () => {
+  const imports = `import { cookieyesHandle } from "@cookieyes/sveltekit";\nimport { config } from "./lib/cookieyes";\n`;
+
+  it("wraps a const handle in sequence, keeping its type annotation", () => {
+    const src = `import type { Handle } from '@sveltejs/kit';\n\nexport const handle: Handle = async ({ event, resolve }) => {\n  return resolve(event);\n};\n`;
+    const out = patchSveltekitHooks(src);
+    expect(out).toContain(
+      `import type { Handle } from '@sveltejs/kit';\nimport { sequence } from '@sveltejs/kit/hooks';`,
+    );
+    expect(out).toContain(`import { cookieyesHandle } from '@cookieyes/sveltekit';`);
+    expect(out).toContain(`const userHandle: Handle = async ({ event, resolve }) => {`);
+    expect(out).not.toContain("export const userHandle");
+    expect(
+      out?.endsWith(`export const handle = sequence(cookieyesHandle(config), userHandle);\n`),
+    ).toBe(true);
+  });
+
+  it("wraps a handle function declaration", () => {
+    const out = patchSveltekitHooks(
+      `export async function handle({ event, resolve }) {\n  return resolve(event);\n}\n`,
+    );
+    expect(out).toContain(`async function userHandle({ event, resolve }) {`);
+    expect(out).toContain(`export const handle = sequence(cookieyesHandle(config), userHandle);`);
+    expect(out).toContain(`import { sequence } from "@sveltejs/kit/hooks";`);
+  });
+
+  it("puts cookieyesHandle first in an existing sequence", () => {
+    const src = `import { sequence } from "@sveltejs/kit/hooks";\n\nexport const handle = sequence(a, b);\n`;
+    const out = patchSveltekitHooks(src);
+    expect(out).toContain(`export const handle = sequence(cookieyesHandle(config), a, b);`);
+    expect(out).toContain(imports.trim());
+    expect(out?.match(/import \{ sequence \}/g)).toHaveLength(1);
+  });
+
+  it("reuses a sequence import when wrapping a const handle", () => {
+    const src = `import { sequence } from "@sveltejs/kit/hooks";\nexport const handle = async ({ event, resolve }) => resolve(event);\n`;
+    expect(patchSveltekitHooks(src)?.match(/import \{ sequence \}/g)).toHaveLength(1);
+  });
+
+  it("returns null when already patched", () => {
+    expect(
+      patchSveltekitHooks(`${imports}export const handle = cookieyesHandle(config);\n`),
+    ).toBeNull();
+  });
+
+  it("returns null for shapes it cannot rewrite safely", () => {
+    // handle used twice, re-exported, no handle at all, an own config, a multi-line import,
+    // sequence used without being imported, and a sequence handle without the import.
+    expect(patchSveltekitHooks(`const handle = h;\nexport { handle };\n`)).toBeNull();
+    expect(patchSveltekitHooks(`const mine = h;\nexport { mine as handle };\n`)).toBeNull();
+    expect(patchSveltekitHooks(`export const handleError = () => {};\n`)).toBeNull();
+    expect(patchSveltekitHooks(`const config = 1;\nexport const handle = h;\n`)).toBeNull();
+    expect(
+      patchSveltekitHooks(`import {\n  a,\n} from "x";\nexport const handle = h;\n`),
+    ).toBeNull();
+    expect(patchSveltekitHooks(`export const handle = h;\nsequence(a);\n`)).toBeNull();
+    expect(patchSveltekitHooks(`export const handle = sequence(a, b);\n`)).toBeNull();
+    expect(patchSveltekitHooks(`export const handle = h;\nexport const x = handle;\n`)).toBeNull();
+  });
+});
+
+describe("patchSveltekitLayout", () => {
+  const kitLayout = `<script lang="ts">\n  import favicon from '$lib/assets/favicon.svg';\n\n  let { children } = $props();\n</script>\n\n<svelte:head>\n  <link rel="icon" href={favicon} />\n</svelte:head>\n\n{@render children()}\n`;
+
+  it("wraps the page content and adds the imports and data", () => {
+    expect(patchSveltekitLayout(kitLayout, true)).toBe(
+      `<script lang="ts">\n  import favicon from '$lib/assets/favicon.svg';\n  import { CookieYesRoot } from '@cookieyes/sveltekit';\n  import { config } from '../lib/cookieyes';\n\n  let { data, children } = $props();\n</script>\n\n<svelte:head>\n  <link rel="icon" href={favicon} />\n</svelte:head>\n\n<CookieYesRoot {config} state={data.consent}>\n  {@render children()}\n</CookieYesRoot>\n`,
+    );
+  });
+
+  it("finds a script block whose closing tag has more before the bracket", () => {
+    const out = patchSveltekitLayout(kitLayout.replace("</script>", "</script\t\n bar>"), true);
+    expect(out).toContain("let { data, children } = $props();\n</script\t\n bar>");
+  });
+
+  it("leaves out data and state when withState is false", () => {
+    const out = patchSveltekitLayout(kitLayout, false);
+    expect(out).toContain(`let { children } = $props();`);
+    expect(out).toContain(`<CookieYesRoot {config}>\n  {@render children()}\n</CookieYesRoot>`);
+  });
+
+  it("keeps an optional children call and an existing data prop", () => {
+    const out = patchSveltekitLayout(
+      `<script>\n  let { data, children } = $props();\n</script>\n\n<main>\n  {@render children?.()}\n</main>\n`,
+      true,
+    );
+    expect(out).toContain(`let { data, children } = $props();`);
+    expect(out).toContain(
+      `<main>\n  <CookieYesRoot {config} state={data.consent}>\n    {@render children?.()}\n  </CookieYesRoot>\n</main>`,
+    );
+    expect(out).toContain(`<script>\n  import { CookieYesRoot } from "@cookieyes/sveltekit";`);
+  });
+
+  it("accepts a named props type and skips a module script", () => {
+    const out = patchSveltekitLayout(
+      `<script module>\n  export const x = 1;\n</script>\n<script lang="ts">\n  import type { LayoutProps } from './$types';\n  let { children }: LayoutProps = $props();\n</script>\n{@render children()}\n`,
+      true,
+    );
+    expect(out).toContain(`let { data, children }: LayoutProps = $props();`);
+    expect(out).toContain(`import { CookieYesRoot } from '@cookieyes/sveltekit';`);
+  });
+
+  it("returns null when already patched", () => {
+    expect(
+      patchSveltekitLayout(`<CookieYesRoot {config}>{@render children()}</CookieYesRoot>`, true),
+    ).toBeNull();
+  });
+
+  it("returns null for layouts it cannot patch safely", () => {
+    const render = `\n{@render children()}\n`;
+    // no script, no children prop, inline props type, two renders, render inside a block,
+    // a multi-line import, an own config
+    expect(patchSveltekitLayout(render, true)).toBeNull();
+    expect(
+      patchSveltekitLayout(`<script>\n  let { data } = $props();\n</script>${render}`, true),
+    ).toBeNull();
+    expect(
+      patchSveltekitLayout(
+        `<script lang="ts">\n  let { children }: { children: Snippet } = $props();\n</script>${render}`,
+        true,
+      ),
+    ).toBeNull();
+    expect(
+      patchSveltekitLayout(
+        `<script>\n  let { children } = $props();\n</script>${render}${render}`,
+        true,
+      ),
+    ).toBeNull();
+    expect(
+      patchSveltekitLayout(
+        `<script>\n  let { children } = $props();\n</script>\n{#if x}{@render children()}{/if}\n`,
+        true,
+      ),
+    ).toBeNull();
+    expect(
+      patchSveltekitLayout(
+        `<script>\n  import {\n    a,\n  } from "x";\n  let { children } = $props();\n</script>${render}`,
+        true,
+      ),
+    ).toBeNull();
+    expect(
+      patchSveltekitLayout(
+        `<script>\n  const config = 1;\n  let { children } = $props();\n</script>${render}`,
+        true,
+      ),
     ).toBeNull();
   });
 });

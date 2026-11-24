@@ -1,14 +1,14 @@
 ---
 title: ReloadNotice
 description: Ask the visitor to reload when a withdrawn tool cannot be stopped otherwise.
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
 
 Some third-party tools cannot be switched off once they are running. When a visitor withdraws consent for such a tool, this notice appears with a **Reload** and a **Dismiss** button. It never reloads on its own; the visitor decides.
 
-<Framework when="nextjs react vue svelte">
+<Framework when="nextjs react vue svelte sveltekit">
 
 You need it only if you register a tool as "needs a reload" (below). The ready-made [integrations](/docs/integrations) stop their tools themselves. Hotjar is the exception; its page shows how to register it.
 
@@ -66,6 +66,47 @@ Then mark the tool that cannot be stopped, once, **before** `<CookieYesProvider>
 
 ```ts title="src/lib/cookieyes.ts"
 import { type CookieYesConfig, registerStopHandler } from "@cookieyes/svelte";
+
+registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+
+export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR" };
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+`<CookieYesRoot>` does not render it. Give `<CookieYesRoot>` a `ui` snippet and add it there; the snippet replaces the stock banner, dialogs and recall button, so keep the others:
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+    ReloadNotice,
+  } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <CookieBanner />
+    <CookiePreferences />
+    <RecallButton />
+    <ReloadNotice />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+Then mark the tool that cannot be stopped, once, **before** `<CookieYesRoot>` starts the runtime. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors. Module scope in `src/lib/cookieyes.ts` is early enough, since the root layout imports it:
+
+```ts title="src/lib/cookieyes.ts"
+import { type CookieYesConfig, registerStopHandler } from "@cookieyes/sveltekit";
 
 registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
 

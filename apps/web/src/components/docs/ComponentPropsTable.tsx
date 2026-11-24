@@ -27,7 +27,7 @@ export function ComponentPropsTable({ component, framework }: ComponentPropsTabl
   const adapter =
     framework === "vue" || framework === "nuxt"
       ? "vue"
-      : framework === "svelte"
+      : framework === "svelte" || framework === "sveltekit"
         ? "svelte"
         : "react";
   const options = data[adapter][component];

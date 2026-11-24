@@ -38,7 +38,7 @@ interface PackageOption {
 /**
  * The three frameworks a reader picks between, per the design's .pdrop
  * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/vue`,
- * `/docs/nuxt`, `/docs/svelte`, `/docs/core`.
+ * `/docs/nuxt`, `/docs/svelte`, `/docs/sveltekit`, `/docs/core`.
  *
  * `@cookieyes/cli` and `@cookieyes/translations` are deliberately absent: they are
  * not frameworks, so choosing one here answered nothing.
@@ -73,6 +73,13 @@ const PACKAGES: Record<Framework, PackageOption> = {
     name: "@cookieyes/svelte",
     logo: <SvelteLogo />,
     hint: FRAMEWORK_LABEL.svelte,
+  },
+  // SvelteKit's own mark is the Svelte one; the package name and the hint tell the two apart.
+  sveltekit: {
+    id: "sveltekit",
+    name: "@cookieyes/sveltekit",
+    logo: <SvelteLogo />,
+    hint: FRAMEWORK_LABEL.sveltekit,
   },
   core: {
     id: "core",

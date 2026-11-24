@@ -4,11 +4,12 @@
 "@cookieyes/vue": minor
 "@cookieyes/nuxt": minor
 "@cookieyes/svelte": minor
+"@cookieyes/sveltekit": minor
 "@cookieyes/ui": minor
 "@cookieyes/vanilla": patch
 ---
 
-React, Next.js, Vue, Nuxt and Svelte apps can now embed a YouTube video with one component that contacts YouTube only after the visitor allows it.
+React, Next.js, Vue, Nuxt, Svelte and SvelteKit apps can now embed a YouTube video with one component that contacts YouTube only after the visitor allows it.
 
 **New: `<YouTubeEmbed>`.** Give it a `videoId` (a video or a Short) or a `playlistId`, and a `title`. It loads the player from the privacy-enhanced `youtube-nocookie.com` once the `advertisement` category is granted, and removes it again if the visitor withdraws. `category`, `params` and `domain` change those defaults. Nuxt registers the component automatically.
 

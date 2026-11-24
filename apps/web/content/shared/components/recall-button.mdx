@@ -1,7 +1,7 @@
 ---
 title: RecallButton
 description: A floating button that lets a visitor change their cookie choice later.
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -19,6 +19,12 @@ You already render it if you followed [Installation](/docs/getting-started/insta
 <Framework when="nuxt">
 
 In Nuxt, `<CookieYesRoot />` renders it for you. If you list the components inside `<CookieYesRoot>` yourself, its slot replaces the default contents, so keep the button there:
+
+</Framework>
+
+<Framework when="sveltekit">
+
+In SvelteKit, `<CookieYesRoot>` renders it for you. If you render the components in a `ui` snippet of `<CookieYesRoot>` yourself, the snippet replaces the stock contents, so keep the button there:
 
 </Framework>
 
@@ -67,6 +73,33 @@ In Nuxt, `<CookieYesRoot />` renders it for you. If you list the components insi
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+  } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <CookieBanner />
+    <CookiePreferences />
+    <RecallButton />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+</Framework>
+
 ## Prefer your own link
 
 A "Cookie settings" link in your footer does the same job. Render that instead of the button, or as well as it. See [useConsentActions](/docs/hooks/use-consent-actions).
@@ -85,7 +118,7 @@ The tooltip and screen-reader label come from the `recallButtonLabel` text in `i
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 The tooltip and screen-reader label come from the `recallButtonLabel` text in `i18n` ([Translations](/docs/translations)). Put your own icon between its tags; it becomes the `children` snippet and replaces the default icon:
 
@@ -111,7 +144,7 @@ The tooltip and screen-reader label come from the `recallButtonLabel` text in `i
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 ```svelte check="false"
 <RecallButton>
@@ -131,7 +164,7 @@ Target `[data-cy-part="recall"]` in your CSS. Passing `className` **replaces** t
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 Target `[data-cy-part="recall"]` in your CSS. Passing `class` **replaces** the button's own class, so the default look disappears; include `cy-widget` if you want to keep it:
 
@@ -153,7 +186,7 @@ Target `[data-cy-part="recall"]` in your CSS. Passing `class` **replaces** the b
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 ```svelte check="false"
 <RecallButton class="cy-widget my-extra-class" />
@@ -173,7 +206,7 @@ You passed `className`, which replaced the default class. Add `cy-widget` to it.
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 **The button is an unstyled circle.**
 You passed `class`, which replaced the default class. Add `cy-widget` to it.

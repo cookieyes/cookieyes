@@ -1,7 +1,7 @@
 ---
 title: CSP
 description: The SDK works under a strict Content-Security-Policy without unsafe-inline or a nonce.
-frameworks: [nextjs, react, vue, nuxt, svelte, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="core">
@@ -27,6 +27,12 @@ No `'unsafe-inline'`, no nonce. The banner, both dialogs, the recall button and 
 <Framework when="nuxt">
 
 The full stylesheet is a normal file served from your own origin, and theme colours are applied as CSS variables on the elements. The one inline block is `critical.css`, which the module writes into every page's `<head>`, so `style-src` needs `'self'` plus that block's hash. See [Critical CSS](#critical-css) below. No `'unsafe-inline'` and no nonce for styles.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+The full stylesheet is a normal file served from your own origin by the stylesheet route, and theme colours are applied as CSS variables on the elements. The one inline block is `critical.css`, which `cookieyesHandle` writes into every page's `<head>`, so `style-src` needs `'self'` plus that block's hash. See [Critical CSS](#critical-css) below. No `'unsafe-inline'` and no nonce for styles.
 
 </Framework>
 
@@ -85,6 +91,42 @@ With `googleConsentMode` set, the module also writes Google's Consent Mode defau
 
 </Framework>
 
+<Framework when="sveltekit">
+
+## Critical CSS
+
+The handle always inlines `critical.css`, so its hash belongs in `style-src`. The package exports it as `CRITICAL_CSS_HASH`, the SHA-256 of `@cookieyes/sveltekit/critical.css`. `svelte.config.js` runs in Node, which cannot load the package's entry (it holds `.svelte` files), so compute the hash from the file there. In SvelteKit 2 it goes in `kit.csp`:
+
+```js title="svelte.config.js"
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+
+const critical = readFileSync(
+  createRequire(import.meta.url).resolve("@cookieyes/sveltekit/critical.css"),
+  "utf8",
+);
+const criticalHash = `'sha256-${createHash("sha256").update(critical, "utf8").digest("base64")}'`;
+
+export default {
+  kit: {
+    csp: { directives: { "style-src": ["self", criticalHash] } },
+  },
+};
+```
+
+SvelteKit 3 takes the same `csp` object as a top-level key of the `sveltekit({ ... })` call in `vite.config.ts`, with the same `criticalHash` computed there:
+
+```ts title="vite.config.ts" check="false"
+export default defineConfig({
+  plugins: [sveltekit({ csp: { directives: { "style-src": ["self", criticalHash] } } })],
+});
+```
+
+The handle never rewrites a CSP header and puts no nonce on its `<style>`: SvelteKit admits styles by hash, not by nonce. With `googleConsentMode` set, the handle also writes Google's Consent Mode default as an inline `<script>`, and that script takes the nonce SvelteKit put on its own scripts, so a `script-src` with a nonce admits it on a page rendered per request. A prerendered page carries its policy in a `<meta>` tag that comes after these tags, so there the policy that matters is the one your host sends as a header.
+
+</Framework>
+
 <Framework when="react vue svelte core">
 
 ## Critical CSS
@@ -104,6 +146,12 @@ CookieYes's interface loads as a normal stylesheet file, never as an inline `<st
 <Framework when="nuxt">
 
 The Nuxt module inlines one `<style>` block, the SDK's `critical.css` byte for byte, whose hash it exports as `CRITICAL_CSS_HASH`. The full stylesheet loads as a normal file from your own origin, and theme colours are applied as CSS custom properties directly on the elements. `style-src` therefore needs `'self'` and that hash, never `'unsafe-inline'`. The SDK's code is part of your Nuxt bundle. With `googleConsentMode` set, the module adds one inline `<script>`: Google's Consent Mode default.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+`cookieyesHandle` inlines one `<style>` block, the SDK's `critical.css` byte for byte, whose hash `@cookieyes/sveltekit` exports as `CRITICAL_CSS_HASH`. The full stylesheet loads as a normal file from your own origin, and theme colours are applied as CSS custom properties directly on the elements. `style-src` therefore needs `'self'` and that hash, never `'unsafe-inline'`. The SDK's code is part of your SvelteKit bundle. With `googleConsentMode` set, the handle adds one inline `<script>`: Google's Consent Mode default, carrying SvelteKit's nonce when the page has one.
 
 </Framework>
 

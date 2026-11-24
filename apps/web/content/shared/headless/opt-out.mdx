@@ -1,7 +1,7 @@
 ---
 title: OptOut
 description: Build the CCPA Do Not Sell dialog with your own markup.
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -21,6 +21,12 @@ Render this in place of `<CookieOptOut />`. `OptOut.Root` renders nothing while 
 <Framework when="nuxt">
 
 Write the dialog as a component, then render it in place of `<CookieOptOut />` inside `<CookieYesRoot>`. `OptOut.Root` renders nothing while the dialog is closed, so keep it as the outer element.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Write the dialog as a component, then render it in place of `<CookieOptOut />` in the `ui` snippet of `<CookieYesRoot>`. `OptOut.Root` renders nothing while the dialog is closed, so keep it as the outer element.
 
 </Framework>
 
@@ -166,13 +172,71 @@ Every piece is also exported on its own, as `OptOutRoot`, `OptOutCheckbox` and s
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/lib/ConsentOptOut.svelte"
+<script lang="ts">
+  import { OptOut } from "@cookieyes/sveltekit";
+</script>
+
+<OptOut.Root class="overlay">
+  <div class="dialog">
+    <OptOut.Title class="dialog-title" />
+    <OptOut.Close class="dialog-close" />
+    <OptOut.Description class="dialog-text" />
+
+    <div class="opt-out-row">
+      <OptOut.Checkbox id="do-not-sell" />
+      <OptOut.CheckboxLabel for="do-not-sell" />
+    </div>
+
+    <OptOut.Buttons class="dialog-actions">
+      <OptOut.Cancel class="btn" />
+      <OptOut.Save class="btn btn-primary" />
+    </OptOut.Buttons>
+    <OptOut.Success class="dialog-success" />
+  </div>
+</OptOut.Root>
+```
+
+Every piece is also exported on its own, as `OptOutRoot`, `OptOutCheckbox` and so on. `OptOut.Root` renders where you put it; it is not moved into the portal root.
+
+The `ui` snippet of `<CookieYesRoot>` replaces everything it renders by default, so list the other components you still want:
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+  } from "@cookieyes/sveltekit";
+  import ConsentOptOut from "../lib/ConsentOptOut.svelte";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <CookieBanner />
+    <CookiePreferences />
+    <ConsentOptOut />
+    <RecallButton />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+</Framework>
+
 <Framework when="nextjs react">
 
 Give the checkbox an `id` and the label the matching `htmlFor`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after an opt-out, the buttons disappear and the confirmation takes their place. Saving without an opt-out closes the dialog at once.
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 Give the checkbox an `id` and the label the matching `for`, so clicking the label ticks the box. Render both `Buttons` and `Success`: after an opt-out, the buttons disappear and the confirmation takes their place. Saving without an opt-out closes the dialog at once.
 
@@ -206,7 +270,7 @@ Every piece takes `class`, `style` and the other attributes of the element it re
 
 </Framework>
 
-<Framework when="svelte">
+<Framework when="svelte sveltekit">
 
 Every piece takes `class`, `style` and the other attributes of the element it renders, and renders the translated text for the active language; put your own content between the tags of a text or button piece to replace it. `Close`, `Cancel` and `Save` take a `child` snippet for your own button element, the same way as on [Banner](/docs/headless/banner#use-your-own-button-component).
 
@@ -231,7 +295,7 @@ The checkbox `id` and the label `htmlFor` do not match.
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 **Clicking the label does not tick the box.**
 The checkbox `id` and the label `for` do not match.

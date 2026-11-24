@@ -22,6 +22,7 @@ const h = vi.hoisted(() => ({
   vueProjectPaths: vi.fn(),
   nuxtProjectPaths: vi.fn(),
   svelteProjectPaths: vi.fn(),
+  sveltekitProjectPaths: vi.fn(),
 }));
 
 vi.mock("@clack/prompts", () => ({
@@ -52,6 +53,7 @@ vi.mock("../utils/detect-layout.js", () => ({
   vueProjectPaths: h.vueProjectPaths,
   nuxtProjectPaths: h.nuxtProjectPaths,
   svelteProjectPaths: h.svelteProjectPaths,
+  sveltekitProjectPaths: h.sveltekitProjectPaths,
 }));
 
 import { cancel, note } from "@clack/prompts";
@@ -831,6 +833,10 @@ describe("parseInitFlags", () => {
 
   it("accepts svelte as a framework", () => {
     expect(parseInitFlags(["--framework", "svelte"]).framework).toBe("svelte");
+  });
+
+  it("accepts sveltekit as a framework", () => {
+    expect(parseInitFlags(["--framework", "sveltekit"]).framework).toBe("sveltekit");
   });
 
   it("accepts nuxt as a framework", () => {
