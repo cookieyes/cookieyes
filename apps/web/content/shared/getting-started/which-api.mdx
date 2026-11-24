@@ -358,7 +358,8 @@ Read `consent.hasActed` where Svelte tracks it, in the template or a `$derived`.
 | Accept, reject, or open a dialog | [`useConsentActions()`](/docs/hooks/use-consent-actions) |
 | Run code when consent changes, inside a component | [`useOnConsentChange()`](/docs/hooks/use-on-consent-change) |
 | Load one script only when its category is granted | [`useConsentCategory("analytics")`](/docs/hooks/focused-hooks), or [`GatedScript`](/docs/components/gated-script) with no code at all |
-| Show an embed such as a YouTube video only after consent | [`GatedFrame`](/docs/components/gated-frame), or [`blockIframes()`](/docs/embeds) for HTML you do not render |
+| Show a YouTube video only after consent | [`YouTubeEmbed`](/docs/integrations/youtube) |
+| Show another embed, such as a map, only after consent | [`GatedFrame`](/docs/components/gated-frame), or [`blockIframes()`](/docs/embeds) for HTML you do not render |
 | Know the region, language, or whether the banner is showing | [Focused hooks](/docs/hooks/focused-hooks) |
 | Call the runtime from a store or a plain module | [`getCookieYes()`](/docs/hooks/low-level-hooks#module-level-registry) |
 | Read a returning visitor's consent on the server | [`event.locals.cookieyes`](/docs/hooks/low-level-hooks#read-a-returning-visitors-consent-on-the-server), set by `cookieyesHandle` |

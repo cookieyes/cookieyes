@@ -210,7 +210,7 @@ The placeholder is drawn inside the iframe, so your page's CSS cannot restyle it
 - Use the `advertisement` category: YouTube's player can set advertising cookies.
 - Copy `allow` and `allowfullscreen` from YouTube's own embed code. Without them, full screen and some player features do not work.
 
-<Framework when="nextjs react vue svelte">
+<Framework when="nextjs react vue svelte sveltekit">
 
 `youTubeEmbedUrl({ videoId: "VIDEO_ID" })` returns this address, for a video, a Short or a playlist. It is exported from the same package as `blockIframes`. For a video you render in a component, [YouTubeEmbed](/docs/integrations/youtube) does all of this for you.
 

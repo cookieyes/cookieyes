@@ -1,7 +1,7 @@
 ---
 title: YouTube
 description: Embed a YouTube video that contacts YouTube only after the visitor allows it.
-frameworks: [nextjs, react, vue, nuxt, svelte]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 `YouTubeEmbed` shows a YouTube video only while the visitor allows its category. Until then it shows a placeholder that looks like a video, with a button that allows the category, and nothing is requested from YouTube or Google. If the visitor withdraws consent, the player is removed again.
@@ -64,6 +64,20 @@ Render `<ProductTour />` inside `<CookieYesProvider>`.
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```svelte title="src/lib/ProductTour.svelte"
+<script lang="ts">
+  import { YouTubeEmbed } from "@cookieyes/sveltekit";
+</script>
+
+<YouTubeEmbed videoId="VIDEO_ID" title="Product tour" />
+```
+
+Render `<ProductTour />` in any page: every page is inside `<CookieYesRoot>` in your root layout. The server always renders the placeholder; the player appears once the page has loaded in the browser.
+
+</Framework>
+
 The video id is the part after `v=` in the video's address, or after `/shorts/` for a Short. For a playlist, pass `playlistId` instead of `videoId`: the part after `list=`.
 
 `title` is required. It names the video for screen readers.
@@ -90,7 +104,7 @@ Pass the class as `className`. Load your stylesheet after the SDK's, so that you
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 Pass the class as `class`. Load your stylesheet after the SDK's, so that your class wins.
 
@@ -118,7 +132,7 @@ Pass the class as `class`. Load your stylesheet after the SDK's, so that your cl
 
 </Framework>
 
-<Framework when="vue nuxt svelte">
+<Framework when="vue nuxt svelte sveltekit">
 
 `class` and `style` go to the box. Every other `<iframe>` attribute is passed to the iframe once it appears. The iframe already has the `allow`, `allowfullscreen` and `referrerpolicy` values of YouTube's own embed code, and `loading="lazy"`.
 
@@ -183,6 +197,26 @@ const allowed = useConsentCategory("advertisement");
 ```svelte title="src/lib/OwnPlayer.svelte"
 <script lang="ts">
   import { useConsentCategory } from "@cookieyes/svelte";
+  import type { Snippet } from "svelte";
+
+  let { children, placeholder }: { children: Snippet; placeholder: Snippet } = $props();
+  const allowed = useConsentCategory("advertisement");
+</script>
+
+{#if allowed.current}
+  {@render children()}
+{:else}
+  {@render placeholder()}
+{/if}
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```svelte title="src/lib/OwnPlayer.svelte"
+<script lang="ts">
+  import { useConsentCategory } from "@cookieyes/sveltekit";
   import type { Snippet } from "svelte";
 
   let { children, placeholder }: { children: Snippet; placeholder: Snippet } = $props();
