@@ -1,7 +1,7 @@
 ---
 title: Meta Pixel
 description: Load the Meta Pixel only after advertising consent, and pause it when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 `metaPixel()` loads the Meta Pixel after the visitor grants the advertising category. When consent is withdrawn, it tells Meta to stop with Meta's own consent call and clears the `_fbp` and `_fbc` cookies. When consent is granted again, tracking resumes without loading the script a second time.
@@ -21,6 +21,16 @@ Install the integrations package and add `metaPixel()` to the config you pass to
 <Framework when="nuxt">
 
 Install the integrations package and add `metaPixel()` to `cookieyes.integrations` in `app/app.config.ts`:
+
+</Framework>
+<Framework when="svelte">
+
+Install the integrations package and add `metaPixel()` to the config you pass to `<CookieYesProvider>`:
+
+</Framework>
+<Framework when="sveltekit">
+
+Install the integrations package and add `metaPixel()` to the config in `src/lib/cookieyes.ts`:
 
 </Framework>
 
@@ -79,6 +89,38 @@ export default defineAppConfig({
 ```
 
 `integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
+
+</Framework>
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+import { metaPixel } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [metaPixel({ pixelId: "123456789012345" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+import { metaPixel } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [metaPixel({ pixelId: "123456789012345" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">

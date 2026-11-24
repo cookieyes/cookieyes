@@ -2,7 +2,8 @@ import { createFromSource } from "fumadocs-core/search/server";
 import { source } from "@/lib/source";
 
 /**
- * Each page is tagged with its root — `nextjs`, `react`, `vue`, `nuxt`, `core` or `changelog` — so the
+ * Each page is tagged with its root (`nextjs`, `react`, `vue`, `nuxt`, `svelte`, `sveltekit`, `core` or
+ * `changelog`), so the
  * search dialog can ask for the reader's framework plus the changelog and never surface
  * a React hook to someone reading the JavaScript docs. The three framework copies of a
  * shared page would otherwise appear as three near-identical results.

@@ -1,7 +1,7 @@
 ---
 title: useConsentActions
 description: Accept, reject, save or reset consent, and open the dialogs, from your own buttons.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -12,7 +12,7 @@ Returns the functions that change consent or open a dialog. Use it to build your
 
 </Framework>
 
-<Framework when="vue nuxt">
+<Framework when="vue nuxt svelte sveltekit">
 
 Returns the functions that change consent or open a dialog. Use it to build your own controls: a "Cookie settings" link in the footer, an accept button in a custom banner, a reset button on a settings page. It only writes, so it does not track consent changes. To read consent, use [`useConsent()`](/docs/hooks/use-consent).
 
@@ -73,6 +73,38 @@ const { showPreferences } = useConsentActions();
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte title="src/lib/CookieSettingsLink.svelte"
+<script lang="ts">
+  import { useConsentActions } from "@cookieyes/svelte";
+
+  const { showPreferences } = useConsentActions();
+</script>
+
+<button type="button" onclick={showPreferences}>Cookie settings</button>
+```
+
+Destructuring is fine here: the actions are plain functions, not state.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```svelte title="src/lib/CookieSettingsLink.svelte"
+<script lang="ts">
+  import { useConsentActions } from "@cookieyes/sveltekit";
+
+  const { showPreferences } = useConsentActions();
+</script>
+
+<button type="button" onclick={showPreferences}>Cookie settings</button>
+```
+
+Destructuring is fine here: the actions are plain functions, not state.
+
+</Framework>
+
 Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can reach it. The dialog moves focus into itself when it opens and back to your button when it closes.
 
 ## The actions
@@ -107,6 +139,18 @@ Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can 
 
 </Framework>
 
+<Framework when="svelte">
+
+**Tell the consent record where your controls are.** In `mode: "self-hosted"` every decision is sent as a [consent record](/docs/getting-started/self-hosted) with a `source`. Pass it once, `useConsentActions("banner")` (or `"preferences"`, `"optout"`), and every action from that hook records it. Without it, decisions are recorded as `"api"`. The actions still take no arguments, so `onclick={acceptAll}` works as before.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**Tell the consent record where your controls are.** In `mode: "self-hosted"` every decision is sent as a [consent record](/docs/getting-started/self-hosted) with a `source`. Pass it once, `useConsentActions("banner")` (or `"preferences"`, `"optout"`), and every action from that hook records it. Without it, decisions are recorded as `"api"`. The actions still take no arguments, so `onclick={acceptAll}` works as before.
+
+</Framework>
+
 <Framework when="nextjs react">
 
 **Before the runtime is ready** (on the server, or if `initCookieYes()` has not run), every action is a silent no-op. Nothing throws.
@@ -122,6 +166,18 @@ Use a real `<button>` or an `<a href>`, so keyboard and screen-reader users can 
 <Framework when="nuxt">
 
 **Call it inside `setup()` or `<script setup>`.** The module installs the plugin before any component renders, so there is nothing else to set up.
+
+</Framework>
+
+<Framework when="svelte">
+
+**Without the provider it throws.** If no `<CookieYesProvider>` is above the component, calling `useConsentActions()` throws "could not find CookieYes". Call it while the component initialises, and call the actions it returns from your handlers.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**Outside the root it throws.** If the component is not rendered inside `<CookieYesRoot>`, calling `useConsentActions()` throws "could not find CookieYes". Call it while the component initialises, and call the actions it returns from your handlers.
 
 </Framework>
 
@@ -154,6 +210,20 @@ You called `updateCategory()` without `save()`.
 
 **`useConsentActions is not defined`.**
 `@cookieyes/nuxt` is missing from `modules` in `nuxt.config.ts`. See [Installation](/docs/getting-started/installation).
+
+</Framework>
+
+<Framework when="svelte">
+
+**It throws "could not find CookieYes".**
+The component is not inside `<CookieYesProvider>`, or you called `useConsentActions()` inside an event handler. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**It throws "could not find CookieYes".**
+The component is not inside `<CookieYesRoot>`, or you called `useConsentActions()` inside an event handler. See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes).
 
 </Framework>
 

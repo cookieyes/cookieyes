@@ -1,4 +1,13 @@
-type PackageKey = "core" | "react" | "nextjs" | "vue" | "nuxt" | "cli" | "translations";
+type PackageKey =
+  | "core"
+  | "react"
+  | "nextjs"
+  | "vue"
+  | "nuxt"
+  | "svelte"
+  | "sveltekit"
+  | "cli"
+  | "translations";
 
 /** Initial shown in the colour chip — mirrors the sidebar package switcher. */
 const PACKAGE_MARK: Record<PackageKey, string> = {
@@ -7,6 +16,8 @@ const PACKAGE_MARK: Record<PackageKey, string> = {
   nextjs: "N",
   vue: "V",
   nuxt: "▲",
+  svelte: "S",
+  sveltekit: "K",
   cli: "✦",
   translations: "T",
 };

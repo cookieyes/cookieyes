@@ -96,6 +96,20 @@
       "initial": 18900,
       "total": 19850
     },
+    "svelte": {
+      "$comment": [
+        "@cookieyes/svelte's README setup: <CookieYesProvider> with <CookieBanner />,",
+        "<CookiePreferences /> and <RecallButton /> (fixture `with-svelte`). Measured 27449 /",
+        "28399, and the budget is set just above them. Its control is an empty Vite + Svelte app",
+        "(`baseline-svelte`), not the Next.js one, so it is not directly comparable with",
+        "`interface`. Svelte's runtime is tree-shaken like Vue's, so the control carries only what",
+        "an empty app uses (about 9 KB gzip, mounting included) and the runtime features the",
+        "components use (blocks, snippets, effects, events) count in this figure, whereas React's",
+        "whole runtime sits in the Next.js control."
+      ],
+      "initial": 27650,
+      "total": 28600
+    },
     "nuxt": {
       "$comment": [
         "@cookieyes/nuxt: the module in `modules` and <CookieYesRoot /> in app.vue. Measured",
@@ -112,6 +126,22 @@
       ],
       "initial": 22150,
       "total": 20800
+    },
+    "sveltekit": {
+      "$comment": [
+        "@cookieyes/sveltekit's README setup: cookieyesHandle, loadConsent, <CookieYesRoot> in",
+        "the root layout and the styles route (fixture `with-sveltekit`). Measured 29262 / 30355,",
+        "and the budget is set just above them. Its control is an empty SvelteKit app",
+        "(`baseline-sveltekit`), and the page read is the HTML the built Node server renders for /",
+        "plus the modulepreload Link header SvelteKit sends with it, so it is comparable with",
+        "`nuxt` and `svelte` in method but not in size. It is about 1.8 KB above `svelte`: the",
+        "provider and the opt-out dialog <CookieYesRoot> adds, which renders the opt-out only",
+        "when a CCPA regulation can apply but imports it statically, and the hand-over of the",
+        "server-read state. The server code (handle, load, styles route) is not in the client",
+        "bundle, and neither is the stylesheet, which is not a script."
+      ],
+      "initial": 29460,
+      "total": 30560
     },
     "devtools": {
       "$comment": [

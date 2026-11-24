@@ -1,7 +1,7 @@
 ---
 title: Runtime and server helpers
 description: Direct access to the runtime from plain code, and reading a returning visitor's consent on the server.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What this page covers
@@ -21,6 +21,18 @@ Two things the regular composables do not do: reaching the runtime from code tha
 <Framework when="nuxt">
 
 Two things the regular composables do not do: reaching the runtime from code that is not a component, and knowing a visitor's saved consent on the server so the banner is right on the first paint. The module does the second for you. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+</Framework>
+
+<Framework when="svelte">
+
+Two things the regular hooks do not do: reaching the runtime from code that is not a component, and reading a visitor's saved consent on the server so the banner is right on the first paint. Most apps need neither. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Two things the regular hooks do not do: reaching the runtime from code that is not a component, and knowing a visitor's saved consent on the server so the banner is right on the first paint. The handle does the second for you. If you want to read or change consent in a component, use [`useConsent()`](/docs/hooks/use-consent) and [`useConsentActions()`](/docs/hooks/use-consent-actions).
 
 </Framework>
 
@@ -85,9 +97,49 @@ The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every a
 
 </Framework>
 
+<Framework when="svelte">
+
+`<CookieYesProvider>` starts one runtime for the page. `getCookieYes()` returns it from any code, such as a store or a plain module, and `useConsentRuntime()` returns the same object inside a component.
+
+```ts title="src/lib/consent-log.ts"
+import { getCookieYes } from "@cookieyes/svelte";
+
+export function logCurrentConsent() {
+  const snapshot = getCookieYes().getSnapshot();
+  console.log(snapshot.committedCategories);
+}
+```
+
+The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every action) and `getIntegrations()` for a debug panel.
+
+**`getCookieYes()` throws** with `[cookieyes] getCookieYes() found no runtime` until a `<CookieYesProvider>` has run, and `useConsentRuntime()` throws like every other hook without a provider above it. On the server one runtime serves every request and holds no visitor's choice, so call `getCookieYes()` from an event handler, `onMount` or other code that runs in the browser.
+
+`resetCookieYes()` clears the runtime, so the next provider starts fresh. Use it between tests.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+`<CookieYesRoot>` starts one runtime for the page. `getCookieYes()` returns it from any code, such as a store or a plain module, and `useConsentRuntime()` returns the same object inside a component.
+
+```ts title="src/lib/consent-log.ts"
+import { getCookieYes } from "@cookieyes/sveltekit";
+
+export function logCurrentConsent() {
+  const snapshot = getCookieYes().getSnapshot();
+  console.log(snapshot.committedCategories);
+}
+```
+
+The runtime gives you `getSnapshot()`, `subscribe(listener)`, `manager` (every action) and `getIntegrations()` for a debug panel.
+
+**Call it from browser code.** `getCookieYes()` throws with `[cookieyes] getCookieYes() found no runtime` until `<CookieYesRoot>` has run, and `useConsentRuntime()` throws like every other hook outside `<CookieYesRoot>`. On the server one runtime serves every request and holds no visitor's choice, so call `getCookieYes()` from an event handler, `onMount` or other code that runs in the browser. To read consent while rendering, use [`useConsent()`](/docs/hooks/use-consent).
+
+</Framework>
+
 ## Read a returning visitor's consent on the server
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue svelte">
 
 By default the server does not know what a visitor chose, so it renders the banner for everyone and the browser removes it after loading, which a returning visitor sees as a flash. To avoid it, read the saved decision from the request cookie and pass it to `CookieYesProvider`.
 
@@ -108,6 +160,37 @@ Composables read the server's answer only inside `<CookieYesRoot>`. Elsewhere th
 
 **The banner flashes on every load for a returning visitor.**
 On a server-rendered route, the banner is rendered outside `<CookieYesRoot>`, where no server-read consent reaches it. Render it inside the slot of `<CookieYesRoot>`. With `ssr: false`, `nuxt generate` or a cached route, the flash is expected: see above.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+The handle does this for you; there is nothing to call. On every request `cookieyesHandle` reads the consent cookie and the visitor's region from the Vercel (`x-vercel-ip-country`, `x-vercel-ip-country-region`) or Cloudflare (`cf-ipcountry`) headers into `event.locals.cookieyes`. `loadConsent` hands both to the page as `data.consent`, and `<CookieYesRoot state={data.consent}>` gives them to the provider it renders. Those headers are then the only region source, in the browser too: a `region.detect` of yours is not used on such a page. A returning visitor gets no banner and no flash, and a visitor whose region maps to `"CCPA"` gets the CCPA banner from the server. `Sec-GPC` stays on the server; Global Privacy Control is applied in the browser after hydration.
+
+Your own server code can read the same values. `event.locals.cookieyes` (type `CookieYesLocals`) is set in every `load`, form action and endpoint that runs after the handle:
+
+```ts title="src/routes/account/+page.server.ts"
+import type { PageServerLoad } from "./$types";
+
+export const load: PageServerLoad = ({ locals }) => {
+  // null means the visitor has not chosen yet.
+  const saved = locals.cookieyes.initialConsent;
+  return { analyticsAllowed: saved?.categories.analytics === true };
+};
+```
+
+A prerendered page reads nothing from the request: it is built once for every visitor, so the banner is in the HTML for everyone and the browser hides it for a returning visitor after hydration. A route with `ssr = false` gets `data.consent` from the server's data request. With no server at all, such as `adapter-static`, leave out `+layout.server.ts` and render `<CookieYesRoot {config}>` without `state`. One visitor's choice or region never reaches another.
+
+## Common mistakes
+
+**`loadConsent() found no event.locals.cookieyes`.**
+`cookieyesHandle(config)` is not exported from `src/hooks.server.ts`. Add it, and combine it with a handle of your own with `sequence()` from `@sveltejs/kit/hooks`.
+
+**The banner flashes on every load for a returning visitor.**
+`<CookieYesRoot>` gets no `state`, or the banner is rendered outside it. Pass `state={data.consent}` from `loadConsent`, and leave the banner to `<CookieYesRoot>`. On a prerendered page the flash is expected: see above.
+
+**`[cookieyes] getCookieYes() found no runtime`.**
+`getCookieYes()` ran on the server, or before `<CookieYesRoot>` mounted. Call it from browser code, or use `useConsent()` while rendering.
 
 </Framework>
 
@@ -218,6 +301,79 @@ A client-only app (Vite with no server rendering) has no server render, so it ne
 
 </Framework>
 
+<Framework when="svelte">
+
+Read the request's `Cookie` header with `readServerConsent()`:
+
+```ts title="src/server/consent.ts"
+import { readServerConsent } from "@cookieyes/svelte";
+
+export function getInitialConsent(request: Request) {
+  // null means the visitor has not chosen yet: the banner shows as usual.
+  return readServerConsent(request.headers.get("cookie") ?? "", { regulation: "GDPR" });
+}
+```
+
+The root component takes the result as a prop and hands it to the provider, which wraps the consent components. `config` is the module-level object from `src/lib/cookieyes.ts`: the provider reuses the running runtime when it gets the same object, so a server that renders per request does not build a new one each time.
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR" };
+```
+
+```svelte title="src/App.svelte"
+<script lang="ts">
+  import {
+    type ConsentSnapshot,
+    CookieBanner,
+    CookiePreferences,
+    CookieYesProvider,
+    RecallButton,
+  } from "@cookieyes/svelte";
+  import { config } from "./lib/cookieyes";
+
+  let { initialConsent }: { initialConsent: ConsentSnapshot | null } = $props();
+</script>
+
+<CookieYesProvider {config} regulation="GDPR" {initialConsent}>
+  <CookieBanner />
+  <CookiePreferences />
+  <RecallButton />
+  <h1>Your app</h1>
+</CookieYesProvider>
+```
+
+Render it per request with the consent passed in:
+
+```ts title="src/entry-server.ts"
+import { render } from "svelte/server";
+import App from "./App.svelte";
+import { getInitialConsent } from "./server/consent";
+
+export function renderPage(request: Request) {
+  return render(App, { props: { initialConsent: getInitialConsent(request) } });
+}
+```
+
+Hydrate with the same value, so the first client render matches the server HTML. The consent cookie is readable in the browser, so the same function gives the same answer there:
+
+```ts title="src/entry-client.ts"
+import "@cookieyes/svelte/styles.css";
+import { hydrate } from "svelte";
+import { readServerConsent } from "@cookieyes/svelte";
+import App from "./App.svelte";
+
+hydrate(App, {
+  target: document.body,
+  props: { initialConsent: readServerConsent(document.cookie, { regulation: "GDPR" }) },
+});
+```
+
+A client-only app (Vite with no server rendering) has no server render, so it needs none of this.
+
+</Framework>
+
 <Framework when="nextjs react">
 
 Pass the result to the provider only. Never write a visitor's consent into `initCookieYes()` or onto the runtime: the server runs one process for every visitor at once, and per-visitor values there would leak between them.
@@ -253,6 +409,28 @@ No `initialConsent` reached `CookieYesProvider`. Read it on the server as shown 
 
 **One visitor's consent appears for another in production.**
 A per-visitor value was written into the plugin config or onto the runtime on the server. Per-visitor values go on `CookieYesProvider` only.
+
+</Framework>
+
+<Framework when="svelte">
+
+Pass the result to the provider only. Never write a visitor's consent into `config` or onto the runtime: the server runs one process for every visitor at once, and per-visitor values there would leak between them.
+
+To choose the regulation per visitor on the server, `regionFromHeaders(headers)` from `@cookieyes/svelte` reads the visitor's region, such as `"DE"` or `"US-CA"`, from the hosting provider's headers. Map it to `"GDPR"` or `"CCPA"` and pass that as the provider's `regulation`. See the `region` option on [Configuration](/docs/getting-started/configuration#region).
+
+## Common mistakes
+
+**`[cookieyes] getCookieYes() found no runtime`, or `could not find CookieYes`.**
+No `<CookieYesProvider>` has run yet, or a hook was called outside component initialisation. Render the provider around your app, and call hooks while a component initialises.
+
+**The banner flashes on every load for a returning visitor.**
+No `initialConsent` reached `CookieYesProvider`, on the server or when hydrating. Pass it in both, as shown above.
+
+**The runtime is rebuilt on every server render.**
+The config is written inline in a component, so each render passes a new object. Import one module-level `config`.
+
+**One visitor's consent appears for another in production.**
+A per-visitor value was written into `config` or onto the runtime on the server. Per-visitor values go on `CookieYesProvider` only.
 
 </Framework>
 

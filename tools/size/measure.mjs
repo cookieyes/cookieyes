@@ -103,7 +103,8 @@ const REPO = resolve(HERE, "..", "..");
  * fixtures do: a delta over an empty Next.js app would put React's runtime in a
  * Vue figure, so `baseline-vue` (an empty Vite + Vue app) is the control for
  * `vue`, and a control is an entry whose `control` is `null`. `nuxt` is measured
- * against `baseline-nuxt`, an empty Nuxt app, for the same reason. `key` is what
+ * against `baseline-nuxt`, an empty Nuxt app, and `sveltekit` against
+ * `baseline-sveltekit`, an empty SvelteKit app, for the same reason. `key` is what
  * appears in the report, in the budgets and on the site, so it names the thing a
  * reader recognises ("core", "interface") rather than the directory.
  */
@@ -139,6 +140,18 @@ const DEFAULT_APPS = [
     label: "@cookieyes/vue: banner + preferences + recall (three-file setup)",
   },
   {
+    dir: "baseline-svelte",
+    key: "baseline-svelte",
+    control: null,
+    label: "empty Vite + Svelte app (control for the Svelte adapter)",
+  },
+  {
+    dir: "with-svelte",
+    key: "svelte",
+    control: "baseline-svelte",
+    label: "@cookieyes/svelte: banner + preferences + recall (README setup)",
+  },
+  {
     dir: "baseline-nuxt",
     key: "baseline-nuxt",
     control: null,
@@ -149,6 +162,18 @@ const DEFAULT_APPS = [
     key: "nuxt",
     control: "baseline-nuxt",
     label: "@cookieyes/nuxt: the module and <CookieYesRoot />",
+  },
+  {
+    dir: "baseline-sveltekit",
+    key: "baseline-sveltekit",
+    control: null,
+    label: "empty SvelteKit app (control for the SvelteKit integration)",
+  },
+  {
+    dir: "with-sveltekit",
+    key: "sveltekit",
+    control: "baseline-sveltekit",
+    label: "@cookieyes/sveltekit: handle, load, <CookieYesRoot /> and the styles route",
   },
   {
     dir: "with-nextjs-devtools",
@@ -332,6 +357,7 @@ function otherRouteHtml(appDir) {
  */
 function chunkSets(appDir) {
   if (isViteApp(appDir)) return viteChunkSets(appDir);
+  if (isSvelteKitApp(appDir)) return svelteKitChunkSets(appDir);
   if (isNuxtApp(appDir)) return nuxtChunkSets(appDir);
   const indexHtml = join(appDir, ".next", "server", "app", "index.html");
   if (!existsSync(indexHtml)) {
@@ -386,6 +412,20 @@ function nuxtChunkSets(appDir) {
   return moduleChunkSets(join(output, "index.html"), publicDir, join(publicDir, "_nuxt"));
 }
 
+/**
+ * The two chunk sets for a SvelteKit app, on the same definitions as a Vite app.
+ *
+ * `vite build` with the Node adapter prerenders nothing, so the HTML is the page the built
+ * server renders for `/` (see `renderServerPage`). Kit preloads the entry and the nodes the
+ * page needs with `<link rel="modulepreload">`; every other script under `_app` is a dynamic
+ * import (the other routes' nodes), present on both sides of the subtraction or counted in
+ * `total` only.
+ */
+function svelteKitChunkSets(appDir) {
+  const client = join(appDir, ".output", "client");
+  return moduleChunkSets(join(appDir, ".output", "index.html"), client, join(client, "_app"));
+}
+
 /** `initial` from a built page's module scripts and preloads, `total` adding every emitted script. */
 function moduleChunkSets(indexHtml, root, assets) {
   if (!existsSync(indexHtml)) {
@@ -402,7 +442,7 @@ function moduleChunkSets(indexHtml, root, assets) {
       (/^<link/i.test(tag) && /\brel="modulepreload"/i.test(tag));
     const reference = /\b(?:src|href)="([^"]+\.js)"/i.exec(tag)?.[1];
     if (!eager || !reference) continue;
-    const file = join(root, reference.replace(/^\//, ""));
+    const file = join(root, reference.replace(/^\.?\//, ""));
     if (!existsSync(file)) {
       throw new Error(
         `${relative(REPO, indexHtml)} references ${reference}, which was not emitted`,
@@ -415,7 +455,7 @@ function moduleChunkSets(indexHtml, root, assets) {
 
   const total = new Set(initial);
   if (existsSync(assets)) {
-    for (const name of readdirSync(assets).sort()) {
+    for (const name of readdirSync(assets, { recursive: true }).sort()) {
       if (name.endsWith(".js")) total.add(join(assets, name));
     }
   }
@@ -467,7 +507,9 @@ function installFixture(appDir, name, tarballs) {
     .replace("__TARBALL_DEVTOOLS__", `file:${tarballs["@cookieyes/devtools"]}`)
     .replace("__TARBALL_VANILLA__", `file:${tarballs["@cookieyes/vanilla"]}`)
     .replace("__TARBALL_VUE__", `file:${tarballs["@cookieyes/vue"]}`)
-    .replace("__TARBALL_NUXT__", `file:${tarballs["@cookieyes/nuxt"]}`);
+    .replace("__TARBALL_NUXT__", `file:${tarballs["@cookieyes/nuxt"]}`)
+    .replace("__TARBALL_SVELTE__", `file:${tarballs["@cookieyes/svelte"]}`)
+    .replace("__TARBALL_SVELTEKIT__", `file:${tarballs["@cookieyes/sveltekit"]}`);
   if (resolved.includes("__TARBALL_")) {
     throw new Error(`fixture "${name}" has an unresolved tarball placeholder in package.json`);
   }
@@ -548,6 +590,8 @@ function installFixture(appDir, name, tarballs) {
     "vanilla",
     "vue",
     "nuxt",
+    "svelte",
+    "sveltekit",
     "scripts",
     "devtools",
   ]) {
@@ -566,6 +610,7 @@ function installFixture(appDir, name, tarballs) {
   for (const [framework, label] of [
     ["react", "React"],
     ["vue", "Vue"],
+    ["svelte", "Svelte"],
   ]) {
     const seen = new Set();
     if (existsSync(pnpmDir)) {
@@ -587,13 +632,22 @@ function installFixture(appDir, name, tarballs) {
 // Build
 // ---------------------------------------------------------------------------
 
-/** Vite and Nuxt fixtures are recognised by their config; everything else is a Next.js app. */
-const isViteApp = (appDir) => existsSync(join(appDir, "vite.config.ts"));
+/**
+ * Vite, Nuxt and SvelteKit fixtures are recognised by their config; everything else is a
+ * Next.js app. A SvelteKit fixture also has a `vite.config.ts`, so it is checked first.
+ */
+const isSvelteKitApp = (appDir) => existsSync(join(appDir, "svelte.config.js"));
+const isViteApp = (appDir) => !isSvelteKitApp(appDir) && existsSync(join(appDir, "vite.config.ts"));
 const isNuxtApp = (appDir) => existsSync(join(appDir, "nuxt.config.ts"));
 
 function build(appDir, name) {
-  const tool = isViteApp(appDir) ? "vite" : isNuxtApp(appDir) ? "nuxi" : "next";
-  const outputs = { vite: ["dist"], nuxi: [".nuxt", ".output"], next: [".next"] }[tool];
+  const vite = isViteApp(appDir) || isSvelteKitApp(appDir);
+  const tool = vite ? "vite" : isNuxtApp(appDir) ? "nuxi" : "next";
+  const outputs = {
+    vite: isSvelteKitApp(appDir) ? [".svelte-kit", ".output"] : ["dist"],
+    nuxi: [".nuxt", ".output"],
+    next: [".next"],
+  }[tool];
   for (const output of outputs) rmSync(join(appDir, output), { recursive: true, force: true });
   const started = Date.now();
   const result = spawnSync("npx", [tool, "build"], {
@@ -616,7 +670,7 @@ function build(appDir, name) {
   return Date.now() - started;
 }
 
-/** A port nothing is listening on, for the Nuxt server to take. */
+/** A port nothing is listening on, for the built server to take. */
 function freePort() {
   return new Promise((resolvePort, reject) => {
     const probe = createServer();
@@ -629,18 +683,18 @@ function freePort() {
 }
 
 /**
- * Starts a built Nuxt fixture's server, saves the HTML it renders for `/` as
- * `.output/index.html`, and stops it.
+ * Starts a built Nuxt or SvelteKit fixture's server (`entry`, relative to the fixture), saves
+ * the HTML it renders for `/` as `.output/index.html`, and stops it.
  *
- * Nuxt renders pages on request, so unlike Next.js and Vite a build leaves no
+ * These frameworks render pages on request, so unlike Next.js and Vite a build leaves no
  * HTML to read. Prerendering `/` would produce one, but it also changes the
  * client bundle (payload extraction adds about 2 KB to Nuxt's entry), and no
  * build tuning goes into a fixture. The saved file lets `--no-build` re-read
  * the measurement without starting a server.
  */
-async function renderNuxtPage(appDir, name) {
+async function renderServerPage(appDir, name, entry) {
   const port = await freePort();
-  const server = spawn(process.execPath, [join(".output", "server", "index.mjs")], {
+  const server = spawn(process.execPath, [entry], {
     cwd: appDir,
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...process.env, NODE_ENV: "production", HOST: "127.0.0.1", PORT: String(port) },
@@ -665,7 +719,16 @@ async function renderNuxtPage(appDir, name) {
         if (!response.ok) {
           throw new Error(`the server for fixture "${name}" answered ${response.status} for /`);
         }
-        writeFileSync(join(appDir, ".output", "index.html"), await response.text());
+        // SvelteKit sends the preload set of a server-rendered page in a Link header, not in
+        // the HTML (only prerendered pages get tags). The header is what the browser acts on,
+        // so it is folded into the saved page as the tags it stands for.
+        const preloads = [
+          ...(response.headers.get("link") ?? "").matchAll(/<([^>]+)>;\s*rel="modulepreload"/g),
+        ].map(([, href]) => `<link rel="modulepreload" href="${href}">\n`);
+        writeFileSync(
+          join(appDir, ".output", "index.html"),
+          preloads.join("") + (await response.text()),
+        );
         return;
       }
       if (server.exitCode !== null || Date.now() > deadline) {
@@ -692,6 +755,8 @@ const TARBALL_PACKAGES = [
   "@cookieyes/vanilla",
   "@cookieyes/vue",
   "@cookieyes/nuxt",
+  "@cookieyes/svelte",
+  "@cookieyes/sveltekit",
 ];
 
 /** Bytes of file content inside a `.tgz`, read from the tar headers. */
@@ -785,6 +850,8 @@ if (doBuild) {
     "vanilla",
     "vue",
     "nuxt",
+    "svelte",
+    "sveltekit",
     "scripts",
     "test",
     "devtools",
@@ -821,9 +888,14 @@ for (const app of APPS) {
     installFixture(appDir, app.dir, tarballs);
     process.stderr.write("building … ");
     let ms = build(appDir, app.dir);
-    if (isNuxtApp(appDir)) {
+    const server = isSvelteKitApp(appDir)
+      ? join(".output", "index.js")
+      : isNuxtApp(appDir)
+        ? join(".output", "server", "index.mjs")
+        : null;
+    if (server) {
       const started = Date.now();
-      await renderNuxtPage(appDir, app.dir);
+      await renderServerPage(appDir, app.dir, server);
       ms += Date.now() - started;
     }
     process.stderr.write(`${(ms / 1000).toFixed(1)}s\n`);
@@ -915,13 +987,17 @@ const report = {
       "is reported alongside. 'initial' counts only scripts the prerendered HTML references; " +
       "'total' counts every emitted client chunk including dynamic ones. The Vue entry is " +
       "measured the same way against an empty Vite + Vue app, so Vue's runtime is in its control, " +
-      "and the Nuxt entry against an empty Nuxt app, reading the HTML its server renders for /.",
+      "the Svelte entry against an empty Vite + Svelte app, " +
+      "the Nuxt entry against an empty Nuxt app, and the SvelteKit entry against an empty " +
+      "SvelteKit app, reading the HTML their servers render for /.",
     compression: { headline: "gzip", gzipLevel: 9, brotliQuality: 11 },
     next: "16.3.0",
     react: "19.2.8",
     vite: "8.3.6",
     vue: "3.5.45",
     nuxt: "4.6.4",
+    svelte: "5.57.3",
+    sveltekit: "2.70.4",
   },
   measuredAt: new Date().toISOString(),
   node: process.version,

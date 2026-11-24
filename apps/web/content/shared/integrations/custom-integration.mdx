@@ -1,7 +1,7 @@
 ---
 title: Custom integration
 description: Load any script only after consent, with customScript() or a small integration object of your own.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 Two ways to gate a tool that has no ready-made integration. `customScript()` covers most cases: give it a script URL and a category. Write an integration object of your own when the tool needs more, for example a call to its own consent API instead of removing the script.
@@ -21,6 +21,16 @@ Install the integrations package and add `customScript()` to the config you pass
 <Framework when="nuxt">
 
 Install the integrations package and add `customScript()` to `cookieyes.integrations` in `app/app.config.ts`:
+
+</Framework>
+<Framework when="svelte">
+
+Install the integrations package and add `customScript()` to the config you pass to `<CookieYesProvider>`:
+
+</Framework>
+<Framework when="sveltekit">
+
+Install the integrations package and add `customScript()` to the config in `src/lib/cookieyes.ts`:
 
 </Framework>
 
@@ -97,6 +107,50 @@ export default defineAppConfig({
 ```
 
 `integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
+
+</Framework>
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+import { customScript } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [
+    customScript({
+      id: "chat-widget",
+      src: "https://cdn.example.com/widget.js",
+      category: "functional",
+    }),
+  ],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+import { customScript } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [
+    customScript({
+      id: "chat-widget",
+      src: "https://cdn.example.com/widget.js",
+      category: "functional",
+    }),
+  ],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
 
 </Framework>
 <Framework when="core">
@@ -200,6 +254,28 @@ To see every integration with its current status, log it from a component once i
 
 ```ts
 onMounted(() => console.table(getCookieYes().getIntegrations()));
+```
+
+</Framework>
+<Framework when="svelte">
+
+To see every integration with its current status, run this in the console:
+
+```ts check="false"
+import { getCookieYes } from "@cookieyes/svelte";
+
+console.table(getCookieYes().getIntegrations());
+```
+
+</Framework>
+<Framework when="sveltekit">
+
+To see every integration with its current status, run this in the console:
+
+```ts check="false"
+import { getCookieYes } from "@cookieyes/sveltekit";
+
+console.table(getCookieYes().getIntegrations());
 ```
 
 </Framework>

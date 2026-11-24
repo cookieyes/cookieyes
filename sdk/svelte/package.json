@@ -1,0 +1,87 @@
+{
+  "name": "@cookieyes/svelte",
+  "version": "0.0.0",
+  "description": "Svelte adapter for the CookieYes consent SDK: a provider, components and runes-based hooks",
+  "keywords": [
+    "cookie consent",
+    "GDPR",
+    "CCPA",
+    "cookie banner",
+    "consent management",
+    "privacy",
+    "compliance",
+    "Svelte",
+    "TypeScript",
+    "open source"
+  ],
+  "homepage": "https://developers.cookieyes.com/docs/svelte/getting-started/quick-start",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/svelte"
+  },
+  "license": "Apache-2.0",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.svelte"
+  ],
+  "type": "module",
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./critical.css": "./dist/critical.css"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && svelte-package -i src -o dist && node scripts/prune-dist.mjs && node scripts/copy-styles.mjs",
+    "dev": "svelte-package -i src -o dist -w",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run --coverage",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "svelte": ">=5.20.0"
+  },
+  "dependencies": {
+    "@cookieyes/core": "workspace:*",
+    "@cookieyes/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@cookieyes/test": "workspace:*",
+    "@sveltejs/package": "^2.5.8",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@types/node": "^26.1.1",
+    "@vitest/browser-playwright": "4.1.10",
+    "@vitest/coverage-v8": "^4.1.10",
+    "axe-core": "^4.12.1",
+    "jsdom": "^29.1.1",
+    "playwright": "^1.61.1",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.8",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

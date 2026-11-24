@@ -1,7 +1,7 @@
 ---
 title: CookieOptOut
 description: "The Do Not Sell dialog for CCPA: one checkbox that opts the visitor out of every optional category, and respects Global Privacy Control."
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -12,7 +12,7 @@ If the visitor's browser sends a Global Privacy Control signal, they start opted
 
 ## Add it
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue svelte">
 
 Render it next to the banner whenever your site can be under CCPA. Without it, Do Not Sell does nothing and nothing warns you.
 
@@ -21,6 +21,12 @@ Render it next to the banner whenever your site can be under CCPA. Without it, D
 <Framework when="nuxt">
 
 `<CookieYesRoot />` renders it for you whenever a CCPA regulation can apply: `regulation: "CCPA"`, `region.strictest: "CCPA"` or a `"CCPA"` value in `region.map`. If you list the components in its slot yourself, render it next to the banner. Without it, Do Not Sell does nothing and nothing warns you.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+`<CookieYesRoot>` renders it for you whenever a CCPA regulation can apply: `regulation: "CCPA"`, `region.strictest: "CCPA"` or a `"CCPA"` value in `region.map`. If you render the components in a `ui` snippet yourself, render it next to the banner. Without it, Do Not Sell does nothing and nothing warns you.
 
 </Framework>
 
@@ -58,6 +64,44 @@ Render it next to the banner whenever your site can be under CCPA. Without it, D
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieBanner,
+    CookieOptOut,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+  } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <CookieBanner />
+    <CookieOptOut />
+    <CookiePreferences />
+    <RecallButton />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+</Framework>
+
 If you serve GDPR visitors too, render `CookiePreferences` as well. Each dialog appears only under its own regulation.
 
 ## Change what it shows
@@ -80,6 +124,18 @@ The wording comes from `i18n` ([Translations](/docs/translations)) and the colou
 
 </Framework>
 
+<Framework when="svelte">
+
+The wording comes from `i18n` ([Translations](/docs/translations)) and the colours from `theme` ([Theme tokens](/docs/styling/theme-tokens)), both set in the `config` you pass to `<CookieYesProvider>`. There are no props for them.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+The wording comes from `i18n` ([Translations](/docs/translations)) and the colours from `theme` ([Theme tokens](/docs/styling/theme-tokens)), both set in the config in `src/lib/cookieyes.ts`. There are no props for them.
+
+</Framework>
+
 ## Restyle it
 
 <Framework when="nextjs react">
@@ -88,7 +144,7 @@ It accepts `className` and `style` like any element; they are added to the dialo
 
 </Framework>
 
-<Framework when="vue nuxt">
+<Framework when="vue nuxt svelte sveltekit">
 
 It accepts `class` and `style` like any element; they land on the dialog card and are added to its own styling. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`root`, `title`, `message`, `checkbox`, `checkboxLabel`, `cancel`, `confirm`, `confirmation`, `close`, `branding`). Or use its `data-cy-part` in your CSS. The parts are `optout`, `title`, `message`, `confirm` and `close`. For your own markup, use the [OptOut primitives](/docs/headless/opt-out).
 
@@ -117,6 +173,20 @@ The visitor is not under CCPA. Check `regulation` in the config you pass to `app
 
 **The dialog never appears.**
 The visitor is not under CCPA. Check `regulation`, or `region`, under the `cookieyes` key in `nuxt.config.ts`.
+
+</Framework>
+
+<Framework when="svelte">
+
+**The dialog never appears.**
+The visitor is not under CCPA. Check `regulation` in the `config` you pass to `<CookieYesProvider>`.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**The dialog never appears.**
+The visitor is not under CCPA. Check `regulation`, or `region`, in `src/lib/cookieyes.ts`.
 
 </Framework>
 

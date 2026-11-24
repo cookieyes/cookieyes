@@ -127,3 +127,53 @@ describe("HIGHEST_VERIFIED_VUE_MAJOR stays in sync with matrix.config.mjs", () =
     expect(`3.${minor}.0`).toBe(floor?.versions.vue);
   });
 });
+
+const svelteWarningFilePath = join(
+  repoRoot,
+  "sdk",
+  "svelte",
+  "src",
+  "diagnostics",
+  "svelte-version-warning.ts",
+);
+
+function highestPinnedSvelteMajor() {
+  const majors = combinations
+    .filter((combo) => combo.versions.svelte !== undefined)
+    .map((combo) => {
+      const match = /^(\d+)\./.exec(combo.versions.svelte);
+      if (!match) {
+        throw new Error(
+          `[warning-constant-sync] combination "${combo.id}" has an unparseable versions.svelte: "${combo.versions.svelte}".`,
+        );
+      }
+      return Number.parseInt(match[1], 10);
+    });
+  return Math.max(...majors);
+}
+
+describe("HIGHEST_VERIFIED_SVELTE_MAJOR stays in sync with matrix.config.mjs", () => {
+  it("matches the highest Svelte major pinned by any combination", () => {
+    const source = readFileSync(svelteWarningFilePath, "utf8");
+    const match = /HIGHEST_VERIFIED_SVELTE_MAJOR\s*=\s*(\d+)/.exec(source);
+    if (!match) {
+      throw new Error(
+        `[warning-constant-sync] could not find "HIGHEST_VERIFIED_SVELTE_MAJOR = <number>" in ${svelteWarningFilePath}.`,
+      );
+    }
+    const constantValue = Number.parseInt(match[1], 10);
+    const matrixMax = highestPinnedSvelteMajor();
+    expect(
+      constantValue,
+      `sdk/svelte/src/diagnostics/svelte-version-warning.ts's HIGHEST_VERIFIED_SVELTE_MAJOR is ` +
+        `${constantValue}, but matrix.config.mjs's highest pinned combination is Svelte ${matrixMax}.x. ` +
+        "Update whichever one is stale.",
+    ).toBe(matrixMax);
+  });
+
+  it("mirrors the declared floor: the floor combination pins the lowest version the peer range names", () => {
+    const pkg = JSON.parse(readFileSync(join(repoRoot, "sdk", "svelte", "package.json"), "utf8"));
+    const floor = combinations.find((combo) => combo.app === "svelte" && combo.role === "floor");
+    expect(`>=${floor?.versions.svelte}`).toBe(pkg.peerDependencies.svelte);
+  });
+});

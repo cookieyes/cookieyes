@@ -35,12 +35,15 @@ const tools: Tool[] = [
   {
     name: "search_docs",
     description:
-      "Search the CookieYes SDK documentation. Returns matching pages with title, URL and an excerpt. Restrict to one framework with `framework`: nextjs, react, vue, nuxt or core (plain JavaScript).",
+      "Search the CookieYes SDK documentation. Returns matching pages with title, URL and an excerpt. Restrict to one framework with `framework`: nextjs, react, vue, nuxt, svelte, sveltekit or core (plain JavaScript).",
     inputSchema: {
       type: "object",
       properties: {
         query: { type: "string", description: "Words to search for; every word must match." },
-        framework: { type: "string", enum: ["nextjs", "react", "vue", "nuxt", "core"] },
+        framework: {
+          type: "string",
+          enum: ["nextjs", "react", "vue", "nuxt", "svelte", "sveltekit", "core"],
+        },
       },
       required: ["query"],
     },

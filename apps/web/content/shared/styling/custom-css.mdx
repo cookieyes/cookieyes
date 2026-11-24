@@ -1,7 +1,7 @@
 ---
 title: Custom CSS
 description: Change the width, spacing or any single element with a CSS rule on its part name.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="core">
@@ -32,7 +32,7 @@ Every element the SDK renders carries a `data-cy-part` attribute: `banner`, `acc
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue svelte">
 
 ```css title="src/consent.css"
 [data-cy-part="banner"] {
@@ -77,7 +77,41 @@ export default defineNuxtConfig({
 
 </Framework>
 
-<Framework when="nextjs react vue core">
+<Framework when="sveltekit">
+
+```css title="src/app.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+Import it in the root layout. `cookieyesHandle` writes the SDK's critical CSS and stylesheet link right after `<meta charset>`, ahead of every other tag in `<head>`, so your file always comes after it and your rules win:
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import "../app.css";
+  import { CookieYesRoot } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {@render children()}
+</CookieYesRoot>
+```
+
+</Framework>
+
+<Framework when="nextjs react vue svelte core">
 
 Import it after the SDK's stylesheet, so your rules win:
 
@@ -110,6 +144,15 @@ import "./consent.css";
 
 </Framework>
 
+<Framework when="svelte">
+
+```ts title="src/main.ts" check="false"
+import "@cookieyes/svelte/styles.css";
+import "./consent.css";
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts" check="false"
@@ -135,9 +178,19 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue svelte">
 
 ```css title="src/consent.css"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: #15803d;
+}
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```css title="src/app.css"
 [data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
   background: #15803d;
 }
@@ -169,6 +222,18 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 </Framework>
 
+<Framework when="svelte">
+
+**Global CSS only.** The banner and recall button render into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing. A `<style>` block in one of your components is scoped to that component's own elements, so it does not reach any CookieYes element. Use a global stylesheet, or wrap the selector in `:global(...)`.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**Global CSS only.** The banner and recall button render into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing. A `<style>` block in one of your components is scoped to that component's own elements, so it does not reach any CookieYes element. Use a global stylesheet such as `src/app.css`, or wrap the selector in `:global(...)`.
+
+</Framework>
+
 **Shared names.** `title`, `close`, `accept-all`, `reject-all` and `branding` exist on more than one surface. To style one, add its parent: `[data-cy-part="banner"] [data-cy-part="title"]`.
 
 **Fonts.** The components set their own font and do not inherit yours. Use `theme.fontFamily`, or set `--cy-font` in CSS.
@@ -177,7 +242,7 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 ## Common mistakes
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte core">
 
 **A rule does nothing.**
 Your stylesheet loads before the SDK's. Import it after `styles.css`, or add the parent part to the selector.
@@ -188,6 +253,13 @@ Your stylesheet loads before the SDK's. Import it after `styles.css`, or add the
 
 **A rule does nothing.**
 The file is missing from the `css` option, or the selector is weaker than the SDK's own rule. Add it to `css`, or add the parent part to the selector.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**A rule does nothing.**
+The stylesheet is not imported anywhere, or the selector is weaker than the SDK's own rule. Import it in `src/routes/+layout.svelte`, or add the parent part to the selector.
 
 </Framework>
 

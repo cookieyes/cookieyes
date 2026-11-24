@@ -9,6 +9,8 @@ import {
   nextProjectPaths,
   nuxtProjectPaths,
   reactProjectPaths,
+  sveltekitProjectPaths,
+  svelteProjectPaths,
   vueProjectPaths,
 } from "../utils/detect-layout.js";
 
@@ -208,6 +210,76 @@ describe("vueProjectPaths", () => {
 
   it("defaults to TypeScript when there is no entry file", () => {
     expect(vueProjectPaths(tmp).typescript).toBe(true);
+  });
+});
+
+describe("svelteProjectPaths", () => {
+  it("uses TypeScript files when src/main.ts exists", () => {
+    touch("src/main.ts");
+    const p = svelteProjectPaths(tmp);
+    expect(p.typescript).toBe(true);
+    expect(p.entryPath).toBe(join(tmp, "src", "main.ts"));
+    expect(p.configLabel).toBe("src/lib/cookieyes.ts");
+    expect(p.rootPath).toBe(join(tmp, "src", "lib", "CookieYesRoot.svelte"));
+    expect(p.appPath).toBe(join(tmp, "src", "App.svelte"));
+  });
+
+  it("uses JavaScript files when only src/main.js exists", () => {
+    touch("src/main.js");
+    const p = svelteProjectPaths(tmp);
+    expect(p.typescript).toBe(false);
+    expect(p.entryLabel).toBe("src/main.js");
+    expect(p.configPath).toBe(join(tmp, "src", "lib", "cookieyes.js"));
+  });
+
+  it("defaults to TypeScript when there is no entry file", () => {
+    expect(svelteProjectPaths(tmp).typescript).toBe(true);
+  });
+});
+
+describe("sveltekitProjectPaths", () => {
+  it("uses TypeScript when there is a tsconfig and no hooks file", () => {
+    touch("tsconfig.json", "{}");
+    const p = sveltekitProjectPaths(tmp);
+    expect(p.typescript).toBe(true);
+    expect(p.configLabel).toBe("src/lib/cookieyes.ts");
+    expect(p.hooksPath).toBe(join(tmp, "src", "hooks.server.ts"));
+    expect(p.hooksExists).toBe(false);
+    expect(p.layoutServerLabel).toBe("src/routes/+layout.server.ts");
+    expect(p.stylesRoutePath).toBe(
+      join(tmp, "src", "routes", "cookieyes", "styles.css", "+server.ts"),
+    );
+    expect(p.layoutPath).toBe(join(tmp, "src", "routes", "+layout.svelte"));
+    expect(p.appDtsPath).toBe(join(tmp, "src", "app.d.ts"));
+    expect(p.staticAdapter).toBe(false);
+  });
+
+  it("uses JavaScript when there is no tsconfig", () => {
+    const p = sveltekitProjectPaths(tmp);
+    expect(p.typescript).toBe(false);
+    expect(p.configLabel).toBe("src/lib/cookieyes.js");
+    expect(p.stylesRouteLabel).toBe("src/routes/cookieyes/styles.css/+server.js");
+  });
+
+  it("follows an existing hooks file over the tsconfig", () => {
+    touch("tsconfig.json", "{}");
+    touch("src/hooks.server.js");
+    const p = sveltekitProjectPaths(tmp);
+    expect(p.typescript).toBe(false);
+    expect(p.hooksExists).toBe(true);
+    expect(p.hooksLabel).toBe("src/hooks.server.js");
+  });
+
+  it("reports an existing +layout.server file", () => {
+    touch("src/routes/+layout.server.js");
+    expect(sveltekitProjectPaths(tmp).existingLayoutServerLabel).toBe(
+      "src/routes/+layout.server.js",
+    );
+  });
+
+  it("detects adapter-static in the Svelte config", () => {
+    touch("svelte.config.js", `import adapter from "@sveltejs/adapter-static";\n`);
+    expect(sveltekitProjectPaths(tmp).staticAdapter).toBe(true);
   });
 });
 

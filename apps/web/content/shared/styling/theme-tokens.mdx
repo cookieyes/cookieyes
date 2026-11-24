@@ -1,7 +1,7 @@
 ---
 title: Theme tokens
 description: Set the brand colour, corner radius and font once; every CookieYes surface follows.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="core">
@@ -70,6 +70,40 @@ export default defineNuxtConfig({
 
 </Framework>
 
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+    fontFamily: "'Inter', sans-serif",
+  },
+};
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  theme: {
+    primaryColor: "#1863dc",
+    borderRadius: "8px",
+    fontFamily: "'Inter', sans-serif",
+  },
+};
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -127,7 +161,7 @@ Every variable with its light and dark default is on the [CSS variables referenc
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue svelte">
 
 ```css title="src/consent.css"
 :root {
@@ -146,6 +180,18 @@ Every variable with its light and dark default is on the [CSS variables referenc
 ```
 
 The server HTML carries the stylesheet's defaults too: the theme is applied in the browser, once the page has hydrated.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```css title="src/app.css"
+:root {
+  --cy-primary: #1863dc;
+}
+```
+
+Import the file in `src/routes/+layout.svelte`, as shown on [Custom CSS](/docs/styling/custom-css). The server HTML carries the stylesheet's defaults too: the theme is applied in the browser, once the page has hydrated.
 
 </Framework>
 

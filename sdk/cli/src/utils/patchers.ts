@@ -135,6 +135,55 @@ export function patchNuxtApp(src: string): string | null {
   return renderRootFirst(src);
 }
 
+const SVELTE_STYLES_IMPORT = "@cookieyes/svelte/styles.css";
+const SVELTE_ROOT_IMPORT = "./lib/CookieYesRoot.svelte";
+
+/**
+ * Import the stylesheet in a Svelte entry file. A missing import leaves the banner unstyled and
+ * nothing warns, so the file is only edited when it is recognisably an entry (it imports a
+ * `.svelte` component). Returns null when already patched or when it is not, so the caller prints
+ * the manual step instead of guessing.
+ */
+export function patchSvelteMain(src: string): string | null {
+  if (src.includes(SVELTE_STYLES_IMPORT)) return null;
+  if (hasMultilineImport(src)) return null;
+  if (!/^import\s.+\.svelte["'`]/m.test(src)) return null;
+  const { quote, semi } = importStyle(src);
+  return insertImport(src, `import ${quote}${SVELTE_STYLES_IMPORT}${quote}${semi}`);
+}
+
+/**
+ * Import `CookieYesRoot` in a Svelte root component's instance `<script>` and render it last in
+ * the markup, before a trailing `<style>` block. A `<script module>` is skipped: the import
+ * belongs with the component's own. Returns null when already patched or when there is no
+ * instance script to put the import in, so the caller prints the manual step.
+ */
+export function patchSvelteApp(src: string): string | null {
+  if (src.includes("CookieYesRoot")) return null;
+  const scripts = src.matchAll(/(<script\b([^>]*)>)([\s\S]*?)(<\/script\b[^>]*>)/gi);
+  const script = [...scripts].find((m) => !/\b(?:module|context\s*=)/.test(m[2] ?? ""));
+  if (!script) return null;
+  const [whole, open = "", , body = "", close = ""] = script;
+  // Script contents are indented, so the Vue helpers, which expect imports at column 0, do not
+  // see them.
+  if (/^[ \t]*import\s*(?:type\s+)?[\w$]*\s*,?\s*\{[^}\n]*$/m.test(body)) return null;
+
+  const imports = [...body.matchAll(/^([ \t]*)import\s.+$/gm)];
+  const last = imports[imports.length - 1];
+  const { quote, semi } = importStyle(last?.[0].trim() ?? "");
+  const importLine = `import CookieYesRoot from ${quote}${SVELTE_ROOT_IMPORT}${quote}${semi}`;
+  const newBody = last
+    ? `${body.slice(0, last.index + last[0].length)}\n${last[1]}${importLine}${body.slice(last.index + last[0].length)}`
+    : `\n  ${importLine}${body.startsWith("\n") ? body : `\n${body}`}`;
+  const withScript = src.replace(whole, () => `${open}${newBody}${close}`);
+
+  const style = /^<style\b/m.exec(withScript);
+  if (style) {
+    return `${withScript.slice(0, style.index)}<CookieYesRoot />\n\n${withScript.slice(style.index)}`;
+  }
+  return `${withScript.trimEnd()}\n\n<CookieYesRoot />\n`;
+}
+
 const NUXT_MODULE = "@cookieyes/nuxt";
 
 /** Index just past the string or comment that starts at `i`, or `i` when none starts there. */
@@ -240,4 +289,97 @@ export function patchNuxtConfig(src: string): string | null {
     added = comma ? ` ${entry}` : `, ${entry}`;
   }
   return `${src.slice(0, last + 1)}${added}${src.slice(last + 1)}`;
+}
+
+/**
+ * Compose `cookieyesHandle(config)` into an existing `src/hooks.server.*`: first in an existing
+ * `sequence(...)`, or in a new `sequence(cookieyesHandle(config), userHandle)` that replaces a
+ * `handle` declared as a const or a function. Returns null when already patched or when the file
+ * has any other shape (a re-exported `handle`, a second use of the name, a multi-line import, a
+ * `config` of its own), so the caller prints the manual step instead of guessing.
+ */
+export function patchSveltekitHooks(src: string): string | null {
+  if (src.includes("cookieyesHandle")) return null;
+  if (hasMultilineImport(src)) return null;
+  if (/(?<![\w$.])(?:config|userHandle)\b/.test(src)) return null;
+  const { quote, semi } = importStyle(src);
+  const imports = [
+    `import { cookieyesHandle } from ${quote}@cookieyes/sveltekit${quote}${semi}`,
+    `import { config } from ${quote}./lib/cookieyes${quote}${semi}`,
+  ];
+  const withImports = (body: string): string => imports.reduce(insertImport, body);
+  const hasSequenceImport = /^import\s*\{[^}]*\bsequence\b[^}]*\}\s*from/m.test(src);
+
+  const inSequence = /^(export\s+const\s+handle\b[^=\n]*=\s*sequence\()/m.exec(src);
+  if (inSequence) {
+    if (!hasSequenceImport) return null;
+    const head = inSequence[1] ?? "";
+    return withImports(src.replace(head, () => `${head}cookieyesHandle(config), `));
+  }
+
+  // The existing declaration is renamed, so every other use of `handle` would point at the wrong
+  // thing; only a file where it appears once is rewritten.
+  if ((src.match(/(?<![\w$.])handle\b/g) ?? []).length !== 1) return null;
+  const declaration = /^export\s+(const\s+handle\b|(?:async\s+)?function\s+handle\b)/m.exec(src);
+  if (!declaration) return null;
+  if (/\bsequence\b/.test(src) && !hasSequenceImport) return null;
+  const [text = ""] = declaration;
+  const renamed = src.replace(text, () =>
+    text.replace(/^export\s+/, "").replace(/handle\b/, "userHandle"),
+  );
+  const sequenceImport = hasSequenceImport
+    ? []
+    : [`import { sequence } from ${quote}@sveltejs/kit/hooks${quote}${semi}`];
+  const body = [...sequenceImport, ...imports].reduce(insertImport, renamed);
+  return `${body.trimEnd()}\n\nexport const handle = sequence(cookieyesHandle(config), userHandle)${semi}\n`;
+}
+
+/**
+ * Wrap the page content of a SvelteKit root layout in `<CookieYesRoot>`: import it and the shared
+ * config, take `data` from `$props()` and replace the one `{@render children()}`. With `withState`
+ * false (a build with no server, so no `loadConsent`) the root gets no `state` and `data` is left
+ * alone. Returns null when already patched or when the layout has no instance script, no
+ * destructured `$props()` with `children` (a plain type name such as `LayoutProps` after it is
+ * fine), or not exactly one `{@render children()}`, so the caller prints the manual step.
+ */
+export function patchSveltekitLayout(src: string, withState: boolean): string | null {
+  if (src.includes("CookieYesRoot")) return null;
+  const scripts = [...src.matchAll(/(<script\b([^>]*)>)([\s\S]*?)(<\/script\b[^>]*>)/gi)];
+  const script = scripts.find((m) => !/\b(?:module|context\s*=)/.test(m[2] ?? ""));
+  if (!script) return null;
+  const [whole, open = "", , body = "", close = ""] = script;
+  if (/^[ \t]*import\s*(?:type\s+)?[\w$]*\s*,?\s*\{[^}\n]*$/m.test(body)) return null;
+  if (/(?<![\w$.])(?:CookieYesRoot|config)\b/.test(body)) return null;
+
+  const props = /(let\s*\{)([^}]*)(\}\s*(?::\s*[\w$.]+\s*)?=\s*\$props\(\))/.exec(body);
+  if (!props) return null;
+  const names = (props[2] ?? "").split(",").map((n) => n.trim().split(/[\s:=]/)[0]);
+  if (!names.includes("children")) return null;
+  const needsData = withState && !names.includes("data");
+  const patchedProps = needsData ? ` data,${props[2]}` : (props[2] ?? "");
+
+  const markup = src.slice(src.indexOf(whole) + whole.length);
+  const render = [...markup.matchAll(/^([ \t]*)(\{@render children(?:\?\.)?\(\)\})[ \t]*$/gm)];
+  if (render.length !== 1 || (markup.match(/\{@render children/g) ?? []).length !== 1) return null;
+  const [line = "", indent = "", call = ""] = render[0] ?? [];
+
+  const imports = [...body.matchAll(/^([ \t]*)import\s.+$/gm)];
+  const last = imports[imports.length - 1];
+  const { quote, semi } = importStyle(last?.[0].trim() ?? "");
+  const importLines = [
+    `import { CookieYesRoot } from ${quote}@cookieyes/sveltekit${quote}${semi}`,
+    `import { config } from ${quote}../lib/cookieyes${quote}${semi}`,
+  ];
+  const withProps = body.replace(props[0], () => `${props[1]}${patchedProps}${props[3]}`);
+  const lead = last?.[1] ?? "  ";
+  const newBody = last
+    ? `${withProps.slice(0, last.index + last[0].length)}\n${importLines.map((l) => `${lead}${l}`).join("\n")}${withProps.slice(last.index + last[0].length)}`
+    : `\n${importLines.map((l) => `  ${l}`).join("\n")}${withProps.startsWith("\n") ? withProps : `\n${withProps}`}`;
+
+  const root = `<CookieYesRoot {config}${withState ? " state={data.consent}" : ""}>`;
+  const wrapped = [`${indent}${root}`, `${indent}  ${call}`, `${indent}</CookieYesRoot>`].join(
+    "\n",
+  );
+  const withScript = src.replace(whole, () => `${open}${newBody}${close}`);
+  return withScript.replace(line, () => wrapped);
 }

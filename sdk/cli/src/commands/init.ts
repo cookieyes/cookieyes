@@ -19,6 +19,8 @@ import {
   nextProjectPaths,
   nuxtProjectPaths,
   reactProjectPaths,
+  sveltekitProjectPaths,
+  svelteProjectPaths,
   vueProjectPaths,
 } from "../utils/detect-layout.js";
 import { detectPackageManager, type PackageManager } from "../utils/detect-pm.js";
@@ -29,6 +31,10 @@ import {
   patchNextjsPagesApp,
   patchNuxtApp,
   patchNuxtConfig,
+  patchSvelteApp,
+  patchSveltekitHooks,
+  patchSveltekitLayout,
+  patchSvelteMain,
   patchVueApp,
   patchVueMain,
 } from "../utils/patchers.js";
@@ -219,6 +225,88 @@ function vueRootTemplate(typescript: boolean, isCCPA: boolean): string {
   ].join("\n");
 }
 
+function svelteConfigTemplate(
+  opts: OptionInputs,
+  typescript: boolean,
+  pkg = "@cookieyes/svelte",
+): string {
+  const imports = [
+    ...(typescript ? [`import type { CookieYesConfig } from "${pkg}";`] : []),
+    ...localeImportLines(opts),
+  ];
+  return [
+    ...imports,
+    ...(imports.length > 0 ? [``] : []),
+    `export const config${typescript ? ": CookieYesConfig" : ""} = ${buildConfigLiteral(opts, "")};`,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * The root renders `children` inside the provider: Svelte's hooks read the provider's context, so
+ * a component outside it that calls one throws. Wrapping the app in the root avoids that.
+ */
+function svelteRootTemplate(typescript: boolean, isCCPA: boolean): string {
+  return [
+    `<script${typescript ? ' lang="ts"' : ""}>`,
+    ...(typescript ? [`  import type { Snippet } from "svelte";`] : []),
+    `  import {`,
+    `    CookieBanner,${isCCPA ? "\n    CookieOptOut," : ""}`,
+    `    CookiePreferences,`,
+    `    CookieYesProvider,`,
+    `    RecallButton,`,
+    `  } from "@cookieyes/svelte";`,
+    `  import { config } from "./cookieyes";`,
+    ``,
+    typescript
+      ? `  let { children }: { children?: Snippet } = $props();`
+      : `  let { children } = $props();`,
+    `</script>`,
+    ``,
+    `<CookieYesProvider {config}>`,
+    `  <CookieBanner />`,
+    `  <CookiePreferences />${isCCPA ? "\n  <CookieOptOut />" : ""}`,
+    `  <RecallButton />`,
+    `  {@render children?.()}`,
+    `</CookieYesProvider>`,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * The config is imported by relative path: SvelteKit 3 removed the `$lib` alias (it uses `#lib`
+ * subpath imports instead), and a relative path works on both majors.
+ */
+function sveltekitHooksTemplate(): string {
+  return [
+    `import { cookieyesHandle } from "@cookieyes/sveltekit";`,
+    `import { config } from "./lib/cookieyes";`,
+    ``,
+    `export const handle = cookieyesHandle(config);`,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * `data` and `state` only when `loadConsent` runs: a build with no server has no `data.consent`,
+ * and the root then decides in the browser.
+ */
+function sveltekitLayoutTemplate(typescript: boolean, withState: boolean): string {
+  return [
+    `<script${typescript ? ' lang="ts"' : ""}>`,
+    `  import { CookieYesRoot } from "@cookieyes/sveltekit";`,
+    `  import { config } from "../lib/cookieyes";`,
+    ``,
+    `  let { ${withState ? "data, " : ""}children } = $props();`,
+    `</script>`,
+    ``,
+    `<CookieYesRoot {config}${withState ? " state={data.consent}" : ""}>`,
+    `  {@render children()}`,
+    `</CookieYesRoot>`,
+    ``,
+  ].join("\n");
+}
+
 /**
  * The options go in `app.config.ts`, not under `cookieyes` in `nuxt.config.ts`: that key becomes
  * runtime config, which is JSON, so integrations and callbacks added there later would be dropped.
@@ -326,6 +414,8 @@ function pkgForFramework(framework: Framework): string {
   if (framework === "react") return "@cookieyes/react";
   if (framework === "vue") return "@cookieyes/vue";
   if (framework === "nuxt") return "@cookieyes/nuxt";
+  if (framework === "sveltekit") return "@cookieyes/sveltekit";
+  if (framework === "svelte") return "@cookieyes/svelte";
   return "@cookieyes/core";
 }
 
@@ -410,6 +500,8 @@ export function parseInitFlags(args: readonly string[]): InitFlags {
           "react",
           "vue",
           "nuxt",
+          "svelte",
+          "sveltekit",
           "vanilla",
         ] as const);
         break;
@@ -508,6 +600,16 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
                 label: "Nuxt",
                 hint: nuxt ? "detected" : "Nuxt 4",
               },
+              {
+                value: "svelte" as const,
+                label: "Svelte",
+                hint: detected === "svelte" ? "detected" : "Vite + Svelte 5",
+              },
+              {
+                value: "sveltekit" as const,
+                label: "SvelteKit",
+                hint: detected === "sveltekit" ? "detected" : "SvelteKit 2",
+              },
               { value: "vanilla" as const, label: "Vanilla JS / Other" },
             ],
             initialValue: detected ?? ("nextjs" as const),
@@ -524,6 +626,14 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
   // files next to a banner that never renders.
   if (framework === "vue" && nuxt && flags.framework === "vue") {
     cancel("--framework vue is not supported in a Nuxt project. Use --framework nuxt.");
+    process.exit(1);
+  }
+
+  // A Kit app has no `src/main.ts` or `App.svelte`; the Svelte setup would leave dead files.
+  if (framework === "svelte" && detected === "sveltekit" && flags.framework === "svelte") {
+    cancel(
+      "--framework svelte is not supported in a SvelteKit project. Use --framework sveltekit.",
+    );
     process.exit(1);
   }
 
@@ -915,6 +1025,205 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
         ].join("\n"),
         "Manual step needed",
       );
+    }
+  } else if (framework === "svelte") {
+    const paths = svelteProjectPaths(cwd);
+    const rootLabel = "src/lib/CookieYesRoot.svelte";
+
+    if (!existsSync(paths.configPath)) {
+      writeFile(
+        paths.configPath,
+        svelteConfigTemplate(optionInputs, paths.typescript),
+        paths.configLabel,
+      );
+    } else {
+      log.info(`${pc.yellow(paths.configLabel)} already exists, skipped.`);
+    }
+
+    if (!existsSync(paths.rootPath)) {
+      writeFile(paths.rootPath, svelteRootTemplate(paths.typescript, isCCPA), rootLabel);
+    } else {
+      log.info(`${pc.yellow(rootLabel)} already exists, skipped.`);
+    }
+
+    const main = patchFile(paths.entryPath, patchSvelteMain, /@cookieyes\/svelte\/styles\.css/);
+    if (main === "patched") {
+      log.success(`Updated ${pc.cyan(paths.entryLabel)}: imported the stylesheet`);
+    } else if (main === "already") {
+      log.info(`${pc.yellow(paths.entryLabel)} already imports the stylesheet, skipped.`);
+    } else {
+      note(
+        [
+          `Import the stylesheet where the app starts, in ${paths.entryLabel}.`,
+          `Without it the banner renders unstyled:`,
+          ``,
+          `import "@cookieyes/svelte/styles.css";`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    const app = patchFile(paths.appPath, patchSvelteApp, /CookieYesRoot/);
+    if (app === "patched") {
+      log.success(`Updated ${pc.cyan("src/App.svelte")}: mounted CookieYesRoot`);
+    } else if (app === "already") {
+      log.info(`${pc.yellow("src/App.svelte")} already uses CookieYesRoot, skipped.`);
+    } else {
+      note(
+        [
+          `Wrap your page content in <CookieYesRoot> once in src/App.svelte:`,
+          ``,
+          `<script${paths.typescript ? ' lang="ts"' : ""}>`,
+          `  import CookieYesRoot from "./lib/CookieYesRoot.svelte";`,
+          `</script>`,
+          ``,
+          `<CookieYesRoot>`,
+          `  <!-- your page content -->`,
+          `</CookieYesRoot>`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+  } else if (framework === "sveltekit") {
+    const paths = sveltekitProjectPaths(cwd);
+    // With no server there is no `loadConsent` to run, so the root gets no `state`.
+    const withState = !paths.staticAdapter;
+
+    if (!existsSync(paths.configPath)) {
+      writeFile(
+        paths.configPath,
+        svelteConfigTemplate(optionInputs, paths.typescript, "@cookieyes/sveltekit"),
+        paths.configLabel,
+      );
+    } else {
+      log.info(`${pc.yellow(paths.configLabel)} already exists, skipped.`);
+    }
+
+    const hooks = paths.hooksExists
+      ? patchFile(paths.hooksPath, patchSveltekitHooks, /cookieyesHandle/)
+      : "missing";
+    if (hooks === "missing") {
+      writeFile(paths.hooksPath, sveltekitHooksTemplate(), paths.hooksLabel);
+    } else if (hooks === "patched") {
+      log.success(`Updated ${pc.cyan(paths.hooksLabel)}: added cookieyesHandle`);
+    } else if (hooks === "already") {
+      log.info(`${pc.yellow(paths.hooksLabel)} already uses cookieyesHandle, skipped.`);
+    } else {
+      note(
+        [
+          `Run cookieyesHandle(config) before your own handle in ${paths.hooksLabel}:`,
+          ``,
+          `import { sequence } from "@sveltejs/kit/hooks";`,
+          `import { cookieyesHandle } from "@cookieyes/sveltekit";`,
+          `import { config } from "./lib/cookieyes";`,
+          ``,
+          `export const handle = sequence(cookieyesHandle(config), yourHandle);`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    if (withState) {
+      if (paths.existingLayoutServerLabel === null) {
+        writeFile(
+          paths.layoutServerPath,
+          [
+            `import { loadConsent } from "@cookieyes/sveltekit";`,
+            ``,
+            `export const load = loadConsent;`,
+            ``,
+          ].join("\n"),
+          paths.layoutServerLabel,
+        );
+      } else if (
+        readFileSync(join(cwd, paths.existingLayoutServerLabel), "utf-8").includes("loadConsent")
+      ) {
+        log.info(
+          `${pc.yellow(paths.existingLayoutServerLabel)} already uses loadConsent, skipped.`,
+        );
+      } else {
+        note(
+          [
+            `${paths.existingLayoutServerLabel} already exists, so it was left as it is.`,
+            `Return what loadConsent returns from its load function:`,
+            ``,
+            `import { loadConsent } from "@cookieyes/sveltekit";`,
+            ``,
+            `export const load = async (event) => ({`,
+            `  ...loadConsent(event),`,
+            `  // your own data`,
+            `});`,
+          ].join("\n"),
+          "Manual step needed",
+        );
+      }
+    }
+
+    if (!existsSync(paths.stylesRoutePath)) {
+      writeFile(
+        paths.stylesRoutePath,
+        [
+          `export { GET } from "@cookieyes/sveltekit/styles-route";`,
+          ...(paths.staticAdapter ? [`export const prerender = true;`] : []),
+          ``,
+        ].join("\n"),
+        paths.stylesRouteLabel,
+      );
+    } else {
+      log.info(`${pc.yellow(paths.stylesRouteLabel)} already exists, skipped.`);
+    }
+
+    const layout = patchFile(
+      paths.layoutPath,
+      (src) => patchSveltekitLayout(src, withState),
+      /CookieYesRoot/,
+    );
+    if (layout === "missing") {
+      writeFile(
+        paths.layoutPath,
+        sveltekitLayoutTemplate(paths.typescript, withState),
+        "src/routes/+layout.svelte",
+      );
+    } else if (layout === "patched") {
+      log.success(
+        `Updated ${pc.cyan("src/routes/+layout.svelte")}: wrapped the page in CookieYesRoot`,
+      );
+    } else if (layout === "already") {
+      log.info(`${pc.yellow("src/routes/+layout.svelte")} already uses CookieYesRoot, skipped.`);
+    } else {
+      note(
+        [
+          `Wrap the page content in <CookieYesRoot> once in src/routes/+layout.svelte:`,
+          ``,
+          `<script${paths.typescript ? ' lang="ts"' : ""}>`,
+          `  import { CookieYesRoot } from "@cookieyes/sveltekit";`,
+          `  import { config } from "../lib/cookieyes";`,
+          ``,
+          `  let { ${withState ? "data, " : ""}children } = $props();`,
+          `</script>`,
+          ``,
+          `<CookieYesRoot {config}${withState ? " state={data.consent}" : ""}>`,
+          `  {@render children()}`,
+          `</CookieYesRoot>`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    // Plain JavaScript projects have no types to extend.
+    const reference = `/// <reference types="@cookieyes/sveltekit" />`;
+    if (existsSync(paths.appDtsPath)) {
+      const dts = readFileSync(paths.appDtsPath, "utf-8");
+      if (dts.includes("@cookieyes/sveltekit")) {
+        log.info(`${pc.yellow("src/app.d.ts")} already references @cookieyes/sveltekit, skipped.`);
+      } else {
+        writeFileSync(paths.appDtsPath, `${reference}\n${dts}`, "utf-8");
+        log.success(
+          `Updated ${pc.cyan("src/app.d.ts")}: added the reference to @cookieyes/sveltekit`,
+        );
+      }
+    } else if (paths.typescript) {
+      writeFile(paths.appDtsPath, `${reference}\n\nexport {};\n`, "src/app.d.ts");
     }
   } else {
     // Vanilla

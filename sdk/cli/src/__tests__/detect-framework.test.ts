@@ -71,4 +71,30 @@ describe("detectFramework", () => {
     writePkg({ dependencies: { nuxt: "4.0.0", react: "19.0.0" } });
     expect(detectFramework(dir)).toBe("nuxt");
   });
+
+  it("detects Svelte from a svelte dependency", () => {
+    writePkg({ devDependencies: { svelte: "5.20.0", vite: "7.0.0" } });
+    expect(detectFramework(dir)).toBe("svelte");
+  });
+
+  it("keeps React and Vue ahead of Svelte", () => {
+    writePkg({ dependencies: { react: "19.0.0", svelte: "5.20.0" } });
+    expect(detectFramework(dir)).toBe("react");
+    writePkg({ dependencies: { vue: "3.5.0", svelte: "5.20.0" } });
+    expect(detectFramework(dir)).toBe("vue");
+  });
+
+  it("detects SvelteKit, not plain Svelte, from @sveltejs/kit", () => {
+    writePkg({ devDependencies: { svelte: "5.20.0", "@sveltejs/kit": "2.0.0" } });
+    expect(detectFramework(dir)).toBe("sveltekit");
+  });
+
+  it("keeps Next.js ahead of SvelteKit and SvelteKit ahead of Nuxt, React and Vue", () => {
+    writePkg({ dependencies: { next: "15.0.0", "@sveltejs/kit": "2.0.0" } });
+    expect(detectFramework(dir)).toBe("nextjs");
+    writePkg({ dependencies: { nuxt: "4.0.0", "@sveltejs/kit": "2.0.0" } });
+    expect(detectFramework(dir)).toBe("sveltekit");
+    writePkg({ dependencies: { react: "19.0.0", vue: "3.5.0", "@sveltejs/kit": "2.0.0" } });
+    expect(detectFramework(dir)).toBe("sveltekit");
+  });
 });

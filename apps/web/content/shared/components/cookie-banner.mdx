@@ -1,7 +1,7 @@
 ---
 title: CookieBanner
 description: The consent banner a visitor sees on their first visit.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -43,6 +43,45 @@ In Nuxt, `<CookieYesRoot />` renders it for you. To render it yourself, for exam
 
 </Framework>
 
+<Framework when="svelte">
+
+Render it inside `<CookieYesProvider>`, in `src/lib/CookieYesRoot.svelte` if you followed Installation:
+
+```svelte check="false"
+<CookieBanner />
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+In SvelteKit, `<CookieYesRoot>` renders it for you. To render it yourself, for example to pass it props, give `<CookieYesRoot>` a `ui` snippet: it replaces the stock banner, dialogs and recall button, so keep the others you need.
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesRoot,
+    RecallButton,
+  } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {#snippet ui()}
+    <CookieBanner class="my-banner" />
+    <CookiePreferences />
+    <RecallButton />
+  {/snippet}
+  {@render children()}
+</CookieYesRoot>
+```
+
+</Framework>
+
 ## Change what it shows
 
 <Framework when="nextjs react">
@@ -60,6 +99,18 @@ Nothing on the banner is set through props. Everything comes from the config you
 <Framework when="nuxt">
 
 Nothing on the banner is set through props. Everything comes from the `cookieyes` key in `nuxt.config.ts` and `app/app.config.ts`, so the banner, the dialogs and the recall button always match.
+
+</Framework>
+
+<Framework when="svelte">
+
+Nothing on the banner is set through props. Everything comes from the `config` you pass to `<CookieYesProvider>`, so the banner, the dialogs and the recall button always match.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Nothing on the banner is set through props. Everything comes from the config in `src/lib/cookieyes.ts`, so the banner, the dialogs and the recall button always match.
 
 </Framework>
 
@@ -81,6 +132,12 @@ It accepts `className` and `style` like any element; they are added to the banne
 <Framework when="vue nuxt">
 
 It accepts `class` and `style` like any element; they land on the banner card and are added to its own styling, not replacing it. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`root`, `title`, `description`, `actions`, `acceptAll`, `rejectAll`, `customise`, `doNotSell`, `close`, `branding`), for example `:class-names="{ acceptAll: 'my-accept' }"`. Or use its `data-cy-part` in your CSS:
+
+</Framework>
+
+<Framework when="svelte sveltekit">
+
+It accepts `class` and `style` like any element; they land on the banner card and are added to its own styling, not replacing it. To restyle one part, pass `classNames` or `styles`, keyed by part name in camelCase (`root`, `title`, `description`, `actions`, `acceptAll`, `rejectAll`, `customise`, `doNotSell`, `close`, `branding`), for example `classNames={{ acceptAll: "my-accept" }}`. `styles` takes camelCase property names or custom properties. Or use its `data-cy-part` in your CSS:
 
 </Framework>
 
@@ -129,15 +186,42 @@ Do Not Sell opens the opt-out dialog, so render it next to the banner:
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+`<CookieYesRoot>` renders it for you whenever a CCPA regulation can apply: `regulation: "CCPA"`, `region.strictest: "CCPA"` or a `"CCPA"` value in `region.map`. If you render the components in a `ui` snippet yourself, add it there:
+
+```svelte check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+</Framework>
+
 ## Common mistakes
 
 **The banner never appears.**
 You already chose in this browser. Delete the `cookieyes-consent` cookie and reload.
 
-<Framework when="nextjs react vue">
+<Framework when="nextjs react vue svelte">
 
 **The banner is unstyled text.**
 The stylesheet import is missing. See [Installation](/docs/getting-started/installation).
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**The banner is unstyled text.**
+The stylesheet route is missing. Add `src/routes/cookieyes/styles.css/+server.ts`, as in [Installation](/docs/getting-started/installation).
 
 </Framework>
 

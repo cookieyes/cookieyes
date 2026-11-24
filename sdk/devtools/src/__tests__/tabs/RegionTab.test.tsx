@@ -36,8 +36,11 @@ function part(name: string): HTMLElement {
 }
 
 // A longer timeout, not a weaker check: these tests type into the region combobox a
-// key at a time, and on a busy CI runner two of them took just over the 5 s default.
-describe("RegionTab", { timeout: 20_000 }, () => {
+// key at a time, and on a busy CI runner two of them took just over the 5 s default. Every
+// block below that drives a combobox uses it; the mouse test in "Combobox" timed out too.
+const COMBOBOX_TIMEOUT = { timeout: 20_000 };
+
+describe("RegionTab", COMBOBOX_TIMEOUT, () => {
   // Test 20 (design §9)
   it("shows the real decision when unforced", async () => {
     initCookieYes({
@@ -217,7 +220,7 @@ describe("RegionTab", { timeout: 20_000 }, () => {
   });
 });
 
-describe("RegionTab pending override", () => {
+describe("RegionTab pending override", COMBOBOX_TIMEOUT, () => {
   it("says a new override isn't applied until a reload, and the footer keeps the live region", async () => {
     initCookieYes({
       mode: "cookie-only",
@@ -239,7 +242,7 @@ describe("RegionTab pending override", () => {
   });
 });
 
-describe("Combobox", () => {
+describe("Combobox", COMBOBOX_TIMEOUT, () => {
   it("chooses with the mouse, and closes on a click outside", async () => {
     initCookieYes({ mode: "cookie-only", region: { detect: () => "DE", map: { DE: "GDPR" } } });
     const user = await openTab("region");
@@ -278,7 +281,7 @@ describe("Combobox", () => {
   });
 });
 
-describe("RegionTab language picker", () => {
+describe("RegionTab language picker", COMBOBOX_TIMEOUT, () => {
   it("switches the runtime's language live", async () => {
     const runtime = initCookieYes({
       mode: "cookie-only",

@@ -1,7 +1,7 @@
 ---
 title: GatedScript
 description: Load a third-party script only after the visitor consents.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -21,6 +21,18 @@ Anywhere inside your client tree, for example next to the banner:
 <Framework when="vue nuxt">
 
 In any component of your app, for example next to the banner:
+
+</Framework>
+
+<Framework when="svelte">
+
+In any component inside `<CookieYesProvider>`, for example next to the banner:
+
+</Framework>
+
+<Framework when="sveltekit">
+
+In any page, layout or component inside `<CookieYesRoot>`, for example in your root layout:
 
 </Framework>
 
@@ -44,6 +56,40 @@ In any component of your app, for example next to the banner:
   src="https://widget.example.com/loader.js"
   category="functional"
 />
+```
+
+</Framework>
+
+<Framework when="svelte">
+
+```svelte check="false"
+<GatedScript
+  id="my-chat-widget"
+  src="https://widget.example.com/loader.js"
+  category="functional"
+/>
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import { CookieYesRoot, GatedScript } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  <GatedScript
+    id="my-chat-widget"
+    src="https://widget.example.com/loader.js"
+    category="functional"
+  />
+  {@render children()}
+</CookieYesRoot>
 ```
 
 </Framework>

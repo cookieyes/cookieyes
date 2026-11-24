@@ -6,7 +6,18 @@ import { fileURLToPath } from "node:url";
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** Packages whose code the measurement covers. */
-const PACKAGES = ["core", "ui", "react", "nextjs", "vanilla", "vue", "nuxt", "devtools"];
+const PACKAGES = [
+  "core",
+  "ui",
+  "react",
+  "nextjs",
+  "vanilla",
+  "vue",
+  "nuxt",
+  "svelte",
+  "sveltekit",
+  "devtools",
+];
 
 /**
  * A short hash of everything that determines the measured bundle.
@@ -30,7 +41,8 @@ const PACKAGES = ["core", "ui", "react", "nextjs", "vanilla", "vue", "nuxt", "de
  *
  * ## What it covers
  *
- * Sources and stylesheets, each package's Rollup config, the shared Rollup
+ * Sources and stylesheets (`.svelte` files included), each package's Rollup config
+ * (`@cookieyes/svelte` and `@cookieyes/sveltekit`: their `svelte.config.js` and build scripts), the shared Rollup
  * config, and the manifest fields that drive externalisation and tree-shaking
  * (`exports`, `sideEffects`, `dependencies`, `peerDependencies`). A change to
  * any of those can move the measured figure; a change to anything else cannot.
@@ -44,7 +56,7 @@ export function sdkFingerprint() {
       if (statSync(full).isDirectory()) {
         // Tests are not shipped, so they cannot change the figure.
         if (name !== "__tests__") walk(full);
-      } else if (/\.(ts|tsx|css)$/.test(name) && !/\.test\.tsx?$/.test(name)) {
+      } else if (/\.(ts|tsx|css|svelte)$/.test(name) && !/\.test\.tsx?$/.test(name)) {
         files.push(full);
       }
     }
@@ -53,8 +65,23 @@ export function sdkFingerprint() {
   for (const pkg of PACKAGES) {
     const src = join(REPO, "sdk", pkg, "src");
     if (existsSync(src)) walk(src);
-    const config = join(REPO, "sdk", pkg, "rollup.config.mjs");
-    if (existsSync(config)) files.push(config);
+    // The Svelte packages are built by svelte-package, not Rollup. Their config and the scripts
+    // that run after it decide what reaches `dist`, so they are build inputs like a Rollup config.
+    const configs =
+      pkg === "svelte"
+        ? ["svelte.config.js", "scripts/copy-styles.mjs", "scripts/prune-dist.mjs"]
+        : pkg === "sveltekit"
+          ? [
+              "svelte.config.js",
+              "scripts/copy-styles.mjs",
+              "scripts/inject-css.mjs",
+              "scripts/prune-dist.mjs",
+            ]
+          : ["rollup.config.mjs"];
+    for (const name of configs) {
+      const config = join(REPO, "sdk", pkg, name);
+      if (existsSync(config)) files.push(config);
+    }
   }
   const shared = join(REPO, "rollup.shared.mjs");
   if (existsSync(shared)) files.push(shared);

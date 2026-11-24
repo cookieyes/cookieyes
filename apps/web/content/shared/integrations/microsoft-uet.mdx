@@ -1,7 +1,7 @@
 ---
 title: Microsoft Advertising
 description: Load the UET tag only after advertising consent, send Microsoft the consent signal it asks for, and stop at once when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 `microsoftUet()` loads Microsoft Advertising's UET tag after the visitor grants the advertising category, and sends Microsoft the consent signal it requires. When consent is withdrawn, the tag goes quiet and its cookies are deleted at once, with no page reload. A second mode loads the tag on every page with consent denied by default; see [Consent modes](#consent-modes).
@@ -21,6 +21,16 @@ Install the integrations package and add `microsoftUet()` to the config you pass
 <Framework when="nuxt">
 
 Install the integrations package and add `microsoftUet()` to `cookieyes.integrations` in `app/app.config.ts`. `tagId` is the `ti` value in the snippet Microsoft Advertising gives you:
+
+</Framework>
+<Framework when="svelte">
+
+Install the integrations package and add `microsoftUet()` to the config you pass to `<CookieYesProvider>`. `tagId` is the `ti` value in the snippet Microsoft Advertising gives you:
+
+</Framework>
+<Framework when="sveltekit">
+
+Install the integrations package and add `microsoftUet()` to the config in `src/lib/cookieyes.ts`. `tagId` is the `ti` value in the snippet Microsoft Advertising gives you:
 
 </Framework>
 
@@ -81,6 +91,38 @@ export default defineAppConfig({
 `integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+import { microsoftUet } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [microsoftUet({ tagId: "12345678" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+import { microsoftUet } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [microsoftUet({ tagId: "12345678" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -113,6 +155,16 @@ UET counts route changes by itself, so there is nothing to add for Vue Router. T
 <Framework when="nuxt">
 
 UET counts route changes by itself, so there is nothing to add for Nuxt's router. To report page loads yourself instead, set `autoSpaTracking: false` and call `uetPageLoad()` on every route change. Do not do both, or each page is counted twice.
+
+</Framework>
+<Framework when="svelte">
+
+UET counts route changes by itself, so there is nothing to add for your router. To report page loads yourself instead, set `autoSpaTracking: false` and call `uetPageLoad()` on every route change. Do not do both, or each page is counted twice.
+
+</Framework>
+<Framework when="sveltekit">
+
+UET counts route changes by itself, so there is nothing to add for your router. To report page loads yourself instead, set `autoSpaTracking: false` and call `uetPageLoad()` on every route change. Do not do both, or each page is counted twice.
 
 </Framework>
 

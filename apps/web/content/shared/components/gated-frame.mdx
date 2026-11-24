@@ -1,7 +1,7 @@
 ---
 title: GatedFrame
 description: Show a third-party iframe only after the visitor consents, with a placeholder until then.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -72,6 +72,46 @@ import { GatedFrame } from "@cookieyes/vue";
 
 </Framework>
 
+<Framework when="svelte">
+
+```svelte title="src/lib/VideoEmbed.svelte"
+<script lang="ts">
+  import { GatedFrame } from "@cookieyes/svelte";
+</script>
+
+<GatedFrame
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  category="functional"
+  width={560}
+  height={315}
+  title="Product tour"
+/>
+```
+
+Render `<VideoEmbed />` inside `<CookieYesProvider>`.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```svelte title="src/lib/VideoEmbed.svelte"
+<script lang="ts">
+  import { GatedFrame } from "@cookieyes/sveltekit";
+</script>
+
+<GatedFrame
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  category="functional"
+  width={560}
+  height={315}
+  title="Product tour"
+/>
+```
+
+Render `<VideoEmbed />` in any page: every page is inside `<CookieYesRoot>` in your root layout. The server always renders the placeholder; the iframe appears once the page has loaded in the browser.
+
+</Framework>
+
 Video and map embeds are usually `functional`; social and ad embeds are usually `advertisement`. The category must exist in your `categories` list.
 
 ## Props
@@ -91,6 +131,12 @@ Pass your own element as `placeholder`:
 <Framework when="vue nuxt">
 
 Fill the `placeholder` slot with your own content. It is rendered inside the placeholder box, `.cy-frame-placeholder`:
+
+</Framework>
+
+<Framework when="svelte sveltekit">
+
+Pass a `placeholder` snippet with your own content. It is rendered inside the placeholder box, `.cy-frame-placeholder`:
 
 </Framework>
 
@@ -181,6 +227,60 @@ const { showPreferences } = useConsentActions();
     </template>
   </GatedFrame>
 </template>
+```
+
+</Framework>
+
+<Framework when="svelte">
+
+```svelte title="src/lib/VideoEmbed.svelte"
+<script lang="ts">
+  import { GatedFrame, useConsentActions } from "@cookieyes/svelte";
+
+  const { showPreferences } = useConsentActions();
+</script>
+
+<GatedFrame
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  category="functional"
+  width={560}
+  height={315}
+  title="Product tour"
+>
+  {#snippet placeholder()}
+    <div class="video-placeholder">
+      <p>This video is hosted by YouTube and needs functional cookies.</p>
+      <button type="button" onclick={showPreferences}>Cookie settings</button>
+    </div>
+  {/snippet}
+</GatedFrame>
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```svelte title="src/lib/VideoEmbed.svelte"
+<script lang="ts">
+  import { GatedFrame, useConsentActions } from "@cookieyes/sveltekit";
+
+  const { showPreferences } = useConsentActions();
+</script>
+
+<GatedFrame
+  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  category="functional"
+  width={560}
+  height={315}
+  title="Product tour"
+>
+  {#snippet placeholder()}
+    <div class="video-placeholder">
+      <p>This video is hosted by YouTube and needs functional cookies.</p>
+      <button type="button" onclick={showPreferences}>Cookie settings</button>
+    </div>
+  {/snippet}
+</GatedFrame>
 ```
 
 </Framework>

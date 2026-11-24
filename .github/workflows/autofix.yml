@@ -65,9 +65,10 @@ jobs:
         run: |
           git diff --name-only -z -- \
             sdk/core/src sdk/ui/src sdk/react/src sdk/nextjs/src sdk/vanilla/src sdk/vue/src \
-            sdk/nuxt/src sdk/devtools/src \
+            sdk/nuxt/src sdk/svelte/src sdk/sveltekit/src sdk/devtools/src \
             sdk/core/rollup.config.mjs sdk/ui/rollup.config.mjs sdk/react/rollup.config.mjs \
             sdk/vanilla/rollup.config.mjs sdk/vue/rollup.config.mjs sdk/nuxt/rollup.config.mjs \
+            sdk/svelte/svelte.config.js sdk/sveltekit/svelte.config.js \
             sdk/nextjs/rollup.config.mjs sdk/devtools/rollup.config.mjs \
             rollup.shared.mjs \
             ':(exclude,glob)**/__tests__/**' \

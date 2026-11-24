@@ -9,7 +9,17 @@
 
 export const dimensions = {
   // Varied today.
-  framework: ["next", "react", "reactDom", "typesReact", "typesReactDom", "vue", "nuxt"],
+  framework: [
+    "next",
+    "react",
+    "reactDom",
+    "typesReact",
+    "typesReactDom",
+    "vue",
+    "nuxt",
+    "svelte",
+    "kit",
+  ],
   // Reserved — add a value here (and to one or more `combinations` entries) to
   // extend the matrix. No script or workflow file needs to change for this
   // (Story 1 AC3): `print-combinations.mjs` and `run-combination.mjs` both
@@ -25,7 +35,7 @@ export const dimensions = {
  *   id: string,
  *   role: "floor" | "middle" | "newest",
  *   label: string,
- *   app?: "next" | "vue" | "nuxt",
+ *   app?: "next" | "vue" | "nuxt" | "svelte" | "sveltekit",
  *   packagesUnderTest: string[],
  *   versions: {
  *     next?: string,
@@ -35,6 +45,12 @@ export const dimensions = {
  *     typesReactDom?: string,
  *     vue?: string,
  *     nuxt?: string,
+ *     svelte?: string,
+ *     vite?: string,
+ *     vitePluginSvelte?: string,
+ *     kit?: string,
+ *     adapterNode?: string,
+ *     adapterStatic?: string,
  *   },
  *   node: string,
  *   packageManager: string,
@@ -48,7 +64,7 @@ export const dimensions = {
  * Next.js combinations stay untouched: leaving `app` out means the Next.js app.
  *
  * @param {Combination} combo
- * @returns {"next" | "vue" | "nuxt"}
+ * @returns {"next" | "vue" | "nuxt" | "svelte" | "sveltekit"}
  */
 export function appOf(combo) {
   return combo.app ?? "next";
@@ -173,6 +189,100 @@ export const combinations = [
     app: "nuxt",
     packagesUnderTest: ["@cookieyes/nuxt"],
     versions: { nuxt: "4.6.4" },
+    node: "22",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["fast", "full"],
+  },
+  // The Svelte legs pin `svelte` as the framework under test, plus `vite` and `vitePluginSvelte`
+  // as tool pins: the floor's Vite 7 and plugin 6 are the newest pair that still accept the
+  // floor, while the newest leg runs the current pair, so the two legs also cover both toolchains.
+  // The floor's `svelte` is compared literally with `peerDependencies.svelte` in
+  // sdk/svelte/package.json by derive-check.mjs, and the newest leg must stay the newest Svelte
+  // 5.x that is at least 72 hours old.
+  {
+    id: "svelte-5.20.0",
+    role: "floor",
+    label: "Svelte 5.20.0 (declared floor)",
+    app: "svelte",
+    packagesUnderTest: ["@cookieyes/svelte"],
+    versions: { svelte: "5.20.0", vite: "7.3.8", vitePluginSvelte: "6.2.4" },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "svelte-5.57.3",
+    role: "newest",
+    label: "Svelte 5.57.3",
+    app: "svelte",
+    packagesUnderTest: ["@cookieyes/svelte"],
+    versions: { svelte: "5.57.3", vite: "8.3.7", vitePluginSvelte: "7.3.1" },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["fast", "full"],
+  },
+  // The SvelteKit legs pin `kit` and `svelte` (the two peers of @cookieyes/sveltekit) plus the
+  // tool pins a Kit app needs: Vite, the Svelte plugin and the two adapters. Each leg's tools are
+  // the newest ones its Kit accepts: Kit 2.62 runs on Vite 7 and plugin 6, while Kit 3 needs Vite
+  // 8, plugin 7 and Node 22.17, and its adapters are a major ahead (adapter-node 6, adapter-static
+  // 4). The floor pins both peers in one combination, which derive-check.mjs compares literally
+  // with `peerDependencies` in sdk/sveltekit/package.json. The middle leg is the newest Kit 2.x and
+  // the newest leg the newest Kit 3.x, each at least 72 hours old when written.
+  {
+    id: "sveltekit-2.62.0-svelte-5.20.0",
+    role: "floor",
+    label: "SvelteKit 2.62.0 + Svelte 5.20.0 (declared floor)",
+    app: "sveltekit",
+    packagesUnderTest: ["@cookieyes/svelte", "@cookieyes/sveltekit"],
+    versions: {
+      kit: "2.62.0",
+      svelte: "5.20.0",
+      vite: "7.3.8",
+      vitePluginSvelte: "6.2.4",
+      adapterNode: "5.5.8",
+      adapterStatic: "3.0.11",
+    },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "sveltekit-2.70.4-svelte-5.57.3",
+    role: "middle",
+    label: "SvelteKit 2.70.4 + Svelte 5.57.3",
+    app: "sveltekit",
+    packagesUnderTest: ["@cookieyes/svelte", "@cookieyes/sveltekit"],
+    versions: {
+      kit: "2.70.4",
+      svelte: "5.57.3",
+      vite: "8.3.7",
+      vitePluginSvelte: "7.3.1",
+      adapterNode: "5.5.8",
+      adapterStatic: "3.0.11",
+    },
+    node: "20",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "sveltekit-3.2.0-svelte-5.57.3",
+    role: "newest",
+    label: "SvelteKit 3.2.0 + Svelte 5.57.3",
+    app: "sveltekit",
+    packagesUnderTest: ["@cookieyes/svelte", "@cookieyes/sveltekit"],
+    versions: {
+      kit: "3.2.0",
+      svelte: "5.57.3",
+      vite: "8.3.7",
+      vitePluginSvelte: "7.3.1",
+      adapterNode: "6.0.2",
+      adapterStatic: "4.0.1",
+    },
     node: "22",
     packageManager: "pnpm@10.22.0",
     moduleResolution: "bundler",

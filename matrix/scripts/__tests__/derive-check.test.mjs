@@ -209,3 +209,113 @@ describe("checkPeerDependencyMatrix with a Nuxt combination", () => {
     expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
   });
 });
+
+/** A Svelte fixture: Svelte pinned, with the Vite toolchain pins that are not peers. */
+function svelteFixture() {
+  return {
+    peerPackages: [
+      {
+        name: "@cookieyes/svelte",
+        peerDependencies: { svelte: ">=5.20.0" },
+      },
+    ],
+    combinations: [
+      {
+        id: "fixture-svelte-5.20.0",
+        role: "floor",
+        app: "svelte",
+        packagesUnderTest: ["@cookieyes/svelte"],
+        versions: { svelte: "5.20.0", vite: "7.3.8", vitePluginSvelte: "6.2.4" },
+      },
+    ],
+  };
+}
+
+describe("checkPeerDependencyMatrix with a Svelte combination", () => {
+  it("returns no violations for a consistent Svelte fixture", () => {
+    expect(checkPeerDependencyMatrix(svelteFixture())).toEqual([]);
+  });
+
+  it("fails when the svelte range is widened without a matching floor combination", () => {
+    const fixture = svelteFixture();
+    fixture.peerPackages[0].peerDependencies.svelte = ">=5.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes('"svelte"') && e.includes("5.0.0"))).toBe(true);
+  });
+
+  it("fails the inverse check when a Svelte combination pins a version outside the range", () => {
+    const fixture = svelteFixture();
+    fixture.combinations[0].versions.svelte = "5.19.0";
+    expect(checkPeerDependencyMatrix(fixture).length).toBeGreaterThan(0);
+  });
+
+  it("leaves the Vue fixture's verdict unchanged when Svelte legs sit beside it", () => {
+    const fixture = vueFixture();
+    const svelte = svelteFixture();
+    fixture.peerPackages.push(...svelte.peerPackages);
+    fixture.combinations.push(...svelte.combinations);
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+});
+
+/** A SvelteKit fixture: Kit and Svelte pinned together in the floor combination. */
+function svelteKitFixture() {
+  return {
+    peerPackages: [
+      {
+        name: "@cookieyes/sveltekit",
+        peerDependencies: { "@sveltejs/kit": "^2.62.0 || ^3.0.0", svelte: ">=5.20.0" },
+      },
+    ],
+    combinations: [
+      {
+        id: "fixture-sveltekit-2.62.0-svelte-5.20.0",
+        role: "floor",
+        app: "sveltekit",
+        packagesUnderTest: ["@cookieyes/sveltekit"],
+        versions: { kit: "2.62.0", svelte: "5.20.0", vite: "7.3.8", vitePluginSvelte: "6.2.4" },
+      },
+      {
+        id: "fixture-sveltekit-3.2.0-svelte-5.57.3",
+        role: "newest",
+        app: "sveltekit",
+        packagesUnderTest: ["@cookieyes/sveltekit"],
+        versions: { kit: "3.2.0", svelte: "5.57.3", vite: "8.3.7", vitePluginSvelte: "7.3.1" },
+      },
+    ],
+  };
+}
+
+describe("checkPeerDependencyMatrix with a SvelteKit combination", () => {
+  it("returns no violations for a consistent SvelteKit fixture", () => {
+    expect(checkPeerDependencyMatrix(svelteKitFixture())).toEqual([]);
+  });
+
+  it("fails when the kit floor is raised without a matching floor combination", () => {
+    const fixture = svelteKitFixture();
+    fixture.peerPackages[0].peerDependencies["@sveltejs/kit"] = "^2.50.0 || ^3.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("versions.kit") && e.includes("2.50.0"))).toBe(true);
+  });
+
+  it("fails the inverse check when a combination pins a Kit outside the kit range", () => {
+    const fixture = svelteKitFixture();
+    fixture.combinations[1].versions.kit = "4.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("does not satisfy") && e.includes("^2.62.0"))).toBe(true);
+  });
+
+  it("fails the inverse check when a combination pins a Svelte below the svelte floor", () => {
+    const fixture = svelteKitFixture();
+    fixture.combinations[1].versions.svelte = "5.19.0";
+    expect(checkPeerDependencyMatrix(fixture).length).toBeGreaterThan(0);
+  });
+
+  it("leaves the Svelte fixture's verdict unchanged when SvelteKit legs sit beside it", () => {
+    const fixture = svelteFixture();
+    const kit = svelteKitFixture();
+    fixture.peerPackages.push(...kit.peerPackages);
+    fixture.combinations.push(...kit.combinations);
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+});

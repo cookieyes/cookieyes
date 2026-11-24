@@ -10,7 +10,7 @@ import * as ui from "../index.js";
  * imported by the source of an adapter (`@cookieyes/vanilla`,
  * `@cookieyes/react`) or of the conformance suite in `@cookieyes/test`.
  */
-const CONSUMERS = ["vanilla", "react", "vue", "test"];
+const CONSUMERS = ["vanilla", "react", "vue", "svelte", "test"];
 
 /**
  * Exports kept without an adapter importing them, each with its reason.
@@ -27,7 +27,7 @@ function sources(dir: string): string[] {
     const full = join(dir, name);
     if (statSync(full).isDirectory()) {
       if (name !== "__tests__") out.push(...sources(full));
-    } else if (/\.tsx?$/.test(name)) {
+    } else if (/\.(tsx?|svelte)$/.test(name)) {
       out.push(readFileSync(full, "utf8"));
     }
   }

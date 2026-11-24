@@ -34,7 +34,13 @@ import { appOf } from "../matrix.config.mjs";
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(here, "..", "..");
 
-const TEMPLATE_DIRS = { next: "example-app", vue: "example-app-vue", nuxt: "example-app-nuxt" };
+const TEMPLATE_DIRS = {
+  next: "example-app",
+  vue: "example-app-vue",
+  nuxt: "example-app-nuxt",
+  svelte: "example-app-svelte",
+  sveltekit: "example-app-sveltekit",
+};
 
 /** The template directory for a combination: one self-contained example app per `app`. */
 function templateDirFor(combo) {
@@ -50,6 +56,9 @@ const EXCLUDE = new Set([
   ".next",
   ".nuxt",
   ".output",
+  ".svelte-kit",
+  "build",
+  "build-static",
   "dist",
   "dist-ssr",
   "tests/vitest.config.mts.timestamp",
@@ -63,42 +72,67 @@ const EXCLUDE = new Set([
  *
  * @param {string} packageJsonText
  * @param {{ tarballs: Record<string, string>, versions: import("../matrix.config.mjs").Combination["versions"],
- *   app?: "next" | "vue" | "nuxt" }} combo
+ *   app?: "next" | "vue" | "nuxt" | "svelte" | "sveltekit" }} combo
  * @returns {string}
  */
 export function renderPackageJson(packageJsonText, { tarballs, versions, app = "next" }) {
   const replacements =
-    app === "nuxt"
+    app === "sveltekit"
       ? {
-          __TARBALL_NUXT__: `file:${tarballs["@cookieyes/nuxt"]}`,
-          __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+          __TARBALL_SVELTEKIT__: `file:${tarballs["@cookieyes/sveltekit"]}`,
+          __TARBALL_SVELTE__: `file:${tarballs["@cookieyes/svelte"]}`,
           __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
           __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
           __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-          __NUXT_VERSION__: versions.nuxt,
+          __KIT_VERSION__: versions.kit,
+          __SVELTE_VERSION__: versions.svelte,
+          __VITE_VERSION__: versions.vite,
+          __VITE_PLUGIN_SVELTE_VERSION__: versions.vitePluginSvelte,
+          __ADAPTER_NODE_VERSION__: versions.adapterNode,
+          __ADAPTER_STATIC_VERSION__: versions.adapterStatic,
         }
-      : app === "vue"
+      : app === "nuxt"
         ? {
+            __TARBALL_NUXT__: `file:${tarballs["@cookieyes/nuxt"]}`,
             __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
             __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
             __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
-            __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
             __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-            __VUE_VERSION__: versions.vue,
+            __NUXT_VERSION__: versions.nuxt,
           }
-        : {
-            __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
-            __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
-            __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
-            __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
-            __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
-            __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-            __NEXT_VERSION__: versions.next,
-            __REACT_VERSION__: versions.react,
-            __REACT_DOM_VERSION__: versions.reactDom,
-            __TYPES_REACT_VERSION__: versions.typesReact,
-            __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
-          };
+        : app === "svelte"
+          ? {
+              __TARBALL_SVELTE__: `file:${tarballs["@cookieyes/svelte"]}`,
+              __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+              __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+              __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+              __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+              __SVELTE_VERSION__: versions.svelte,
+              __VITE_VERSION__: versions.vite,
+              __VITE_PLUGIN_SVELTE_VERSION__: versions.vitePluginSvelte,
+            }
+          : app === "vue"
+            ? {
+                __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+                __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+                __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+                __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+                __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+                __VUE_VERSION__: versions.vue,
+              }
+            : {
+                __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
+                __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
+                __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+                __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+                __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+                __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+                __NEXT_VERSION__: versions.next,
+                __REACT_VERSION__: versions.react,
+                __REACT_DOM_VERSION__: versions.reactDom,
+                __TYPES_REACT_VERSION__: versions.typesReact,
+                __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
+              };
 
   let result = packageJsonText;
   for (const [placeholder, value] of Object.entries(replacements)) {
@@ -111,6 +145,23 @@ export function renderPackageJson(packageJsonText, { tarballs, versions, app = "
     result = result.split(placeholder).join(value);
   }
   return result;
+}
+
+/**
+ * SvelteKit 3 moved its config from svelte.config.js into the options of the `sveltekit()` plugin
+ * and extends `$app/tsconfig`, which Kit 2 does not offer, so the template keeps both forms and the
+ * scaffold keeps the one the leg's Kit reads. Everything else in the app is the same on both.
+ *
+ * @param {string} appDir
+ * @param {string | undefined} kitVersion
+ */
+function applyKitMajor(appDir, kitVersion) {
+  const variantDir = join(appDir, "kit3");
+  if (Number.parseInt(kitVersion ?? "", 10) >= 3) {
+    cpSync(variantDir, appDir, { recursive: true });
+    rmSync(join(appDir, "svelte.config.js"));
+  }
+  rmSync(variantDir, { recursive: true, force: true });
 }
 
 /**
@@ -139,6 +190,8 @@ export function scaffoldExampleApp({ combo, tarballs, targetDir }) {
     app: appOf(combo),
   });
   writeFileSync(packageJsonPath, rendered);
+
+  if (appOf(combo) === "sveltekit") applyKitMajor(targetDir, combo.versions.kit);
 
   return targetDir;
 }

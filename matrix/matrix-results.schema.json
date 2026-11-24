@@ -69,7 +69,9 @@
       "oneOf": [
         { "$ref": "#/$defs/nextReactVersionSet" },
         { "$ref": "#/$defs/vueVersionSet" },
-        { "$ref": "#/$defs/nuxtVersionSet" }
+        { "$ref": "#/$defs/nuxtVersionSet" },
+        { "$ref": "#/$defs/svelteVersionSet" },
+        { "$ref": "#/$defs/sveltekitVersionSet" }
       ]
     },
     "nextReactVersionSet": {
@@ -99,6 +101,29 @@
       "properties": {
         "nuxt": { "type": "string" },
         "vue": { "type": "string" }
+      }
+    },
+    "svelteVersionSet": {
+      "type": "object",
+      "required": ["svelte"],
+      "additionalProperties": false,
+      "properties": {
+        "svelte": { "type": "string" },
+        "vite": { "type": "string" },
+        "vitePluginSvelte": { "type": "string" }
+      }
+    },
+    "sveltekitVersionSet": {
+      "type": "object",
+      "required": ["kit", "svelte"],
+      "additionalProperties": false,
+      "properties": {
+        "kit": { "type": "string" },
+        "svelte": { "type": "string" },
+        "vite": { "type": "string" },
+        "vitePluginSvelte": { "type": "string" },
+        "adapterNode": { "type": "string" },
+        "adapterStatic": { "type": "string" }
       }
     },
     "assertionResult": {
@@ -155,7 +180,7 @@
         "id": { "type": "string" },
         "role": { "type": "string", "enum": ["floor", "middle", "newest"] },
         "label": { "type": "string" },
-        "app": { "type": "string", "enum": ["next", "vue", "nuxt"] },
+        "app": { "type": "string", "enum": ["next", "vue", "nuxt", "svelte", "sveltekit"] },
         "packagesUnderTest": { "type": "array", "items": { "type": "string" } },
         "requested": { "$ref": "#/$defs/versionSet" },
         "resolved": { "$ref": "#/$defs/versionSet" },

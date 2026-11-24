@@ -46,8 +46,11 @@ export type MergedComponentOption = ComponentSidecarEntry & {
   required: boolean;
 };
 
-/** The adapters that have a props table. Next.js pages use React's: same components. */
-export type ComponentAdapter = "react" | "vue";
+/**
+ * The adapters that have a props table. Next.js pages use React's and Nuxt pages Vue's: same
+ * components.
+ */
+export type ComponentAdapter = "react" | "vue" | "svelte";
 
 export type ComponentReferenceData = Record<
   ComponentAdapter,

@@ -1,14 +1,14 @@
 ---
 title: Network blocking
 description: Block a third-party tool's requests until its category is granted, when you cannot gate the tool itself.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 ## What it does
 
 `networkBlocker` stops `fetch`, `XMLHttpRequest` and `sendBeacon` requests to the domains you list until the visitor grants the matching category. It is a last resort for code you do not control: a tag hard-coded in a template you cannot edit, a request fired from inside another vendor's script, a beacon sent when the page unloads.
 
-<Framework when="nextjs react vue nuxt">
+<Framework when="nextjs react vue nuxt svelte sveltekit">
 
 If you can reference the tag in your own code, use [`GatedScript`](/docs/components/gated-script) or an [integration](/docs/integrations) instead: they load nothing until consent, so there is nothing to block.
 
@@ -24,7 +24,7 @@ It cannot stop a `<script src="...">` tag. Browsers load those on a path the blo
 
 ## Set it up
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte sveltekit core">
 
 Two steps: register the blocker once, then list your rules. The blocker is a separate import so that sites that do not use it do not download it. Hotjar below is only an example; put your own vendor's domain in the rule.
 
@@ -96,6 +96,43 @@ export function setupConsent(app: App): void {
 
 </Framework>
 
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import { type CookieYesConfig, registerNetworkBlocker } from "@cookieyes/svelte";
+
+registerNetworkBlocker();
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  networkBlocker: {
+    rules: [{ id: "hotjar", domain: "static.hotjar.com", category: "analytics" }],
+  },
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the blocker added. It runs when the module is first imported, before `<CookieYesProvider>` starts the runtime.
+
+</Framework>
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import { type CookieYesConfig, registerNetworkBlocker } from "@cookieyes/sveltekit";
+
+registerNetworkBlocker();
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  networkBlocker: {
+    rules: [{ id: "hotjar", domain: "static.hotjar.com", category: "analytics" }],
+  },
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the blocker added. It runs when the module is first imported, before `<CookieYesRoot>` starts the runtime. The server imports the module too, through `src/hooks.server.ts`; the blocker never installs there, only in the browser.
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -143,7 +180,7 @@ A blocked `fetch` fails like a network error; a blocked `XMLHttpRequest` is abor
 
 ## Common mistakes
 
-<Framework when="nextjs react vue core">
+<Framework when="nextjs react vue svelte sveltekit core">
 
 **Rules are configured but nothing is blocked.**
 `registerNetworkBlocker()` was never called. Check the console for the error.

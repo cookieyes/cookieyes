@@ -9,7 +9,9 @@ React output stops matching.
 They are the reference the framework-free UI layer and every other
 framework's banner are built and tested against. A difference here is a
 change for every framework at once. The Vue adapter (`@cookieyes/vue`) is checked against these
-same recordings by `sdk/vue/src/__tests__/contract.test.ts`, which reads them and never writes them.
+same recordings by `sdk/vue/src/__tests__/contract.test.ts`, and the Svelte adapter
+(`@cookieyes/svelte`) by `sdk/svelte/src/__tests__/contract.test.ts`; both read them and never write
+them.
 
 ## Files
 

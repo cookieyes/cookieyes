@@ -1,7 +1,7 @@
 ---
 title: Installation
 description: Install the CookieYes SDK and get a working banner in three steps.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="nextjs react">
@@ -19,6 +19,18 @@ Three steps, about five minutes: install the package, add the plugin to your app
 <Framework when="nuxt">
 
 Three steps, about five minutes: install the module, add it to `nuxt.config.ts`, and render `<CookieYesRoot />` once. If you would rather have the files written for you, run `npx @cookieyes/cli init`. See [Quick start](/docs/getting-started/quick-start).
+
+</Framework>
+
+<Framework when="svelte">
+
+Three steps, about five minutes: install the package, write the configuration, and wrap your app in the provider once.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Three steps, about five minutes: install the package, add the handle and the layout files, and render `<CookieYesRoot>` once around your pages. If you would rather have the files written for you, run `npx @cookieyes/cli init`. See [Quick start](/docs/getting-started/quick-start).
 
 </Framework>
 
@@ -72,6 +84,27 @@ The rest of this page sets up `@cookieyes/core`. Two steps, about five minutes.
 | Node.js | 20, or the newer version your Nuxt release requires |
 | Nuxt | 4 |
 | Vue | 3.5 |
+
+</Framework>
+
+<Framework when="svelte">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20 |
+| Svelte | 5.20 |
+
+The components are written in runes mode and ship as `.svelte` source, so your Svelte toolchain (`@sveltejs/vite-plugin-svelte`) compiles them.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20 |
+| SvelteKit | 2.62 (SvelteKit 3 is supported) |
+| Svelte | 5.20 |
 
 </Framework>
 
@@ -129,6 +162,26 @@ npm install @cookieyes/nuxt
 ```
 
 This is the only package you install. `nuxt` and `vue` are peer dependencies, so the copies your app already has are the ones used. `npx nuxi module add @cookieyes/nuxt` installs it and adds it to `modules` in one go.
+
+</Framework>
+
+<Framework when="svelte">
+
+```npm
+npm install @cookieyes/svelte
+```
+
+This is the only package you install. `svelte` is a peer dependency, so the copy your app already has is the one used.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```npm
+npm install @cookieyes/sveltekit
+```
+
+This is the only package you install. `@sveltejs/kit` and `svelte` are peer dependencies, so the copies your app already has are the ones used. The components and hooks of `@cookieyes/svelte` are exported from `@cookieyes/sveltekit` too: import everything from there.
 
 </Framework>
 
@@ -352,6 +405,150 @@ Done. Reload the page and the banner appears. It is already in the server HTML, 
 
 </Framework>
 
+<Framework when="svelte">
+
+## 2. Write the configuration
+
+Put the configuration in a module of its own, so every render reuses one object instead of starting a new runtime:
+
+```ts title="src/lib/cookieyes.ts" group="setup"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only", // no backend needed
+  regulation: "GDPR", // "GDPR" | "CCPA"
+};
+```
+
+`<CookieYesProvider>` takes the same configuration as `initCookieYes()` in the other packages, so a configuration copies across unchanged.
+
+## 3. Render it once
+
+A component starts the SDK and renders the banner, the preferences dialog and the recall button. Everything inside it can use the hooks:
+
+```svelte title="src/lib/CookieYesRoot.svelte" group="setup"
+<script lang="ts">
+  import type { Snippet } from "svelte";
+  import {
+    CookieBanner,
+    CookiePreferences,
+    CookieYesProvider,
+    RecallButton,
+  } from "@cookieyes/svelte";
+  import { config } from "./cookieyes";
+
+  let { children }: { children?: Snippet } = $props();
+</script>
+
+<CookieYesProvider {config}>
+  <CookieBanner />
+  <CookiePreferences />
+  <RecallButton />
+  {@render children?.()}
+</CookieYesProvider>
+```
+
+Wrap your app in it once. Keep the banner before your page content, so it is early in the DOM: screen readers announce it first, and it paints before the rest of the page.
+
+```svelte title="src/App.svelte" group="setup"
+<script lang="ts">
+  import CookieYesRoot from "./lib/CookieYesRoot.svelte";
+</script>
+
+<CookieYesRoot>
+  <h1>Your app</h1>
+</CookieYesRoot>
+```
+
+Load the stylesheet where the app starts:
+
+```ts title="src/main.ts" group="setup"
+import "@cookieyes/svelte/styles.css";
+import { mount } from "svelte";
+import App from "./App.svelte";
+
+const target = document.getElementById("app");
+if (target) mount(App, { target });
+```
+
+The stylesheet import is required. The components ship no inline styling, so without it they render as plain text, with no error to tell you why.
+
+Done. Reload the page and the banner appears. If it does not, see [Common mistakes](#common-mistakes).
+
+</Framework>
+
+<Framework when="sveltekit">
+
+## 2. Add the handle
+
+Put the configuration in a module of its own. The server and the browser both import it, so they run the same options:
+
+```ts title="src/lib/cookieyes.ts" group="setup"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only", // no backend needed
+  regulation: "GDPR", // "GDPR" | "CCPA"
+};
+```
+
+`cookieyesHandle` and `<CookieYesRoot>` take the same configuration as `initCookieYes()` in the other packages, so a configuration copies across unchanged.
+
+Add the handle, which reads each request once:
+
+```ts title="src/hooks.server.ts" group="setup"
+import { cookieyesHandle } from "@cookieyes/sveltekit";
+import { config } from "./lib/cookieyes";
+
+export const handle = cookieyesHandle(config);
+```
+
+Serve the stylesheet the handle links to:
+
+```ts title="src/routes/cookieyes/styles.css/+server.ts" group="setup"
+export { GET } from "@cookieyes/sveltekit/styles-route";
+```
+
+And let TypeScript know about `event.locals.cookieyes`:
+
+```ts title="src/app.d.ts" group="setup"
+/// <reference types="@cookieyes/sveltekit" />
+export {};
+```
+
+There is no stylesheet to import. The handle writes the banner's critical CSS into the head of every page and loads the full stylesheet from the route above.
+
+## 3. Render it once
+
+Pass what the handle read to the page from the root layout's server `load`:
+
+```ts title="src/routes/+layout.server.ts" group="setup"
+import { loadConsent } from "@cookieyes/sveltekit";
+
+export const load = loadConsent;
+```
+
+Render `<CookieYesRoot>` in the root layout, with the page inside it:
+
+```svelte title="src/routes/+layout.svelte" group="setup"
+<script lang="ts">
+  import { CookieYesRoot } from "@cookieyes/sveltekit";
+  import { config } from "../lib/cookieyes";
+
+  let { data, children } = $props();
+</script>
+
+<CookieYesRoot {config} state={data.consent}>
+  {@render children()}
+</CookieYesRoot>
+```
+
+`<CookieYesRoot>` renders the banner, the preferences dialog and the recall button, plus the opt-out dialog when a CCPA regulation can apply, and then your page, inside the same provider, so the hooks work in every page and component. The root layout stays mounted across navigation, and the banner comes before your page content in the DOM: screen readers announce it first, and it paints before the rest of the page.
+
+Done. Reload the page and the banner appears. It is already in the server HTML, and a visitor who has chosen before gets no banner at all. If it does not appear, see [Common mistakes](#common-mistakes).
+
+</Framework>
+
 <Framework when="core">
 
 ## 2. Initialise the runtime
@@ -407,6 +604,35 @@ It is in `nuxt.config.ts`, where options become runtime config, which is JSON an
 
 </Framework>
 
+<Framework when="svelte">
+
+**The banner renders as unstyled text.**
+The stylesheet import is missing. Keep the `@cookieyes/svelte/styles.css` import in `src/main.ts`, where the example above has it.
+
+**A component or hook throws "could not find CookieYes".**
+It is not inside `<CookieYesProvider>`, or a hook was called outside component initialisation, for example in an event handler. Render it inside `<CookieYesRoot>`, as in step 3, and call hooks at the top of a component's `<script>`.
+
+**A warning that `<CookieYesProvider>` ran again with a different config.**
+The config is written inline, so each render builds a new object and replaces the runtime. Import the one object from `src/lib/cookieyes.ts`, as in step 2.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+**`loadConsent() found no event.locals.cookieyes` in the server log.**
+The handle is missing. Export `handle = cookieyesHandle(config)` from `src/hooks.server.ts`, as in step 2. If you have a handle of your own, combine the two with `sequence()` from `@sveltejs/kit/hooks`.
+
+**`<CookieYesRoot> needs a config prop`.**
+Pass the object from `src/lib/cookieyes.ts`: `<CookieYesRoot {config} state={data.consent}>`, as in step 3.
+
+**The banner renders as unstyled text.**
+The stylesheet route is missing, or is mounted somewhere other than `/cookieyes/styles.css`. Add `src/routes/cookieyes/styles.css/+server.ts`, as in step 2, or set `stylesHref` on the handle to where you mounted it.
+
+**Your page renders, but the hooks throw "could not find CookieYes".**
+The component is outside `<CookieYesRoot>`. Render the page through `{@render children()}` inside it, as in step 3.
+
+</Framework>
+
 <Framework when="nextjs">
 
 **`You're importing a component that needs "use client"`**
@@ -427,7 +653,7 @@ The module that calls it is imported from two places under a bundler that duplic
 
 </Framework>
 
-<Framework when="nextjs react vue nuxt core">
+<Framework when="nextjs react vue nuxt svelte sveltekit core">
 
 ## Next steps
 
@@ -452,6 +678,22 @@ The module that calls it is imported from two places under a bundler that duplic
 <Framework when="nuxt">
 
 - [Configuration](/docs/getting-started/configuration): every option of the `cookieyes` key, including CCPA and languages
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="svelte">
+
+- [Configuration](/docs/getting-started/configuration): every option the provider takes, including CCPA and languages
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="sveltekit">
+
+- [Configuration](/docs/getting-started/configuration): every option of `src/lib/cookieyes.ts`, including CCPA and languages
 - [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
 - [Styling](/docs/styling/overview): match the banner to your brand
 

@@ -67,6 +67,10 @@ const peers = {
   vue: "3.5.44",
   // The same, for the `nuxt` devDependency of @cookieyes/nuxt.
   nuxt: "4.6.4",
+  // The same, for the `svelte` devDependency of @cookieyes/svelte.
+  svelte: "5.57.3",
+  // The same, for the `@sveltejs/kit` devDependency of @cookieyes/sveltekit.
+  "@sveltejs/kit": "2.70.4",
 };
 
 /** Reads one file out of a tarball without unpacking it. */

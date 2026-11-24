@@ -1,7 +1,7 @@
 ---
 title: Colour scheme
 description: Show the consent banner and dialogs in light or dark colours, or follow the visitor's device setting, with the colorScheme option.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 <Framework when="core">
@@ -64,6 +64,32 @@ export default defineNuxtConfig({
 
 </Framework>
 
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  colorScheme: "light",
+};
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  colorScheme: "light",
+};
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -98,7 +124,7 @@ The brand colour does not switch. A `primaryColor` that reads well on white can 
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue svelte">
 
 ```css title="src/consent.css"
 @media (prefers-color-scheme: dark) {
@@ -126,6 +152,21 @@ Load the file through the `css` option in `nuxt.config.ts`, as shown on [Custom 
 
 </Framework>
 
+<Framework when="sveltekit">
+
+```css title="src/app.css"
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    --cy-primary: #4d8ef7;
+  }
+}
+```
+
+Import the file in `src/routes/+layout.svelte`, as shown on [Custom CSS](/docs/styling/custom-css).
+
+</Framework>
+
 ## Your site has its own dark-mode switch
 
 If your site toggles dark mode with a class on `<html>` (Tailwind's class strategy, `next-themes`, your own toggle), the SDK does not see it: it reads only `colorScheme` and, under `"system"`, the device setting. Set `colorScheme` to your default scheme, and switch the variables from that class:
@@ -145,9 +186,24 @@ html.dark [data-cy-part="optout"] {
 
 </Framework>
 
-<Framework when="vue">
+<Framework when="vue svelte">
 
 ```css title="src/consent.css"
+html.dark [data-cy-part="banner"],
+html.dark [data-cy-part="dialog"],
+html.dark [data-cy-part="optout"] {
+  --cy-bg: #161b27;
+  --cy-text: #f3f4f6;
+  --cy-muted: #9ca3af;
+  --cy-border: #2d3748;
+}
+```
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```css title="src/app.css"
 html.dark [data-cy-part="banner"],
 html.dark [data-cy-part="dialog"],
 html.dark [data-cy-part="optout"] {

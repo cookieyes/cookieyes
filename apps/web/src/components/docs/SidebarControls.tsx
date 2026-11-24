@@ -38,7 +38,7 @@ interface PackageOption {
 /**
  * The three frameworks a reader picks between, per the design's .pdrop
  * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/vue`,
- * `/docs/nuxt`, `/docs/core`.
+ * `/docs/nuxt`, `/docs/svelte`, `/docs/sveltekit`, `/docs/core`.
  *
  * `@cookieyes/cli` and `@cookieyes/translations` are deliberately absent: they are
  * not frameworks, so choosing one here answered nothing.
@@ -67,6 +67,19 @@ const PACKAGES: Record<Framework, PackageOption> = {
     name: "@cookieyes/nuxt",
     logo: <NuxtLogo />,
     hint: FRAMEWORK_LABEL.nuxt,
+  },
+  svelte: {
+    id: "svelte",
+    name: "@cookieyes/svelte",
+    logo: <SvelteLogo />,
+    hint: FRAMEWORK_LABEL.svelte,
+  },
+  // SvelteKit's own mark is the Svelte one; the package name and the hint tell the two apart.
+  sveltekit: {
+    id: "sveltekit",
+    name: "@cookieyes/sveltekit",
+    logo: <SvelteLogo />,
+    hint: FRAMEWORK_LABEL.sveltekit,
   },
   core: {
     id: "core",
@@ -273,6 +286,22 @@ function NuxtLogo() {
       <path
         d="M13.46 19.83h8.93c.28 0 .56-.07.8-.21a1.6 1.6 0 0 0 .6-.57 1.53 1.53 0 0 0 0-1.57L17.79 7.17a1.6 1.6 0 0 0-.59-.57 1.65 1.65 0 0 0-1.61 0 1.6 1.6 0 0 0-.59.57l-1.53 2.57-3-5.02a1.6 1.6 0 0 0-.59-.58 1.65 1.65 0 0 0-1.61 0 1.6 1.6 0 0 0-.59.58L.22 17.48a1.53 1.53 0 0 0 0 1.57 1.6 1.6 0 0 0 .59.57c.25.14.52.21.81.21h5.6c2.22 0 3.85-.95 4.98-2.79l2.73-4.6 1.47-2.45 4.39 7.38h-5.86zm-6.34-2.46H3.21l5.86-9.85L12 12.44l-1.96 3.29c-.75 1.2-1.6 1.63-2.92 1.63z"
         fill="#00DC82"
+      />
+    </svg>
+  );
+}
+
+/** Svelte: the S mark in brand orange, fixed in both themes. */
+function SvelteLogo() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M20.1 3.2C18 .2 13.9-.7 10.9 1.2L5.6 4.6a6.07 6.07 0 0 0-2.7 4.1 6.4 6.4 0 0 0 .6 4.1 6.07 6.07 0 0 0-.9 2.3 6.47 6.47 0 0 0 1.1 4.9c2.1 3 6.2 3.9 9.2 2l5.3-3.4a6.07 6.07 0 0 0 2.7-4.1 6.4 6.4 0 0 0-.6-4.1 6.07 6.07 0 0 0 .9-2.3 6.47 6.47 0 0 0-1.1-4.9"
+        fill="#FF3E00"
+      />
+      <path
+        d="M10.4 20.6a4.2 4.2 0 0 1-4.5-1.7 3.9 3.9 0 0 1-.7-2.9l.1-.5.1-.3.3.2a6.9 6.9 0 0 0 2.1 1l.2.1v.2a1.2 1.2 0 0 0 .2.8 1.27 1.27 0 0 0 1.4.5 1.2 1.2 0 0 0 .3-.1l5.3-3.4a1.1 1.1 0 0 0 .5-.7 1.2 1.2 0 0 0-.2-.9 1.27 1.27 0 0 0-1.4-.5 1.2 1.2 0 0 0-.3.1l-2 1.3a3.9 3.9 0 0 1-1.1.5 4.2 4.2 0 0 1-4.5-1.7 3.9 3.9 0 0 1-.7-2.9 3.6 3.6 0 0 1 1.6-2.5l5.3-3.4a3.9 3.9 0 0 1 1.1-.5 4.2 4.2 0 0 1 4.5 1.7 3.9 3.9 0 0 1 .7 2.9l-.1.5-.1.3-.3-.2a6.9 6.9 0 0 0-2.1-1l-.2-.1v-.2a1.2 1.2 0 0 0-.2-.8 1.27 1.27 0 0 0-1.4-.5 1.2 1.2 0 0 0-.3.1L8.4 9.6a1.1 1.1 0 0 0-.5.7 1.2 1.2 0 0 0 .2.9 1.27 1.27 0 0 0 1.4.5 1.2 1.2 0 0 0 .3-.1l2-1.3a3.9 3.9 0 0 1 1.1-.5 4.2 4.2 0 0 1 4.5 1.7 3.9 3.9 0 0 1 .7 2.9 3.6 3.6 0 0 1-1.6 2.5l-5.3 3.4a3.9 3.9 0 0 1-1.1.5"
+        fill="#FFFFFF"
       />
     </svg>
   );

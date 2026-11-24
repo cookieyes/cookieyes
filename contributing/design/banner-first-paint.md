@@ -55,15 +55,18 @@ These run in the ordinary `pnpm test` job — no browser needed.
 | A throwing third-party tag cannot strand the banner or block mounting | same file |
 | `readServerConsent` agrees with the client about the same cookie | `core/src/__tests__/server-consent.test.ts` |
 | The server-rendered banner carries no inline `style` attribute, so a strict `style-src` cannot strip its screen-reader styling | `react/src/__tests__/ssr-first-paint.test.tsx` |
+| Svelte hydrates the server's banner into the same DOM for a first visit, a returning visitor, CCPA and GPC. Svelte repairs a mismatch silently, so the test compares the DOM right after `hydrate()` with the server's HTML instead of waiting for a warning, and a control case proves it sees a difference | `svelte/src/__tests__/hydration.test.ts` |
 
 These checks run in a real browser, in the CI job `conformance` (`pnpm test:browser`):
 
 | Invariant | Guard |
 |---|---|
-| Every adapter's banner has the same parts, focus, keyboard and announcement as React's | `@cookieyes/test/conformance`, run by `test/src/__tests__/conformance-react.browser.test.tsx`, `vanilla/src/__tests__/conformance.browser.test.ts` and `vue/src/__tests__/conformance.browser.test.ts` |
+| Every adapter's banner has the same parts, focus, keyboard and announcement as React's | `@cookieyes/test/conformance`, run by `test/src/__tests__/conformance-react.browser.test.tsx`, `vanilla/src/__tests__/conformance.browser.test.ts`, `vue/src/__tests__/conformance.browser.test.ts` and `svelte/src/__tests__/conformance.browser.test.ts` |
 | The vanilla first-paint snippet (`renderShell` plus `critical.css`) is styled, fixed and visible with no script running | `vanilla/src/__tests__/first-paint.browser.test.ts` |
 | The Vue server-rendered banner plus `critical.css` is styled and visible with no script, and hydration keeps the same node | `vue/src/__tests__/first-paint.browser.test.ts` |
+| The Svelte server-rendered banner plus `critical.css` is styled and visible with no script, and hydration keeps the same node | `svelte/src/__tests__/first-paint.browser.test.ts` |
 | A Nuxt production build: the banner in a first visit's HTML and none in a returning visitor's, the CCPA banner from the geo headers, the head opening with the Consent Mode default and `critical.css`, no hydration mismatch for any of them (with a control page proving a mismatch is caught), and the stylesheet switched on | `nuxt/src/__tests__/ssr.browser.test.ts` |
+| A SvelteKit production build: the banner in a first visit's HTML and none in a returning visitor's, the CCPA banner from the geo headers, the head opening with the Consent Mode default and `critical.css`, the nonce SvelteKit wrote copied onto the Consent Mode script, the critical CSS admitted by hash alone under a strict `style-src`, the banner markup after hydration equal to the server's (with a control page proving a difference is caught), a prerendered route that stays visitor-neutral, an `ssr = false` route that mounts live, and the stylesheet switched on | `sveltekit/src/__tests__/ssr.browser.test.ts` |
 
 ## Nuxt: head tags outside unhead
 
@@ -87,6 +90,35 @@ The module also never reads the request on a route with `swr`, `isr`, `cache` or
 route rules (`_isSharedRender`). Nuxt serves that HTML to every visitor, so one visitor's stored
 decision or region would reach the next: someone who never chose could get no banner. Next.js
 needs no such check, because reading cookies makes a route dynamic there.
+
+## SvelteKit: head tags in `transformPageChunk`
+
+`@cookieyes/sveltekit` writes the Consent Mode default, `critical.css` and the deferred stylesheet
+`<link media="print" data-cy-full>` into the HTML from the `transformPageChunk` that
+`cookieyesHandle` passes to `resolve()`, right after `<meta charset>`, not from `<svelte:head>`.
+Svelte reconciles what it renders into the head, so it could set the link back to `media="print"`
+after the runtime switched it on, the failure that made Nuxt leave unhead. Plain server markup is
+left alone. The hook also runs for `ssr = false` shells and prerendered pages, so every deployment
+gets the tags. `sequence()` merges `transformPageChunk` functions, so an app's own still runs.
+
+The critical CSS `<style>` is admitted by hash only. SvelteKit puts a nonce in `script-src` but
+none in `style-src`, so a nonce on our `<style>` would admit nothing. The handle adds no nonce
+attribute to it and never rewrites a CSP header; the app adds `CRITICAL_CSS_HASH` to
+`csp.directives['style-src']`, as a Nuxt app does for its `style-src`. The Consent Mode `<script>`
+does take a nonce on request-time pages. SvelteKit builds the page from `app.html` before
+`transformPageChunk` runs, so a `%sveltekit.nonce%` written by the handle would stay literal;
+the handle reads the nonce SvelteKit already put on its own `<script>` tags and copies it. With no
+nonce in the page there is no nonce attribute, so a policy sent as a header must admit that inline script itself, for example by its hash. SvelteKit
+refuses to prerender with `csp.mode` set to `nonce`, so a prerendered page takes the hash path, and
+the `<meta http-equiv>` CSP SvelteKit writes for it lands after our tags: the hash matters when the
+host sends the policy as a header.
+
+A prerendered page reads nothing from the request (`building` from `$app/environment`), so its HTML
+is the same for every visitor, as a cached Nuxt route is. `<CookieYesRoot>` then renders the
+strictest regulation on the server and while hydrating, and the configured region detector takes
+over after mount. When the server did read the request, its region replaces the detector for both
+the root's provider and the browser's runtime (`_withRequestRegion`), for the reason given under
+Nuxt above.
 
 ## Without a server: `@cookieyes/vanilla`
 

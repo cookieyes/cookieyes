@@ -1,7 +1,7 @@
 ---
 title: TikTok Pixel
 description: Load the TikTok Pixel only after advertising consent, send TikTok its consent signal, and stop it with its cookies deleted when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 `tiktokPixel()` loads the TikTok Pixel after the visitor grants the advertising category and sends TikTok its own consent signal. When consent is withdrawn, the pixel is told to stop and its cookies are deleted at once, with no page reload. Nothing is loaded, queued or stored before consent.
@@ -21,6 +21,16 @@ Install the integrations package and add `tiktokPixel()` to the config you pass 
 <Framework when="nuxt">
 
 Install the integrations package and add `tiktokPixel()` to `cookieyes.integrations` in `app/app.config.ts`. `pixelId` is the value in `ttq.load("…")` in the base code TikTok Events Manager gives you:
+
+</Framework>
+<Framework when="svelte">
+
+Install the integrations package and add `tiktokPixel()` to the config you pass to `<CookieYesProvider>`. `pixelId` is the value in `ttq.load("…")` in the base code TikTok Events Manager gives you:
+
+</Framework>
+<Framework when="sveltekit">
+
+Install the integrations package and add `tiktokPixel()` to the config in `src/lib/cookieyes.ts`. `pixelId` is the value in `ttq.load("…")` in the base code TikTok Events Manager gives you:
 
 </Framework>
 
@@ -81,6 +91,38 @@ export default defineAppConfig({
 `integrations` holds functions, so it goes in `app.config.ts`, not `nuxt.config.ts`. The module merges it with the `cookieyes` key in `nuxt.config.ts` from [Installation](/docs/getting-started/installation), where `regulation` and the rest of your configuration stay.
 
 </Framework>
+<Framework when="svelte">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+import { tiktokPixel } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [tiktokPixel({ pixelId: "C1234567890ABCDEFGHI" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="sveltekit">
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/sveltekit";
+import { tiktokPixel } from "@cookieyes/scripts";
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+  integrations: [tiktokPixel({ pixelId: "C1234567890ABCDEFGHI" })],
+};
+```
+
+This is the `src/lib/cookieyes.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -113,6 +155,16 @@ The pixel counts route changes by itself, so there is nothing to add for Vue Rou
 <Framework when="nuxt">
 
 The pixel counts route changes by itself, so there is nothing to add for Nuxt's router. If your server also sends page views through the Events API, set `trackHistoryChanges: false` so each page is counted once.
+
+</Framework>
+<Framework when="svelte">
+
+The pixel counts route changes by itself, so there is nothing to add for your router. If your server also sends page views through the Events API, set `trackHistoryChanges: false` so each page is counted once.
+
+</Framework>
+<Framework when="sveltekit">
+
+The pixel counts route changes by itself, so there is nothing to add for your router. If your server also sends page views through the Events API, set `trackHistoryChanges: false` so each page is counted once.
 
 </Framework>
 

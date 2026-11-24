@@ -21,6 +21,8 @@ const h = vi.hoisted(() => ({
   reactProjectPaths: vi.fn(),
   vueProjectPaths: vi.fn(),
   nuxtProjectPaths: vi.fn(),
+  svelteProjectPaths: vi.fn(),
+  sveltekitProjectPaths: vi.fn(),
 }));
 
 vi.mock("@clack/prompts", () => ({
@@ -50,6 +52,8 @@ vi.mock("../utils/detect-layout.js", () => ({
   reactProjectPaths: h.reactProjectPaths,
   vueProjectPaths: h.vueProjectPaths,
   nuxtProjectPaths: h.nuxtProjectPaths,
+  svelteProjectPaths: h.svelteProjectPaths,
+  sveltekitProjectPaths: h.sveltekitProjectPaths,
 }));
 
 import { cancel, note } from "@clack/prompts";
@@ -80,6 +84,16 @@ const VUE_PATHS = {
   appPath: "/proj/src/App.vue",
 };
 
+const SVELTE_PATHS = {
+  typescript: true,
+  configPath: "/proj/src/lib/cookieyes.ts",
+  configLabel: "src/lib/cookieyes.ts",
+  rootPath: "/proj/src/lib/CookieYesRoot.svelte",
+  entryPath: "/proj/src/main.ts",
+  entryLabel: "src/main.ts",
+  appPath: "/proj/src/App.svelte",
+};
+
 const NUXT_PATHS = {
   configPath: "/proj/nuxt.config.ts",
   configLabel: "nuxt.config.ts",
@@ -107,6 +121,7 @@ beforeEach(() => {
   h.reactProjectPaths.mockReturnValue(REACT_PATHS);
   h.vueProjectPaths.mockReturnValue(VUE_PATHS);
   h.nuxtProjectPaths.mockReturnValue(NUXT_PATHS);
+  h.svelteProjectPaths.mockReturnValue(SVELTE_PATHS);
   process.stdin.isTTY = true;
 });
 
@@ -311,6 +326,134 @@ describe("runInit: Vue patching", () => {
     expect(noteTexts().some((t) => t.endsWith("|Manual step needed"))).toBe(false);
     expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already exists, skipped"));
     expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already calls setupConsent"));
+    expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already uses CookieYesRoot"));
+  });
+});
+
+const SVELTE_MAIN =
+  "import { mount } from 'svelte'\nimport App from './App.svelte'\n\nexport default mount(App, { target: document.body })\n";
+const SVELTE_APP = "<script lang=\"ts\">\n  import A from './A.svelte'\n</script>\n\n<A />\n";
+
+describe("runInit: Svelte (cookie-only, GDPR)", () => {
+  it("scaffolds the config and root component and installs the svelte adapter", async () => {
+    h.select
+      .mockResolvedValueOnce("svelte")
+      .mockResolvedValueOnce("cookie-only")
+      .mockResolvedValueOnce("GDPR")
+      .mockResolvedValueOnce("light");
+    h.multiselect.mockResolvedValueOnce([]);
+    h.confirm.mockResolvedValueOnce(true);
+
+    await runInit();
+
+    const config = writtenTo(SVELTE_PATHS.configPath);
+    expect(config).toContain('import type { CookieYesConfig } from "@cookieyes/svelte";');
+    expect(config).toContain('export const config: CookieYesConfig = {\n  mode: "cookie-only",');
+    const root = writtenTo(SVELTE_PATHS.rootPath);
+    expect(root).toContain('<script lang="ts">');
+    expect(root).toContain('import { config } from "./cookieyes";');
+    expect(root).toContain(
+      "<CookieYesProvider {config}>\n  <CookieBanner />\n  <CookiePreferences />\n  <RecallButton />\n  {@render children?.()}\n</CookieYesProvider>",
+    );
+    expect(root).toContain("let { children }: { children?: Snippet } = $props();");
+    expect(root).not.toContain("CookieOptOut");
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/svelte", "npm", expect.any(String));
+  });
+
+  it("writes plain JavaScript for a project whose entry is main.js", async () => {
+    h.svelteProjectPaths.mockReturnValue({
+      ...SVELTE_PATHS,
+      typescript: false,
+      configPath: "/proj/src/lib/cookieyes.js",
+      configLabel: "src/lib/cookieyes.js",
+    });
+    await runInit(["--framework=svelte", "--yes", "--no-install"]);
+
+    const config = writtenTo("/proj/src/lib/cookieyes.js");
+    expect(config).toContain("export const config = {");
+    expect(config).not.toContain("CookieYesConfig");
+    const root = writtenTo(SVELTE_PATHS.rootPath);
+    expect(root).toContain("<script>");
+    expect(root).toContain("let { children } = $props();");
+    expect(root).not.toContain("Snippet");
+  });
+});
+
+describe("runInit: Svelte (self-hosted, CCPA, locales)", () => {
+  it("emits apiUrl, the opt-out component and locale imports", async () => {
+    await runInit([
+      "--framework=svelte",
+      "--api-url=https://api.example.com/consent",
+      "--regulation=CCPA",
+      "--locales=es,fr",
+      "--install",
+    ]);
+
+    const config = writtenTo(SVELTE_PATHS.configPath);
+    expect(config).toContain('apiUrl: "https://api.example.com/consent",');
+    expect(config).toContain('import { es } from "@cookieyes/translations/es";');
+    expect(config).toContain("i18n: { messages: { es, fr } },");
+    expect(writtenTo(SVELTE_PATHS.rootPath)).toContain("<CookieOptOut />");
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/svelte", "npm", expect.any(String));
+  });
+});
+
+describe("runInit: Svelte patching", () => {
+  const entryAndApp = (p: unknown) =>
+    String(p).endsWith("main.ts") || String(p).endsWith("App.svelte");
+
+  it("wires an existing main.ts and App.svelte", async () => {
+    h.existsSync.mockImplementation(entryAndApp);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      String(p).endsWith("main.ts") ? SVELTE_MAIN : SVELTE_APP,
+    );
+
+    await runInit(["--framework=svelte", "--yes", "--no-install"]);
+
+    expect(writtenTo(SVELTE_PATHS.entryPath)).toContain(
+      "import App from './App.svelte'\nimport '@cookieyes/svelte/styles.css'",
+    );
+    expect(writtenTo(SVELTE_PATHS.appPath)).toContain("<A />\n\n<CookieYesRoot />");
+    expect(noteTexts().some((t) => t.endsWith("|Manual step needed"))).toBe(false);
+  });
+
+  it("prints manual steps and writes nothing when neither file can be patched", async () => {
+    h.existsSync.mockImplementation(entryAndApp);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      String(p).endsWith("main.ts") ? "start();\n" : "<main />\n",
+    );
+
+    await runInit(["--framework=svelte", "--yes", "--no-install"]);
+
+    expect(writtenTo(SVELTE_PATHS.entryPath)).toBeUndefined();
+    expect(writtenTo(SVELTE_PATHS.appPath)).toBeUndefined();
+    const manual = noteTexts().filter((t) => t.endsWith("|Manual step needed"));
+    expect(manual).toHaveLength(2);
+    expect(manual[0]).toContain('import "@cookieyes/svelte/styles.css";');
+    expect(manual[1]).toContain('import CookieYesRoot from "./lib/CookieYesRoot.svelte";');
+  });
+
+  it("prints manual steps when main.ts and App.svelte do not exist", async () => {
+    await runInit(["--framework=svelte", "--yes", "--no-install"]);
+    expect(noteTexts().filter((t) => t.endsWith("|Manual step needed"))).toHaveLength(2);
+  });
+
+  it("leaves everything alone when the project is already set up", async () => {
+    h.existsSync.mockReturnValue(true);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      String(p).endsWith("main.ts")
+        ? "import '@cookieyes/svelte/styles.css'\n"
+        : "<script>\n  import CookieYesRoot from './x.svelte'\n</script>\n",
+    );
+
+    await runInit(["--framework=svelte", "--yes", "--no-install"]);
+
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+    expect(noteTexts().some((t) => t.endsWith("|Manual step needed"))).toBe(false);
+    expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already exists, skipped"));
+    expect(h.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("already imports the stylesheet"),
+    );
     expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already uses CookieYesRoot"));
   });
 });
@@ -688,6 +831,14 @@ describe("parseInitFlags", () => {
     expect(parseInitFlags(["--framework", "vue"]).framework).toBe("vue");
   });
 
+  it("accepts svelte as a framework", () => {
+    expect(parseInitFlags(["--framework", "svelte"]).framework).toBe("svelte");
+  });
+
+  it("accepts sveltekit as a framework", () => {
+    expect(parseInitFlags(["--framework", "sveltekit"]).framework).toBe("sveltekit");
+  });
+
   it("accepts nuxt as a framework", () => {
     expect(parseInitFlags(["--framework=Nuxt"]).framework).toBe("nuxt");
   });
@@ -698,7 +849,7 @@ describe("parseInitFlags", () => {
 
   it("refuses a typo instead of ignoring it", () => {
     expect(() => parseInitFlags(["--framwork", "react"])).toThrow(/Unknown option/);
-    expect(() => parseInitFlags(["--framework", "svelte"])).toThrow(/must be one of/);
+    expect(() => parseInitFlags(["--framework", "angular"])).toThrow(/must be one of/);
     expect(() => parseInitFlags(["--locales", "es,xx"])).toThrow(/must be one of/);
     expect(() => parseInitFlags(["--api-url", "not a url"])).toThrow(/--api-url/);
     expect(() => parseInitFlags(["--mode"])).toThrow(/needs a value/);

@@ -1,7 +1,7 @@
 ---
 title: Google Consent Mode v2
 description: "Tell Google tags what the visitor allowed: add one default snippet, and the SDK sends every update."
-frameworks: [nextjs, react, vue, nuxt, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
 ---
 
 Google Analytics 4, Google Ads and Google Tag Manager read consent through Google Consent Mode. It has two halves: a default that says "denied" before any Google tag runs, and an update each time the visitor decides. The SDK sends the updates on its own, on page load and on every change. You add the default.
@@ -97,6 +97,41 @@ export default defineNuxtConfig({
 `true` uses the defaults. To change them, pass the options `bootstrapGoogleConsentMode()` takes in the other packages instead, for example `{ urlPassthrough: true }`. The option needs no extra package.
 
 </Framework>
+<Framework when="svelte">
+
+Call `bootstrapGoogleConsentMode()` in the module that holds your config, so it runs when that module is first imported, before `<CookieYesProvider>` starts the SDK. Everything else in that file stays as it is:
+
+```npm
+npm install @cookieyes/scripts
+```
+
+```ts title="src/lib/cookieyes.ts"
+import type { CookieYesConfig } from "@cookieyes/svelte";
+import { bootstrapGoogleConsentMode } from "@cookieyes/scripts";
+
+bootstrapGoogleConsentMode();
+
+export const config: CookieYesConfig = {
+  mode: "cookie-only",
+  regulation: "GDPR",
+};
+```
+
+</Framework>
+<Framework when="sveltekit">
+
+Turn on the `googleConsentMode` option of the handle in `src/hooks.server.ts`. The handle then writes the default right after `<meta charset>` in every page it renders, prerendered pages included, ahead of every other tag in `<head>`, as an inline script, so it runs before any Google tag. Everything else stays as it is: `<CookieYesRoot>` still renders the banner and dialogs.
+
+```ts title="src/hooks.server.ts"
+import { cookieyesHandle } from "@cookieyes/sveltekit";
+import { config } from "./lib/cookieyes";
+
+export const handle = cookieyesHandle({ ...config, googleConsentMode: true });
+```
+
+`true` uses the defaults. To change them, pass the options `bootstrapGoogleConsentMode()` takes in the other packages instead, for example `{ urlPassthrough: true }`. The option needs no extra package. With a nonce-based `script-src`, the script carries the nonce SvelteKit put on its own scripts; see [Content Security Policy](/docs/styling/csp).
+
+</Framework>
 <Framework when="core">
 
 Call `bootstrapGoogleConsentMode()` before `initCookieYes()`, in the same file. Everything else in that file stays as it is:
@@ -118,7 +153,7 @@ initCookieYes({
 ```
 
 </Framework>
-<Framework when="react vue core">
+<Framework when="react vue svelte core">
 
 If your HTML is rendered on a server, you can print `googleConsentModeSnippet()` into `<head>` as an inline script instead.
 
@@ -147,6 +182,20 @@ The message names `@cookieyes/nextjs` for every framework. In a Vue app, fix it 
 > `[cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.`
 
 The message names `@cookieyes/nextjs` for every framework. In a Nuxt app, fix it by setting `googleConsentMode` in `nuxt.config.ts`, as shown above.
+
+</Framework>
+<Framework when="svelte">
+
+> `[cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.`
+
+The message names `@cookieyes/nextjs` for every framework. In a Svelte app, fix it by calling `bootstrapGoogleConsentMode()` in `src/lib/cookieyes.ts`, as shown above.
+
+</Framework>
+<Framework when="sveltekit">
+
+> `[cookieyes] Google Consent Mode default was not set before init: add the <head> snippet (googleConsentModeSnippet / @cookieyes/nextjs) for correct first-paint behaviour. Falling back to a deny-by-default now.`
+
+The message names `@cookieyes/nextjs` for every framework. In a SvelteKit app, fix it by setting `googleConsentMode` on the handle in `src/hooks.server.ts`, as shown above.
 
 </Framework>
 

@@ -4,7 +4,8 @@
 // sidecar (component-props.sidecar.ts), and writes the merged result to
 // `.generated/component-reference.json` for the `<ComponentPropsTable>` MDX
 // component to render. It does this once per adapter (React, whose table Next.js pages
-// share, and Vue), each against its own source and its own sidecar.
+// share, Vue, whose table Nuxt pages share, and Svelte), each against its own source and its
+// own sidecar.
 //
 // Sibling to `generate-config-reference.mjs`, following the same pattern
 // (compiler-API extraction -> join against a checked-in sidecar -> fail closed
@@ -74,7 +75,10 @@ const PLAIN_COMPONENTS = new Set([
  *
  * `synthetic` rows cannot be read off the props type, so they are fixed, hand-written facts
  * about the component: React's `ref` is added by `forwardRef` (the type is built from
- * `ComponentPropsWithoutRef`, which excludes it), and Vue slots are not props at all.
+ * `ComponentPropsWithoutRef`, which excludes it), and Vue slots are not props at all. Svelte
+ * snippets (`children`, `placeholder`) are props, so they are read off the type like any other.
+ * Svelte components are `.svelte` files the compiler API cannot read; their props types live in
+ * plain `types.ts` modules, which is where they are read from.
  */
 const ADAPTERS = {
   react: {
@@ -138,6 +142,34 @@ const ADAPTERS = {
       RecallButton: [{ path: "#default", type: "() => unknown", required: false }],
       GatedFrame: [{ path: "#placeholder", type: "() => unknown", required: false }],
     },
+  },
+  svelte: {
+    srcRoot: join(repoRoot, "sdk", "svelte", "src"),
+    files: {
+      CookieBanner: ["presets", "types.ts"],
+      CookiePreferences: ["presets", "types.ts"],
+      CookieOptOut: ["presets", "types.ts"],
+      RecallButton: ["controls", "types.ts"],
+      GatedScript: ["controls", "types.ts"],
+      GatedFrame: ["controls", "types.ts"],
+    },
+    sidecarPath: join(contentComponentsDir, "component-props.svelte.sidecar.ts"),
+    jsx: ts.JsxEmit.Preserve,
+    extended: {
+      RecallButton: {
+        ownFields: ["children"],
+        namedNativeProps: ["class", "onclick"],
+        restPath: "...rest",
+        restType: 'Omit<HTMLButtonAttributes, "children" | "class" | "onclick">',
+      },
+      GatedFrame: {
+        ownFields: ["src", "category", "placeholder"],
+        namedNativeProps: [],
+        restPath: "...rest",
+        restType: 'Omit<HTMLIframeAttributes, "src" | "children">',
+      },
+    },
+    synthetic: {},
   },
 };
 
@@ -206,7 +238,7 @@ async function generateAdapter(adapter, config) {
   const files = Object.fromEntries(
     COMPONENTS.map((component) => [component, join(config.srcRoot, ...config.files[component])]),
   );
-  const program = ts.createProgram(Object.values(files), {
+  const program = ts.createProgram([...new Set(Object.values(files))], {
     target: ts.ScriptTarget.ESNext,
     lib: ["lib.esnext.d.ts", "lib.dom.d.ts"],
     moduleResolution: ts.ModuleResolutionKind.Bundler,

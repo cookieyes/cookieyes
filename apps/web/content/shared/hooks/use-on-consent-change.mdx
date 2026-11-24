@@ -1,7 +1,7 @@
 ---
 title: useOnConsentChange
 description: Run your own code when the visitor's consent changes.
-frameworks: [nextjs, react, vue, nuxt]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 ---
 
 ## What it does
@@ -15,6 +15,18 @@ Calls your function whenever consent is saved, and once when the component mount
 <Framework when="vue nuxt">
 
 Calls your function whenever consent is saved, and once when the component mounts, with the current state. Use it to start something when a category is granted: initialise an analytics SDK, start a session recorder, sync the decision to your own backend. The subscription is removed when the component unmounts, or when the effect scope it was called in stops.
+
+</Framework>
+
+<Framework when="svelte">
+
+Calls your function whenever consent is saved, and once when the component mounts, with the current state. Use it to start something when a category is granted: initialise an analytics SDK, start a session recorder, sync the decision to your own backend. The subscription is removed when the component is destroyed.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+Calls your function whenever consent is saved, and once when the component mounts, with the current state. Use it to start something when a category is granted: initialise an analytics SDK, start a session recorder, sync the decision to your own backend. The subscription is removed when the component is destroyed.
 
 </Framework>
 
@@ -83,6 +95,50 @@ useOnConsentChange("change", ({ categories }) => {
 ```
 
 Render `<AnalyticsLoader />` once, in `app/app.vue`. It subscribes after the component mounts, so it does nothing during server rendering. `type` and `options` are read once.
+
+</Framework>
+
+<Framework when="svelte">
+
+```ts title="src/lib/analytics.ts"
+/** Whatever starts analytics in your app. Safe to call more than once. */
+export declare function loadAnalytics(): void;
+```
+
+```svelte title="src/lib/AnalyticsLoader.svelte"
+<script lang="ts">
+  import { useOnConsentChange } from "@cookieyes/svelte";
+  import { loadAnalytics } from "./analytics";
+
+  useOnConsentChange("change", ({ categories }) => {
+    if (categories.analytics) loadAnalytics();
+  });
+</script>
+```
+
+Render `<AnalyticsLoader />` once, inside `<CookieYesRoot>` in `src/App.svelte`. It subscribes when the component mounts, so it does nothing during server rendering. `type`, `listener` and `options` are read once.
+
+</Framework>
+
+<Framework when="sveltekit">
+
+```ts title="src/lib/analytics.ts"
+/** Whatever starts analytics in your app. Safe to call more than once. */
+export declare function loadAnalytics(): void;
+```
+
+```svelte title="src/lib/AnalyticsLoader.svelte"
+<script lang="ts">
+  import { useOnConsentChange } from "@cookieyes/sveltekit";
+  import { loadAnalytics } from "./analytics";
+
+  useOnConsentChange("change", ({ categories }) => {
+    if (categories.analytics) loadAnalytics();
+  });
+</script>
+```
+
+Render `<AnalyticsLoader />` once, inside `<CookieYesRoot>` in `src/routes/+layout.svelte`, so it stays mounted across navigation. It subscribes when the component mounts, so it does nothing during server rendering. `type`, `listener` and `options` are read once.
 
 </Framework>
 

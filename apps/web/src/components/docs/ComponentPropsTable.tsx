@@ -24,7 +24,13 @@ export interface ComponentPropsTableProps {
  * own fail-closed checks, catching a `component` typo in the MDX itself.
  */
 export function ComponentPropsTable({ component, framework }: ComponentPropsTableProps) {
-  const options = data[framework === "vue" || framework === "nuxt" ? "vue" : "react"][component];
+  const adapter =
+    framework === "vue" || framework === "nuxt"
+      ? "vue"
+      : framework === "svelte" || framework === "sveltekit"
+        ? "svelte"
+        : "react";
+  const options = data[adapter][component];
   if (!options || options.length === 0) {
     throw new Error(
       `<ComponentPropsTable component="${component}"> has zero props in the generated component ` +

@@ -34,8 +34,12 @@ one component that mounts the SDK:
 | `with-vanilla` | `vanilla` | `@cookieyes/vanilla`'s `start()`: banner and recall button, dialogs on first open |
 | `baseline-vue` | `baseline-vue` | nothing: the control for the Vue fixture |
 | `with-vue` | `vue` | `@cookieyes/vue`'s plugin, `<CookieBanner />`, `<CookiePreferences />` and `<RecallButton />` (the README's three-file setup) |
+| `baseline-svelte` | `baseline-svelte` | nothing: the control for the Svelte fixture |
+| `with-svelte` | `svelte` | `@cookieyes/svelte`'s `<CookieYesProvider>`, `<CookieBanner />`, `<CookiePreferences />` and `<RecallButton />` (the README's quick start) |
 | `baseline-nuxt` | `baseline-nuxt` | nothing: the control for the Nuxt fixture |
 | `with-nuxt` | `nuxt` | `@cookieyes/nuxt` in `modules` and `<CookieYesRoot />` in `app/app.vue` |
+| `baseline-sveltekit` | `baseline-sveltekit` | nothing: the control for the SvelteKit fixture |
+| `with-sveltekit` | `sveltekit` | `@cookieyes/sveltekit`'s handle, `loadConsent`, `<CookieYesRoot>` in the root layout and the styles route (the README's quick start) |
 
 `baseline`, `with-core` and `with-react` mirror consentbench's own `baseline`,
 `with-cookieyes-core` and `with-cookieyes-react` apps, so our figures are
@@ -62,6 +66,18 @@ page, so there is no other route to exclude from `total`. Vite, `@vitejs/plugin-
 pinned exactly in both fixtures, and `measure.mjs` fails if two copies of Vue resolve, as it does
 for React.
 
+### The Svelte fixtures
+
+`with-svelte` is measured against `baseline-svelte`, an empty Vite + Svelte app, for the same
+reason as Vue. Both are plain Vite apps with `@sveltejs/vite-plugin-svelte`, so they use the Vite
+path above. Svelte's runtime is tree-shaken too: the control holds only what an empty app uses,
+and the runtime the adapter's components need counts in `svelte`. `@cookieyes/svelte` ships
+`.svelte` source, so the fixture's own build compiles it, and the figure includes that compiled
+output. Vite, the plugin and Svelte are pinned exactly in both fixtures, and `measure.mjs` fails
+if two copies of Svelte resolve. The package's tarball is packed by `measure.mjs` itself when the
+peer-dependency matrix has not packed it. The report's fingerprint covers `.svelte` sources, the
+package's `svelte.config.js` and its two build scripts, since they decide what reaches `dist`.
+
 ### The Nuxt fixtures
 
 `with-nuxt` is measured against `baseline-nuxt`, an empty Nuxt app, for the same reason. A fixture
@@ -77,6 +93,24 @@ are pinned exactly in both fixtures.
 
 `@cookieyes/nuxt`'s tarball is packed by `measure.mjs` itself: the peer-dependency matrix's
 `pack-tarballs.mjs` packs what its example apps install, and none of them is a Nuxt app.
+
+### The SvelteKit fixtures
+
+`with-sveltekit` is measured against `baseline-sveltekit`, an empty SvelteKit app, for the same
+reason. A fixture with a `svelte.config.js` is a SvelteKit app and is built with `vite build` and
+`@sveltejs/adapter-node` into `.output`; it also has a `vite.config.ts`, so `measure.mjs` checks
+for the Svelte config first. SvelteKit renders pages on request, so the build leaves no HTML to
+read: `measure.mjs` starts the built server, saves the HTML it renders for `/` as
+`.output/index.html` and stops it. SvelteKit sends a server-rendered page's preloads in a `Link`
+header rather than in the HTML, so the saved page has them added as `<link rel="modulepreload">`
+tags. **initial** is those preloads (the entry, the nodes `/` renders and the chunks they share);
+**total** adds every other script in `.output/client/_app`, such as the error page's node, which
+is present on both sides of the subtraction. Svelte, SvelteKit, the adapter, Vite and the plugin
+are pinned exactly in both fixtures, and `measure.mjs` fails if two copies of Svelte resolve. The
+package's tarball comes from the peer-dependency matrix's `pack-tarballs.mjs`. The report's
+fingerprint covers `.svelte` sources, the package's `svelte.config.js` and its three build
+scripts. The server code (the handle, the load function and the styles route) never reaches the
+client, and the stylesheet is not a script, so neither is in the figure.
 
 ### `with-nextjs-devtools` (AD-5 / A2)
 
