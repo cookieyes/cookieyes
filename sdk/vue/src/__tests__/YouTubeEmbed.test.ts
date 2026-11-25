@@ -3,7 +3,17 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { defineComponent, h } from "vue";
 import { YouTubeEmbed, type YouTubeEmbedProps } from "../controls/YouTubeEmbed.js";
 import { getCookieYes } from "../runtime.js";
-import { clearCookie, click, cookieOnly, getByText, mountWith, unmountAll } from "./test-utils.js";
+import {
+  clearCookie,
+  click,
+  cookieOnly,
+  getByText,
+  hydrate,
+  mountWith,
+  spyWarn,
+  ssr,
+  unmountAll,
+} from "./test-utils.js";
 
 const VIDEO = "jNQXAC9IVRw";
 const TITLE = "Me at the zoo";
@@ -127,6 +137,49 @@ describe("YouTubeEmbed", () => {
     await flushPromises();
     expect(document.querySelector(".cy-youtube")?.classList.contains("hero-video")).toBe(true);
     expect(document.querySelector("iframe")?.id).toBe("tour");
+  });
+
+  it("uses the placeholder text from the translations when they have it", async () => {
+    mountWith(
+      {
+        ...cookieOnly("GDPR"),
+        i18n: {
+          messages: {
+            en: {
+              embedPlaceholder: {
+                message: "{provider} needs {category} cookies.",
+                allow: "Turn on {category}",
+                privacyPolicy: "Privacy at {provider}",
+              },
+            },
+          },
+        },
+      },
+      defineComponent({ render: () => h(YouTubeEmbed, { videoId: VIDEO, title: TITLE } as never) }),
+    );
+    await flushPromises();
+    expect(getByText("YouTube needs Advertisement cookies.")).toBeTruthy();
+    expect(getByText("Turn on Advertisement").tagName).toBe("BUTTON");
+    expect(getByText("Privacy at YouTube").tagName).toBe("A");
+  });
+
+  it("server-renders the placeholder even for a visitor who consented, and hydrates into the player", async () => {
+    // A visitor who accepted everything on an earlier visit.
+    document.cookie = `cookieyes-consent=${encodeURIComponent(
+      "consentid:abc,consent:yes,action:yes,necessary:yes,functional:yes,analytics:yes,performance:yes,advertisement:yes,lastRenewedDate:1700000000000",
+    )}`;
+    const factory = () =>
+      defineComponent({ render: () => h(YouTubeEmbed, { videoId: VIDEO, title: TITLE } as never) });
+    const html = await ssr(factory, cookieOnly("GDPR"));
+    // The server is shared between visitors, so it must never decide to contact YouTube.
+    expect(html).not.toContain("<iframe");
+    expect(html).not.toMatch(/youtube(-nocookie)?\.com|ytimg\.com/);
+    expect(html).toContain("cy-youtube-content");
+
+    const warnings = spyWarn();
+    const { container } = await hydrate(html, factory, cookieOnly("GDPR"));
+    expect(warnings.vueWarnings()).toEqual([]);
+    expect(container.querySelector("iframe")?.getAttribute("src")).toBe(ADDRESS);
   });
 
   it("requires a title and exactly one of a video or a playlist (type check)", () => {

@@ -1,6 +1,9 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { YouTubeEmbed } from "../controls/YouTubeEmbed.js";
+import { initCookieYes } from "../runtime.js";
 import { clearCookie, mountOffline, teardown } from "./test-utils.js";
 
 const VIDEO = "jNQXAC9IVRw";
@@ -120,6 +123,59 @@ describe("YouTubeEmbed", () => {
     );
     expect(container.querySelector(".cy-youtube")?.classList.contains("hero-video")).toBe(true);
     expect(container.querySelector("iframe")?.id).toBe("tour");
+  });
+
+  it("uses the placeholder text from the translations when they have it", () => {
+    teardown();
+    initCookieYes({
+      mode: "cookie-only",
+      regulation: "GDPR",
+      i18n: {
+        messages: {
+          en: {
+            embedPlaceholder: {
+              message: "{provider} needs {category} cookies.",
+              allow: "Turn on {category}",
+              privacyPolicy: "Privacy at {provider}",
+            },
+          },
+        },
+      },
+    });
+    render(<YouTubeEmbed videoId={VIDEO} title={TITLE} />);
+    expect(screen.getByText("YouTube needs Advertisement cookies.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Turn on Advertisement" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /^Privacy at YouTube/ })).toBeTruthy();
+  });
+
+  it("server-renders the placeholder even for a visitor who consented, and hydrates into the player", async () => {
+    const rt = mountOffline("GDPR");
+    rt.manager.acceptAll();
+    const tree = <YouTubeEmbed videoId={VIDEO} title={TITLE} />;
+    const html = renderToString(tree);
+    // The server is shared between visitors, so it must never decide to contact YouTube.
+    expect(html).not.toContain("<iframe");
+    expect(html).not.toMatch(/youtube(-nocookie)?\.com|ytimg\.com/);
+    expect(html).toContain("cy-youtube-content");
+
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.append(container);
+    const errors: string[] = [];
+    const spy = vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
+      errors.push(args.map(String).join(" "));
+    });
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, tree, {
+        onRecoverableError: (error) => errors.push(String(error)),
+      });
+    });
+    expect(errors.filter((message) => /hydrat/i.test(message))).toEqual([]);
+    expect(container.querySelector("iframe")?.getAttribute("src")).toBe(ADDRESS);
+    act(() => root?.unmount());
+    container.remove();
+    spy.mockRestore();
   });
 
   it("requires a title and exactly one of a video or a playlist (type check)", () => {

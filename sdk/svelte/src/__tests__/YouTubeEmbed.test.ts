@@ -1,7 +1,11 @@
+import { readServerConsent } from "@cookieyes/core";
+import { hydrate, unmount } from "svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { YouTubeEmbedProps } from "../controls/types.js";
 import YouTubeEmbed from "../controls/YouTubeEmbed.svelte";
 import { getCookieYes } from "../runtime.js";
+import YouTubePage from "./fixtures/YouTubePage.svelte";
+import { renderOnServer, useServerRenderer } from "./ssr-render.js";
 import {
   clearCookie,
   click,
@@ -16,6 +20,7 @@ const VIDEO = "jNQXAC9IVRw";
 const TITLE = "Me at the zoo";
 const ADDRESS = `https://www.youtube-nocookie.com/embed/${VIDEO}`;
 
+useServerRenderer();
 beforeEach(clearCookie);
 afterEach(unmountAll);
 
@@ -131,6 +136,57 @@ describe("YouTubeEmbed", () => {
     await settle();
     expect(document.querySelector(".cy-youtube")?.classList.contains("hero-video")).toBe(true);
     expect(document.querySelector("iframe")?.id).toBe("tour");
+  });
+
+  it("uses the placeholder text from the translations when they have it", async () => {
+    mountWith(
+      {
+        ...cookieOnly("GDPR"),
+        i18n: {
+          messages: {
+            en: {
+              embedPlaceholder: {
+                message: "{provider} needs {category} cookies.",
+                allow: "Turn on {category}",
+                privacyPolicy: "Privacy at {provider}",
+              },
+            },
+          },
+        },
+      },
+      YouTubeEmbed,
+      { videoId: VIDEO, title: TITLE },
+    );
+    await settle();
+    expect(getByText("YouTube needs Advertisement cookies.")).toBeTruthy();
+    expect(getByText("Turn on Advertisement").tagName).toBe("BUTTON");
+    expect(getByText("Privacy at YouTube").tagName).toBe("A");
+  });
+
+  it("server-renders the placeholder even for a visitor who consented, and hydrates into the player", async () => {
+    // A visitor who accepted everything on an earlier visit.
+    const header = `cookieyes-consent=${encodeURIComponent(
+      "consentid:abc,consent:yes,action:yes,necessary:yes,functional:yes,analytics:yes,performance:yes,advertisement:yes,lastRenewedDate:1700000000000",
+    )}`;
+    const spec = { parts: [], initialConsent: readServerConsent(header) };
+    const { body } = await renderOnServer(spec, "src/__tests__/fixtures/YouTubePage.svelte");
+    // The server is shared between visitors, so it must never decide to contact YouTube.
+    expect(body).not.toContain("<iframe");
+    expect(body).not.toMatch(/youtube(-nocookie)?\.com|ytimg\.com/);
+    expect(body).toContain("cy-youtube-content");
+
+    document.cookie = header;
+    const container = document.createElement("div");
+    container.innerHTML = body;
+    document.body.append(container);
+    const atLoad = container.innerHTML;
+    const app = hydrate(YouTubePage, { target: container, props: { spec } });
+    // Svelte repairs a mismatch silently, so the DOM right after hydration is compared with
+    // the server's: any difference would be a mismatch.
+    expect(container.innerHTML).toBe(atLoad);
+    await settle();
+    expect(container.querySelector("iframe")?.getAttribute("src")).toBe(ADDRESS);
+    await unmount(app);
   });
 
   it("requires a title and exactly one of a video or a playlist (type check)", () => {
