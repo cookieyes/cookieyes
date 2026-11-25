@@ -14,7 +14,7 @@ export {
   _warnBuiltInIntegrationsDeprecated,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
-/** @internal — embed helpers shared with the adapters' `GatedFrame` and `YouTubeEmbed`. */
+/** @internal Embed helpers shared with the adapters' `GatedFrame` and `YouTubeEmbed`. */
 export {
   categoryLabel as _categoryLabel,
   embedPlaceholderText as _embedPlaceholderText,
