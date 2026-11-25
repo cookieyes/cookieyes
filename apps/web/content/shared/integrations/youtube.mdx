@@ -241,7 +241,7 @@ When the visitor withdraws consent, `allowed` turns false and your player is rem
 
 - **The category.** YouTube's player can set advertising cookies, so the default is `advertisement`. The category must exist in your `categories` list.
 - **`youtube-nocookie.com` still needs consent.** It is YouTube's privacy-enhanced mode: YouTube says views there are not used to personalise the visitor's YouTube experience or ads. The player still contacts Google when it loads and still stores data in the browser.
-- **The button allows the whole category.** It grants that one category for the whole site and keeps the visitor's other choices. The choice is saved like one made in the banner.
+- **The button allows the whole category.** It grants that one category for the whole site and keeps the visitor's other choices. The choice is saved like one made in the banner. If a click on a video should not switch on your other advertising tools, give YouTube a category of its own and pass it as `category`.
 - **Withdrawal removes the player at once.** What YouTube already stored in the browser stays: it belongs to YouTube's site, and your page cannot delete it.
 - **Content-Security-Policy.** Add `https://www.youtube-nocookie.com` to `frame-src`, or `https://www.youtube.com` if you set `domain`. A poster from another origin needs that origin in `img-src`. The placeholder needs nothing more; see [Content Security Policy](/docs/styling/csp).
 - **Age-restricted videos** do not play in an embed. The player sends the visitor to YouTube to watch them.
