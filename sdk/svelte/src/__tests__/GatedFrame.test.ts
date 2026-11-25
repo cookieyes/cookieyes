@@ -85,17 +85,34 @@ describe("GatedFrame", () => {
     expect(document.querySelector("iframe")).not.toBeNull();
   });
 
-  it("latches: stays rendered after the category is revoked (reload to re-block)", async () => {
+  it("swaps back to the placeholder when the category is withdrawn (saved decision)", async () => {
     await mountFrame({ category: "analytics", title: "video" });
     const { manager } = getCookieYes();
     manager.acceptAll();
     await settle();
     expect(document.querySelector("iframe")).not.toBeNull();
-    // Revoke through a real action: the loaded frame must NOT swap back to the placeholder
-    // mid-session.
-    manager.rejectAll();
+    // Flipping the switch off in the (unsaved) dialog must not remove the embed.
+    manager.updateCategory("analytics", false);
     await settle();
     expect(document.querySelector("iframe")).not.toBeNull();
+    // Saving commits the withdrawal, so now it goes.
+    manager.savePreferences();
+    await settle();
+    expect(document.querySelector("iframe")).toBeNull();
+    expect(getByText("Manage Preferences")).toBeTruthy();
+  });
+
+  it("renders the iframe again when the category is granted again", async () => {
+    await mountFrame({ category: "analytics", title: "video" });
+    const { manager } = getCookieYes();
+    manager.acceptAll();
+    await settle();
+    manager.rejectAll();
+    await settle();
+    expect(document.querySelector("iframe")).toBeNull();
+    manager.acceptAll();
+    await settle();
+    expect(document.querySelector("iframe")?.getAttribute("src")).toBe(SRC);
   });
 });
 

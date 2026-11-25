@@ -100,13 +100,25 @@ describe("module setup", () => {
       ([c]) => c as { name: string; filePath: string },
     );
     expect(components.map((c) => c.name)).toEqual(
-      expect.arrayContaining(["CookieBanner", "GatedFrame", "CookieYesProvider", "CookieYesRoot"]),
+      expect.arrayContaining([
+        "CookieBanner",
+        "GatedFrame",
+        "YouTubeEmbed",
+        "CookieYesProvider",
+        "CookieYesRoot",
+      ]),
     );
     // Never "@cookieyes/vue" directly: an app that installed only this package cannot resolve it.
     expect(components.every((c) => c.filePath.startsWith("/pkg/dist/runtime/"))).toBe(true);
     const imports = kit.addImports.mock.calls[0]?.[0] as { name: string; from: string }[];
     expect(imports.map((i) => i.name)).toEqual(
-      expect.arrayContaining(["useConsent", "useConsentActions", "getCookieYes", "Banner"]),
+      expect.arrayContaining([
+        "useConsent",
+        "useConsentActions",
+        "getCookieYes",
+        "youTubeEmbedUrl",
+        "Banner",
+      ]),
     );
     expect(imports.every((i) => i.from === "/pkg/dist/runtime/vue")).toBe(true);
   });

@@ -34,6 +34,8 @@ const FROM_SVELTE = [
   "RecallButton",
   "GatedScript",
   "GatedFrame",
+  "YouTubeEmbed",
+  "youTubeEmbedUrl",
   "Banner",
   "Preferences",
   "OptOut",

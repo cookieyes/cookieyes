@@ -24,8 +24,9 @@ export type GatedFrameProps = Omit<IframeHTMLAttributes, "src"> & {
 };
 
 /**
- * An iframe that loads only once its category has been consented to, with a placeholder and a
- * button that opens the preferences dialog until then. The other attributes go to the iframe.
+ * An iframe that is on the page only while its category is consented to. Otherwise it shows a
+ * placeholder with a button that opens the preferences dialog. The other attributes go to the
+ * iframe.
  */
 export const GatedFrame: PartComponent<GatedFrameProps, { placeholder?: () => unknown }, object> =
   defineComponent({
@@ -77,14 +78,11 @@ export const GatedFrame: PartComponent<GatedFrameProps, { placeholder?: () => un
         }
       });
 
-      // Latch: once loaded under a committed grant, keep the iframe for the rest of the session.
-      // Revoking doesn't swap it back to the placeholder mid-session; the block takes effect on the
-      // next page load (when `allowed` starts false).
-      let everAllowed = false;
-
       return () => {
-        if (mounted.value && allowed.value) everAllowed = true;
-        if (mounted.value && everAllowed) return h("iframe", { src: props.src, ...attrs });
+        // Follows the saved choice in both directions: withdrawing the category swaps the iframe
+        // back to the placeholder, which unloads the embed at once, the same as `blockIframes()`
+        // in core.
+        if (mounted.value && allowed.value) return h("iframe", { src: props.src, ...attrs });
 
         const copy = t.value.gatedFrame;
         const [before = "", after = ""] = copy.placeholder.split("{category}");

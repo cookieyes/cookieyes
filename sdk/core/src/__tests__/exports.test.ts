@@ -24,6 +24,7 @@ describe("@cookieyes/core public exports", () => {
     "computeGoogleConsent",
     "_clearScriptRegistry",
     "CORE_VERSION",
+    "youTubeEmbedUrl",
   ] as const;
 
   it.each(EXPECTED)("exports %s", (name) => {

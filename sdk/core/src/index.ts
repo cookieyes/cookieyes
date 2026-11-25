@@ -14,9 +14,10 @@ export {
   _warnBuiltInIntegrationsDeprecated,
   _warnOfflineModeDeprecated,
 } from "./deprecations.js";
-/** @internal — embed helpers shared with React's `GatedFrame`. */
+/** @internal Embed helpers shared with the adapters' `GatedFrame` and `YouTubeEmbed`. */
 export {
   categoryLabel as _categoryLabel,
+  embedPlaceholderText as _embedPlaceholderText,
   warnUnknownEmbedCategory as _warnUnknownEmbedCategory,
 } from "./embed-category.js";
 export type { ConsentEmitter } from "./events.js";
@@ -140,3 +141,5 @@ export type {
   TranslationMap,
 } from "./types.js";
 export { CORE_VERSION } from "./version.js";
+export type { YouTubeEmbedUrlOptions } from "./youtube.js";
+export { youTubeEmbedUrl } from "./youtube.js";

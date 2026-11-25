@@ -1,4 +1,4 @@
-import { categoryLabel, warnUnknownEmbedCategory } from "./embed-category.js";
+import { categoryLabel, embedPlaceholderText, warnUnknownEmbedCategory } from "./embed-category.js";
 import type { ConsentManager, ConsentStore } from "./types.js";
 
 /** Declared locally and checked as a literal so bundlers strip the warnings; see `deprecations.ts`. */
@@ -14,13 +14,6 @@ export type IframeBlockerStore = Pick<
 > & { subscribe: (listener: () => void) => () => void };
 
 const BLOCKABLE_IFRAMES = "iframe[data-cy-category]";
-
-const PLACEHOLDER_TEXT = {
-  message:
-    "This content is hosted by {provider}. Viewing it needs your consent to {category} cookies.",
-  allow: "Allow {category} cookies",
-  privacyPolicy: "{provider} privacy policy",
-};
 
 /** Name and privacy policy of providers recognised from the embed's address. */
 const KNOWN_PROVIDERS: Record<string, [name: string, privacyUrl: string]> = {
@@ -71,7 +64,7 @@ export function blockIframes(
     if (!doc?.body) return;
     const category = iframe.dataset.cyCategory ?? "";
     const translations = consentStore.translations;
-    const text = translations.embedPlaceholder ?? PLACEHOLDER_TEXT;
+    const text = translations.embedPlaceholder ?? embedPlaceholderText;
     const provider = providerOf(iframe);
     const label = categoryLabel(
       category,

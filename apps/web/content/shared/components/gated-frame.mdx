@@ -8,25 +8,25 @@ frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
 
 Renders a placeholder instead of the iframe until its category is granted. The placeholder says which cookies are needed and has a button that opens the preferences dialog. Once the visitor agrees, the iframe appears in its place, without a reload.
 
-Use it for embeds that set cookies: YouTube, Vimeo, Google Maps, Spotify, social posts, Calendly. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds).
+Use it for embeds that set cookies: Google Maps, Vimeo, Spotify, social posts, Calendly. For a YouTube video, use [YouTubeEmbed](/docs/integrations/youtube), which is built on this component. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds).
 
 ## Add it
 
 <Framework when="nextjs react">
 
-```tsx title="app/video-embed.tsx"
+```tsx title="app/office-map.tsx"
 "use client";
 
 import { GatedFrame } from "@cookieyes/react";
 
-export function VideoEmbed() {
+export function OfficeMap() {
   return (
     <GatedFrame
-      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+      src="https://www.google.com/maps/embed?pb=YOUR_MAP"
       category="functional"
-      width={560}
-      height={315}
-      title="Product tour"
+      width={600}
+      height={450}
+      title="Our office"
     />
   );
 }
@@ -36,18 +36,18 @@ export function VideoEmbed() {
 
 <Framework when="vue">
 
-```vue title="src/components/VideoEmbed.vue"
+```vue title="src/components/OfficeMap.vue"
 <script setup lang="ts">
 import { GatedFrame } from "@cookieyes/vue";
 </script>
 
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+    src="https://www.google.com/maps/embed?pb=YOUR_MAP"
     category="functional"
-    :width="560"
-    :height="315"
-    title="Product tour"
+    :width="600"
+    :height="450"
+    title="Our office"
   />
 </template>
 ```
@@ -56,63 +56,63 @@ import { GatedFrame } from "@cookieyes/vue";
 
 <Framework when="nuxt">
 
-```vue title="app/components/VideoEmbed.vue"
+```vue title="app/components/OfficeMap.vue"
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+    src="https://www.google.com/maps/embed?pb=YOUR_MAP"
     category="functional"
-    :width="560"
-    :height="315"
-    title="Product tour"
+    :width="600"
+    :height="450"
+    title="Our office"
   />
 </template>
 ```
 
-`GatedFrame` is auto-imported, and so is your `VideoEmbed` component: use `<VideoEmbed />` in any page.
+`GatedFrame` is auto-imported, and so is your `OfficeMap` component: use `<OfficeMap />` in any page.
 
 </Framework>
 
 <Framework when="svelte">
 
-```svelte title="src/lib/VideoEmbed.svelte"
+```svelte title="src/lib/OfficeMap.svelte"
 <script lang="ts">
   import { GatedFrame } from "@cookieyes/svelte";
 </script>
 
 <GatedFrame
-  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  src="https://www.google.com/maps/embed?pb=YOUR_MAP"
   category="functional"
-  width={560}
-  height={315}
-  title="Product tour"
+  width={600}
+  height={450}
+  title="Our office"
 />
 ```
 
-Render `<VideoEmbed />` inside `<CookieYesProvider>`.
+Render `<OfficeMap />` inside `<CookieYesProvider>`.
 
 </Framework>
 
 <Framework when="sveltekit">
 
-```svelte title="src/lib/VideoEmbed.svelte"
+```svelte title="src/lib/OfficeMap.svelte"
 <script lang="ts">
   import { GatedFrame } from "@cookieyes/sveltekit";
 </script>
 
 <GatedFrame
-  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  src="https://www.google.com/maps/embed?pb=YOUR_MAP"
   category="functional"
-  width={560}
-  height={315}
-  title="Product tour"
+  width={600}
+  height={450}
+  title="Our office"
 />
 ```
 
-Render `<VideoEmbed />` in any page: every page is inside `<CookieYesRoot>` in your root layout. The server always renders the placeholder; the iframe appears once the page has loaded in the browser.
+Render `<OfficeMap />` in any page: every page is inside `<CookieYesRoot>` in your root layout. The server always renders the placeholder; the iframe appears once the page has loaded in the browser.
 
 </Framework>
 
-Video and map embeds are usually `functional`; social and ad embeds are usually `advertisement`. The category must exist in your `categories` list.
+Embeds that can set advertising cookies, such as YouTube, social posts and ad players, are `advertisement`. Embeds that only need to work, such as a map or a calendar, are `functional`. The category must exist in your `categories` list.
 
 ## Props
 
@@ -142,16 +142,16 @@ Pass a `placeholder` snippet with your own content. It is rendered inside the pl
 
 <Framework when="nextjs react">
 
-```tsx title="app/video-embed.tsx"
+```tsx title="app/office-map.tsx"
 "use client";
 
 import { GatedFrame, useConsentActions } from "@cookieyes/react";
 
-function VideoPlaceholder() {
+function MapPlaceholder() {
   const { showPreferences } = useConsentActions();
   return (
-    <div className="video-placeholder">
-      <p>This video is hosted by YouTube and needs functional cookies.</p>
+    <div className="map-placeholder">
+      <p>This map is hosted by Google Maps and needs functional cookies.</p>
       <button type="button" onClick={showPreferences}>
         Cookie settings
       </button>
@@ -159,15 +159,15 @@ function VideoPlaceholder() {
   );
 }
 
-export function VideoEmbed() {
+export function OfficeMap() {
   return (
     <GatedFrame
-      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+      src="https://www.google.com/maps/embed?pb=YOUR_MAP"
       category="functional"
-      width={560}
-      height={315}
-      title="Product tour"
-      placeholder={<VideoPlaceholder />}
+      width={600}
+      height={450}
+      title="Our office"
+      placeholder={<MapPlaceholder />}
     />
   );
 }
@@ -177,7 +177,7 @@ export function VideoEmbed() {
 
 <Framework when="vue">
 
-```vue title="src/components/VideoEmbed.vue"
+```vue title="src/components/OfficeMap.vue"
 <script setup lang="ts">
 import { GatedFrame, useConsentActions } from "@cookieyes/vue";
 
@@ -186,15 +186,15 @@ const { showPreferences } = useConsentActions();
 
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+    src="https://www.google.com/maps/embed?pb=YOUR_MAP"
     category="functional"
-    :width="560"
-    :height="315"
-    title="Product tour"
+    :width="600"
+    :height="450"
+    title="Our office"
   >
     <template #placeholder>
-      <div class="video-placeholder">
-        <p>This video is hosted by YouTube and needs functional cookies.</p>
+      <div class="map-placeholder">
+        <p>This map is hosted by Google Maps and needs functional cookies.</p>
         <button type="button" @click="showPreferences">Cookie settings</button>
       </div>
     </template>
@@ -206,22 +206,22 @@ const { showPreferences } = useConsentActions();
 
 <Framework when="nuxt">
 
-```vue title="app/components/VideoEmbed.vue"
+```vue title="app/components/OfficeMap.vue"
 <script setup lang="ts">
 const { showPreferences } = useConsentActions();
 </script>
 
 <template>
   <GatedFrame
-    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+    src="https://www.google.com/maps/embed?pb=YOUR_MAP"
     category="functional"
-    :width="560"
-    :height="315"
-    title="Product tour"
+    :width="600"
+    :height="450"
+    title="Our office"
   >
     <template #placeholder>
-      <div class="video-placeholder">
-        <p>This video is hosted by YouTube and needs functional cookies.</p>
+      <div class="map-placeholder">
+        <p>This map is hosted by Google Maps and needs functional cookies.</p>
         <button type="button" @click="showPreferences">Cookie settings</button>
       </div>
     </template>
@@ -233,7 +233,7 @@ const { showPreferences } = useConsentActions();
 
 <Framework when="svelte">
 
-```svelte title="src/lib/VideoEmbed.svelte"
+```svelte title="src/lib/OfficeMap.svelte"
 <script lang="ts">
   import { GatedFrame, useConsentActions } from "@cookieyes/svelte";
 
@@ -241,15 +241,15 @@ const { showPreferences } = useConsentActions();
 </script>
 
 <GatedFrame
-  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  src="https://www.google.com/maps/embed?pb=YOUR_MAP"
   category="functional"
-  width={560}
-  height={315}
-  title="Product tour"
+  width={600}
+  height={450}
+  title="Our office"
 >
   {#snippet placeholder()}
-    <div class="video-placeholder">
-      <p>This video is hosted by YouTube and needs functional cookies.</p>
+    <div class="map-placeholder">
+      <p>This map is hosted by Google Maps and needs functional cookies.</p>
       <button type="button" onclick={showPreferences}>Cookie settings</button>
     </div>
   {/snippet}
@@ -260,7 +260,7 @@ const { showPreferences } = useConsentActions();
 
 <Framework when="sveltekit">
 
-```svelte title="src/lib/VideoEmbed.svelte"
+```svelte title="src/lib/OfficeMap.svelte"
 <script lang="ts">
   import { GatedFrame, useConsentActions } from "@cookieyes/sveltekit";
 
@@ -268,15 +268,15 @@ const { showPreferences } = useConsentActions();
 </script>
 
 <GatedFrame
-  src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+  src="https://www.google.com/maps/embed?pb=YOUR_MAP"
   category="functional"
-  width={560}
-  height={315}
-  title="Product tour"
+  width={600}
+  height={450}
+  title="Our office"
 >
   {#snippet placeholder()}
-    <div class="video-placeholder">
-      <p>This video is hosted by YouTube and needs functional cookies.</p>
+    <div class="map-placeholder">
+      <p>This map is hosted by Google Maps and needs functional cookies.</p>
       <button type="button" onclick={showPreferences}>Cookie settings</button>
     </div>
   {/snippet}
@@ -289,7 +289,9 @@ To only change the default text, set `gatedFrame.placeholder` and `gatedFrame.ac
 
 ## Good to know
 
-Give the placeholder the same size as the iframe, or the page jumps when it swaps. Once the iframe has appeared, withdrawing consent does not remove it in the current page; it is blocked again on the next page load.
+Give the placeholder the same size as the iframe, or the page jumps when it swaps.
+
+When the visitor withdraws the category, the iframe is removed and the placeholder comes back, without a page reload. Cookies and other data the embed already stored in the browser stay: they belong to the embed's site, and your page cannot delete them. If the visitor accepts again, the embed loads again from the start.
 
 ## Common mistakes
 

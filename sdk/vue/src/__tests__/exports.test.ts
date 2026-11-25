@@ -29,6 +29,8 @@ describe("@cookieyes/vue public exports", () => {
     "RecallButton",
     "GatedScript",
     "GatedFrame",
+    "YouTubeEmbed",
+    "youTubeEmbedUrl",
     "useConsent",
     "useConsentActions",
     "useConsentCategory",

@@ -5,6 +5,17 @@ import type { CategoryText, TranslationMap } from "./types.js";
 declare const process: { env: { NODE_ENV?: string } };
 
 /**
+ * English text for a blocked embed, used when the active translations have no
+ * `embedPlaceholder`. Shared by `blockIframes` and the adapters' YouTube embed.
+ */
+export const embedPlaceholderText = {
+  message:
+    "This content is hosted by {provider}. Viewing it needs your consent to {category} cookies.",
+  allow: "Allow {category} cookies",
+  privacyPolicy: "{provider} privacy policy",
+};
+
+/**
  * The name to show for a category: the customer's translation for the active
  * language, then the label in the category config, then the built-in text,
  * then the id itself. Shared by `blockIframes` and React's `GatedFrame`.

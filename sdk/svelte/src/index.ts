@@ -44,6 +44,7 @@ export type {
   TextDirection,
   ThemeConfig,
   TranslationMap,
+  YouTubeEmbedUrlOptions,
 } from "@cookieyes/core";
 export {
   DEFAULT_CATEGORIES,
@@ -58,6 +59,7 @@ export {
   resolveCategories,
   resolveRegion,
   resolveTranslations,
+  youTubeEmbedUrl,
 } from "@cookieyes/core";
 /**
  * Re-exported from `@cookieyes/core/iframes` so a Svelte app can block embeds in HTML it does not
@@ -83,7 +85,13 @@ export type { CookieYesProviderProps } from "./context/types.js";
 export { default as GatedFrame } from "./controls/GatedFrame.svelte";
 export { default as GatedScript } from "./controls/GatedScript.svelte";
 export { default as RecallButton } from "./controls/RecallButton.svelte";
-export type { GatedFrameProps, GatedScriptProps, RecallButtonProps } from "./controls/types.js";
+export type {
+  GatedFrameProps,
+  GatedScriptProps,
+  RecallButtonProps,
+  YouTubeEmbedProps,
+} from "./controls/types.js";
+export { default as YouTubeEmbed } from "./controls/YouTubeEmbed.svelte";
 // Hooks
 export {
   type ConsentActions,

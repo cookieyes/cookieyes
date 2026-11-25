@@ -11,8 +11,9 @@ import { useTranslations } from "../hooks/useTranslations.svelte.js";
 import { _trackGatedFrame } from "./gated-frame.svelte.js";
 import type { GatedFrameProps } from "./types.js";
 
-// An iframe that loads only once its category has been consented to, with a placeholder and a
-// button that opens the preferences dialog until then. The other attributes go to the iframe.
+// An iframe that is on the page only while its category is consented to. Otherwise it shows a
+// placeholder with a button that opens the preferences dialog. The other attributes go to the
+// iframe.
 let { src, category, placeholder, ...rest }: GatedFrameProps = $props();
 
 const runtime = _useRuntime("<GatedFrame>");
@@ -41,15 +42,9 @@ _trackGatedFrame(
   () => category,
 );
 
-// Latch: once loaded under a committed grant, keep the iframe for the rest of the session.
-// Revoking doesn't swap it back to the placeholder mid-session; the block takes effect on the
-// next page load (when `allowed` starts false). A plain variable, not state: it is only
-// written while computing `showFrame`, which already depends on everything that changes it.
-let everAllowed = false;
-const showFrame = $derived.by(() => {
-  if (mounted && allowed.current) everAllowed = true;
-  return mounted && everAllowed;
-});
+// Follows the saved choice in both directions: withdrawing the category swaps the iframe back
+// to the placeholder, which unloads the embed at once, the same as `blockIframes()` in core.
+const showFrame = $derived(mounted && allowed.current);
 
 const copy = $derived(t.gatedFrame);
 const split = $derived(copy.placeholder.split("{category}"));

@@ -72,6 +72,8 @@ export type {
   TranslationMap,
   UseLanguageResult,
   UseReloadNoticeResult,
+  YouTubeEmbedProps,
+  YouTubeEmbedUrlOptions,
 } from "@cookieyes/svelte";
 export {
   Banner,
@@ -136,6 +138,8 @@ export {
   useRegulation,
   useReloadNotice,
   useTranslations,
+  YouTubeEmbed,
+  youTubeEmbedUrl,
 } from "@cookieyes/svelte";
 export { default as CookieYesRoot } from "./CookieYesRoot.svelte";
 export { type CookieYesSvelteKitConfig, cookieyesHandle } from "./handle.js";

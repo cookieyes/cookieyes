@@ -44,6 +44,7 @@ export type {
   TextDirection,
   ThemeConfig,
   TranslationMap,
+  YouTubeEmbedUrlOptions,
 } from "@cookieyes/core";
 export {
   DEFAULT_CATEGORIES,
@@ -58,6 +59,7 @@ export {
   resolveCategories,
   resolveRegion,
   resolveTranslations,
+  youTubeEmbedUrl,
 } from "@cookieyes/core";
 /**
  * Re-exported from `@cookieyes/core/iframes` so a Vue app can block embeds in HTML it does not
@@ -102,6 +104,7 @@ export { GatedFrame, type GatedFrameProps } from "./controls/GatedFrame.js";
 export { GatedScript, type GatedScriptProps } from "./controls/GatedScript.js";
 // Controls: standalone helpers
 export { RecallButton, type RecallButtonProps } from "./controls/RecallButton.js";
+export { YouTubeEmbed, type YouTubeEmbedProps } from "./controls/YouTubeEmbed.js";
 // The plugin: `app.use(CookieYes, config)` starts the runtime
 export { CookieYes } from "./plugin.js";
 // Styled presets: drop-in defaults built from the primitives
