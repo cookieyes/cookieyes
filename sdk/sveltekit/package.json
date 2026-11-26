@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/sveltekit",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "SvelteKit adapter for the CookieYes consent SDK: the banner in the server HTML, a handle, a load helper and a root component",
   "keywords": [
     "cookie consent",
