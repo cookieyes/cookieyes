@@ -1,6 +1,6 @@
 {
   "name": "@cookieyes/svelte",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Svelte adapter for the CookieYes consent SDK: a provider, components and runes-based hooks",
   "keywords": [
     "cookie consent",
