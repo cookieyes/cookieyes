@@ -20,7 +20,7 @@
     "svelte-check": "4.7.8",
     "typescript": "6.0.3",
     "vite": "__VITE_VERSION__",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "pnpm": {
     "overrides": {
