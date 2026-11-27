@@ -57,11 +57,26 @@ function newId(name: string): string {
   return `cy-${name}-${sequence}`;
 }
 
+/** @internal A component the widget can draw, as an adapter names it in {@link MountOptions}. */
+export type SurfaceName = "banner" | "preferences" | "optOut" | "recall" | "reloadNotice";
+
+/**
+ * @internal What an adapter changes about the widget. `surfaces` lists the components to draw,
+ * all of them when absent. `decorate` rewrites a component's markup before it is drawn, so classes
+ * an adapter adds are part of the markup and `morph` keeps them, instead of stripping a class
+ * added to the element afterwards.
+ */
+export type MountOptions = {
+  surfaces?: readonly SurfaceName[] | undefined;
+  decorate?: ((surface: SurfaceName, node: UiNode) => UiNode) | undefined;
+};
+
 /** What `start` hands back to the module: the commands, and the cleanup. */
 export type Widget = {
   runtime: ConsentRuntime;
   openPreferences: () => void;
   openOptOut: () => void;
+  closeOptOut: () => void;
   destroy: () => void;
 };
 
@@ -70,8 +85,15 @@ export type Widget = {
  * `@cookieyes/ui`'s markup, attaching `ui`'s behaviour to the real elements.
  * Consent decisions are core's; the only state kept here is the UI's own:
  * whether the opt-out dialog is open.
+ *
+ * @internal Exported as `_mountWidget` for `@cookieyes/astro`, whose components pick the
+ * surfaces and their classes; `start` passes no options.
  */
-export function mountWidget(config: CookieYesConfig): Widget {
+export function mountWidget(
+  config: CookieYesConfig,
+  { surfaces, decorate = (_surface, node) => node }: MountOptions = {},
+): Widget {
+  const shows = (surface: SurfaceName) => !surfaces || surfaces.includes(surface);
   const runtime = initCookieYes(config);
   const manager = runtime.consentManager;
   const store = runtime.consentStore;
@@ -194,14 +216,14 @@ export function mountWidget(config: CookieYesConfig): Widget {
     const live = announcer;
 
     let bannerHid = false;
-    if (isBannerVisible(state)) {
+    if (isBannerVisible(state) && shows("banner")) {
       // A banner already on the page from the first-paint snippet is replaced
       // in the same task, before the browser paints, and marked so it does not
       // play its entry animation a second time.
       const shell = bannerSurface ? null : findShell();
       bannerSurface = draw(
         bannerSurface,
-        banner({ translations: t, regulation, titleId: bannerTitleId }),
+        decorate("banner", banner({ translations: t, regulation, titleId: bannerTitleId })),
         (el) => {
           if (shell) el.setAttribute("data-cy-entered", "");
           live.after(el);
@@ -234,10 +256,10 @@ export function mountWidget(config: CookieYesConfig): Widget {
       }
     }
 
-    if (isRecallVisible(state, regulation)) {
+    if (isRecallVisible(state, regulation) && shows("recall")) {
       recallSurface = draw(
         recallSurface,
-        recallButton(t),
+        decorate("recall", recallButton(t)),
         (el) => root.appendChild(el),
         (el) => {
           const onClick = () => (regulation === "CCPA" ? openOptOut() : openPreferences());
@@ -252,10 +274,10 @@ export function mountWidget(config: CookieYesConfig): Widget {
     // After the recall button is back, so focus has somewhere to go.
     if (bannerHid) focusRecallAfterBanner();
 
-    if (manager.reloadNotice.required) {
+    if (manager.reloadNotice.required && shows("reloadNotice")) {
       noticeSurface = draw(
         noticeSurface,
-        reloadNotice(t),
+        decorate("reloadNotice", reloadNotice(t)),
         (el) => document.body.appendChild(el),
         (el) => {
           el.addEventListener("click", onNoticeClick);
@@ -279,6 +301,8 @@ export function mountWidget(config: CookieYesConfig): Widget {
       runtime,
       themed,
       newId,
+      shows,
+      decorate,
       isOptOutOpen: () => optOutOpen,
       closeOptOut,
     };
@@ -297,6 +321,7 @@ export function mountWidget(config: CookieYesConfig): Widget {
     runtime,
     openPreferences,
     openOptOut,
+    closeOptOut,
     destroy() {
       destroyed = true;
       unsubscribe();

@@ -15,6 +15,7 @@ import {
   type UiNode,
 } from "@cookieyes/ui";
 import { morph } from "./morph.js";
+import type { SurfaceName } from "./widget.js";
 
 // The preferences and opt-out dialogs. A module of its own, loaded the first
 // time either opens, so a page whose visitors only see the banner never
@@ -26,6 +27,10 @@ export type DialogContext = {
   /** Applies the theme to an element; returns the cleanup. */
   themed: (el: HTMLElement) => () => void;
   newId: (name: string) => string;
+  /** Whether the adapter asked for this component; see `MountOptions`. */
+  shows: (surface: SurfaceName) => boolean;
+  /** Rewrites a dialog's markup before it is drawn; see `MountOptions`. */
+  decorate: (surface: SurfaceName, node: UiNode) => UiNode;
   isOptOutOpen: () => boolean;
   closeOptOut: () => void;
 };
@@ -54,6 +59,8 @@ export function createDialogs({
   runtime,
   themed,
   newId,
+  shows,
+  decorate,
   isOptOutOpen,
   closeOptOut,
 }: DialogContext): Dialogs {
@@ -76,7 +83,7 @@ export function createDialogs({
 
   function preferencesMarkup() {
     const t = store.translations;
-    return preferences({
+    const markup = preferences({
       translations: t,
       titleId: ids.prefsTitle,
       categories: store.categories.ids.map((id) => {
@@ -93,16 +100,18 @@ export function createDialogs({
         };
       }),
     });
+    return decorate("preferences", markup);
   }
 
   function optOutMarkup() {
-    return optOut({
+    const markup = optOut({
       translations: store.translations,
       titleId: ids.optOutTitle,
       checkboxId: ids.checkbox,
       optedOut: optOutState.optedOut,
       confirmation: optOutState.confirmed ? { secondsLeft: optOutState.secondsLeft } : undefined,
     });
+    return decorate("optOut", markup);
   }
 
   function dispatch(event: OptOutEvent): void {
@@ -197,14 +206,14 @@ export function createDialogs({
   }
 
   function render(): void {
-    if (manager.isPreferencesOpen) {
+    if (manager.isPreferencesOpen && shows("preferences")) {
       if (prefs) morph(prefs.el, preferencesMarkup());
       else prefs = openPreferences();
     } else {
       close(prefs);
       prefs = undefined;
     }
-    if (isOptOutOpen()) {
+    if (isOptOutOpen() && shows("optOut")) {
       if (optOutDialog) morph(optOutDialog.el, optOutMarkup());
       else optOutDialog = openOptOut();
     } else {

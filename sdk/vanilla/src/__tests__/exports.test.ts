@@ -8,6 +8,7 @@ import * as vanilla from "../index.js";
 describe("@cookieyes/vanilla public exports", () => {
   it("exports exactly the documented commands", () => {
     expect(Object.keys(vanilla).sort()).toEqual([
+      "_mountWidget",
       "destroy",
       "openOptOut",
       "openPreferences",
