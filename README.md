@@ -29,6 +29,7 @@ Open-source cookie consent SDK for developers. Build consent banners and manage 
 | [`@cookieyes/nuxt`](./sdk/nuxt) | Nuxt 4 module over the Vue adapter, with server-rendered consent | [![npm](https://img.shields.io/npm/v/@cookieyes/nuxt)](https://www.npmjs.com/package/@cookieyes/nuxt) |
 | [`@cookieyes/svelte`](./sdk/svelte) | Svelte 5 adapter: a provider, components and hooks | [![npm](https://img.shields.io/npm/v/@cookieyes/svelte)](https://www.npmjs.com/package/@cookieyes/svelte) |
 | [`@cookieyes/sveltekit`](./sdk/sveltekit) | SvelteKit package over the Svelte adapter, with server-rendered consent | [![npm](https://img.shields.io/npm/v/@cookieyes/sveltekit)](https://www.npmjs.com/package/@cookieyes/sveltekit) |
+| [`@cookieyes/astro`](./sdk/astro) | Astro 6 and 7 integration: the banner decided before first paint, server-rendered consent and `<ClientRouter />` support | [![npm](https://img.shields.io/npm/v/@cookieyes/astro)](https://www.npmjs.com/package/@cookieyes/astro) |
 | [`@cookieyes/translations`](./sdk/translations) | Curated, per-locale translation catalog | [![npm](https://img.shields.io/npm/v/@cookieyes/translations)](https://www.npmjs.com/package/@cookieyes/translations) |
 | [`@cookieyes/backend`](./sdk/backend) | Self-hosted consent server: stores each consent record once, in your own database | [![npm](https://img.shields.io/npm/v/@cookieyes/backend)](https://www.npmjs.com/package/@cookieyes/backend) |
 | [`@cookieyes/cli`](./sdk/cli) | Scaffolder — wire the SDK into an existing app | [![npm](https://img.shields.io/npm/v/@cookieyes/cli)](https://www.npmjs.com/package/@cookieyes/cli) |
@@ -206,6 +207,7 @@ sdk/
   nuxt/          @cookieyes/nuxt         Nuxt 4 module
   svelte/        @cookieyes/svelte       Svelte 5 provider + components + hooks
   sveltekit/     @cookieyes/sveltekit    SvelteKit handle, load and root component
+  astro/         @cookieyes/astro        Astro integration, middleware and components
   translations/  @cookieyes/translations per-locale catalog
   backend/       @cookieyes/backend      self-hosted consent server
   cli/           @cookieyes/cli          scaffolder
