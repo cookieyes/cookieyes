@@ -696,6 +696,27 @@ const ASTRO_DEFAULT_FILES = {
 };
 const astroBin = join(webRoot, "node_modules", ".bin", "astro");
 
+/**
+ * Whether this Node meets the installed astro's `engines.node` floor (22.23.4 for 7.4). The repo
+ * still supports Node 20, where `astro check` refuses to start, so the Astro variants are skipped
+ * there with a warning instead of failing every Astro fence; Node 22 and 24 check them.
+ */
+function canRunAstro() {
+  const pkg = JSON.parse(
+    readFileSync(join(webRoot, "node_modules", "astro", "package.json"), "utf8"),
+  );
+  const want = /(\d+)\.(\d+)\.(\d+)/
+    .exec(pkg.engines?.node ?? "")
+    ?.slice(1)
+    .map(Number) ?? [0, 0, 0];
+  const have = process.versions.node.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((have[i] ?? 0) !== (want[i] ?? 0)) return (have[i] ?? 0) > (want[i] ?? 0);
+  }
+  return true;
+}
+
+let astroSupported = null;
 let astroHarness = null;
 
 function prepareAstroHarness() {
@@ -719,6 +740,15 @@ function prepareAstroHarness() {
 }
 
 function checkAstroVariant(relFile, source) {
+  if (astroSupported === null) {
+    astroSupported = canRunAstro();
+    if (!astroSupported) {
+      console.warn(
+        `[check-examples] WARNING: skipping Astro variants: astro does not run on Node ${process.versions.node}.`,
+      );
+    }
+  }
+  if (!astroSupported) return true;
   astroHarness ??= prepareAstroHarness();
   const appDir = astroHarness;
   let ok = true;
