@@ -1,7 +1,7 @@
 ---
 title: CookieBanner
 description: The consent banner a visitor sees on their first visit.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 ## What it does
@@ -82,6 +82,36 @@ In SvelteKit, `<CookieYesRoot>` renders it for you. To render it yourself, for e
 
 </Framework>
 
+<Framework when="astro">
+
+In Astro, `<CookieYesRoot />` renders it for you. To render it yourself, for example to pass it props, put the components inside `<CookieYesRoot>`: its default slot replaces the stock contents, so keep the others you need.
+
+```astro title="src/layouts/Layout.astro"
+---
+import {
+  CookieBanner,
+  CookiePreferences,
+  CookieYesRoot,
+  RecallButton,
+} from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot>
+      <CookieBanner class="my-banner" />
+      <CookiePreferences />
+      <RecallButton />
+    </CookieYesRoot>
+    <slot />
+  </body>
+</html>
+```
+
+</Framework>
+
 ## Change what it shows
 
 <Framework when="nextjs react">
@@ -114,6 +144,12 @@ Nothing on the banner is set through props. Everything comes from the config in 
 
 </Framework>
 
+<Framework when="astro">
+
+Nothing on the banner is set through props. Everything comes from `cookieyes()` in the Astro config and `src/cookieyes.client.ts`, so the banner, the dialogs and the recall button always match.
+
+</Framework>
+
 | To change | Set |
 | --- | --- |
 | The wording, in any language | `i18n`, see [Translations](/docs/translations) |
@@ -141,6 +177,12 @@ It accepts `class` and `style` like any element; they land on the banner card an
 
 </Framework>
 
+<Framework when="astro">
+
+It accepts `class`, which lands on the banner card and is added to its own styling, not replacing it. To restyle one part, pass `classNames`, keyed by part name in camelCase (`root`, `title`, `description`, `actions`, `acceptAll`, `rejectAll`, `customise`, `doNotSell`, `close`, `branding`), for example `classNames={{ acceptAll: "my-accept" }}`. There is no `style` or `styles` prop: the banner never carries a `style` attribute, so a strict Content Security Policy needs no allowance for it. Or use its `data-cy-part` in your CSS:
+
+</Framework>
+
 ```css title="app/consent.css"
 [data-cy-part="banner"] {
   max-width: 32rem;
@@ -151,7 +193,13 @@ It accepts `class` and `style` like any element; they land on the banner card an
 }
 ```
 
-The parts are `banner`, `title`, `description`, `actions`, `accept-all`, `reject-all`, `customise`, `do-not-sell`, `close` and `branding`. For your own markup, not only your own styles, use the [Banner primitives](/docs/headless/banner).
+The parts are `banner`, `title`, `description`, `actions`, `accept-all`, `reject-all`, `customise`, `do-not-sell`, `close` and `branding`.
+
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
+For your own markup, not only your own styles, use the [Banner primitives](/docs/headless/banner).
+
+</Framework>
 
 ## Under CCPA
 
@@ -206,6 +254,17 @@ Do Not Sell opens the opt-out dialog, so render it next to the banner:
 
 </Framework>
 
+<Framework when="astro">
+
+`<CookieYesRoot />` renders it for you whenever a CCPA regulation can apply: `regulation: "CCPA"`, `region.strictest: "CCPA"` or a `"CCPA"` value in `region.map`. If you put the components in its slot yourself, add it there:
+
+```astro check="false"
+<CookieBanner />
+<CookieOptOut />
+```
+
+</Framework>
+
 ## Common mistakes
 
 **The banner never appears.**
@@ -225,11 +284,29 @@ The stylesheet route is missing. Add `src/routes/cookieyes/styles.css/+server.ts
 
 </Framework>
 
+<Framework when="astro">
+
+**The banner is unstyled text.**
+The stylesheet route is not reachable, or `stylesHref` points somewhere it is not served. The default is `/cookieyes/styles.css`.
+
+**`<CookieBanner /> needs <CookieYesRoot /> in your layout` in the browser console.**
+The page has a banner but no root. Render `<CookieYesRoot />` once in the layout, as in [Installation](/docs/getting-started/installation).
+
+</Framework>
+
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 **Do Not Sell does nothing.**
 `<CookieOptOut />` is not rendered.
+
+</Framework>
 
 ## Next steps
 
 - [CookiePreferences](/docs/components/cookie-preferences): the dialog Customise opens
 - [RecallButton](/docs/components/recall-button): lets a visitor change their choice later
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 - [Banner primitives](/docs/headless/banner): the same behaviour with your own markup
+
+</Framework>

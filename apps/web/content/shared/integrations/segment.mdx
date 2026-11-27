@@ -1,7 +1,7 @@
 ---
 title: Segment
 description: Load Segment only after analytics consent, and remove it with its identifiers when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 `segment()` loads Segment's `analytics.js` after the visitor grants the analytics category. When consent is withdrawn, the script and Segment's `ajs_anonymous_id` and `ajs_user_id` are removed. When consent is granted again, Segment loads once more and starts a new session.
@@ -16,6 +16,11 @@ Install the integrations package and add `segment()` to the `initCookieYes()` ca
 <Framework when="vue">
 
 Install the integrations package and add `segment()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
+<Framework when="astro">
+
+Install the integrations package and add `segment()` to `integrations` in `src/cookieyes.client.ts`:
 
 </Framework>
 <Framework when="nuxt">
@@ -74,6 +79,20 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="astro">
+
+```ts title="src/cookieyes.client.ts"
+import type { CookieYesConfig } from "@cookieyes/astro";
+import { segment } from "@cookieyes/scripts";
+
+export default {
+  integrations: [segment({ writeKey: "YOUR_WRITE_KEY" })],
+} satisfies Partial<CookieYesConfig>;
+```
+
+`integrations` holds functions, so it goes in `src/cookieyes.client.ts`, not in the Astro config, which reaches the browser as JSON and drops functions. The integration merges the two, so `regulation` and the rest of your configuration stay in `astro.config.ts` from [Installation](/docs/getting-started/installation).
 
 </Framework>
 <Framework when="nuxt">

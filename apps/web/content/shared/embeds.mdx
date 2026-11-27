@@ -1,14 +1,14 @@
 ---
 title: Block embeds
 description: Load YouTube videos, maps and other iframes only after the visitor consents, on any site.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 ## What it does
 
 `blockIframes()` keeps an iframe empty until the visitor grants its category, and shows a placeholder in its place. It works on any HTML: your own templates, CMS content, Markdown, or a page with no framework at all.
 
-<Framework when="nextjs react vue nuxt svelte sveltekit">
+<Framework when="nextjs react vue nuxt svelte sveltekit astro">
 
 For an iframe you render in a component, [`GatedFrame`](/docs/components/gated-frame) is simpler. Use `blockIframes()` for iframes in HTML you do not render yourself, such as CMS or Markdown content.
 
@@ -148,6 +148,23 @@ Render `<EmbedBlocker />` once, inside `<CookieYesProvider>` next to `<CookieBan
 
 </Framework>
 
+<Framework when="astro">
+
+Start it from a script, once the SDK has started:
+
+```astro title="src/components/EmbedBlocker.astro"
+<script>
+  import { blockIframes, getCookieYes } from "@cookieyes/astro/client";
+
+  const { consentManager, consentStore } = await getCookieYes();
+  blockIframes(consentManager, consentStore);
+</script>
+```
+
+Render `<EmbedBlocker />` once in your layout, next to `<CookieYesRoot />`. The script runs in the browser only, once per visit, also under `<ClientRouter />`. Sites that never import `blockIframes` do not download it.
+
+</Framework>
+
 <Framework when="sveltekit">
 
 ```svelte title="src/lib/EmbedBlocker.svelte"
@@ -216,6 +233,12 @@ The placeholder is drawn inside the iframe, so your page's CSS cannot restyle it
 
 </Framework>
 
+<Framework when="astro">
+
+`youTubeEmbedUrl({ videoId: "VIDEO_ID" })` from `@cookieyes/astro/components` returns this address, for a video, a Short or a playlist. It runs in frontmatter, so it can build the `src` of a [GatedFrame](/docs/components/gated-frame).
+
+</Framework>
+
 <Framework when="nuxt">
 
 `youTubeEmbedUrl({ videoId: "VIDEO_ID" })` returns this address, for a video, a Short or a playlist. It is auto-imported. For a video you render in a component, [YouTubeEmbed](/docs/integrations/youtube) does all of this for you.
@@ -272,9 +295,16 @@ The address is in `src`. Move it to `data-cy-src`. The blocker stops the rest of
 
 </Framework>
 
+<Framework when="astro">
+
+**Nothing is blocked and no placeholder appears.**
+`<EmbedBlocker />` is not rendered, or the page has no `<CookieYesRoot />`, so the SDK never starts. Render both once in your layout.
+
+</Framework>
+
 ## Next steps
 
-<Framework when="nextjs react vue svelte sveltekit">
+<Framework when="nextjs react vue svelte sveltekit astro">
 
 - [GatedFrame](/docs/components/gated-frame): an iframe you render in a component
 - [Network blocking](/docs/network-blocking): requests that scripts make on their own

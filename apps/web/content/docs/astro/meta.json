@@ -1,0 +1,17 @@
+{
+  "title": "Astro",
+  "root": true,
+  "pages": [
+    "getting-started",
+    "self-host",
+    "components",
+    "client-functions",
+    "styling",
+    "translations",
+    "accessibility",
+    "embeds",
+    "network-blocking",
+    "troubleshooting",
+    "ai-agents"
+  ]
+}

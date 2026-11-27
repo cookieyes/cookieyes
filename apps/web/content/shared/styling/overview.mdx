@@ -1,7 +1,7 @@
 ---
 title: Styling
 description: Change the colours, font and layout of the banner and dialogs, and know which tool to use for each.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -72,6 +72,17 @@ The components look finished out of the box. To make them match your site, pick 
 
 </Framework>
 
+<Framework when="astro">
+
+| You want to change | Use | Page |
+| --- | --- | --- |
+| Brand colour, corner radius, font, backgrounds | `theme` in `cookieyes()` | [Theme tokens](/docs/styling/theme-tokens) |
+| Light, dark, or follow the device | `colorScheme` in `cookieyes()` | [Colour scheme](/docs/styling/color-scheme) |
+| Anything else: width, spacing, one button, the toggle | A CSS rule on a `data-cy-part` selector | [Custom CSS](/docs/styling/custom-css), [Parts](/docs/styling/part-and-state-contract) |
+| The same, with utility classes | `class` and `@apply` | [Tailwind](/docs/styling/tailwind) |
+
+</Framework>
+
 <Framework when="core">
 
 | You want to change | Use | Page |
@@ -102,6 +113,12 @@ Most sites stop at the first row.
 
 </Framework>
 
+<Framework when="astro">
+
+1. **Load your CSS after the SDK's stylesheet.** The SDK's rules are plain single-class rules, so a rule of yours with the same selector strength wins only if it comes later. The integration writes its critical CSS and the stylesheet link right after `<meta charset>`, ahead of every other tag in `<head>`, so CSS you import in a layout or a component comes after it already. You never need `!important`.
+
+</Framework>
+
 <Framework when="sveltekit">
 
 1. **Load your CSS after the SDK's stylesheet.** The SDK's rules are plain single-class rules, so a rule of yours with the same selector strength wins only if it comes later. `cookieyesHandle` writes its critical CSS and the stylesheet link right after `<meta charset>`, ahead of every other tag in `<head>`, so CSS you import in a layout or a component comes after it already. You never need `!important`.
@@ -112,7 +129,18 @@ Most sites stop at the first row.
 
 ## Good to know
 
+<Framework when="nextjs react vue nuxt svelte sveltekit core">
+
 - The banner, dialogs and recall button render into `<body>`, not where you placed them, so CSS scoped to your app (`.app [data-cy-part]`, CSS Modules) does not reach them. Use global CSS.
+
+</Framework>
+
+<Framework when="astro">
+
+- The banner and recall button render where `<CookieYesRoot />` is, and the dialogs into `<body>`, so CSS scoped to your app (`.app [data-cy-part]`, a component's `<style>`) does not reach them. Use global CSS.
+
+</Framework>
+
 - The banner does not inherit your page font. Set `theme.fontFamily`.
 - Every `data-cy-part`, `data-cy-state`, `--cy-*` and `cy-*` name is stable across minor versions. Renames come only with a major version.
 - Which buttons appear, and which one is primary, is not styling: it follows the privacy regulation.

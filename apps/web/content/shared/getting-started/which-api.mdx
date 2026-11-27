@@ -1,7 +1,7 @@
 ---
 title: "Which API should I use?"
 description: "Presets, primitives or hooks: pick the layer that fits, and the one hook for each job."
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -385,6 +385,105 @@ You wanted [Custom CSS](/docs/styling/custom-css) or the primitives. The presets
 
 - [useConsent](/docs/hooks/use-consent) and [useConsentActions](/docs/hooks/use-consent-actions): the two hooks in full
 - [Banner primitives](/docs/headless/banner): the banner and dialogs with your own markup
+- [Integrations](/docs/integrations): Google Analytics, Meta Pixel and other tags, loaded only after consent
+
+</Framework>
+
+<Framework when="astro">
+
+Most sites need only `<CookieYesRoot />`, styled with a `theme`. Read on if the defaults do not fit your design, or you need consent somewhere other than the banner.
+
+## Pick a layer
+
+| Layer | You write | Choose when |
+| --- | --- | --- |
+| **Presets**: `CookieYesRoot`, which renders `CookieBanner`, `CookiePreferences` and `RecallButton` | Nothing. Theme with `theme` config or [CSS](/docs/styling/custom-css) | The default. Start here |
+| **Client functions**: `getConsent()`, `getConsentActions()`, `onConsentChange()` and the rest of `@cookieyes/astro/client` | Everything | You are building something that is not a banner |
+
+The two mix freely. Astro has no hooks and no provider, and the headless primitives are not exported, so a banner with your own markup is not built from this package. [Client functions](/docs/client-functions) lists what replaces each hook.
+
+## Read and change consent
+
+Import the functions in a `<script>` of a component, or in an island. They wait for the SDK to start, so they work even when they run first. `getConsent()` is a snapshot, not a live value: to react to a change, use `onConsentChange()`.
+
+```astro title="src/components/ConsentStatus.astro"
+<p id="consent-status" hidden>
+  Analytics: <span id="consent-analytics"></span>
+  <button type="button" id="consent-change">Change</button>
+</p>
+
+<script>
+  import { getConsent, onConsentChange, openPreferences } from "@cookieyes/astro/client";
+
+  const status = document.getElementById("consent-status");
+  const analytics = document.getElementById("consent-analytics");
+
+  const consent = await getConsent();
+  if (status && consent.hasActed) status.hidden = false;
+
+  onConsentChange("change", ({ categories }) => {
+    if (analytics) analytics.textContent = categories.analytics ? "on" : "off";
+  });
+  document.getElementById("consent-change")?.addEventListener("click", openPreferences);
+</script>
+```
+
+## Find your situation
+
+| You want to | Use |
+| --- | --- |
+| Read consent in the browser | [`getConsent()`](/docs/client-functions#getconsent) |
+| Accept, reject, or open a dialog | [`getConsentActions()`](/docs/client-functions#getconsentactions), or [`openPreferences()`](/docs/client-functions#openpreferences) |
+| Run code when consent changes | [`onConsentChange()`](/docs/client-functions#onconsentchange) |
+| Load one script only when its category is granted | [`GatedScript`](/docs/components/gated-script) with no code at all, or [`getConsentCategory("analytics")`](/docs/client-functions#getconsentcategory) |
+| Show an embed, such as a map, only after consent | [`GatedFrame`](/docs/components/gated-frame) |
+| Call the runtime from a plain module | [`getCookieYes()`](/docs/client-functions#getcookieyes) |
+| Read a returning visitor's consent on the server | [`getServerConsent(Astro)`](#static-and-on-request-pages), or `Astro.locals.cookieyes` |
+
+## Static and on-request pages
+
+On a prerendered page the HTML is the same for every visitor, so nothing about one visitor is in it. The banner is in the HTML, hidden, and a small inline script in `<head>` reads the consent cookie before first paint: a first-time visitor sees the banner at once, a returning visitor never sees it, and no request is made. `Astro.locals.cookieyes` on such a page holds safe defaults: `read` is `false`, `initialConsent` is `null`, and only the required categories are `true`. `getServerConsent(Astro)` returns `null` and `getServerRegion(Astro)` returns an empty region.
+
+On a page rendered on request (`export const prerender = false`, or a server `output`), the integration reads the request: the consent cookie, the Vercel and Cloudflare geo headers, `Sec-GPC`, and in development the DevTools region override. A visitor who already chose gets no banner markup, and with a `region` map a visitor the headers place in California gets the CCPA banner from the first byte.
+
+```astro title="src/pages/account.astro"
+---
+import { getServerConsent, getServerRegion } from "@cookieyes/astro/server";
+import Layout from "../layouts/Layout.astro";
+
+export const prerender = false;
+
+const consent = getServerConsent(Astro);
+const { region } = getServerRegion(Astro);
+---
+<Layout>
+  <p>Decided: {consent ? "yes" : "no"}. Region: {region ?? "unknown"}.</p>
+</Layout>
+```
+
+A page that reads the request is different for each visitor, so it is sent with `Cache-Control: private` and `Vary: Cookie`, unless your page already sets its own `Cache-Control`. Never put such a page in a shared cache: a CDN that cached the HTML rendered for a California visitor would serve the CCPA banner to visitors elsewhere. If the page does not need the visitor, prerender it instead, which makes one HTML for everyone.
+
+## Gate on committed values
+
+`getConsent()` exposes two views of the categories. `consents` is the live copy and changes on every toggle in the dialog, even before Save. `committedConsents` changes only on a real decision: accept, reject, save or reset.
+
+Load scripts, embeds and trackers from `committedConsents`, or from `getConsentCategory()`, which reads the committed value for one category. Use `consents` only to drive your own dialog's checkboxes.
+
+## Common mistakes
+
+**A script loads as soon as someone flips a toggle, before Save.**
+It reads `consents` (live) instead of `committedConsents` or `getConsentCategory()` (committed).
+
+**`getConsent()` shows an old value.**
+It is a snapshot taken when it resolved. Subscribe with `onConsentChange()` to follow later decisions.
+
+**An on-request page is served from a CDN cache.**
+The page sets its own shared `Cache-Control`. The integration keeps it and, in development, warns. Prerender the page or drop the directive.
+
+## Next steps
+
+- [Client functions](/docs/client-functions): every function of `@cookieyes/astro/client` in full
+- [Components](/docs/components/cookie-banner): the presets, with their props
 - [Integrations](/docs/integrations): Google Analytics, Meta Pixel and other tags, loaded only after consent
 
 </Framework>

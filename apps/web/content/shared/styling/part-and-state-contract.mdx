@@ -1,7 +1,7 @@
 ---
 title: Parts
 description: Every data-cy-part name the SDK renders, for CSS and for tests.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -24,7 +24,7 @@ Every element the SDK renders carries `data-cy-part="<name>"`. The names are the
 
 </Framework>
 
-<Framework when="vue svelte">
+<Framework when="vue svelte astro">
 
 ```css title="src/consent.css"
 [data-cy-part="banner"] [data-cy-part="accept-all"] {
@@ -118,6 +118,12 @@ Five names appear on more than one surface: `title`, `close`, `accept-all`, `rej
 
 </Framework>
 
+<Framework when="astro">
+
+- `data-cy-state` exists on the switch only, set by `CookiePreferences`.
+
+</Framework>
+
 <Framework when="core">
 
 - `data-cy-state` exists on the switch only.
@@ -152,6 +158,14 @@ Five names appear on more than one surface: `title`, `close`, `accept-all`, `rej
 
 - The part names are exported as constants, `CY_PART` and `CY_STATE` (from `@cookieyes/sveltekit`), so a test can write `CY_PART.banner.acceptAll` instead of a string.
 - Two more selectors are stable: `#cookieyes-portal-root`, the container the banner and recall button render into, and `[data-cky-banner]`, the visible banner card. The dialogs exist in the page only while open.
+- The `cy-*` class names are stable too, but prefer parts. `.cy-frame-placeholder` is the exception: the `GatedFrame` placeholder has no part.
+
+</Framework>
+
+<Framework when="astro">
+
+- The part names are exported as constants, `CY_PART` and `CY_STATE`, from `@cookieyes/ui`, so a test can write `CY_PART.banner.acceptAll` instead of a string. `@cookieyes/astro` does not export them; install `@cookieyes/ui` to use them.
+- Two more selectors are stable: `#cookieyes-portal-root`, the container `<CookieYesRoot />` writes and the banner and recall button render into, and `[data-cky-banner]`, the visible banner card. The dialogs exist in the page only while open.
 - The `cy-*` class names are stable too, but prefer parts. `.cy-frame-placeholder` is the exception: the `GatedFrame` placeholder has no part.
 
 </Framework>

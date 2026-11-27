@@ -1,7 +1,7 @@
 ---
 title: Custom CSS
 description: Change the width, spacing or any single element with a CSS rule on its part name.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -111,6 +111,42 @@ Import it in the root layout. `cookieyesHandle` writes the SDK's critical CSS an
 
 </Framework>
 
+<Framework when="astro">
+
+```css title="src/styles/consent.css"
+[data-cy-part="banner"] {
+  max-width: 34rem;
+}
+
+[data-cy-part="actions"] {
+  gap: 0.75rem;
+}
+
+[data-cy-part="accept-all"] {
+  font-weight: 600;
+}
+```
+
+Import it in your layout. The integration writes the SDK's critical CSS and stylesheet link right after `<meta charset>`, ahead of every other tag in `<head>`, so your file always comes after it and your rules win:
+
+```astro title="src/layouts/Layout.astro"
+---
+import { CookieYesRoot } from "@cookieyes/astro/components";
+import "../styles/consent.css";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot />
+    <slot />
+  </body>
+</html>
+```
+
+</Framework>
+
 <Framework when="nextjs react vue svelte core">
 
 Import it after the SDK's stylesheet, so your rules win:
@@ -188,6 +224,16 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 </Framework>
 
+<Framework when="astro">
+
+```css title="src/styles/consent.css"
+[data-cy-part="toggle"][data-cy-part][data-cy-state="on"] .cy-toggle-track {
+  background: #15803d;
+}
+```
+
+</Framework>
+
 <Framework when="sveltekit">
 
 ```css title="src/app.css"
@@ -228,6 +274,12 @@ The switch in the preferences dialog is the one element that needs a specific se
 
 </Framework>
 
+<Framework when="astro">
+
+**Global CSS only.** The banner and recall button render into the element `<CookieYesRoot />` writes, and the dialogs into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing when the root sits outside `.app-shell`. A `<style>` block in one of your components is scoped by Astro to that component's own elements, so it does not reach any CookieYes element. Use a global stylesheet such as `src/styles/consent.css`, or `<style is:global>`.
+
+</Framework>
+
 <Framework when="sveltekit">
 
 **Global CSS only.** The banner and recall button render into `<body>`, so a rule scoped to your app, such as `.app-shell [data-cy-part="banner"]`, matches nothing. A `<style>` block in one of your components is scoped to that component's own elements, so it does not reach any CookieYes element. Use a global stylesheet such as `src/app.css`, or wrap the selector in `:global(...)`.
@@ -253,6 +305,13 @@ Your stylesheet loads before the SDK's. Import it after `styles.css`, or add the
 
 **A rule does nothing.**
 The file is missing from the `css` option, or the selector is weaker than the SDK's own rule. Add it to `css`, or add the parent part to the selector.
+
+</Framework>
+
+<Framework when="astro">
+
+**A rule does nothing.**
+The stylesheet is not imported anywhere, or the selector is weaker than the SDK's own rule. Import it in your layout, or add the parent part to the selector.
 
 </Framework>
 

@@ -1,7 +1,7 @@
 ---
 title: Data subject requests
 description: Show a visitor every consent record you hold about them, or delete them all, with one call each.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 When someone asks to see or delete their data, the backend answers with one call. Both routes need an owner key, so set `apiKeys` first.
@@ -85,6 +85,22 @@ const consent = useConsent();
 <p>
   Your consent id: <code>{consent.consentId}</code>
 </p>
+```
+
+</Framework>
+
+<Framework when="astro">
+
+```astro title="src/components/YourConsentId.astro"
+<p>Your consent id: <code id="your-consent-id"></code></p>
+
+<script>
+  import { getConsent } from "@cookieyes/astro/client";
+
+  const { consentId } = await getConsent();
+  const el = document.getElementById("your-consent-id");
+  if (el) el.textContent = consentId;
+</script>
 ```
 
 </Framework>

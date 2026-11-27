@@ -1,7 +1,7 @@
 ---
 title: Theme tokens
 description: Set the brand colour, corner radius and font once; every CookieYes surface follows.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -104,6 +104,27 @@ export const config: CookieYesConfig = {
 
 </Framework>
 
+<Framework when="astro">
+
+```ts title="astro.config.ts"
+import cookieyes from "@cookieyes/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [
+    cookieyes({
+      theme: {
+        primaryColor: "#1863dc",
+        borderRadius: "8px",
+        fontFamily: "'Inter', sans-serif",
+      },
+    }),
+  ],
+});
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -180,6 +201,18 @@ Every variable with its light and dark default is on the [CSS variables referenc
 ```
 
 The server HTML carries the stylesheet's defaults too: the theme is applied in the browser, once the page has hydrated.
+
+</Framework>
+
+<Framework when="astro">
+
+```css title="src/styles/consent.css"
+:root {
+  --cy-primary: #1863dc;
+}
+```
+
+Import the file in your layout, as shown on [Custom CSS](/docs/styling/custom-css). The server HTML carries the stylesheet's defaults too: the theme is applied in the browser, once the SDK has started.
 
 </Framework>
 

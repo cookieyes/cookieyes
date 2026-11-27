@@ -1,7 +1,7 @@
 ---
 title: Ahrefs Web Analytics
 description: Load Ahrefs Web Analytics only after analytics consent, and stop it sending when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 `ahrefsAnalytics()` loads Ahrefs Web Analytics after the visitor grants the analytics category. When consent is withdrawn, Ahrefs stops sending page views and events straight away, with no reload. Ahrefs sets no cookies, so there is nothing to delete.
@@ -16,6 +16,11 @@ Install the integrations package and add `ahrefsAnalytics()` to the `initCookieY
 <Framework when="vue">
 
 Install the integrations package and add `ahrefsAnalytics()` to the config you pass to `app.use(CookieYes, config)`. The key is the `data-key` value in the snippet Ahrefs gives you:
+
+</Framework>
+<Framework when="astro">
+
+Install the integrations package and add `ahrefsAnalytics()` to `integrations` in `src/cookieyes.client.ts`. The key is the `data-key` value in the snippet Ahrefs gives you:
 
 </Framework>
 <Framework when="nuxt">
@@ -74,6 +79,20 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="astro">
+
+```ts title="src/cookieyes.client.ts"
+import type { CookieYesConfig } from "@cookieyes/astro";
+import { ahrefsAnalytics } from "@cookieyes/scripts";
+
+export default {
+  integrations: [ahrefsAnalytics({ key: "abc123xyz" })],
+} satisfies Partial<CookieYesConfig>;
+```
+
+`integrations` holds functions, so it goes in `src/cookieyes.client.ts`, not in the Astro config, which reaches the browser as JSON and drops functions. The integration merges the two, so `regulation` and the rest of your configuration stay in `astro.config.ts` from [Installation](/docs/getting-started/installation).
 
 </Framework>
 <Framework when="nuxt">

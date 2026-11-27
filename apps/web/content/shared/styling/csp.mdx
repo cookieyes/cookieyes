@@ -1,7 +1,7 @@
 ---
 title: CSP
 description: The SDK works under a strict Content-Security-Policy without unsafe-inline or a nonce.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -33,6 +33,12 @@ The full stylesheet is a normal file served from your own origin, and theme colo
 <Framework when="sveltekit">
 
 The full stylesheet is a normal file served from your own origin by the stylesheet route, and theme colours are applied as CSS variables on the elements. The one inline block is `critical.css`, which `cookieyesHandle` writes into every page's `<head>`, so `style-src` needs `'self'` plus that block's hash. See [Critical CSS](#critical-css) below. No `'unsafe-inline'` and no nonce for styles.
+
+</Framework>
+
+<Framework when="astro">
+
+The full stylesheet is a normal file served from your own origin, and theme colours are applied as CSS variables on the elements, so there is no `style` attribute and no runtime `<style>` block. The integration does write four things inline into the head of every HTML page, right after `<meta charset>`: a small script that decides before first paint whether a static page shows the banner, the SDK's `critical.css`, one style rule that hides the banner until that script has run, and, with `googleConsentMode` set, Google's Consent Mode default. `style-src` and `script-src` need `'self'` plus the hashes of those blocks, and the next two sections show how to get them. The JSON the page hands to the browser is a data block, never executed, so it needs nothing.
 
 </Framework>
 
@@ -127,6 +133,60 @@ The handle never rewrites a CSP header and puts no nonce on its `<style>`: Svelt
 
 </Framework>
 
+<Framework when="astro">
+
+## Hashes and nonces
+
+**With Astro's own CSP.** Turn on `security.csp` in the Astro config and the integration adds the hashes of every inline block above to your policy by itself, using the `algorithm` you set. It never turns CSP on, and it leaves `resources` alone, because setting it replaces Astro's defaults.
+
+```ts title="astro.config.ts"
+import cookieyes from "@cookieyes/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  security: { csp: true },
+  integrations: [cookieyes({ regulation: "GDPR" })],
+});
+```
+
+Astro's CSP does not support `<ClientRouter />`. That is a limit of Astro's feature, not of this package: a site that uses the client router sends its own policy, as below.
+
+**With a policy you send yourself.** `astro build` prints the hashes of the inline blocks, in the form to paste into a policy:
+
+```text
+Inline head tags, for a Content-Security-Policy you set yourself: script-src 'sha256-…'; style-src 'sha256-…' 'sha256-…'
+```
+
+They are the SHA-256 of each block. They change when the package or your `categories` change, because the head script checks the cookie against your category list, so copy them again after an upgrade. The hash of `critical.css` alone is exported as `CRITICAL_CSS_HASH`:
+
+```ts title="src/csp.ts"
+import { CRITICAL_CSS_HASH } from "@cookieyes/astro";
+
+// Append to style-src: "style-src 'self' 'sha256-…'"
+export const styleSrc = `'self' ${CRITICAL_CSS_HASH}`;
+```
+
+**With nonces.** A page rendered on request can carry a nonce on those blocks. Set it in a middleware of your own, which runs after the integration's, or put it in the `Content-Security-Policy` header the response already has: the integration copies a `'nonce-…'` source from `script-src` onto the script and from `style-src` onto the styles. A prerendered page is the same for every visitor, so it never gets a nonce.
+
+```ts title="src/middleware.ts"
+import { defineMiddleware } from "astro:middleware";
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  const nonce = crypto.randomUUID();
+  context.locals.cookieyes.nonce = nonce;
+  const response = await next();
+  response.headers.set(
+    "Content-Security-Policy",
+    `script-src 'self' 'nonce-${nonce}'; style-src 'self' 'nonce-${nonce}'`,
+  );
+  return response;
+});
+```
+
+If the script in the head is blocked, for example by a policy without its hash, a first-time visitor still sees the banner, but only once the SDK has started instead of at first paint, and the console shows the violation.
+
+</Framework>
+
 <Framework when="react vue svelte core">
 
 ## Critical CSS
@@ -146,6 +206,12 @@ CookieYes's interface loads as a normal stylesheet file, never as an inline `<st
 <Framework when="nuxt">
 
 The Nuxt module inlines one `<style>` block, the SDK's `critical.css` byte for byte, whose hash it exports as `CRITICAL_CSS_HASH`. The full stylesheet loads as a normal file from your own origin, and theme colours are applied as CSS custom properties directly on the elements. `style-src` therefore needs `'self'` and that hash, never `'unsafe-inline'`. The SDK's code is part of your Nuxt bundle. With `googleConsentMode` set, the module adds one inline `<script>`: Google's Consent Mode default.
+
+</Framework>
+
+<Framework when="astro">
+
+The integration inlines two `<style>` blocks, the SDK's `critical.css` byte for byte, whose hash `@cookieyes/astro` exports as `CRITICAL_CSS_HASH`, and one rule that hides the banner until the head script has run, plus one inline `<script>` that decides first paint on static pages. Their hashes are printed at build, and added to a policy by Astro's own CSP automatically. The full stylesheet loads as a normal file from your own origin, and theme colours are applied as CSS custom properties directly on the elements. `style-src` therefore needs `'self'` and those hashes, never `'unsafe-inline'`. The SDK's code is part of your Astro bundle. With `googleConsentMode` set, the integration adds one more inline `<script>`: Google's Consent Mode default.
 
 </Framework>
 

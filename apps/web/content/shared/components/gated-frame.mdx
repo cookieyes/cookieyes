@@ -1,14 +1,26 @@
 ---
 title: GatedFrame
 description: Show a third-party iframe only after the visitor consents, with a placeholder until then.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 ## What it does
 
 Renders a placeholder instead of the iframe until its category is granted. The placeholder says which cookies are needed and has a button that opens the preferences dialog. Once the visitor agrees, the iframe appears in its place, without a reload.
 
-Use it for embeds that set cookies: Google Maps, Vimeo, Spotify, social posts, Calendly. For a YouTube video, use [YouTubeEmbed](/docs/integrations/youtube), which is built on this component. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds).
+Use it for embeds that set cookies: Google Maps, Vimeo, Spotify, social posts, Calendly.
+
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
+For a YouTube video, use [YouTubeEmbed](/docs/integrations/youtube), which is built on this component. For iframes in HTML you do not render yourself, such as CMS or Markdown content, use [Block embeds](/docs/embeds).
+
+</Framework>
+
+<Framework when="astro">
+
+For iframes in HTML you do not render yourself, such as CMS or Markdown content, see [Block embeds](/docs/embeds).
+
+</Framework>
 
 ## Add it
 
@@ -92,6 +104,25 @@ Render `<OfficeMap />` inside `<CookieYesProvider>`.
 
 </Framework>
 
+<Framework when="astro">
+
+```astro title="src/components/OfficeMap.astro"
+---
+import { GatedFrame } from "@cookieyes/astro/components";
+---
+<GatedFrame
+  src="https://www.google.com/maps/embed?pb=YOUR_MAP"
+  category="functional"
+  width={600}
+  height={450}
+  title="Our office"
+/>
+```
+
+Use `<OfficeMap />` in any page, with `<CookieYesRoot />` in your layout. The server always renders the placeholder, never the iframe, so a shared page or cache cannot decide consent for a visitor; the iframe appears once the page has loaded in the browser. Attributes with a text, number or boolean value are passed to the iframe; a function value is dropped.
+
+</Framework>
+
 <Framework when="sveltekit">
 
 ```svelte title="src/lib/OfficeMap.svelte"
@@ -121,6 +152,12 @@ Embeds that can set advertising cookies, such as YouTube, social posts and ad pl
 Every other `<iframe>` attribute (`width`, `height`, `title`, `allow`, ...) is passed to the iframe once it appears.
 
 ## Change the placeholder
+
+<Framework when="astro">
+
+Fill the `placeholder` slot with your own content. It is rendered inside the placeholder box, `.cy-frame-placeholder`:
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -281,6 +318,36 @@ const { showPreferences } = useConsentActions();
     </div>
   {/snippet}
 </GatedFrame>
+```
+
+</Framework>
+
+<Framework when="astro">
+
+```astro title="src/components/OfficeMap.astro"
+---
+import { GatedFrame } from "@cookieyes/astro/components";
+---
+<GatedFrame
+  src="https://www.google.com/maps/embed?pb=YOUR_MAP"
+  category="functional"
+  width={600}
+  height={450}
+  title="Our office"
+>
+  <div slot="placeholder" class="map-placeholder">
+    <p>This map is hosted by Google Maps and needs functional cookies.</p>
+    <button type="button" class="map-cookie-settings">Cookie settings</button>
+  </div>
+</GatedFrame>
+
+<script>
+  import { openPreferences } from "@cookieyes/astro/client";
+
+  for (const button of document.querySelectorAll(".map-cookie-settings")) {
+    button.addEventListener("click", openPreferences);
+  }
+</script>
 ```
 
 </Framework>

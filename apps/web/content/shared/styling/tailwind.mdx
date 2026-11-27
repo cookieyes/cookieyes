@@ -1,7 +1,7 @@
 ---
 title: Tailwind
 description: Use Tailwind utilities with the banner and dialogs, in the right order.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -49,6 +49,17 @@ Import the SDK's stylesheet **after** Tailwind. Tailwind's preflight resets butt
 ```
 
 Import the file in `src/routes/+layout.svelte`. The handle still writes the SDK's critical CSS and stylesheet link right after `<meta charset>`, before Tailwind. The copy imported here comes after Tailwind, which is the order that counts; both copies hold the same rules.
+
+</Framework>
+
+<Framework when="astro">
+
+```css title="src/styles/global.css"
+@import "tailwindcss";
+@import "@cookieyes/astro/styles.css";
+```
+
+Import the file in your layout. The integration still writes the SDK's critical CSS and stylesheet link right after `<meta charset>`, before Tailwind. The copy imported here comes after Tailwind, which is the order that counts; both copies hold the same rules.
 
 </Framework>
 
@@ -189,6 +200,40 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
+<Framework when="astro">
+
+## Three ways to use utilities
+
+**On a component.** `class` is added to the component's own classes. Pass the components to `<CookieYesRoot>`'s default slot, which replaces the ones it renders by default, so list each one you want, and `<CookieOptOut />` too if a CCPA regulation can apply:
+
+```astro title="src/layouts/Layout.astro"
+---
+import {
+  CookieBanner,
+  CookiePreferences,
+  CookieYesRoot,
+  RecallButton,
+} from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot>
+      <CookieBanner class="shadow-2xl ring-1 ring-black/5" />
+      <CookiePreferences />
+      <RecallButton />
+    </CookieYesRoot>
+    <slot />
+  </body>
+</html>
+```
+
+`RecallButton` takes `class` too, and it merges with the default `cy-widget` class instead of replacing it, so `<RecallButton class="ring-2" />` keeps the default look.
+
+</Framework>
+
 <Framework when="nuxt">
 
 ## Three ways to use utilities
@@ -286,6 +331,23 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
+<Framework when="astro">
+
+```css title="src/styles/global.css"
+@import "tailwindcss";
+@import "@cookieyes/astro/styles.css";
+
+[data-cy-part="banner"] {
+  @apply max-w-lg rounded-xl p-6 shadow-2xl;
+}
+
+[data-cy-part="accept-all"] {
+  @apply font-semibold;
+}
+```
+
+</Framework>
+
 <Framework when="nuxt">
 
 ```css title="app/assets/css/main.css"
@@ -326,10 +388,28 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
+<Framework when="astro">
+
+Astro has no primitives to put utilities on: the markup is the SDK's own, so use `class` and `classNames` on the components, or `@apply` on the parts.
+
+</Framework>
+
 ## Good to know
 
 - A utility has the same strength as the SDK's own rule, so it wins only if your CSS comes after `styles.css`. Do not use the `!` modifier or `@layer components` for these rules; both hide the ordering problem instead of fixing it.
+<Framework when="nextjs react vue nuxt svelte sveltekit core">
+
 - The components render into `<body>`, so `group-` and `peer-` variants from your tree do not reach them.
+
+</Framework>
+
+<Framework when="astro">
+
+- The banner renders where `<CookieYesRoot />` is and the dialogs into `<body>`, so `group-` and `peer-` variants from your tree do not reach them.
+
+</Framework>
+
+
 - The SDK does not read Tailwind's `dark` class. Set `colorScheme` to match your default scheme and switch the variables from `html.dark`: see [Colour scheme](/docs/styling/color-scheme).
 <Framework when="nextjs react">
 
@@ -337,7 +417,7 @@ export const config: CookieYesConfig = { mode: "cookie-only", regulation: "GDPR"
 
 </Framework>
 
-<Framework when="vue nuxt svelte sveltekit">
+<Framework when="vue nuxt svelte sveltekit astro">
 
 - Arbitrary values set the SDK's variables: `<CookieBanner class="[--cy-primary:#7c3aed]" />`. This works only while `primaryColor` is not set in `theme`.
 
@@ -366,6 +446,13 @@ Your CSS comes before `styles.css`, or the value is set in `theme`.
 
 **`<RecallButton class="...">` lost its style.**
 `class` replaces the default class there. Include `cy-widget`.
+
+</Framework>
+
+<Framework when="astro">
+
+**A utility on `<CookieBanner>` does nothing.**
+Your CSS comes before `styles.css`, or the value is set in `theme`.
 
 </Framework>
 
