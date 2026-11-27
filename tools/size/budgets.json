@@ -129,10 +129,16 @@
         "About 2.2 KB is Nuxt's own runtime that the empty app loads only with its lazy error",
         "page; the module's plugin uses it too, so the bundler moves it into the entry, which is",
         "why `total` is below `initial`. The module's own client code (plugin, config merge,",
-        "<CookieYesRoot />) is about 0.3 KB."
+        "<CookieYesRoot />) is about 0.3 KB.",
+        "",
+        "`total` was raised by 250 bytes with no change to the SDK. From 27 November CI builds",
+        "the same source with that 2.2 KB left in its own chunk: 20718 / 20868, so `initial`",
+        "falls 1.3 KB and `total` rises past the old ceiling. A local install still produces",
+        "the shape above, so the fixture's unpinned build tooling is the likely cause.",
+        "`initial` keeps its ceiling so the old shape still passes."
       ],
       "initial": 22150,
-      "total": 20800
+      "total": 21050
     },
     "sveltekit": {
       "$comment": [
