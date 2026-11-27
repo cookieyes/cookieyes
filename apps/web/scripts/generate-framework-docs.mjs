@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generates the per-framework docs trees under content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,core} from the
+// Generates the per-framework docs trees under content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,astro,core} from the
 // shared bodies in content/shared.
 //
 // One body, written once, is published under every framework it applies to. Each
@@ -33,6 +33,7 @@ const FRAMEWORKS = {
   nuxt: "Nuxt",
   svelte: "Svelte",
   sveltekit: "SvelteKit",
+  astro: "Astro",
   core: "JavaScript",
 };
 
@@ -71,7 +72,7 @@ function readFrontmatter(source, file) {
       const inner = /^\[(.*)\]$/.exec(value);
       if (!inner) {
         throw new Error(
-          `${file}: frameworks must be written as [nextjs, react, vue, nuxt, svelte, sveltekit, core]`,
+          `${file}: frameworks must be written as [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]`,
         );
       }
       data.frameworks = inner[1]

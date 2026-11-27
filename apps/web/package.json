@@ -27,6 +27,8 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@cookieyes/astro": "workspace:*",
     "@cookieyes/backend": "workspace:*",
     "@cookieyes/core": "workspace:*",
     "@cookieyes/nextjs": "workspace:*",
@@ -44,6 +46,7 @@
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "astro": "7.4.12",
     "nuxt": "^4.6.4",
     "postcss": "^8.5.26",
     "svelte": "^5.57.3",

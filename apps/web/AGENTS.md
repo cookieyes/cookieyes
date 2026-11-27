@@ -6,14 +6,14 @@ else. The root `AGENTS.md` still applies here.
 
 ## Where things live
 
-- `content/shared/**` is the only hand-written docs source. `content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,core}`
+- `content/shared/**` is the only hand-written docs source. `content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,astro,core}`
   are generated from it and committed; never edit them, the generator deletes hand-placed files.
 - A page is published to each framework named in its frontmatter: `frameworks: [nextjs, react,
-  vue, nuxt, svelte, sveltekit, core]`. A page without `frameworks:` fails the build.
+  vue, nuxt, svelte, sveltekit, astro, core]`. A page without `frameworks:` fails the build.
 - Section order: `content/shared/_root-order.json`. Pages inside a section: that folder's
   `meta.json`.
 - How fenced code is rewritten per framework (`@cookieyes/react` to `@cookieyes/nextjs`, never
-  applied to Vue, Nuxt, Svelte or SvelteKit pages, which are written by hand; `"use client"` dropped, `app/` to
+  applied to Vue, Nuxt, Svelte, SvelteKit or Astro pages, which are written by hand; `"use client"` dropped, `app/` to
   `src/` except on Nuxt pages, `frameworkSwap=false`, `<Framework when="...">`):
   `content/shared/README.md`. Read it before writing a page.
 - Links are framework-relative: `/docs/hooks/use-consent`.
@@ -50,7 +50,8 @@ else. The root `AGENTS.md` still applies here.
   per framework (Vue pages: `ts` and `vue` fences, with `vue-tsc`; Nuxt pages: the same fences, inside a
   prepared Nuxt app that installs `@cookieyes/nuxt`; Svelte pages: `ts` and `svelte` fences, with
   `svelte-check`; SvelteKit pages: the same fences, inside a prepared SvelteKit app that installs
-  `@cookieyes/sveltekit`). Use `check="false"` only for
+  `@cookieyes/sveltekit`; Astro pages: `ts` and `astro` fences, inside a prepared Astro app that
+  installs `@cookieyes/astro`, with `astro check`). Use `check="false"` only for
   a fragment that cannot compile alone (for example a single `window.*` call), never to silence a
   real error.
 - The config, component and CSS-variable reference generators fail when a sidecar entry is

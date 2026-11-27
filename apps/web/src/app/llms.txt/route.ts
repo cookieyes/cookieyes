@@ -13,6 +13,7 @@ const SECTIONS: Record<string, string> = {
   nuxt: "Nuxt",
   svelte: "Svelte",
   sveltekit: "SvelteKit",
+  astro: "Astro",
   core: "JavaScript",
   changelog: "Changelog",
 };

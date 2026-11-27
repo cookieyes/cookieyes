@@ -47,10 +47,10 @@ export type MergedComponentOption = ComponentSidecarEntry & {
 };
 
 /**
- * The adapters that have a props table. Next.js pages use React's and Nuxt pages Vue's: same
- * components.
+ * The adapters that have a props table. Next.js pages use React's, Nuxt pages Vue's and
+ * SvelteKit pages Svelte's: same components. Astro has its own.
  */
-export type ComponentAdapter = "react" | "vue" | "svelte";
+export type ComponentAdapter = "react" | "vue" | "svelte" | "astro";
 
 export type ComponentReferenceData = Record<
   ComponentAdapter,

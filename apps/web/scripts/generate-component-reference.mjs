@@ -4,8 +4,8 @@
 // sidecar (component-props.sidecar.ts), and writes the merged result to
 // `.generated/component-reference.json` for the `<ComponentPropsTable>` MDX
 // component to render. It does this once per adapter (React, whose table Next.js pages
-// share, Vue, whose table Nuxt pages share, and Svelte), each against its own source and its
-// own sidecar.
+// share, Vue, whose table Nuxt pages share, Svelte, whose table SvelteKit pages share, and
+// Astro), each against its own source and its own sidecar.
 //
 // Sibling to `generate-config-reference.mjs`, following the same pattern
 // (compiler-API extraction -> join against a checked-in sidecar -> fail closed
@@ -78,7 +78,11 @@ const PLAIN_COMPONENTS = new Set([
  * `ComponentPropsWithoutRef`, which excludes it), and Vue slots are not props at all. Svelte
  * snippets (`children`, `placeholder`) are props, so they are read off the type like any other.
  * Svelte components are `.svelte` files the compiler API cannot read; their props types live in
- * plain `types.ts` modules, which is where they are read from.
+ * plain `types.ts` modules, which is where they are read from. The same goes for Astro, whose
+ * components are `.astro` files: `components.d.ts` declares each as `AstroComponent<Props>`, so
+ * `declared` reads the props from that type argument instead of a `<Name>Props` alias, and
+ * `plain` lists the components whose props are all documented individually, because only
+ * `GatedFrame` extends a native element there.
  */
 const ADAPTERS = {
   react: {
@@ -171,6 +175,38 @@ const ADAPTERS = {
     },
     synthetic: {},
   },
+  astro: {
+    srcRoot: join(repoRoot, "sdk", "astro", "src"),
+    declared: true,
+    files: {
+      CookieBanner: ["components", "components.d.ts"],
+      CookiePreferences: ["components", "components.d.ts"],
+      CookieOptOut: ["components", "components.d.ts"],
+      RecallButton: ["components", "components.d.ts"],
+      GatedScript: ["components", "components.d.ts"],
+      GatedFrame: ["components", "components.d.ts"],
+    },
+    sidecarPath: join(contentComponentsDir, "component-props.astro.sidecar.ts"),
+    jsx: ts.JsxEmit.Preserve,
+    plain: new Set([
+      "CookieBanner",
+      "CookiePreferences",
+      "CookieOptOut",
+      "RecallButton",
+      "GatedScript",
+    ]),
+    extended: {
+      GatedFrame: {
+        ownFields: ["src", "category"],
+        namedNativeProps: [],
+        restPath: "...rest",
+        restType: 'Omit<HTMLAttributes<"iframe">, "src" | "category">',
+      },
+    },
+    synthetic: {
+      GatedFrame: [{ path: "placeholder (slot)", type: "HTML", required: false }],
+    },
+  },
 };
 
 function fail(message) {
@@ -184,6 +220,31 @@ function findTypeAlias(sourceFile, name) {
   let found;
   ts.forEachChild(sourceFile, (node) => {
     if (ts.isTypeAliasDeclaration(node) && node.name.text === name) found = node;
+  });
+  return found;
+}
+
+/**
+ * The props of an Astro component: the type argument of `export declare const <Name>:
+ * AstroComponent<Props>`.
+ */
+function findDeclaredProps(checker, sourceFile, name) {
+  let found;
+  ts.forEachChild(sourceFile, (node) => {
+    if (!ts.isVariableStatement(node)) return;
+    for (const declaration of node.declarationList.declarations) {
+      const typeNode = declaration.type;
+      if (
+        ts.isIdentifier(declaration.name) &&
+        declaration.name.text === name &&
+        typeNode &&
+        ts.isTypeReferenceNode(typeNode) &&
+        typeNode.typeArguments?.[0]
+      ) {
+        const [propsNode] = typeNode.typeArguments;
+        found = { type: checker.getTypeFromTypeNode(propsNode), location: propsNode };
+      }
+    }
   });
   return found;
 }
@@ -207,21 +268,26 @@ function readNamedProperty(checker, type, location, name, component, adapter) {
 }
 
 /** Every direct property of a plain, closed object-literal props type. */
-function extractPlainComponent(checker, node) {
-  const type = checker.getTypeAtLocation(node.name);
+function extractPlainComponent(checker, { type, location }) {
   const result = new Map();
   for (const symbol of checker.getPropertiesOfType(type)) {
-    result.set(symbol.getName(), readSymbol(checker, symbol, node.name));
+    result.set(symbol.getName(), readSymbol(checker, symbol, location));
   }
   return result;
 }
 
 /** Own fields + curated native props + hand-written rows + one collapsed "...rest" row. */
-function extractExtendedComponent(checker, node, component, config, synthetic, adapter) {
-  const type = checker.getTypeAtLocation(node.name);
+function extractExtendedComponent(
+  checker,
+  { type, location },
+  component,
+  config,
+  synthetic,
+  adapter,
+) {
   const result = new Map();
   for (const name of [...config.ownFields, ...config.namedNativeProps]) {
-    result.set(name, readNamedProperty(checker, type, node.name, name, component, adapter));
+    result.set(name, readNamedProperty(checker, type, location, name, component, adapter));
   }
   for (const row of synthetic[component] ?? []) {
     result.set(row.path, { type: row.type, required: row.required });
@@ -257,16 +323,27 @@ async function generateAdapter(adapter, config) {
     const sourceFile = program.getSourceFile(file);
     if (!sourceFile) fail(`could not load source file ${file} (${adapter} "${component}")`);
 
-    const node = findTypeAlias(sourceFile, typeName);
-    if (!node) {
-      fail(`could not find type alias "${typeName}" (${adapter} "${component}") in ${file}`);
+    let props;
+    if (config.declared) {
+      props = findDeclaredProps(checker, sourceFile, component);
+      if (!props) {
+        fail(
+          `could not find "declare const ${component}: AstroComponent<…>" (${adapter}) in ${file}`,
+        );
+      }
+    } else {
+      const node = findTypeAlias(sourceFile, typeName);
+      if (!node) {
+        fail(`could not find type alias "${typeName}" (${adapter} "${component}") in ${file}`);
+      }
+      props = { type: checker.getTypeAtLocation(node.name), location: node.name };
     }
 
-    const extracted = PLAIN_COMPONENTS.has(component)
-      ? extractPlainComponent(checker, node)
+    const extracted = (config.plain ?? PLAIN_COMPONENTS).has(component)
+      ? extractPlainComponent(checker, props)
       : extractExtendedComponent(
           checker,
-          node,
+          props,
           component,
           config.extended[component],
           config.synthetic,

@@ -3,7 +3,8 @@
  * the sidebar switcher, the header, search and the raw-Markdown route.
  *
  * The docs are written once in content/shared and published under `/docs/nextjs`,
- * `/docs/react`, `/docs/vue`, `/docs/nuxt`, `/docs/svelte`, `/docs/sveltekit` and `/docs/core`
+ * `/docs/react`, `/docs/vue`, `/docs/nuxt`, `/docs/svelte`, `/docs/sveltekit`, `/docs/astro` and
+ * `/docs/core`
  * (scripts/generate-framework-docs.mjs). A page's framework
  * is therefore the first path segment, and nothing else — no stored preference decides
  * what a URL shows, which is what makes a docs link mean the same thing for everyone who
@@ -17,6 +18,7 @@ export const FRAMEWORKS = [
   "nuxt",
   "svelte",
   "sveltekit",
+  "astro",
   "core",
 ] as const;
 
@@ -33,6 +35,7 @@ export const FRAMEWORK_LABEL: Record<Framework, string> = {
   nuxt: "Nuxt",
   svelte: "Svelte",
   sveltekit: "SvelteKit",
+  astro: "Astro",
   core: "JavaScript",
 };
 
@@ -55,7 +58,7 @@ export function frameworkOf(slugsOrPath: readonly string[] | string): Framework 
  * `index.mdx`, which is why this works from the file path and not from the URL.
  */
 export function sharedPath(wrapperPath: string): string {
-  return wrapperPath.replace(/^(nextjs|react|vue|nuxt|svelte|sveltekit|core)\//, "");
+  return wrapperPath.replace(/^(nextjs|react|vue|nuxt|svelte|sveltekit|astro|core)\//, "");
 }
 
 /**
@@ -92,6 +95,7 @@ export function resolveDocsHref(
       "nuxt",
       "svelte",
       "sveltekit",
+      "astro",
       "core",
     ]),
   ];
@@ -135,6 +139,14 @@ const SVELTE_FORBIDDEN =
  */
 const SVELTEKIT_FORBIDDEN =
   /@cookieyes\/(react|nextjs|vue|nuxt|svelte)(?![\w-])|"use client"|useSyncExternalStore/;
+/**
+ * What must never reach an Astro page's code: an import of any other adapter, which includes
+ * `@cookieyes/svelte` and `@cookieyes/vue` because an Astro app installs `@cookieyes/astro`
+ * alone and, under pnpm's strict layout, cannot resolve them. `tsx`, `vue` and `svelte` fences
+ * are rejected by language.
+ */
+const ASTRO_FORBIDDEN =
+  /@cookieyes\/(react|nextjs|vue|nuxt|svelte|sveltekit)(?![\w-])|"use client"|useSyncExternalStore/;
 /** An innermost block: one whose body opens no further <Framework>. Resolved repeatedly. */
 const BLOCK = /<Framework when="([^"]*)">\s*\n((?:(?!<Framework)[\s\S])*?)\n\s*<\/Framework>\n?/g;
 const FENCE = /^(```[^\n]*)\n([\s\S]*?)^```[ \t]*$/gm;
@@ -160,9 +172,19 @@ export function composeMarkdown(body: string, framework: Framework): string {
       framework === "vue" ||
       framework === "nuxt" ||
       framework === "svelte" ||
-      framework === "sveltekit";
+      framework === "sveltekit" ||
+      framework === "astro";
     const lang = /^```(\w*)/.exec(opener)?.[1];
-    if (framework === "svelte" || framework === "sveltekit") {
+    if (framework === "astro") {
+      if (lang === "tsx" || lang === "vue" || lang === "svelte" || ASTRO_FORBIDDEN.test(code)) {
+        throw new Error(
+          "An Astro page has a fence for another framework (tsx, vue, svelte, an import of " +
+            "@cookieyes/react, @cookieyes/nextjs, @cookieyes/vue, @cookieyes/nuxt, @cookieyes/svelte or " +
+            '@cookieyes/sveltekit, a "use client" line or useSyncExternalStore). ' +
+            'Wrap it in <Framework when="...">.',
+        );
+      }
+    } else if (framework === "svelte" || framework === "sveltekit") {
       const forbidden = framework === "svelte" ? SVELTE_FORBIDDEN : SVELTEKIT_FORBIDDEN;
       if (lang === "tsx" || lang === "vue" || forbidden.test(code)) {
         throw new Error(
