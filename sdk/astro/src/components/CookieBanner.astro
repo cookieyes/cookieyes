@@ -1,0 +1,12 @@
+---
+// The consent banner. Inside <CookieYesRoot />, with `class` for the card and `classNames` per part.
+import { _renderSurface } from "../markup.js";
+
+interface Props {
+  class?: string | undefined;
+  classNames?: Partial<Record<string, string>> | undefined;
+}
+
+const html = _renderSurface(Astro.locals, "banner", Astro.props);
+---
+<Fragment set:html={html} />

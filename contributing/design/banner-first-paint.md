@@ -54,6 +54,8 @@ These run in the ordinary `pnpm test` job — no browser needed.
 | The consent decision is committed and broadcast before any side effect runs | `core/src/__tests__/persist-ordering.test.ts` |
 | A throwing third-party tag cannot strand the banner or block mounting | same file |
 | `readServerConsent` agrees with the client about the same cookie | `core/src/__tests__/server-consent.test.ts` |
+| The Astro head script's verdict on a cookie equals `readServerConsent(...) !== null`, under the default, a custom and an invalid category list, for a table of edge cases and 5,000 generated cookies, in source and in the built script | `astro/src/__tests__/prepaint-parity.test.ts` |
+| A static Astro build opens its head with the Consent Mode default, the head script, `critical.css` and the wait rule, holds the banner marked `data-cy-wait`, and admits every inline head tag by hash when the site turns on Astro's CSP | `astro/src/__tests__/fixture.test.ts` (skipped below Astro's Node floor) |
 | The server-rendered banner carries no inline `style` attribute, so a strict `style-src` cannot strip its screen-reader styling | `react/src/__tests__/ssr-first-paint.test.tsx` |
 | Svelte hydrates the server's banner into the same DOM for a first visit, a returning visitor, CCPA and GPC. Svelte repairs a mismatch silently, so the test compares the DOM right after `hydrate()` with the server's HTML instead of waiting for a warning, and a control case proves it sees a difference | `svelte/src/__tests__/hydration.test.ts` |
 
@@ -67,6 +69,7 @@ These checks run in a real browser, in the CI job `conformance` (`pnpm test:brow
 | The Svelte server-rendered banner plus `critical.css` is styled and visible with no script, and hydration keeps the same node | `svelte/src/__tests__/first-paint.browser.test.ts` |
 | A Nuxt production build: the banner in a first visit's HTML and none in a returning visitor's, the CCPA banner from the geo headers, the head opening with the Consent Mode default and `critical.css`, no hydration mismatch for any of them (with a control page proving a mismatch is caught), and the stylesheet switched on | `nuxt/src/__tests__/ssr.browser.test.ts` |
 | A SvelteKit production build: the banner in a first visit's HTML and none in a returning visitor's, the CCPA banner from the geo headers, the head opening with the Consent Mode default and `critical.css`, the nonce SvelteKit wrote copied onto the Consent Mode script, the critical CSS admitted by hash alone under a strict `style-src`, the banner markup after hydration equal to the server's (with a control page proving a difference is caught), a prerendered route that stays visitor-neutral, an `ssr = false` route that mounts live, and the stylesheet switched on | `sveltekit/src/__tests__/ssr.browser.test.ts` |
+| An Astro build: a static page shows a first visit the banner and a returning visitor none with only the head script running, the runtime takes the shell over marked `data-cy-entered`, an on-request page holds the CCPA banner from the geo headers and no banner for a returning visitor, and under `<ClientRouter />` the banner, an open dialog and the head script's verdict survive navigation while gated content on the new page follows consent | `astro/src/__tests__/ssr.browser.test.ts`, `astro/src/__tests__/router.browser.test.ts` |
 
 ## Nuxt: head tags outside unhead
 
@@ -119,6 +122,38 @@ strictest regulation on the server and while hydrating, and the configured regio
 over after mount. When the server did read the request, its region replaces the detector for both
 the root's provider and the browser's runtime (`_withRequestRegion`), for the reason given under
 Nuxt above.
+
+## Astro: deciding a static page before first paint
+
+`@cookieyes/astro` writes its head tags from a middleware ordered `pre`, which Astro also runs for
+every prerendered page at build time, right after `<meta charset>`: the Consent Mode default, a
+head script, `critical.css`, a wait rule in a `<style>` of its own, and the deferred stylesheet.
+The wait rule is separate so `critical.css` stays byte-identical to the other adapters' and
+`CRITICAL_CSS_HASH` keeps its value.
+
+A prerendered page is shared by every visitor, so `<CookieYesRoot />` renders its banner shell
+marked `data-cy-wait`, hidden by the wait rule. The head script reads `document.cookie` before
+first paint and sets `data-cy-banner="show"` on `<html>` unless the cookie records a decision the
+runtime will honour; only then is the shell visible. A returning visitor therefore never sees it,
+and no request is made. The verdict does not depend on region, regulation or GPC: the stored
+decision is valid when the taxonomy hash matches (or is absent under the built-in five categories)
+and the visitor acted, which is `readServerConsent`'s rule. The script is core's own
+`parseCookieHeader` bundled at package build time, with the expected hash filled in from the
+site's categories at site build time, and `prepaint-parity.test.ts` holds it to
+`readServerConsent`.
+
+A mismatch is never a compliance failure: the script can only reveal a shell, and the runtime
+adopts or removes the shell in the same task it starts. If the script says "decided" and the
+runtime disagrees (for example `categories` set only in `src/cookieyes.client.ts`, which the
+integration warns about), the banner is late, not missing. If it says "undecided" and the runtime
+disagrees, the banner flashes and is removed. Gating is core's either way. If the head script is
+blocked, a first visitor sees the banner when the runtime starts.
+
+An on-request page reads the request instead, as Nuxt and SvelteKit do, and its region replaces the
+detector for the browser's runtime (`_withRequestRegion`). Under `<ClientRouter />` the portal root
+is carried by `transition:persist`, the dialogs and reload notice, which vanilla appends to
+`<body>`, are moved into the incoming document on `astro:before-swap`, and the `data-cy-banner`
+attribute is copied, because Astro replaces the `<html>` attributes.
 
 ## Without a server: `@cookieyes/vanilla`
 

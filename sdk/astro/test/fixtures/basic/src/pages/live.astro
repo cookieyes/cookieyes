@@ -1,0 +1,7 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+export const prerender = false;
+const { regulation, read } = Astro.locals.cookieyes;
+---
+<Layout title="Live"><p id="locals">{read ? "read" : "shared"} {regulation}</p></Layout>

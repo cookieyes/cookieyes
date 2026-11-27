@@ -1,0 +1,12 @@
+---
+// The CCPA opt-out dialog, drawn by the browser when it opens. `class` and `classNames` as on <CookieBanner />.
+import { _renderSurface } from "../markup.js";
+
+interface Props {
+  class?: string | undefined;
+  classNames?: Partial<Record<string, string>> | undefined;
+}
+
+const html = _renderSurface(Astro.locals, "optOut", Astro.props);
+---
+<Fragment set:html={html} />

@@ -50,9 +50,15 @@ const outDir = resolve(outArg === -1 ? join(tmpdir(), "cookieyes-package-gate") 
  * `@cookieyes/nuxt` is a Nuxt module: Nuxt loads modules with `import`, never `require`, and the
  * module finds its runtime files through `import.meta.url`, which a CommonJS build would not have.
  * `@cookieyes/svelte` and `@cookieyes/sveltekit` ship `.svelte` component files, which have no
- * CommonJS form.
+ * CommonJS form. `@cookieyes/astro` is an Astro integration, loaded with `import` and finding its
+ * middleware through `import.meta.url`, and ships `.astro` components.
  */
-const ESM_ONLY = new Set(["@cookieyes/nuxt", "@cookieyes/svelte", "@cookieyes/sveltekit"]);
+const ESM_ONLY = new Set([
+  "@cookieyes/astro",
+  "@cookieyes/nuxt",
+  "@cookieyes/svelte",
+  "@cookieyes/sveltekit",
+]);
 
 /** Class prefix each stylesheet must contain. A package not listed ships no CSS. */
 const CSS_PREFIX = {
@@ -63,6 +69,7 @@ const CSS_PREFIX = {
   "@cookieyes/svelte": ".cy-",
   "@cookieyes/sveltekit": ".cy-",
   "@cookieyes/nuxt": ".cy-",
+  "@cookieyes/astro": ".cy-",
   "@cookieyes/nextjs": ".cy-",
   "@cookieyes/devtools": ".cyd-",
 };

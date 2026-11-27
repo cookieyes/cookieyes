@@ -1,0 +1,14 @@
+---
+// An iframe that is built only once its category is granted, with a placeholder until then. Any
+// other attribute is passed to the iframe; the `placeholder` slot replaces the default text.
+import type { HTMLAttributes } from "astro/types";
+import { _renderGatedFrame } from "../markup.js";
+
+type Props = Omit<HTMLAttributes<"iframe">, "src"> & { src: string; category: string };
+
+const placeholder = Astro.slots.has("placeholder")
+  ? await Astro.slots.render("placeholder")
+  : undefined;
+const html = _renderGatedFrame(Astro.locals, Astro.props, placeholder);
+---
+<Fragment set:html={html} />

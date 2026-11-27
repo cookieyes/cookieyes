@@ -45,7 +45,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.svelte"],
+      "includes": ["**/*.svelte", "**/*.astro"],
       "linter": {
         "rules": {
           "correctness": {

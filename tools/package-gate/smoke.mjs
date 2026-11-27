@@ -5,7 +5,8 @@
 // For every published package:
 //   - every JS sub-path in "exports" loads with `import` and with `require` (for a package that
 //     ships `.svelte` files, which Node cannot load, it resolves to a file that exists instead,
-//     and `@cookieyes/sveltekit/styles-route` to a file that exports `GET`)
+//     and `@cookieyes/sveltekit/styles-route` to a file that exports `GET`; `@cookieyes/astro/components`,
+//     which re-exports `.astro` files, resolves and every file it names exists)
 //   - every stylesheet sub-path resolves to a file
 //   - the copy that resolves, and the copy each sibling @cookieyes package resolves, is
 //     the tarball under test and not a registry copy of the same version
@@ -39,6 +40,8 @@ function fingerprint(entryPath, entry) {
  * `svelte` export condition, which is what Svelte's tooling follows.
  */
 const SVELTE_COMPONENTS = new Set(["@cookieyes/svelte", "@cookieyes/sveltekit"]);
+/** Sub-paths that re-export `.astro` files, which only Astro's compiler can load. */
+const ASTRO_COMPONENTS = new Set(["@cookieyes/astro/components"]);
 const firstLine = (error) => String(error?.message ?? error).split("\n")[0];
 
 async function check(label, fn) {
@@ -57,6 +60,21 @@ for (const [name, pkg] of Object.entries(expected.packages)) {
       await check(`resolve ${spec}`, () => {
         if (readFileSync(require.resolve(spec)).length === 0) {
           throw new Error("resolved to an empty file");
+        }
+      });
+      continue;
+    }
+    if (ASTRO_COMPONENTS.has(spec)) {
+      await check(`resolve ${spec}`, () => {
+        const entry = fileURLToPath(import.meta.resolve(spec));
+        const files = [
+          ...readFileSync(entry, "utf8").matchAll(/from\s*["'](\.\/[^"']+\.astro)["']/g),
+        ];
+        if (files.length === 0) throw new Error("re-exports no .astro file");
+        for (const [, file] of files) {
+          if (!existsSync(fileURLToPath(new URL(file, `file://${entry}`)))) {
+            throw new Error(`${file} is missing`);
+          }
         }
       });
       continue;
@@ -129,6 +147,15 @@ await check("@cookieyes/nuxt exposes a Nuxt module under the cookieyes key", asy
   if (typeof nuxt.default !== "function") throw new Error("the default export is not a module");
   const meta = await nuxt.default.getMeta?.();
   if (meta?.configKey !== "cookieyes") throw new Error("the module's config key is not cookieyes");
+});
+
+await check("@cookieyes/astro exposes an Astro integration", async () => {
+  const astro = await import("@cookieyes/astro");
+  const integration = astro.default();
+  if (integration?.name !== "@cookieyes/astro") throw new Error("the integration is misnamed");
+  if (typeof integration.hooks?.["astro:config:setup"] !== "function") {
+    throw new Error("the integration has no astro:config:setup hook");
+  }
 });
 
 console.log(`${passed} checks passed`);
