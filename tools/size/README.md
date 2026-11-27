@@ -40,6 +40,8 @@ one component that mounts the SDK:
 | `with-nuxt` | `nuxt` | `@cookieyes/nuxt` in `modules` and `<CookieYesRoot />` in `app/app.vue` |
 | `baseline-sveltekit` | `baseline-sveltekit` | nothing: the control for the SvelteKit fixture |
 | `with-sveltekit` | `sveltekit` | `@cookieyes/sveltekit`'s handle, `loadConsent`, `<CookieYesRoot>` in the root layout and the styles route (the README's quick start) |
+| `baseline-astro` | `baseline-astro` | nothing: the control for the Astro fixture |
+| `with-astro` | `astro` | `@cookieyes/astro`'s `cookieyes()` in `astro.config.mjs` and `<CookieYesRoot />` in the layout (a static build, no router) |
 
 `baseline`, `with-core` and `with-react` mirror consentbench's own `baseline`,
 `with-cookieyes-core` and `with-cookieyes-react` apps, so our figures are
@@ -111,6 +113,24 @@ package's tarball comes from the peer-dependency matrix's `pack-tarballs.mjs`. T
 fingerprint covers `.svelte` sources, the package's `svelte.config.js` and its three build
 scripts. The server code (the handle, the load function and the styles route) never reaches the
 client, and the stylesheet is not a script, so neither is in the figure.
+
+### The Astro fixtures
+
+`with-astro` is measured against `baseline-astro`, an empty Astro site, for the same reason. A
+fixture with an `astro.config.mjs` is built with `astro build` as a static site, and
+`measure.mjs` reads the built `dist/index.html`. An empty Astro site loads no script, so the
+control has an empty `initial` and `total`, which is a valid control and not a failed build.
+**initial** is the module scripts the page references plus the code the integration writes inline
+into every HTML response: the head script that decides first paint and the two styles. They are
+not files, so each is compressed on its own like a chunk, and they are counted on both sides of
+the subtraction. The critical styles are CSS, so the Astro figure carries about 1.8 KB of
+stylesheet that the other fixtures do not count. **total** adds every other script in
+`dist/_astro`, which are the preferences and opt-out dialogs and the theme runtime, loaded on first
+use. Astro is pinned exactly in both fixtures. The package's tarball comes from the
+peer-dependency matrix's `pack-tarballs.mjs`. The report's fingerprint covers `.astro` sources and
+the package's copy script. The server code (the middleware and the styles route) never reaches the
+client, and the full stylesheet, which the page loads without blocking, is not a script, so
+neither is in the figure.
 
 ### `with-nextjs-devtools` (AD-5 / A2)
 

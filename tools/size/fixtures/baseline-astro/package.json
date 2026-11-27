@@ -1,0 +1,13 @@
+{
+  "name": "@cookieyes/size-fixture-baseline-astro",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Size-measurement fixture. Not published. See tools/size/README.md.",
+  "scripts": {
+    "build": "astro build"
+  },
+  "dependencies": {
+    "astro": "7.4.13"
+  }
+}
