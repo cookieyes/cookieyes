@@ -40,8 +40,10 @@ const PACKAGES = [
   { name: "@cookieyes/svelte", dir: join(repoRoot, "sdk", "svelte") },
   // The SvelteKit legs' example app (matrix/example-app-sveltekit) installs it.
   { name: "@cookieyes/sveltekit", dir: join(repoRoot, "sdk", "sveltekit") },
-  // Packed so tools/size's with-vanilla fixture installs it from a tarball like
-  // every other fixture; the matrix's own example app does not use it.
+  // The Astro legs' example app (matrix/example-app-astro) installs it.
+  { name: "@cookieyes/astro", dir: join(repoRoot, "sdk", "astro") },
+  // A runtime dependency of @cookieyes/astro, so it is pinned like @cookieyes/scripts below;
+  // tools/size's with-vanilla fixture installs it from a tarball too.
   { name: "@cookieyes/vanilla", dir: join(repoRoot, "sdk", "vanilla") },
   { name: "@cookieyes/test", dir: join(repoRoot, "sdk", "test") },
   // Not imported by the example app, but @cookieyes/nextjs depends on it, so it

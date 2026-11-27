@@ -19,6 +19,7 @@ export const dimensions = {
     "nuxt",
     "svelte",
     "kit",
+    "astro",
   ],
   // Reserved — add a value here (and to one or more `combinations` entries) to
   // extend the matrix. No script or workflow file needs to change for this
@@ -35,7 +36,7 @@ export const dimensions = {
  *   id: string,
  *   role: "floor" | "middle" | "newest",
  *   label: string,
- *   app?: "next" | "vue" | "nuxt" | "svelte" | "sveltekit",
+ *   app?: "next" | "vue" | "nuxt" | "svelte" | "sveltekit" | "astro",
  *   packagesUnderTest: string[],
  *   versions: {
  *     next?: string,
@@ -51,6 +52,7 @@ export const dimensions = {
  *     kit?: string,
  *     adapterNode?: string,
  *     adapterStatic?: string,
+ *     astro?: string,
  *   },
  *   node: string,
  *   packageManager: string,
@@ -64,7 +66,7 @@ export const dimensions = {
  * Next.js combinations stay untouched: leaving `app` out means the Next.js app.
  *
  * @param {Combination} combo
- * @returns {"next" | "vue" | "nuxt" | "svelte" | "sveltekit"}
+ * @returns {"next" | "vue" | "nuxt" | "svelte" | "sveltekit" | "astro"}
  */
 export function appOf(combo) {
   return combo.app ?? "next";
@@ -283,6 +285,37 @@ export const combinations = [
       adapterNode: "6.0.2",
       adapterStatic: "4.0.1",
     },
+    node: "22",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["fast", "full"],
+  },
+  // The Astro legs pin `astro`, the one peer of @cookieyes/astro, and the Node adapter the example
+  // app serves its on-request page with: each leg's adapter is the newest one its Astro builds
+  // with: adapter-node 10.0.2 for Astro 6.0.0 (10.0.3 and later import code Astro 6.0.0 lacks,
+  // though their peer range allows it), 11.1.14 for Astro 7. The floor's `astro` is compared literally with
+  // `peerDependencies.astro` in sdk/astro/package.json by derive-check.mjs, and the newest leg must
+  // stay the newest Astro 7.x that is at least 72 hours old. They run on Node 22, as the Nuxt legs
+  // do: Astro 7.4 declares `node: >=22.23.4`, which Node 20 cannot meet.
+  {
+    id: "astro-6.0.0",
+    role: "floor",
+    label: "Astro 6.0.0 (declared floor)",
+    app: "astro",
+    packagesUnderTest: ["@cookieyes/astro"],
+    versions: { astro: "6.0.0", adapterNode: "10.0.2" },
+    node: "22",
+    packageManager: "pnpm@10.22.0",
+    moduleResolution: "bundler",
+    subsets: ["full"],
+  },
+  {
+    id: "astro-7.4.13",
+    role: "newest",
+    label: "Astro 7.4.13",
+    app: "astro",
+    packagesUnderTest: ["@cookieyes/astro"],
+    versions: { astro: "7.4.13", adapterNode: "11.1.14" },
     node: "22",
     packageManager: "pnpm@10.22.0",
     moduleResolution: "bundler",

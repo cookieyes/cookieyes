@@ -50,7 +50,7 @@ Verified by installing the exact SvelteKit and Svelte versions above, building a
 - Any SvelteKit adapter other than adapter-node and adapter-static, and any host.
 - npm/yarn as the install client.
 - No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).
-- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, SvelteKit on Node 20 and 22, all with pnpm and moduleResolution=bundler.
+- Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, SvelteKit on Node 20 and 22, Astro on Node 22, all with pnpm and moduleResolution=bundler.
 <!-- PEER-MATRIX:END -->
 
 ## Quick start

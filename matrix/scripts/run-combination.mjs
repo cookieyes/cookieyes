@@ -78,6 +78,14 @@ const JSDOM_ASSERTION_NAME_MAPS = {
     "Banner child snippet runs the consent action when the developer's element is clicked":
       "child-snippet-click-commits-consent",
   },
+  astro: {
+    "the page entry shows the banner to a first-time visitor":
+      "page-entry-shows-banner-to-fresh-visitor",
+    "accepting in the banner writes the consent cookie and hides the banner":
+      "accept-writes-cookie-and-hides-banner",
+    "getConsentCategory reports a category once it is granted":
+      "get-consent-category-reports-granted-category",
+  },
   nuxt: {
     "CookieYesRoot shows the banner to a first-time visitor": "root-shows-banner-to-fresh-visitor",
     "accepting in the banner writes the consent cookie and hides the banner":
@@ -627,12 +635,92 @@ const SVELTEKIT_STRATEGY = {
   },
 };
 
+const ASTRO_STRATEGY = {
+  emptyResolved: { astro: "", adapterNode: "" },
+  assertionNames: JSDOM_ASSERTION_NAME_MAPS.astro,
+
+  resolve(nodeModules) {
+    return {
+      astro: readResolvedVersion(nodeModules, "astro") ?? "",
+      adapterNode: readResolvedVersion(nodeModules, "@astrojs/node") ?? "",
+    };
+  },
+
+  // Dynamic proof that the leg tested the Astro it asked for: every exact pin must be what got
+  // installed, and no second copy of Astro may sit in the graph. Without it the floor leg could
+  // pass on a newer Astro that a peer range pulled in.
+  typePackageCheck(resolved, combo, appDir) {
+    for (const field of Object.keys(this.emptyResolved)) {
+      if (resolved[field] !== combo.versions[field]) {
+        return {
+          ok: false,
+          notes: `resolved ${field} (${resolved[field] || "none"}) is not the requested ${combo.versions[field]}.`,
+        };
+      }
+    }
+    const copies = installedCopies(appDir, "astro");
+    if (copies.length > 1) {
+      return {
+        ok: false,
+        notes: `resolved ${copies.length} copies of astro (${copies.join(", ")}).`,
+      };
+    }
+    return { ok: true };
+  },
+
+  // Real HTTP against the built Node-adapter server, so the middleware reads the Cookie and geo
+  // headers from a real request; the prerendered page is read from the files of the same build.
+  async ssr({ appDir, logPath }) {
+    const serverProcess = spawn(process.execPath, [join("dist", "server", "entry.mjs")], {
+      cwd: appDir,
+      env: { ...process.env, PORT: String(SERVER_PORT), NODE_ENV: "production" },
+      stdio: ["ignore", "pipe", "pipe"],
+      // Process-group leader, so killProcessTree can signal everything it starts.
+      detached: true,
+    });
+    let served;
+    try {
+      let serverLog = "";
+      serverProcess.stdout?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+      serverProcess.stderr?.on("data", (d) => {
+        serverLog += d.toString();
+      });
+
+      const ready = await waitForServer(SERVER_PORT, SERVER_READY_TIMEOUT_MS);
+      appendLog(logPath, "astro node server", serverLog);
+      if (!ready) {
+        return {
+          outcome: "fail",
+          assertions: [],
+          notes: `the Astro server did not become ready on port ${SERVER_PORT} within ${SERVER_READY_TIMEOUT_MS}ms.`,
+        };
+      }
+
+      const { runSsrAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+      served = await runSsrAssertions({ baseUrl: `http://localhost:${SERVER_PORT}/` });
+    } finally {
+      killProcessTree(serverProcess);
+    }
+
+    const { runStaticAssertions } = await import(join(appDir, "tests", "ssr.assert.mjs"));
+    const prerendered = runStaticAssertions({ buildDir: join(appDir, "dist", "client") });
+    return {
+      outcome: served.outcome === "pass" && prerendered.outcome === "pass" ? "pass" : "fail",
+      assertions: [...served.assertions, ...prerendered.assertions],
+      notes: [served.notes, prerendered.notes].filter(Boolean).join(" ") || null,
+    };
+  },
+};
+
 const STRATEGIES = {
   next: NEXT_STRATEGY,
   vue: VUE_STRATEGY,
   nuxt: NUXT_STRATEGY,
   svelte: SVELTE_STRATEGY,
   sveltekit: SVELTEKIT_STRATEGY,
+  astro: ASTRO_STRATEGY,
 };
 
 /**
@@ -741,7 +829,7 @@ export async function runCombination({ comboId, tarballsPath, tarballsDir, logsA
       id: combo.id,
       role: combo.role,
       label: combo.label,
-      // Only the Vue, Nuxt, Svelte and SvelteKit combinations name their app; the Next.js results keep their shape.
+      // Only the Vue, Nuxt, Svelte, SvelteKit and Astro combinations name their app; the Next.js results keep their shape.
       ...(combo.app ? { app: combo.app } : {}),
       packagesUnderTest: combo.packagesUnderTest,
       requested: combo.versions,

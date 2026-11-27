@@ -3,10 +3,11 @@
 // `matrix/matrix.config.mjs` (the latter only to know which combination IDs *should* be present),
 // then writes `apps/web/.generated/peer-matrix-reference.json` and injects marker-delimited
 // markdown compatibility tables into `README.md`, `sdk/react/README.md`, `sdk/nextjs/README.md`,
-// `sdk/vue/README.md`, `sdk/nuxt/README.md`, `sdk/svelte/README.md` and `sdk/sveltekit/README.md`. Combinations are split by `app`: the
+// `sdk/vue/README.md`, `sdk/nuxt/README.md`, `sdk/svelte/README.md`, `sdk/sveltekit/README.md` and `sdk/astro/README.md`. Combinations are split by `app`: the
 // Next.js/React table goes to the root and the React and Next.js READMEs, the Vue table to the
 // root and the Vue README, the Nuxt table to the root and the Nuxt README, the Svelte table to the root and the Svelte
-// README, the SvelteKit table to the root and the SvelteKit README.
+// README, the SvelteKit table to the root and the SvelteKit README, the Astro table to the root and
+// the Astro README.
 //
 // Sibling to `generate-config-reference.mjs` / `generate-component-reference.mjs` /
 // `generate-css-variables-reference.mjs` — same fail-closed discipline, adapted to this contract's
@@ -60,7 +61,7 @@ const README_TARGETS = [
   {
     path: join(repoRoot, "README.md"),
     kind: "root",
-    apps: ["next", "vue", "nuxt", "svelte", "sveltekit"],
+    apps: ["next", "vue", "nuxt", "svelte", "sveltekit", "astro"],
   },
   { path: join(repoRoot, "sdk", "react", "README.md"), kind: "package", apps: ["next"] },
   { path: join(repoRoot, "sdk", "nextjs", "README.md"), kind: "package", apps: ["next"] },
@@ -68,6 +69,7 @@ const README_TARGETS = [
   { path: join(repoRoot, "sdk", "nuxt", "README.md"), kind: "package", apps: ["nuxt"] },
   { path: join(repoRoot, "sdk", "svelte", "README.md"), kind: "package", apps: ["svelte"] },
   { path: join(repoRoot, "sdk", "sveltekit", "README.md"), kind: "package", apps: ["sveltekit"] },
+  { path: join(repoRoot, "sdk", "astro", "README.md"), kind: "package", apps: ["astro"] },
 ];
 
 /** `generatedAt` older than this many days is treated as "the workflow stopped running." */
@@ -102,6 +104,7 @@ const REQUIRED_VERSION_FIELDS = {
   nuxt: ["nuxt"],
   svelte: ["svelte", "vite", "vitePluginSvelte"],
   sveltekit: ["kit", "svelte", "vite", "vitePluginSvelte"],
+  astro: ["astro", "adapterNode"],
 };
 
 /** A combination without an `app` field is a Next.js one, as in matrix.config.mjs. */
@@ -332,6 +335,13 @@ function buildRows(data) {
         vitePluginSvelte: combo.resolved.vitePluginSvelte,
       };
     }
+    if (common.app === "astro") {
+      return {
+        ...common,
+        astro: `${combo.resolved.astro}${floorSuffix}`,
+        adapterNode: combo.resolved.adapterNode,
+      };
+    }
     return {
       ...common,
       next: `${combo.resolved.next}${floorSuffix}`,
@@ -461,6 +471,29 @@ function renderSvelteKitSection({ rows, rationaleLink }) {
   ];
 }
 
+function renderAstroSection({ rows, rationaleLink }) {
+  const header =
+    "| Astro | Node adapter | Verified | Build + typecheck | SSR (HTTP + prerendered page) | Behaviour (jsdom) |\n" +
+    "|---|---|---|---|---|---|";
+  const body = rows
+    .map(
+      (r) =>
+        `| ${r.astro} | ${r.adapterNode} | ${r.verifiedDate} | ${r.buildTypecheck} | ${r.ssr} | ${r.behaviour} |`,
+    )
+    .join("\n");
+  return [
+    header,
+    body,
+    "",
+    `Verified by installing the exact Astro versions above, building a real Astro app with the ` +
+      `integration and the Node adapter, starting its server and asserting over HTTP the banner's ` +
+      `HTML for first-time, returning and California visitors (the consent value the server read ` +
+      `for the returning one, the order of the head tags and the stylesheet route), checking the ` +
+      `app's prerendered page on disk, and running behaviour assertions in \`jsdom\`. Node 22, ` +
+      `pnpm. See [rationale](${rationaleLink}) for why this stops short of a real browser.`,
+  ];
+}
+
 function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
   const testLink = testPackageLink(fromFile);
   const rationaleLink = "https://github.com/cookieyes/cookieyes#compatibility";
@@ -469,6 +502,7 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
   const nuxtRows = rows.filter((r) => r.app === "nuxt");
   const svelteRows = rows.filter((r) => r.app === "svelte");
   const svelteKitRows = rows.filter((r) => r.app === "sveltekit");
+  const astroRows = rows.filter((r) => r.app === "astro");
 
   // Static claims this generator itself makes (things the verification depth structurally never
   // covers, independent of any one matrix run) plus, dynamically, every limit the *producer*
@@ -492,6 +526,12 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
     notVerifiedItems.push(
       "Any SvelteKit or Svelte version outside the rows above.",
       "Any SvelteKit adapter other than adapter-node and adapter-static, and any host.",
+    );
+  }
+  if (apps.includes("astro")) {
+    notVerifiedItems.push(
+      "Any Astro version outside the rows above.",
+      "Any Astro adapter other than the Node adapter, and any host.",
     );
   }
   notVerifiedItems.push("npm/yarn as the install client.", ...coverageLimits);
@@ -519,6 +559,7 @@ function renderMarkerBlock({ rows, coverageLimits, fromFile, apps }) {
     sections.push(renderSvelteSection({ rows: svelteRows, rationaleLink }));
   if (apps.includes("sveltekit"))
     sections.push(renderSvelteKitSection({ rows: svelteKitRows, rationaleLink }));
+  if (apps.includes("astro")) sections.push(renderAstroSection({ rows: astroRows, rationaleLink }));
 
   return [
     MARKER_START,
