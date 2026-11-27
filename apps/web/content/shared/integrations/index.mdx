@@ -1,7 +1,7 @@
 ---
 title: Overview
 description: Load third-party tools only after consent, with a ready-made integration or your own.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="nextjs react core">
@@ -17,6 +17,11 @@ An integration loads a third-party tool only after the visitor grants its catego
 <Framework when="nuxt">
 
 An integration loads a third-party tool only after the visitor grants its category, and stops it again when consent is withdrawn. You add it once, to `cookieyes.integrations` in `app/app.config.ts`; no consent checks in your own code. Every ready-made integration comes from one extra package:
+
+</Framework>
+<Framework when="astro">
+
+An integration loads a third-party tool only after the visitor grants its category, and stops it again when consent is withdrawn. You add it once, to `integrations` in `src/cookieyes.client.ts`; no consent checks in your own code. Every ready-made integration comes from one extra package:
 
 </Framework>
 <Framework when="svelte">

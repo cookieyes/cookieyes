@@ -1,0 +1,99 @@
+{
+  "name": "@cookieyes/astro",
+  "version": "0.0.0",
+  "description": "Astro integration for the CookieYes consent SDK: the banner in the HTML, decided before first paint on static pages",
+  "keywords": [
+    "cookie consent",
+    "GDPR",
+    "CCPA",
+    "cookie banner",
+    "consent management",
+    "privacy",
+    "compliance",
+    "Astro",
+    "astro-integration",
+    "withastro",
+    "TypeScript",
+    "open source"
+  ],
+  "homepage": "https://developers.cookieyes.com/docs/astro/getting-started/quick-start",
+  "bugs": {
+    "url": "https://github.com/cookieyes/cookieyes/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cookieyes/cookieyes.git",
+    "directory": "sdk/astro"
+  },
+  "license": "Apache-2.0",
+  "author": "CookieYes (https://www.cookieyes.com)",
+  "sideEffects": [
+    "**/*.css",
+    "**/*.astro"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "default": "./dist/client/index.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "default": "./dist/components/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./critical.css": "./dist/critical.css"
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "!src/**/__tests__",
+    "!src/**/*.test.ts",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "rm -rf dist && rollup -c && node scripts/copy-assets.mjs",
+    "dev": "rollup -c -w",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:browser": "vitest run --config vitest.browser.config.ts",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "astro": "^6.0.0 || ^7.0.0"
+  },
+  "dependencies": {
+    "@cookieyes/core": "workspace:*",
+    "@cookieyes/scripts": "workspace:*",
+    "@cookieyes/ui": "workspace:*",
+    "@cookieyes/vanilla": "workspace:*"
+  },
+  "devDependencies": {
+    "@astrojs/node": "11.1.14",
+    "@types/node": "^26.1.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "astro": "7.4.12",
+    "jsdom": "^29.1.1",
+    "playwright": "^1.61.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  }
+}

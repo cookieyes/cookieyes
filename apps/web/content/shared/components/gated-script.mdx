@@ -1,7 +1,7 @@
 ---
 title: GatedScript
 description: Load a third-party script only after the visitor consents.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 ## What it does
@@ -33,6 +33,12 @@ In any component inside `<CookieYesProvider>`, for example next to the banner:
 <Framework when="sveltekit">
 
 In any page, layout or component inside `<CookieYesRoot>`, for example in your root layout:
+
+</Framework>
+
+<Framework when="astro">
+
+In any page, layout or component of your site, for example in your layout. It needs `<CookieYesRoot />` on the page, because the browser registers the script when the SDK starts, and again after each [`<ClientRouter />`](https://docs.astro.build/en/guides/view-transitions/) navigation to a page that has one:
 
 </Framework>
 
@@ -72,6 +78,32 @@ In any page, layout or component inside `<CookieYesRoot>`, for example in your r
 
 </Framework>
 
+<Framework when="astro">
+
+```astro title="src/layouts/Layout.astro"
+---
+import { CookieYesRoot, GatedScript } from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot />
+    <GatedScript
+      id="my-chat-widget"
+      src="https://widget.example.com/loader.js"
+      category="functional"
+    />
+    <slot />
+  </body>
+</html>
+```
+
+The component renders only a marker, so the script is not in the HTML and nothing is downloaded before consent. To run code after the script loads, use [`onConsentChange()`](/docs/client-functions#onconsentchange) or `src/cookieyes.client.ts`: a prop cannot hold a function across the server boundary, so there is no `onLoad`.
+
+</Framework>
+
 <Framework when="sveltekit">
 
 ```svelte title="src/routes/+layout.svelte"
@@ -98,7 +130,17 @@ In any page, layout or component inside `<CookieYesRoot>`, for example in your r
 
 <ComponentPropsTable component="GatedScript" />
 
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 `id` is also the `id` of the `<script>` tag that gets injected, so keep it unique on the page.
+
+</Framework>
+
+<Framework when="astro">
+
+Scripts are registered once per `id`, so keep it unique: a second component with the same `id` does not load a second script.
+
+</Framework>
 
 ## Which category
 

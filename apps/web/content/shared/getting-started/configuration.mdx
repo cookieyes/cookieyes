@@ -1,7 +1,7 @@
 ---
 title: Configuration
 description: Every option of initCookieYes(), grouped by what it changes.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="nextjs react core">
@@ -73,6 +73,40 @@ export const config: CookieYesConfig = {
 
 </Framework>
 
+<Framework when="astro">
+
+`cookieyes({ ... })` in `astro.config.ts` is where you configure CookieYes. It takes the same `CookieYesConfig` that `initCookieYes()` takes in the other packages. `mode` defaults to `"cookie-only"` here, so no option is required.
+
+```ts title="astro.config.ts" group="config"
+import cookieyes from "@cookieyes/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [
+    cookieyes({
+      regulation: "GDPR",
+      theme: { primaryColor: "#1863dc" },
+    }),
+  ],
+});
+```
+
+Options that hold functions, such as `integrations`, `onConsentReady`, `onConsentUpdate` and `region.detect`, go in `src/cookieyes.client.ts` instead, as its default export. The config reaches the server and the browser as JSON, which drops functions; in development the integration warns, naming the option, when it finds one in the Astro config.
+
+```ts title="src/cookieyes.client.ts" group="config"
+import type { CookieYesConfig } from "@cookieyes/astro";
+
+export default {
+  onConsentUpdate: (state) => {
+    console.log("Consent saved", state.categories);
+  },
+} satisfies Partial<CookieYesConfig>;
+```
+
+The integration finds `src/cookieyes.client.ts` (or `.js`) by itself and merges it over the config. The file wins for a key set in both, and one level of nesting is merged, so `i18n.messages` in one and `i18n.loadLanguage` in the other both apply. Arrays are replaced, not combined. Keep `categories` in the Astro config: the script in the head that decides whether a static page shows the banner reads them there.
+
+</Framework>
+
 <Framework when="nuxt">
 
 The `cookieyes` key in `nuxt.config.ts` is where you configure CookieYes. It takes the same `CookieYesConfig` that `initCookieYes()` takes in the other packages. `mode` defaults to `"cookie-only"` here, so no option is required.
@@ -114,6 +148,19 @@ Two options exist only in the Nuxt module, under `cookieyes` in `nuxt.config.ts`
 | Option | Default | What it does |
 | --- | --- | --- |
 | `stylesHref` | `"/cookieyes/styles.css"` | The path the module serves the full stylesheet from. |
+| `googleConsentMode` | not set | `true`, or Consent Mode options, adds Google's deny-by-default snippet right after `<meta charset>`, before any Google tag. See [Google Consent Mode](/docs/integrations/google-consent-mode). |
+
+</Framework>
+
+<Framework when="astro">
+
+### Integration options
+
+Two options exist only in `cookieyes()`:
+
+| Option | Default | What it does |
+| --- | --- | --- |
+| `stylesHref` | `"/cookieyes/styles.css"` | The path the full stylesheet is served from: a file in a static build, a compressed and cached response on a server. |
 | `googleConsentMode` | not set | `true`, or Consent Mode options, adds Google's deny-by-default snippet right after `<meta charset>`, before any Google tag. See [Google Consent Mode](/docs/integrations/google-consent-mode). |
 
 </Framework>
@@ -162,7 +209,7 @@ The handle composes with your own: `export const handle = sequence(cookieyesHand
 
 ### `theme`
 
-<Framework when="nextjs react vue nuxt svelte sveltekit">
+<Framework when="nextjs react vue nuxt svelte sveltekit astro">
 
 Nine keys for colour, corner radius and font. Each is listed with its default on [Theme tokens](/docs/styling/theme-tokens).
 
@@ -184,6 +231,12 @@ Put `region.map` in `nuxt.config.ts`. On a page the server renders per request, 
 
 </Framework>
 
+<Framework when="astro">
+
+Put `region.map` in `astro.config.ts`. On a page rendered on request (`prerender = false`), the integration reads the region from the Vercel (`x-vercel-ip-country`, `x-vercel-ip-country-region`) or Cloudflare (`cf-ipcountry`) geo headers, and those headers are the only region source, for the banner and for the browser alike. A `region.detect` in `src/cookieyes.client.ts` is used only where the server reads nothing, which is a prerendered page, once the page has loaded. Until then such a page shows the banner of the strictest regulation. The result of the request is `Astro.locals.cookieyes`; see [Static and on-request pages](/docs/getting-started/which-api#static-and-on-request-pages).
+
+</Framework>
+
 <Framework when="sveltekit">
 
 On a page the server renders per request, the handle reads the region from the Vercel (`x-vercel-ip-country`, `x-vercel-ip-country-region`) or Cloudflare (`cf-ipcountry`) geo headers, and those headers are the only region source, for the banner and for the browser alike. A `region.detect` of yours is used only where the server reads nothing (a prerendered page, or `<CookieYesRoot>` rendered without `state`), once the page has loaded. Until then such a page shows the banner of the strictest regulation.
@@ -192,7 +245,7 @@ On a page the server renders per request, the handle reads the region from the V
 
 ### `i18n`
 
-<Framework when="nextjs react vue nuxt svelte sveltekit">
+<Framework when="nextjs react vue nuxt svelte sveltekit astro">
 
 `messages` per language, `locale`, `detectBrowserLanguage` and `loadLanguage`. See [Translations](/docs/translations).
 
@@ -230,6 +283,12 @@ On a page the server renders per request, the handle reads the region from the V
 
 </Framework>
 
+<Framework when="astro">
+
+`rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Put `rules` in `astro.config.ts`: the integration registers the blocker before the SDK starts and bundles it only when there are rules. `onRequestBlocked` is a function, so it goes in `src/cookieyes.client.ts`. See [Network blocking](/docs/network-blocking).
+
+</Framework>
+
 <Framework when="nuxt">
 
 `rules` for requests to block until a category is granted, plus `onRequestBlocked` and `logBlockedRequests`. Put `rules` in `nuxt.config.ts`: the module finds them there when it builds, registers the blocker itself and bundles it only then. `onRequestBlocked` is a function, so it goes in `app/app.config.ts`. See [Network blocking](/docs/network-blocking).
@@ -254,7 +313,7 @@ Under `"CCPA"`, render `<CookieOptOut />` next to the banner: Do Not Sell opens 
 
 </Framework>
 
-<Framework when="nuxt sveltekit">
+<Framework when="nuxt sveltekit astro">
 
 Under `"CCPA"`, `<CookieYesRoot />` renders `<CookieOptOut />` for you, and so it does when `region` can resolve to `"CCPA"`: Do Not Sell opens it.
 
@@ -335,6 +394,27 @@ export const config: CookieYesConfig = {
 
 </Framework>
 
+<Framework when="astro">
+
+```ts title="astro.config.ts"
+import cookieyes from "@cookieyes/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [
+    cookieyes({
+      categories: [
+        { id: "necessary", required: true, label: "Essential" },
+        { id: "analytics", label: "Analytics", gcm: ["analytics_storage"] },
+        { id: "marketing", label: "Marketing", gcm: ["ad_storage", "ad_user_data"] },
+      ],
+    }),
+  ],
+});
+```
+
+</Framework>
+
 <Framework when="nuxt">
 
 ```ts title="nuxt.config.ts"
@@ -373,7 +453,7 @@ Your `categories` list broke one of the rules above; the console warning says wh
 
 ## Next steps
 
-<Framework when="nextjs react vue nuxt svelte sveltekit">
+<Framework when="nextjs react vue nuxt svelte sveltekit astro">
 
 - [Translations](/docs/translations): every text in every language, through `i18n`
 - [Theme tokens](/docs/styling/theme-tokens): what each `theme` value changes

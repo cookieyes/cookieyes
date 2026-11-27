@@ -1,7 +1,7 @@
 ---
 title: Google Analytics 4
 description: Load GA4 with one integration and let the SDK keep its Consent Mode signals up to date.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 `ga4()` loads Google Analytics 4 and registers your measurement id. Consent reaches GA4 through Google Consent Mode: the SDK tells Google what the visitor allowed, on page load and on every change.
@@ -18,6 +18,11 @@ Then install the integrations package and add `ga4()` to the `initCookieYes()` c
 <Framework when="vue">
 
 Then install the integrations package and add `ga4()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
+<Framework when="astro">
+
+Then install the integrations package and add `ga4()` to `integrations` in `src/cookieyes.client.ts`:
 
 </Framework>
 <Framework when="nuxt">
@@ -76,6 +81,20 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="astro">
+
+```ts title="src/cookieyes.client.ts"
+import type { CookieYesConfig } from "@cookieyes/astro";
+import { ga4 } from "@cookieyes/scripts";
+
+export default {
+  integrations: [ga4({ measurementId: "G-XXXXXXX" })],
+} satisfies Partial<CookieYesConfig>;
+```
+
+`integrations` holds functions, so it goes in `src/cookieyes.client.ts`, not in the Astro config, which reaches the browser as JSON and drops functions. The integration merges the two, so `regulation` and the rest of your configuration stay in `astro.config.ts` from [Installation](/docs/getting-started/installation).
 
 </Framework>
 <Framework when="nuxt">

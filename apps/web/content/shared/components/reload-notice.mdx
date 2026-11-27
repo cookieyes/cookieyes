@@ -1,7 +1,7 @@
 ---
 title: ReloadNotice
 description: Ask the visitor to reload when a withdrawn tool cannot be stopped otherwise.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 ## What it does
@@ -15,6 +15,48 @@ You need it only if you register a tool as "needs a reload" (below). The ready-m
 </Framework>
 
 ## Add it
+
+<Framework when="astro">
+
+`<CookieYesRoot />` does not render it. Put the components inside `<CookieYesRoot>` and add it there; the default slot replaces the stock contents, so keep the others. The notice is drawn by the browser, only when it is needed:
+
+```astro title="src/layouts/Layout.astro"
+---
+import {
+  CookieBanner,
+  CookiePreferences,
+  CookieYesRoot,
+  RecallButton,
+  ReloadNotice,
+} from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+      <ReloadNotice />
+    </CookieYesRoot>
+    <slot />
+  </body>
+</html>
+```
+
+Then mark the tool that cannot be stopped, once, **before** the runtime starts. The SDK reads this list once, when it starts, so a line placed after it misses returning visitors. Module scope in `src/cookieyes.client.ts` is early enough: the integration runs that file before it starts the runtime.
+
+```ts title="src/cookieyes.client.ts"
+import { registerStopHandler } from "@cookieyes/astro/client";
+
+registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+
+export default {};
+```
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -168,7 +210,13 @@ The notice shows only when a category that was granted is turned off and a tool 
 
 ## Change what it shows
 
-It has no props. The text comes from the `reloadNotice.message`, `reloadNotice.reloadButton` and `reloadNotice.dismissButton` keys in `i18n`; see [Translations](/docs/translations). For your own markup, read the same state with `useReloadNotice()`, which returns `required` and `dismiss`.
+It has no props. The text comes from the `reloadNotice.message`, `reloadNotice.reloadButton` and `reloadNotice.dismissButton` keys in `i18n`; see [Translations](/docs/translations).
+
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
+For your own markup, read the same state with `useReloadNotice()`, which returns `required` and `dismiss`.
+
+</Framework>
 
 ## Restyle it
 
@@ -177,7 +225,7 @@ Target `[data-cy-part="reload-notice"]`, `[data-cy-part="reload-message"]`, `[da
 ## Common mistakes
 
 **I rejected a category and the notice did not appear.**
-Expected, unless that category was granted before and a `needsReload` tool was running. Accept first, then reject.
+Expected, unless that category was granted before and a tool needing a reload was running. Accept first, then reject.
 
 **The notice appears for a tool I did not mark.**
 That tool's own stop function threw an error, so CookieYes fell back to asking for a reload.

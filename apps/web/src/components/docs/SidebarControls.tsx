@@ -38,7 +38,7 @@ interface PackageOption {
 /**
  * The three frameworks a reader picks between, per the design's .pdrop
  * (docs.html:400-406). Each is a docs root: `/docs/nextjs`, `/docs/react`, `/docs/vue`,
- * `/docs/nuxt`, `/docs/svelte`, `/docs/sveltekit`, `/docs/core`.
+ * `/docs/nuxt`, `/docs/svelte`, `/docs/sveltekit`, `/docs/astro`, `/docs/core`.
  *
  * `@cookieyes/cli` and `@cookieyes/translations` are deliberately absent: they are
  * not frameworks, so choosing one here answered nothing.
@@ -80,6 +80,12 @@ const PACKAGES: Record<Framework, PackageOption> = {
     name: "@cookieyes/sveltekit",
     logo: <SvelteLogo />,
     hint: FRAMEWORK_LABEL.sveltekit,
+  },
+  astro: {
+    id: "astro",
+    name: "@cookieyes/astro",
+    logo: <AstroLogo />,
+    hint: FRAMEWORK_LABEL.astro,
   },
   core: {
     id: "core",
@@ -302,6 +308,18 @@ function SvelteLogo() {
       <path
         d="M10.4 20.6a4.2 4.2 0 0 1-4.5-1.7 3.9 3.9 0 0 1-.7-2.9l.1-.5.1-.3.3.2a6.9 6.9 0 0 0 2.1 1l.2.1v.2a1.2 1.2 0 0 0 .2.8 1.27 1.27 0 0 0 1.4.5 1.2 1.2 0 0 0 .3-.1l5.3-3.4a1.1 1.1 0 0 0 .5-.7 1.2 1.2 0 0 0-.2-.9 1.27 1.27 0 0 0-1.4-.5 1.2 1.2 0 0 0-.3.1l-2 1.3a3.9 3.9 0 0 1-1.1.5 4.2 4.2 0 0 1-4.5-1.7 3.9 3.9 0 0 1-.7-2.9 3.6 3.6 0 0 1 1.6-2.5l5.3-3.4a3.9 3.9 0 0 1 1.1-.5 4.2 4.2 0 0 1 4.5 1.7 3.9 3.9 0 0 1 .7 2.9l-.1.5-.1.3-.3-.2a6.9 6.9 0 0 0-2.1-1l-.2-.1v-.2a1.2 1.2 0 0 0-.2-.8 1.27 1.27 0 0 0-1.4-.5 1.2 1.2 0 0 0-.3.1L8.4 9.6a1.1 1.1 0 0 0-.5.7 1.2 1.2 0 0 0 .2.9 1.27 1.27 0 0 0 1.4.5 1.2 1.2 0 0 0 .3-.1l2-1.3a3.9 3.9 0 0 1 1.1-.5 4.2 4.2 0 0 1 4.5 1.7 3.9 3.9 0 0 1 .7 2.9 3.6 3.6 0 0 1-1.6 2.5l-5.3 3.4a3.9 3.9 0 0 1-1.1.5"
         fill="#FFFFFF"
+      />
+    </svg>
+  );
+}
+
+/** Astro: the rocket mark in brand purple, fixed in both themes. */
+function AstroLogo() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M8.358 20.162c-1.186-1.07-1.532-3.316-1.038-4.944.856 1.026 2.043 1.352 3.272 1.535 1.897.283 3.76.177 5.522-.678.202-.098.388-.229.608-.36.166.473.209.95.151 1.437-.14 1.185-.738 2.1-1.688 2.794-.38.277-.782.525-1.175.787-1.205.804-1.531 1.747-1.078 3.119l.044.148a3.158 3.158 0 0 1-1.407-1.188 3.31 3.31 0 0 1-.544-1.815c-.004-.32-.004-.642-.048-.958-.106-.769-.472-1.113-1.161-1.133-.707-.02-1.267.411-1.415 1.09-.012.053-.028.104-.045.165zm-5.961-4.445s3.24-1.575 6.49-1.575l2.451-7.565c.092-.366.36-.614.662-.614.302 0 .57.248.662.614l2.45 7.565c3.85 0 6.491 1.575 6.491 1.575L16.088.727C15.93.285 15.663 0 15.303 0H8.697c-.36 0-.615.285-.784.727z"
+        fill="#BC52EE"
       />
     </svg>
   );

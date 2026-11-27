@@ -16,6 +16,7 @@ const PACKAGES = [
   "nuxt",
   "svelte",
   "sveltekit",
+  "astro",
   "devtools",
 ];
 
@@ -41,8 +42,9 @@ const PACKAGES = [
  *
  * ## What it covers
  *
- * Sources and stylesheets (`.svelte` files included), each package's Rollup config
- * (`@cookieyes/svelte` and `@cookieyes/sveltekit`: their `svelte.config.js` and build scripts), the shared Rollup
+ * Sources and stylesheets (`.svelte` and `.astro` files included), each package's Rollup config
+ * (`@cookieyes/svelte` and `@cookieyes/sveltekit`: their `svelte.config.js` and build scripts;
+ * `@cookieyes/astro`: its copy script), the shared Rollup
  * config, and the manifest fields that drive externalisation and tree-shaking
  * (`exports`, `sideEffects`, `dependencies`, `peerDependencies`). A change to
  * any of those can move the measured figure; a change to anything else cannot.
@@ -56,7 +58,7 @@ export function sdkFingerprint() {
       if (statSync(full).isDirectory()) {
         // Tests are not shipped, so they cannot change the figure.
         if (name !== "__tests__") walk(full);
-      } else if (/\.(ts|tsx|css|svelte)$/.test(name) && !/\.test\.tsx?$/.test(name)) {
+      } else if (/\.(ts|tsx|css|svelte|astro)$/.test(name) && !/\.test\.tsx?$/.test(name)) {
         files.push(full);
       }
     }
@@ -77,7 +79,9 @@ export function sdkFingerprint() {
               "scripts/inject-css.mjs",
               "scripts/prune-dist.mjs",
             ]
-          : ["rollup.config.mjs"];
+          : pkg === "astro"
+            ? ["rollup.config.mjs", "scripts/copy-assets.mjs"]
+            : ["rollup.config.mjs"];
     for (const name of configs) {
       const config = join(REPO, "sdk", pkg, name);
       if (existsSync(config)) files.push(config);

@@ -1,7 +1,7 @@
 ---
 title: CookieOptOut
 description: "The Do Not Sell dialog for CCPA: one checkbox that opts the visitor out of every optional category, and respects Global Privacy Control."
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 ## What it does
@@ -27,6 +27,12 @@ Render it next to the banner whenever your site can be under CCPA. Without it, D
 <Framework when="sveltekit">
 
 `<CookieYesRoot>` renders it for you whenever a CCPA regulation can apply: `regulation: "CCPA"`, `region.strictest: "CCPA"` or a `"CCPA"` value in `region.map`. If you render the components in a `ui` snippet yourself, render it next to the banner. Without it, Do Not Sell does nothing and nothing warns you.
+
+</Framework>
+
+<Framework when="astro">
+
+`<CookieYesRoot />` renders it for you whenever a CCPA regulation can apply: `regulation: "CCPA"`, `region.strictest: "CCPA"` or a `"CCPA"` value in `region.map`. If you put the components in its slot yourself, add it there to pass it `class` or `classNames`. The browser always has the dialog available, so Do Not Sell opens it even where the server drew none, for example when CCPA is set only in `src/cookieyes.client.ts`.
 
 </Framework>
 
@@ -69,6 +75,36 @@ Render it next to the banner whenever your site can be under CCPA. Without it, D
 ```svelte check="false"
 <CookieBanner />
 <CookieOptOut />
+```
+
+</Framework>
+
+<Framework when="astro">
+
+```astro title="src/layouts/Layout.astro"
+---
+import {
+  CookieBanner,
+  CookieOptOut,
+  CookiePreferences,
+  CookieYesRoot,
+  RecallButton,
+} from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot>
+      <CookieBanner />
+      <CookieOptOut />
+      <CookiePreferences />
+      <RecallButton />
+    </CookieYesRoot>
+    <slot />
+  </body>
+</html>
 ```
 
 </Framework>
@@ -136,11 +172,23 @@ The wording comes from `i18n` ([Translations](/docs/translations)) and the colou
 
 </Framework>
 
+<Framework when="astro">
+
+The wording comes from `i18n` ([Translations](/docs/translations)) and the colours from `theme` ([Theme tokens](/docs/styling/theme-tokens)), both set in `cookieyes()` in the Astro config. There are no props for them.
+
+</Framework>
+
 ## Restyle it
 
 <Framework when="nextjs react">
 
 It accepts `className` and `style` like any element; they are added to the dialog's own styling. For one part, use its `data-cy-part` in your CSS. The parts are `optout`, `title`, `message`, `confirm` and `close`. For your own markup, use the [OptOut primitives](/docs/headless/opt-out).
+
+</Framework>
+
+<Framework when="astro">
+
+It accepts `class`, which lands on the dialog card and is added to its own styling. To restyle one part, pass `classNames`, keyed by part name in camelCase (`root`, `title`, `message`, `checkbox`, `checkboxLabel`, `cancel`, `confirm`, `confirmation`, `close`, `branding`). There is no `style` or `styles` prop. Or use its `data-cy-part` in your CSS. The parts are `optout`, `title`, `message`, `confirm` and `close`.
 
 </Framework>
 
@@ -152,8 +200,19 @@ It accepts `class` and `style` like any element; they land on the dialog card an
 
 ## Common mistakes
 
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 **Do Not Sell does nothing.**
 `<CookieOptOut />` is not rendered.
+
+</Framework>
+
+<Framework when="astro">
+
+**The dialog never appears.**
+The visitor is not under CCPA. Check `regulation`, or `region`, in `cookieyes()` in the Astro config.
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -197,4 +256,8 @@ Their browser sends Global Privacy Control, which CookieYes honours by default.
 
 - [CookieBanner](/docs/components/cookie-banner): the banner that opens this dialog
 - [RecallButton](/docs/components/recall-button): reopens it later
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 - [OptOut primitives](/docs/headless/opt-out): the same dialog with your own markup
+
+</Framework>

@@ -1,7 +1,7 @@
 ---
 title: Installation
 description: Install the CookieYes SDK and get a working banner in three steps.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="nextjs react">
@@ -31,6 +31,12 @@ Three steps, about five minutes: install the package, write the configuration, a
 <Framework when="sveltekit">
 
 Three steps, about five minutes: install the package, add the handle and the layout files, and render `<CookieYesRoot>` once around your pages. If you would rather have the files written for you, run `npx @cookieyes/cli init`. See [Quick start](/docs/getting-started/quick-start).
+
+</Framework>
+
+<Framework when="astro">
+
+Three steps, about five minutes: install the package, add the integration, and render `<CookieYesRoot />` once in your layout. If you would rather have the files written for you, run `npx @cookieyes/cli init`. See [Quick start](/docs/getting-started/quick-start).
 
 </Framework>
 
@@ -108,6 +114,15 @@ The components are written in runes mode and ship as `.svelte` source, so your S
 
 </Framework>
 
+<Framework when="astro">
+
+| Requirement | Minimum |
+| --- | --- |
+| Node.js | 20, or the newer version your Astro release requires |
+| Astro | 6 or 7 |
+
+</Framework>
+
 <Framework when="core">
 
 | Requirement | Minimum |
@@ -182,6 +197,16 @@ npm install @cookieyes/sveltekit
 ```
 
 This is the only package you install. `@sveltejs/kit` and `svelte` are peer dependencies, so the copies your app already has are the ones used. The components and hooks of `@cookieyes/svelte` are exported from `@cookieyes/sveltekit` too: import everything from there.
+
+</Framework>
+
+<Framework when="astro">
+
+```npm
+npm install @cookieyes/astro
+```
+
+This is the only package you install. `astro` is a peer dependency, so the copy your app already has is the one used. `npx astro add @cookieyes/astro` installs it and adds it to `integrations` in one go.
 
 </Framework>
 
@@ -549,6 +574,60 @@ Done. Reload the page and the banner appears. It is already in the server HTML, 
 
 </Framework>
 
+<Framework when="astro">
+
+## 2. Add the integration
+
+```ts title="astro.config.ts" group="setup"
+import cookieyes from "@cookieyes/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [
+    cookieyes({
+      mode: "cookie-only", // the default: no backend needed
+      regulation: "GDPR", // "GDPR" | "CCPA"
+    }),
+  ],
+});
+```
+
+The examples use `astro.config.ts`; the same code works in `astro.config.mjs`. `cookieyes()` takes the same configuration as `initCookieYes()` in the other packages, so a configuration copies across unchanged. Options that hold functions, such as integrations and callbacks, go in `src/cookieyes.client.ts` instead; see [Configuration](/docs/getting-started/configuration).
+
+There is no stylesheet to import. The integration puts the banner's critical CSS in the head of every page and links the full stylesheet from a route it adds.
+
+## 3. Render it once
+
+```astro title="src/layouts/Layout.astro" group="setup"
+---
+import { CookieYesRoot } from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot />
+    <slot />
+  </body>
+</html>
+```
+
+`<CookieYesRoot />` renders the banner, the preferences dialog and the recall button, plus the opt-out dialog when a CCPA regulation can apply. Keep it first in the `<body>`, so the banner is early in the DOM: screen readers announce it first, and it paints before the rest of the page. Keep `<meta charset>` in the `<head>`: the integration adds its tags right after it.
+
+```astro title="src/pages/index.astro" group="setup"
+---
+import Layout from "../layouts/Layout.astro";
+---
+<Layout>
+  <h1>Your app</h1>
+</Layout>
+```
+
+Done. Reload the page and the banner appears. On a static page it is in the HTML, hidden, and a small script in the head shows it before first paint to a visitor who has not chosen. If it does not appear, see [Common mistakes](#common-mistakes).
+
+</Framework>
+
 <Framework when="core">
 
 ## 2. Initialise the runtime
@@ -633,6 +712,22 @@ The component is outside `<CookieYesRoot>`. Render the page through `{@render ch
 
 </Framework>
 
+<Framework when="astro">
+
+**`[cookieyes] Add cookieyes() to integrations in astro.config.mjs.` in the server log.**
+The integration is missing, so `<CookieYesRoot />` renders nothing. Add `cookieyes()` to `integrations`, as in step 2.
+
+**Nothing renders: no banner, no error anywhere.**
+`<CookieYesRoot />` is not in the layout of the page you are looking at. Render it once, as in step 3. In development the browser console says `<CookieYesRoot /> in your layout` when a CookieYes component is on a page without one.
+
+**The banner renders as unstyled text.**
+The stylesheet route is not reachable, or `stylesHref` points somewhere it is not served. The default is `/cookieyes/styles.css`.
+
+**An integration or a callback never runs.**
+It is in `astro.config.ts`, where options become JSON and functions are dropped. Move it to `src/cookieyes.client.ts`. In development the integration logs a warning naming the option.
+
+</Framework>
+
 <Framework when="nextjs">
 
 **`You're importing a component that needs "use client"`**
@@ -653,7 +748,7 @@ The module that calls it is imported from two places under a bundler that duplic
 
 </Framework>
 
-<Framework when="nextjs react vue nuxt svelte sveltekit core">
+<Framework when="nextjs react vue nuxt svelte sveltekit astro core">
 
 ## Next steps
 
@@ -694,6 +789,14 @@ The module that calls it is imported from two places under a bundler that duplic
 <Framework when="sveltekit">
 
 - [Configuration](/docs/getting-started/configuration): every option of `src/lib/cookieyes.ts`, including CCPA and languages
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="astro">
+
+- [Configuration](/docs/getting-started/configuration): every option of `cookieyes()`, including CCPA and languages
 - [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
 - [Styling](/docs/styling/overview): match the banner to your brand
 

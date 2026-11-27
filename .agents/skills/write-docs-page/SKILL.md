@@ -52,6 +52,9 @@ Include `svelte` when `@cookieyes/svelte` has the feature; Svelte code is hand-w
 Include `sveltekit` when `@cookieyes/sveltekit` has the feature; SvelteKit code is hand-written
 inside `<Framework when="sveltekit">`, imports only from `@cookieyes/sveltekit`, and keeps the
 config in `src/lib/cookieyes.ts`.
+Include `astro` when `@cookieyes/astro` has the feature; Astro code is hand-written inside
+`<Framework when="astro">` in `ts` and `astro` fences, imports only from `@cookieyes/astro`, and
+keeps function-valued options in `src/cookieyes.client.ts`.
 
 ## 3. Structure
 

@@ -1,7 +1,7 @@
 ---
 title: Self-hosted mode
 description: Send each consent decision to your own server as a record, and keep it as proof.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 In `mode: "self-hosted"`, every decision a visitor makes is also sent to your server as a consent record, so you can keep proof of it. The choice is still kept in the browser cookie too.
@@ -75,6 +75,24 @@ export const config: CookieYesConfig = {
 
 </Framework>
 
+<Framework when="astro">
+
+```ts title="astro.config.ts"
+import cookieyes from "@cookieyes/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [
+    cookieyes({
+      mode: "self-hosted",
+      apiUrl: "https://example.com/api/consent", // your server's endpoint
+    }),
+  ],
+});
+```
+
+</Framework>
+
 Each decision is sent as one `POST` with a JSON body. If you set `apiKey`, it goes in an `Authorization: Bearer` header; anyone can see it in the browser, so never treat it as a secret.
 
 ## Receive it
@@ -116,6 +134,28 @@ export default defineEventHandler(async (event) => {
   setResponseStatus(event, 204);
   return null;
 });
+```
+
+</Framework>
+
+<Framework when="astro">
+
+For example, an Astro endpoint at `/api/consent`, the path in `apiUrl` above. It runs on a server, so it opts out of prerendering and needs an [adapter](https://docs.astro.build/en/guides/on-demand-rendering/):
+
+```ts title="src/pages/api/consent.ts"
+import type { APIRoute } from "astro";
+
+export const prerender = false;
+
+// A stand-in for your database.
+const records = new Map<string, unknown>();
+
+export const POST: APIRoute = async ({ request }) => {
+  const record = await request.json();
+  // A record can arrive twice, with the same recordId. Keep the first.
+  if (!records.has(record.recordId)) records.set(record.recordId, record);
+  return new Response(null, { status: 204 });
+};
 ```
 
 </Framework>
@@ -283,6 +323,25 @@ export const config: CookieYesConfig = {
 
 </Framework>
 
+<Framework when="astro">
+
+`persist` is a function, so `backend` goes in `src/cookieyes.client.ts`; keep `mode: "self-hosted"` in the Astro config, and the integration merges the two:
+
+```ts title="src/cookieyes.client.ts"
+import type { CookieYesConfig } from "@cookieyes/astro";
+
+export default {
+  backend: {
+    async persist(record) {
+      const res = await fetch("/api/consent", { method: "POST", body: JSON.stringify(record) });
+      if (!res.ok) throw new Error(`Consent record not stored: HTTP ${res.status}`);
+    },
+  },
+} satisfies Partial<CookieYesConfig>;
+```
+
+</Framework>
+
 <Framework when="sveltekit">
 
 ```ts title="src/lib/cookieyes.ts"
@@ -344,6 +403,14 @@ Add your `apiUrl` origin to `connect-src`.
 
 - [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
 - [Configuration](/docs/getting-started/configuration): every other option the provider takes
+- [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
+
+</Framework>
+
+<Framework when="astro">
+
+- [Store consent records on your server](/docs/self-host/quickstart) with `@cookieyes/backend`
+- [Configuration](/docs/getting-started/configuration): every other option of `cookieyes()`
 - [Content Security Policy](/docs/styling/csp): every directive CookieYes needs
 
 </Framework>

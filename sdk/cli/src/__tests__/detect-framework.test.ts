@@ -97,4 +97,20 @@ describe("detectFramework", () => {
     writePkg({ dependencies: { react: "19.0.0", vue: "3.5.0", "@sveltejs/kit": "2.0.0" } });
     expect(detectFramework(dir)).toBe("sveltekit");
   });
+
+  it("detects Astro, which brings React, Vue and Svelte in only as island frameworks", () => {
+    writePkg({ dependencies: { astro: "6.0.0", react: "19.0.0", vue: "3.5.0", svelte: "5.20.0" } });
+    expect(detectFramework(dir)).toBe("astro");
+    writePkg({ devDependencies: { astro: "7.4.13" } });
+    expect(detectFramework(dir)).toBe("astro");
+  });
+
+  it("keeps Next.js and SvelteKit ahead of Astro and Astro ahead of Nuxt", () => {
+    writePkg({ dependencies: { next: "15.0.0", astro: "6.0.0" } });
+    expect(detectFramework(dir)).toBe("nextjs");
+    writePkg({ dependencies: { "@sveltejs/kit": "2.0.0", astro: "6.0.0" } });
+    expect(detectFramework(dir)).toBe("sveltekit");
+    writePkg({ dependencies: { nuxt: "4.0.0", astro: "6.0.0" } });
+    expect(detectFramework(dir)).toBe("astro");
+  });
 });

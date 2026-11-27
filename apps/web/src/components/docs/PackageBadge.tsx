@@ -6,6 +6,7 @@ type PackageKey =
   | "nuxt"
   | "svelte"
   | "sveltekit"
+  | "astro"
   | "cli"
   | "translations";
 
@@ -18,6 +19,7 @@ const PACKAGE_MARK: Record<PackageKey, string> = {
   nuxt: "▲",
   svelte: "S",
   sveltekit: "K",
+  astro: "A",
   cli: "✦",
   translations: "T",
 };

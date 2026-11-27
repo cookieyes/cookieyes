@@ -1,0 +1,9 @@
+---
+import { getServerConsent } from "@cookieyes/astro/server";
+import Layout from "../layouts/Layout.astro";
+
+// Rendered on request: the consent the server read is printed so the matrix can compare it with
+// the cookie it sent.
+const consent = getServerConsent(Astro);
+---
+<Layout title="Home"><p id="consent" data-consent={JSON.stringify(consent)}>{consent ? "read" : "none"}</p></Layout>

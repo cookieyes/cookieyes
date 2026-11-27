@@ -1,7 +1,7 @@
 ---
 title: Quick start
 description: "A working cookie consent banner in about a minute: one CLI command detects your framework and writes the setup for you."
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 One command in your existing project. The CLI detects your framework, asks a few questions and writes the setup for you, including the stylesheet import that is easy to forget. It runs locally and collects no data.
@@ -84,6 +84,15 @@ With `adapter-static` there is no server to read requests: the CLI then writes n
 
 </Framework>
 
+<Framework when="astro">
+
+- `astro.config.mjs` (or the `astro.config.*` you have): `cookieyes()` added to `integrations`, with the options you chose.
+- `src/layouts/Layout.astro` (or your layout's name): `<CookieYesRoot />` added first in the `<body>`, with its import.
+
+No `src/cookieyes.client.ts` is written: it holds options that are functions, such as integrations, which the CLI does not ask for. See [Configuration](/docs/getting-started/configuration).
+
+</Framework>
+
 <Framework when="nuxt">
 
 - `nuxt.config.ts`: `@cookieyes/nuxt` added to `modules`.
@@ -119,6 +128,14 @@ The hooks work only inside `<CookieYesRoot>`. To use them in your own components
 To change anything later, edit `src/lib/cookieyes.ts`: every option is on [Configuration](/docs/getting-started/configuration).
 
 In a SvelteKit project, choose SvelteKit instead: the CLI then sets up `@cookieyes/sveltekit`. See the [SvelteKit quick start](/docs/sveltekit/getting-started/quick-start).
+
+</Framework>
+
+<Framework when="astro">
+
+Files that already exist are left alone. If the CLI cannot add the integration or `<CookieYesRoot />` to a file you already have, for example a layout with more than one `<body>` tag, it prints the lines to paste under "Manual step needed".
+
+To change anything later, edit the `cookieyes()` call in `astro.config.mjs`: every option is on [Configuration](/docs/getting-started/configuration).
 
 </Framework>
 
@@ -164,6 +181,16 @@ The stylesheet import was removed from `src/main.ts`. Put it back.
 
 **`could not find CookieYes` in the console.**
 A component outside `<CookieYesRoot>` uses a hook. Move it inside.
+
+</Framework>
+
+<Framework when="astro">
+
+**The banner does not render and the server log says `Add cookieyes() to integrations`.**
+`cookieyes()` is no longer in `integrations` in the Astro config. Add it back.
+
+**Nothing renders: no banner, no error.**
+`<CookieYesRoot />` is no longer in the layout. Add it back, first in the `<body>`.
 
 </Framework>
 
@@ -224,6 +251,14 @@ Paste the printed lines into your layout or entry file. Nothing else is missing.
 <Framework when="sveltekit">
 
 - [Configuration](/docs/getting-started/configuration): every option of `src/lib/cookieyes.ts`
+- [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
+- [Styling](/docs/styling/overview): match the banner to your brand
+
+</Framework>
+
+<Framework when="astro">
+
+- [Configuration](/docs/getting-started/configuration): every option of `cookieyes()`
 - [Integrations](/docs/integrations): load Google Analytics, Meta Pixel and other tags only after consent
 - [Styling](/docs/styling/overview): match the banner to your brand
 

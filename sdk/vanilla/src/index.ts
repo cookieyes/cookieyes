@@ -53,3 +53,8 @@ export function destroy(): void {
 
 export type { ConsentRuntime, CookieYesConfig } from "@cookieyes/core";
 export { renderShell } from "./shell.js";
+export {
+  type MountOptions as _MountOptions,
+  mountWidget as _mountWidget,
+  type SurfaceName as _SurfaceName,
+} from "./widget.js";

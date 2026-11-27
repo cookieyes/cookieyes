@@ -1,7 +1,7 @@
 ---
 title: Colour scheme
 description: Show the consent banner and dialogs in light or dark colours, or follow the visitor's device setting, with the colorScheme option.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 <Framework when="core">
@@ -90,6 +90,19 @@ export const config: CookieYesConfig = {
 
 </Framework>
 
+<Framework when="astro">
+
+```ts title="astro.config.ts"
+import cookieyes from "@cookieyes/astro";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  integrations: [cookieyes({ colorScheme: "light" })],
+});
+```
+
+</Framework>
+
 <Framework when="core">
 
 ```ts title="src/consent.ts"
@@ -152,6 +165,21 @@ Load the file through the `css` option in `nuxt.config.ts`, as shown on [Custom 
 
 </Framework>
 
+<Framework when="astro">
+
+```css title="src/styles/consent.css"
+@media (prefers-color-scheme: dark) {
+  [data-cy-part="banner"],
+  [data-cy-part="dialog"] {
+    --cy-primary: #4d8ef7;
+  }
+}
+```
+
+Import the file in your layout, as shown on [Custom CSS](/docs/styling/custom-css).
+
+</Framework>
+
 <Framework when="sveltekit">
 
 ```css title="src/app.css"
@@ -198,6 +226,23 @@ html.dark [data-cy-part="optout"] {
   --cy-border: #2d3748;
 }
 ```
+
+</Framework>
+
+<Framework when="astro">
+
+```css title="src/styles/consent.css"
+html.dark [data-cy-part="banner"],
+html.dark [data-cy-part="dialog"],
+html.dark [data-cy-part="optout"] {
+  --cy-bg: #161b27;
+  --cy-text: #f3f4f6;
+  --cy-muted: #9ca3af;
+  --cy-border: #2d3748;
+}
+```
+
+Under `<ClientRouter />`, Astro replaces the attributes of `<html>` with the new page's on each navigation, so keep your toggle's class on every page, or set it again from `astro:after-swap`.
 
 </Framework>
 

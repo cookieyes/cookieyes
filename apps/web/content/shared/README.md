@@ -2,7 +2,7 @@
 
 The docs are written **once**, here, and published **once per framework** under
 `content/docs/nextjs`, `content/docs/react`, `content/docs/vue`, `content/docs/nuxt`,
-`content/docs/svelte`, `content/docs/sveltekit` and `content/docs/core`. Those directories are generated (`pnpm generate:framework-docs`, also run
+`content/docs/svelte`, `content/docs/sveltekit`, `content/docs/astro` and `content/docs/core`. Those directories are generated (`pnpm generate:framework-docs`, also run
 by `dev` and `build`) and must not be edited by hand.
 
 ## Publishing a page
@@ -10,7 +10,7 @@ by `dev` and `build`) and must not be edited by hand.
 A body opts in to each framework it applies to, in its frontmatter:
 
 ```yaml
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ```
 
 Nothing is published by default. A page with no `frameworks:` fails the generator, so
@@ -109,6 +109,24 @@ The guard is the Svelte one plus `@cookieyes/svelte`: everything an app needs is
 cannot import `@cookieyes/svelte`. `CookieYesProvider` is not exported; `<CookieYesRoot>` wraps
 it.
 
+### Astro
+
+`@cookieyes/astro` is an integration, and its components are `.astro` files, so Astro code is
+written by hand too, inside `<Framework when="astro">`, in `ts` and `astro` fences. Nothing in a
+fence is rewritten. The options go in `astro.config.ts` (`cookieyes({ ... })` in `integrations`;
+the same code works in `astro.config.mjs`), the components are imported from
+`@cookieyes/astro/components` into the layout, and options that hold functions go in
+`src/cookieyes.client.ts`. Browser code imports the functions of `@cookieyes/astro/client` in a
+`<script>`. Title each file with its path in the app. There is no stylesheet import: the
+integration adds the critical CSS and links the stylesheet route.
+
+Astro has no hooks and no provider. A page that documents a hook in the other adapters points to
+the matching function of `@cookieyes/astro/client` (`client-functions.mdx` is the Astro-only page
+that lists them). Headless pages stay without `astro`: the headless primitives are not exported.
+
+The guard rejects an import of any other adapter, a `tsx`, `vue` or `svelte` fence, a `"use client"`
+line and `useSyncExternalStore`.
+
 Blocks may nest, and a heading may sit inside one when the whole section belongs to one
 framework: the table of contents is built after the blocks are resolved, so each framework
 sees only its own headings. `@cookieyes/core` has no components and no hooks, so its examples are
@@ -146,6 +164,15 @@ the route `$types` resolve, and then checked with `svelte-check`. Each file is w
 `title` (`src/hooks.server.ts`, `src/routes/+layout.svelte`); an untitled fence lands in
 `src/lib/`. The app ships a `src/lib/cookieyes.ts`, a `src/routes/+layout.server.ts` and a
 `src/app.d.ts` that a group may replace.
+
+On an Astro page the `ts` and `astro` fences are checked inside a small Astro app that installs
+`@cookieyes/astro`, with `astro check`, which generates the types (including the typed
+`Astro.locals.cookieyes`) for exactly the files of each group. Each file is written under its
+`title` (`astro.config.ts`, `src/layouts/Layout.astro`, `src/pages/index.astro`,
+`src/cookieyes.client.ts`); an untitled fence lands in `src/lib/`. The app ships an
+`astro.config.ts` with `cookieyes()`, a layout with `<CookieYesRoot />` and an empty page, all of
+which a group may replace. Use ```` ```astro check="false" ```` for a fragment that is not a whole
+file, such as one component tag.
 
 Fences under one heading compile together, so a layout can import the module the fence above
 it defines. When the files of one walkthrough sit under separate step headings, give each fence

@@ -1,0 +1,7 @@
+---
+// The notice shown when a withdrawn tool can only be stopped by reloading, drawn by the browser.
+import { _renderSurface } from "../markup.js";
+
+const html = _renderSurface(Astro.locals, "reloadNotice");
+---
+<Fragment set:html={html} />

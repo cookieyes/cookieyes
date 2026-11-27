@@ -23,6 +23,7 @@ const h = vi.hoisted(() => ({
   nuxtProjectPaths: vi.fn(),
   svelteProjectPaths: vi.fn(),
   sveltekitProjectPaths: vi.fn(),
+  astroProjectPaths: vi.fn(),
 }));
 
 vi.mock("@clack/prompts", () => ({
@@ -54,6 +55,7 @@ vi.mock("../utils/detect-layout.js", () => ({
   nuxtProjectPaths: h.nuxtProjectPaths,
   svelteProjectPaths: h.svelteProjectPaths,
   sveltekitProjectPaths: h.sveltekitProjectPaths,
+  astroProjectPaths: h.astroProjectPaths,
 }));
 
 import { cancel, note } from "@clack/prompts";
@@ -104,6 +106,13 @@ const NUXT_PATHS = {
   appLabel: "app/app.vue",
 };
 
+const ASTRO_PATHS = {
+  configPath: "/proj/astro.config.mjs",
+  configLabel: "astro.config.mjs",
+  layoutPath: "/proj/src/layouts/Layout.astro",
+  layoutLabel: "src/layouts/Layout.astro",
+};
+
 /** All strings written to disk during a runInit() call. */
 function writtenContents(): string[] {
   return h.writeFileSync.mock.calls.map((c) => String(c[1]));
@@ -122,6 +131,7 @@ beforeEach(() => {
   h.vueProjectPaths.mockReturnValue(VUE_PATHS);
   h.nuxtProjectPaths.mockReturnValue(NUXT_PATHS);
   h.svelteProjectPaths.mockReturnValue(SVELTE_PATHS);
+  h.astroProjectPaths.mockReturnValue(ASTRO_PATHS);
   process.stdin.isTTY = true;
 });
 
@@ -458,6 +468,28 @@ describe("runInit: Svelte patching", () => {
   });
 });
 
+describe("runInit: an island framework in an Astro project", () => {
+  beforeEach(() => {
+    h.detectFramework.mockReturnValue("astro" as never);
+  });
+
+  it.each(["react", "vue", "svelte"])(
+    "exits non-zero and writes nothing with --framework %s",
+    async (framework) => {
+      vi.spyOn(process, "exit").mockImplementation(((code: number) => {
+        throw new Error(`exit ${code}`);
+      }) as never);
+      await expect(runInit([`--framework=${framework}`, "--yes"])).rejects.toThrow("exit 1");
+      expect(cancel).toHaveBeenCalledWith(
+        `--framework ${framework} is not supported in an Astro project. Use --framework astro.`,
+      );
+      expect(h.writeFileSync).not.toHaveBeenCalled();
+      expect(h.installPackage).not.toHaveBeenCalled();
+      vi.restoreAllMocks();
+    },
+  );
+});
+
 describe("runInit: Vue in a Nuxt project", () => {
   beforeEach(() => {
     h.detectFramework.mockReturnValue("nuxt" as never);
@@ -621,6 +653,152 @@ describe("runInit: Nuxt", () => {
     expect(writtenTo(NUXT_PATHS.appPath)).toBeUndefined();
     expect(h.log.info).toHaveBeenCalledWith(
       expect.stringContaining("already lists @cookieyes/nuxt"),
+    );
+    expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already uses CookieYesRoot"));
+  });
+});
+
+const ASTRO_CONFIG = `import { defineConfig } from "astro/config";\n\nexport default defineConfig({});\n`;
+const ASTRO_LAYOUT = `---\n---\n<html>\n  <body>\n    <slot />\n  </body>\n</html>\n`;
+
+describe("runInit: Astro", () => {
+  it("offers Astro at the prompt, pre-selected when detected", async () => {
+    h.detectFramework.mockReturnValue("astro" as never);
+    h.select
+      .mockResolvedValueOnce("astro")
+      .mockResolvedValueOnce("cookie-only")
+      .mockResolvedValueOnce("GDPR")
+      .mockResolvedValueOnce("light");
+    h.multiselect.mockResolvedValueOnce([]);
+    h.confirm.mockResolvedValueOnce(true);
+
+    await runInit();
+
+    const question = h.select.mock.calls[0]?.[0] as {
+      initialValue: string;
+      options: { value: string; hint?: string }[];
+    };
+    expect(question.initialValue).toBe("astro");
+    expect(question.options.find((o) => o.value === "astro")?.hint).toBe("detected");
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/astro", "npm", expect.any(String));
+  });
+
+  it("takes a detected Astro project with --yes and wires the config and the layout", async () => {
+    h.detectFramework.mockReturnValue("astro" as never);
+    h.existsSync.mockImplementation(
+      (p: unknown) => p === ASTRO_PATHS.configPath || p === ASTRO_PATHS.layoutPath,
+    );
+    h.readFileSync.mockImplementation((p: unknown) =>
+      p === ASTRO_PATHS.configPath ? ASTRO_CONFIG : ASTRO_LAYOUT,
+    );
+
+    await runInit(["--yes"]);
+
+    expect(writtenTo(ASTRO_PATHS.configPath)).toBe(
+      [
+        `import { defineConfig } from "astro/config";`,
+        `import cookieyes from "@cookieyes/astro";`,
+        ``,
+        `export default defineConfig({`,
+        `  integrations: [`,
+        `    cookieyes({`,
+        `      mode: "cookie-only",`,
+        `      regulation: "GDPR",`,
+        `      colorScheme: "light",`,
+        `    }),`,
+        `  ],`,
+        `});`,
+        ``,
+      ].join("\n"),
+    );
+    expect(writtenTo(ASTRO_PATHS.layoutPath)).toBe(
+      `---\nimport { CookieYesRoot } from "@cookieyes/astro/components";\n---\n<html>\n  <body>\n    <CookieYesRoot />\n    <slot />\n  </body>\n</html>\n`,
+    );
+    expect(h.writeFileSync).toHaveBeenCalledTimes(2);
+    expect(noteTexts().some((t) => t.endsWith("|Manual step needed"))).toBe(false);
+    expect(h.installPackage).toHaveBeenCalledWith("@cookieyes/astro", "npm", expect.any(String));
+  });
+
+  it("writes apiUrl and the locale imports into the integration's options", async () => {
+    h.existsSync.mockImplementation((p: unknown) => p === ASTRO_PATHS.configPath);
+    h.readFileSync.mockReturnValue(ASTRO_CONFIG);
+
+    await runInit([
+      "--framework=astro",
+      "--api-url=https://api.example.com/consent",
+      "--regulation=CCPA",
+      "--color-scheme=dark",
+      "--locales=es,fr",
+      "--no-install",
+    ]);
+
+    const config = writtenTo(ASTRO_PATHS.configPath) ?? "";
+    expect(config).toContain(
+      `import cookieyes from "@cookieyes/astro";\nimport { es } from "@cookieyes/translations/es";\nimport { fr } from "@cookieyes/translations/fr";\n`,
+    );
+    expect(config).toContain(
+      `      mode: "self-hosted",\n      apiUrl: "https://api.example.com/consent",`,
+    );
+    expect(config).toContain(`      regulation: "CCPA",\n      colorScheme: "dark",`);
+    expect(config).toContain(`      i18n: { messages: { es, fr } },\n    }),`);
+    expect(h.installPackage).not.toHaveBeenCalled();
+  });
+
+  it("writes no cookieyes.client file, since init chooses no integrations", async () => {
+    h.existsSync.mockReturnValue(true);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      p === ASTRO_PATHS.configPath ? ASTRO_CONFIG : ASTRO_LAYOUT,
+    );
+
+    await runInit(["--framework=astro", "--yes", "--no-install"]);
+
+    expect(h.writeFileSync.mock.calls.map((c) => String(c[0]))).toEqual([
+      ASTRO_PATHS.configPath,
+      ASTRO_PATHS.layoutPath,
+    ]);
+  });
+
+  it("prints manual steps when the config or the layout is missing or cannot be patched", async () => {
+    h.astroProjectPaths.mockReturnValue({
+      ...ASTRO_PATHS,
+      configPath: null,
+      layoutPath: null,
+      layoutLabel: null,
+    });
+    await runInit(["--framework=astro", "--yes", "--no-install"]);
+    let manual = noteTexts().filter((t) => t.endsWith("|Manual step needed"));
+    expect(manual).toHaveLength(2);
+    expect(manual[0]).toContain(`integrations: [cookieyes({`);
+    expect(manual[0]).toContain(`import cookieyes from "@cookieyes/astro";`);
+    expect(manual[1]).toContain(`<CookieYesRoot />\n    <slot />`);
+
+    vi.clearAllMocks();
+    h.astroProjectPaths.mockReturnValue(ASTRO_PATHS);
+    h.existsSync.mockReturnValue(true);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      p === ASTRO_PATHS.configPath
+        ? `export default defineConfig(shared);\n`
+        : `<Base><slot /></Base>\n`,
+    );
+    await runInit(["--framework=astro", "--yes", "--no-install"]);
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+    manual = noteTexts().filter((t) => t.endsWith("|Manual step needed"));
+    expect(manual).toHaveLength(2);
+  });
+
+  it("leaves the config and the layout alone when they are already set up", async () => {
+    h.existsSync.mockReturnValue(true);
+    h.readFileSync.mockImplementation((p: unknown) =>
+      p === ASTRO_PATHS.configPath
+        ? `import cookieyes from "@cookieyes/astro";\nexport default defineConfig({ integrations: [cookieyes()] });\n`
+        : `<body><CookieYesRoot /></body>\n`,
+    );
+
+    await runInit(["--framework=astro", "--yes", "--no-install"]);
+
+    expect(h.writeFileSync).not.toHaveBeenCalled();
+    expect(h.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("already uses @cookieyes/astro"),
     );
     expect(h.log.info).toHaveBeenCalledWith(expect.stringContaining("already uses CookieYesRoot"));
   });
@@ -837,6 +1015,10 @@ describe("parseInitFlags", () => {
 
   it("accepts sveltekit as a framework", () => {
     expect(parseInitFlags(["--framework", "sveltekit"]).framework).toBe("sveltekit");
+  });
+
+  it("accepts astro as a framework", () => {
+    expect(parseInitFlags(["--framework", "astro"]).framework).toBe("astro");
   });
 
   it("accepts nuxt as a framework", () => {

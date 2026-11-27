@@ -1,0 +1,10 @@
+---
+// The whole consent UI: banner, preferences, recall button and, when CCPA can apply, the opt-out
+// dialog. Put it once in your layout. A default slot replaces that set with your own selection of
+// components, for example to pass them `class` or `classNames`.
+import { _renderRoot } from "../markup.js";
+
+const slot = Astro.slots.has("default") ? () => Astro.slots.render("default") : undefined;
+const html = await _renderRoot(Astro.locals, slot);
+---
+<Fragment set:html={html} />

@@ -1,9 +1,9 @@
 {
   "$schema": "https://cookieyes.dev/schemas/peer-matrix-results.schema.json",
   "schemaVersion": 1,
-  "generatedAt": "2026-11-20T10:53:39.002Z",
-  "commit": "a1ea05622a9199f9fbe44ef9c91e5526d17b9322",
-  "matrixConfigHash": "sha256:0860185dd0947135c5069cc19696dfd8239fb8cb5d84c2cd488ebc9b12c5d30b",
+  "generatedAt": "2026-11-26T12:10:15.907Z",
+  "commit": "c545f4c35bf65bfc9c19e053d85d53c6aba1610c",
+  "matrixConfigHash": "sha256:7b152c4575c40ed880ebc8ebcb35642d14c0db9022679084d5a53fcae36dc206",
   "subset": "full",
   "dimensions": {
     "varied": ["framework"],
@@ -1054,16 +1054,216 @@
       },
       "notes": null,
       "logsArtifact": "local/sveltekit-3.2.0-svelte-5.57.3.log"
+    },
+    {
+      "id": "astro-6.0.0",
+      "role": "floor",
+      "label": "Astro 6.0.0 (declared floor)",
+      "app": "astro",
+      "packagesUnderTest": ["@cookieyes/astro"],
+      "requested": {
+        "astro": "6.0.0",
+        "adapterNode": "10.0.2"
+      },
+      "resolved": {
+        "astro": "6.0.0",
+        "adapterNode": "10.0.2"
+      },
+      "node": "22",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-26T12:09:47.994Z",
+      "finishedAt": "2026-11-26T12:09:58.981Z",
+      "durationMs": 10987,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            },
+            {
+              "name": "stylesheet-route-serves-css",
+              "outcome": "pass"
+            },
+            {
+              "name": "prerendered-page-holds-banner-hidden",
+              "outcome": "pass"
+            },
+            {
+              "name": "prerendered-page-carries-no-visitor-state",
+              "outcome": "pass"
+            },
+            {
+              "name": "prerendered-page-head-tags-in-order-after-charset",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "page-entry-shows-banner-to-fresh-visitor",
+              "outcome": "pass"
+            },
+            {
+              "name": "accept-writes-cookie-and-hides-banner",
+              "outcome": "pass"
+            },
+            {
+              "name": "get-consent-category-reports-granted-category",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/astro-6.0.0.log"
+    },
+    {
+      "id": "astro-7.4.13",
+      "role": "newest",
+      "label": "Astro 7.4.13",
+      "app": "astro",
+      "packagesUnderTest": ["@cookieyes/astro"],
+      "requested": {
+        "astro": "7.4.13",
+        "adapterNode": "11.1.14"
+      },
+      "resolved": {
+        "astro": "7.4.13",
+        "adapterNode": "11.1.14"
+      },
+      "node": "22",
+      "packageManager": "pnpm@10.22.0",
+      "moduleResolution": "bundler",
+      "outcome": "pass",
+      "startedAt": "2026-11-26T12:09:59.020Z",
+      "finishedAt": "2026-11-26T12:10:08.298Z",
+      "durationMs": 9278,
+      "steps": {
+        "install": {
+          "outcome": "pass"
+        },
+        "typePackageCheck": {
+          "outcome": "pass"
+        },
+        "typecheck": {
+          "outcome": "pass"
+        },
+        "build": {
+          "outcome": "pass"
+        },
+        "ssrRender": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "fresh-visitor-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-banner-absent",
+              "outcome": "pass"
+            },
+            {
+              "name": "returning-visitor-cookie-value-correct",
+              "outcome": "pass"
+            },
+            {
+              "name": "ccpa-visitor-opt-out-banner-html-present",
+              "outcome": "pass"
+            },
+            {
+              "name": "head-tags-in-order-after-charset",
+              "outcome": "pass"
+            },
+            {
+              "name": "banner-html-has-no-inline-style",
+              "outcome": "pass"
+            },
+            {
+              "name": "stylesheet-route-serves-css",
+              "outcome": "pass"
+            },
+            {
+              "name": "prerendered-page-holds-banner-hidden",
+              "outcome": "pass"
+            },
+            {
+              "name": "prerendered-page-carries-no-visitor-state",
+              "outcome": "pass"
+            },
+            {
+              "name": "prerendered-page-head-tags-in-order-after-charset",
+              "outcome": "pass"
+            }
+          ]
+        },
+        "jsdomBehaviour": {
+          "outcome": "pass",
+          "assertions": [
+            {
+              "name": "page-entry-shows-banner-to-fresh-visitor",
+              "outcome": "pass"
+            },
+            {
+              "name": "accept-writes-cookie-and-hides-banner",
+              "outcome": "pass"
+            },
+            {
+              "name": "get-consent-category-reports-granted-category",
+              "outcome": "pass"
+            }
+          ]
+        }
+      },
+      "notes": null,
+      "logsArtifact": "local/astro-7.4.13.log"
     }
   ],
   "summary": {
-    "total": 12,
-    "pass": 12,
+    "total": 14,
+    "pass": 14,
     "fail": 0,
     "outcome": "pass"
   },
   "coverageLimits": [
-    "No real browser paint or hydration — SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).",
-    "Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, SvelteKit on Node 20 and 22, all with pnpm and moduleResolution=bundler."
+    "No real browser paint or hydration \u2014 SSR is asserted via server-rendered HTML/fetch only; client behaviour is asserted in jsdom, not a browser DOM (no Playwright).",
+    "Node, package-manager and module-resolution dimensions are not yet varied within a framework: Next.js on Node 20, Vue on Node 20, Nuxt on Node 22, Svelte on Node 20, SvelteKit on Node 20 and 22, Astro on Node 22, all with pnpm and moduleResolution=bundler."
   ]
 }

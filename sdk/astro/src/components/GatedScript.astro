@@ -1,0 +1,14 @@
+---
+// A third-party script that loads only once its category is granted. To run code after it loads,
+// use onConsentChange from @cookieyes/astro/client or src/cookieyes.client.ts.
+import { _renderGatedScript } from "../markup.js";
+
+interface Props {
+  id: string;
+  src: string;
+  category: string;
+}
+
+const html = _renderGatedScript(Astro.locals, Astro.props);
+---
+<Fragment set:html={html} />

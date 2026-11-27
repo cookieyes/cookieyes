@@ -20,6 +20,7 @@ on:
       - "sdk/nuxt/**"
       - "sdk/svelte/**"
       - "sdk/sveltekit/**"
+      - "sdk/astro/**"
       - "sdk/core/**"
       - "matrix/**"
   schedule:
@@ -126,7 +127,7 @@ jobs:
       - uses: actions/checkout@v7
 
       # Each combination names its own Node in matrix.config.mjs: the Nuxt legs need Node 22,
-      # which Nuxt 4.6 requires. Read with the runner's preinstalled Node, before setup-node.
+      # which Nuxt 4.6 and Astro 7.4 require. Read with the runner's preinstalled Node, before setup-node.
       - name: Read the combination's Node version
         id: node
         run: |

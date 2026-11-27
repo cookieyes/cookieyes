@@ -46,6 +46,11 @@ sdk/nuxt/test/fixtures/*/dist
 # The adapter-node build of the sdk/sveltekit test fixture
 sdk/sveltekit/test/fixtures/*/build
 
+# Astro writes its generated types here, and the sdk/astro test fixture builds its server and CSP
+# variants next to `dist`
+.astro/
+sdk/astro/test/fixtures/*/dist-*/
+
 # Fumadocs generated content index (apps/web)
 .source/
 *.tsbuildinfo

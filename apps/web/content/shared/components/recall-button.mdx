@@ -1,7 +1,7 @@
 ---
 title: RecallButton
 description: A floating button that lets a visitor change their cookie choice later.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 ## What it does
@@ -25,6 +25,12 @@ In Nuxt, `<CookieYesRoot />` renders it for you. If you list the components insi
 <Framework when="sveltekit">
 
 In SvelteKit, `<CookieYesRoot>` renders it for you. If you render the components in a `ui` snippet of `<CookieYesRoot>` yourself, the snippet replaces the stock contents, so keep the button there:
+
+</Framework>
+
+<Framework when="astro">
+
+In Astro, `<CookieYesRoot />` renders it for you. If you put the components inside `<CookieYesRoot>` yourself, its default slot replaces the stock contents, so keep the button there. The button is drawn by the browser, once the banner has been answered or closed, so it adds nothing to the server HTML.
 
 </Framework>
 
@@ -59,6 +65,34 @@ In SvelteKit, `<CookieYesRoot>` renders it for you. If you render the components
   </CookieYesRoot>
   <NuxtPage />
 </template>
+```
+
+</Framework>
+
+<Framework when="astro">
+
+```astro title="src/layouts/Layout.astro"
+---
+import {
+  CookieBanner,
+  CookiePreferences,
+  CookieYesRoot,
+  RecallButton,
+} from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </CookieYesRoot>
+    <slot />
+  </body>
+</html>
 ```
 
 </Framework>
@@ -102,9 +136,25 @@ In SvelteKit, `<CookieYesRoot>` renders it for you. If you render the components
 
 ## Prefer your own link
 
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 A "Cookie settings" link in your footer does the same job. Render that instead of the button, or as well as it. See [useConsentActions](/docs/hooks/use-consent-actions).
 
+</Framework>
+
+<Framework when="astro">
+
+A "Cookie settings" link in your footer does the same job. Render that instead of the button, or as well as it, with [`openPreferences()`](/docs/components/cookie-preferences#open-it-from-your-own-button).
+
+</Framework>
+
 ## Change what it shows
+
+<Framework when="astro">
+
+The tooltip and screen-reader label come from the `recallButtonLabel` text in `i18n` ([Translations](/docs/translations)). The icon is not replaceable: the button takes no children, because the browser draws it from the same markup as the other adapters and a redraw, for example after a language change, would replace slot content.
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -157,6 +207,16 @@ The tooltip and screen-reader label come from the `recallButtonLabel` text in `i
 The position is fixed to the bottom-left corner.
 
 ## Restyle it
+
+<Framework when="astro">
+
+Target `[data-cy-part="recall"]` in your CSS. Passing `class` **adds** to the button's own `cy-widget` class, so the default look stays; this differs from `className` in React:
+
+```astro check="false"
+<RecallButton class="my-extra-class" />
+```
+
+</Framework>
 
 <Framework when="nextjs react">
 
@@ -218,5 +278,15 @@ The dialog it opens is not rendered: `CookiePreferences` under GDPR, `CookieOptO
 
 ## Next steps
 
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 - [useConsentActions](/docs/hooks/use-consent-actions): a footer link or settings page instead of the button
+
+</Framework>
+
+<Framework when="astro">
+
+- [Client functions](/docs/client-functions): `openPreferences()` for a footer link or settings page instead of the button
+
+</Framework>
 - [CookiePreferences](/docs/components/cookie-preferences): the dialog it opens

@@ -2,7 +2,7 @@
  * Resolves a shared docs body for the framework it is being published under.
  *
  * The docs are written once, in content/shared, and published once per framework, under
- * content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,core} (scripts/generate-framework-docs.mjs). This plugin runs
+ * content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,astro,core} (scripts/generate-framework-docs.mjs). This plugin runs
  * after `<include>` has spliced the body into its wrapper, reads the framework from the
  * wrapper's path, and does two things:
  *
@@ -16,24 +16,35 @@
  *    everything the two share the import is the only line that differs; that is what makes
  *    the rewrite safe. It never touches `@cookieyes/nextjs/server` or `/styles-route`,
  *    which exist in one package only, and never touches prose, where the two names are
- *    usually being compared. Under JavaScript, Vue, Nuxt, Svelte and SvelteKit nothing is
+ *    usually being compared. Under JavaScript, Vue, Nuxt, Svelte, SvelteKit and Astro nothing is
  *    rewritten: `@cookieyes/core` has no components, and `@cookieyes/vue`, `@cookieyes/nuxt`,
- *    `@cookieyes/svelte` and `@cookieyes/sveltekit` have a different API from React's, so their
- *    examples are written by hand, in `<Framework when="core">`, `<Framework when="vue">`,
- *    `<Framework when="nuxt">`, `<Framework when="svelte">` and `<Framework when="sveltekit">`.
- *    A Vue, Nuxt, Svelte or SvelteKit page whose code still names a React package, uses a `tsx`
- *    fence or carries a `"use client"` line fails the build instead of shipping the wrong code;
- *    a Svelte or SvelteKit page also fails on a `vue` fence or a Vue import, and a SvelteKit
- *    page on an `@cookieyes/svelte` import.
+ *    `@cookieyes/svelte`, `@cookieyes/sveltekit` and `@cookieyes/astro` have a different API from
+ *    React's, so their examples are written by hand, in `<Framework when="core">`,
+ *    `<Framework when="vue">`, `<Framework when="nuxt">`, `<Framework when="svelte">`,
+ *    `<Framework when="sveltekit">` and `<Framework when="astro">`. A Vue, Nuxt, Svelte, SvelteKit
+ *    or Astro page whose code still names a React package, uses a `tsx` fence or carries a
+ *    `"use client"` line fails the build instead of shipping the wrong code; a Svelte, SvelteKit
+ *    or Astro page also fails on a `vue` fence or a Vue import, a SvelteKit page on an
+ *    `@cookieyes/svelte` import, and an Astro page on an import of any other adapter.
  *
  * A fence that names a framework on purpose opts out with ```ts frameworkSwap=false.
  */
 
-const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "svelte", "sveltekit", "core"] as const;
+const FRAMEWORKS = [
+  "nextjs",
+  "react",
+  "vue",
+  "nuxt",
+  "svelte",
+  "sveltekit",
+  "astro",
+  "core",
+] as const;
 type Framework = (typeof FRAMEWORKS)[number];
 
 /** `content/docs/<framework>/…` — the only place wrappers live. */
-const ROOT_IN_PATH = /[\\/]content[\\/]docs[\\/](nextjs|react|vue|nuxt|svelte|sveltekit|core)[\\/]/;
+const ROOT_IN_PATH =
+  /[\\/]content[\\/]docs[\\/](nextjs|react|vue|nuxt|svelte|sveltekit|astro|core)[\\/]/;
 
 const SWAPPABLE = /@cookieyes\/(react|nextjs)(\/styles\.css|\/critical\.css)?(?![\w/-])/g;
 const OPT_OUT = /(^|\s)frameworkSwap=false(\s|$)/;
@@ -47,6 +58,9 @@ const SVELTE_FORBIDDEN =
 /** Kept identical to SVELTEKIT_FORBIDDEN in framework-docs.ts; a test compares the two. */
 const SVELTEKIT_FORBIDDEN =
   /@cookieyes\/(react|nextjs|vue|nuxt|svelte)(?![\w-])|"use client"|useSyncExternalStore/;
+/** Kept identical to ASTRO_FORBIDDEN in framework-docs.ts; a test compares the two. */
+const ASTRO_FORBIDDEN =
+  /@cookieyes\/(react|nextjs|vue|nuxt|svelte|sveltekit)(?![\w-])|"use client"|useSyncExternalStore/;
 
 // Structural types for the few node shapes touched. The mdast and mdast-util-mdx-jsx
 // typings are not dependencies of this app, and the plugin needs only this much.
@@ -120,7 +134,8 @@ function resolve(parent: Node, framework: Framework, where: string): void {
         framework === "vue" ||
         framework === "nuxt" ||
         framework === "svelte" ||
-        framework === "sveltekit";
+        framework === "sveltekit" ||
+        framework === "astro";
       if (
         framework === "svelte" &&
         (child.lang === "tsx" || child.lang === "vue" || SVELTE_FORBIDDEN.test(child.value))
@@ -140,6 +155,20 @@ function resolve(parent: Node, framework: Framework, where: string): void {
             `@cookieyes/react, @cookieyes/nextjs, @cookieyes/vue, @cookieyes/nuxt or ` +
             `@cookieyes/svelte import, a "use client" line or useSyncExternalStore). Wrap it in ` +
             `<Framework when="...">.`,
+        );
+      }
+      if (
+        framework === "astro" &&
+        (child.lang === "tsx" ||
+          child.lang === "vue" ||
+          child.lang === "svelte" ||
+          ASTRO_FORBIDDEN.test(child.value))
+      ) {
+        throw new Error(
+          `${where}: an Astro page has a fence for another framework (tsx, vue, svelte, an ` +
+            `import of @cookieyes/react, @cookieyes/nextjs, @cookieyes/vue, @cookieyes/nuxt, ` +
+            `@cookieyes/svelte or @cookieyes/sveltekit, a "use client" line or ` +
+            `useSyncExternalStore). Wrap it in <Framework when="...">.`,
         );
       }
       if (

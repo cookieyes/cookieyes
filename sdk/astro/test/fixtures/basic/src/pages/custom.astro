@@ -1,0 +1,18 @@
+---
+import {
+  CookieBanner,
+  CookiePreferences,
+  CookieYesRoot,
+  RecallButton,
+} from "../../../../../dist/components/index.js";
+---
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Custom</title></head>
+  <body>
+    <CookieYesRoot>
+      <CookieBanner class="site-banner" classNames={{ acceptAll: "site-accept" }} />
+      <CookiePreferences classNames={{ save: "site-save" }} />
+      <RecallButton />
+    </CookieYesRoot>
+  </body>
+</html>

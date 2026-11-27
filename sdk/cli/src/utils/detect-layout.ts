@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 export type Layout = "src" | "root";
@@ -231,5 +231,52 @@ export function sveltekitProjectPaths(cwd: string): SveltekitProjectPaths {
     layoutPath: join(routes, "+layout.svelte"),
     appDtsPath: join(src, "app.d.ts"),
     staticAdapter,
+  };
+}
+
+export type AstroProjectPaths = {
+  /** The existing `astro.config.*`, or null when the project has none. */
+  configPath: string | null;
+  configLabel: string;
+  /** The layout to render `<CookieYesRoot />` in, or null when none could be chosen. */
+  layoutPath: string | null;
+  layoutLabel: string | null;
+};
+
+const ASTRO_CONFIG_FILES = [
+  "astro.config.mjs",
+  "astro.config.ts",
+  "astro.config.js",
+  "astro.config.mts",
+];
+// Names an Astro site gives its one page shell, most common first.
+const ASTRO_LAYOUT_NAMES = ["Layout.astro", "BaseLayout.astro", "Base.astro", "MainLayout.astro"];
+
+export function astroProjectPaths(cwd: string): AstroProjectPaths {
+  const config = ASTRO_CONFIG_FILES.find((f) => existsSync(join(cwd, f)));
+  const layouts = join(cwd, "src", "layouts");
+  // Only a layout with its own `<body>` can hold the root. With several, a rule picks one, and
+  // when none applies the choice is left to the developer: a root in the wrong layout shows the
+  // banner on some pages only.
+  const shells = existsSync(layouts)
+    ? readdirSync(layouts)
+        .filter((f) => f.endsWith(".astro"))
+        .sort()
+        .filter((f) => /<body\b/.test(readFileSync(join(layouts, f), "utf-8")))
+    : [];
+  const rooted = shells.filter((f) =>
+    /CookieYesRoot/.test(readFileSync(join(layouts, f), "utf-8")),
+  );
+  const chosen =
+    rooted.length === 1
+      ? rooted[0]
+      : shells.length === 1
+        ? shells[0]
+        : ASTRO_LAYOUT_NAMES.find((f) => shells.includes(f));
+  return {
+    configPath: config === undefined ? null : join(cwd, config),
+    configLabel: config ?? "astro.config.mjs",
+    layoutPath: chosen === undefined ? null : join(layouts, chosen),
+    layoutLabel: chosen === undefined ? null : `src/layouts/${chosen}`,
   };
 }

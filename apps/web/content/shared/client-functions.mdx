@@ -1,0 +1,193 @@
+---
+title: Client functions
+description: Read and change consent from a script or an island in Astro, with plain functions that wait for the SDK to start.
+frameworks: [astro]
+---
+
+## What it does
+
+Astro components have no hooks and no provider. `@cookieyes/astro/client` gives the same jobs as plain functions: read consent, change it, react to a decision, open a dialog. Import them in a `<script>` of an `.astro` file, or in a framework island of your own.
+
+Every function works when it runs before the SDK has started, which an island that hydrates first can do. Calls wait for the SDK and then run, so there is nothing to retry and no `DOMContentLoaded` to wait for. The functions run in the browser only: do not call them from the frontmatter of an `.astro` file. On the server, use [`getServerConsent(Astro)`](/docs/getting-started/which-api#static-and-on-request-pages).
+
+```ts title="src/scripts/consent-status.ts"
+import { getConsentCategory, onConsentChange, openPreferences } from "@cookieyes/astro/client";
+
+if (await getConsentCategory("analytics")) console.log("analytics allowed");
+
+onConsentChange("change", ({ categories }) => console.log(categories), { category: "analytics" });
+
+document.querySelector("#cookie-settings")?.addEventListener("click", openPreferences);
+```
+
+## getConsent()
+
+Returns a promise of the current consent state: the committed and live values per category, the regulation and which surface is active. It is a snapshot taken when the promise resolves, not a live value. To follow later decisions, use [`onConsentChange()`](#onconsentchange).
+
+```ts title="src/scripts/consent-snapshot.ts"
+import { getConsent } from "@cookieyes/astro/client";
+
+const { hasActed, committedConsents, consents, regulation } = await getConsent();
+console.log(hasActed, regulation, committedConsents, consents);
+```
+
+`committedConsents` changes only on a real decision: accept, reject, save or reset. `consents` is the live copy and changes on every toggle in the dialog, even before Save. Gate scripts and embeds on `committedConsents`, and use `consents` only to drive your own dialog's checkboxes.
+
+## getConsentCategory()
+
+Returns a promise of whether one category is committed-granted: a saved decision, not an unsaved toggle in the preferences dialog. Use it for gating.
+
+```ts title="src/scripts/analytics.ts"
+import { getConsentCategory } from "@cookieyes/astro/client";
+
+if (await getConsentCategory("analytics")) {
+  console.log("load analytics now");
+}
+```
+
+It reads the value once. A visitor who accepts later is not noticed by this call: listen with `onConsentChange()` as well, or load the tool through an [integration](/docs/integrations), which does both.
+
+## getConsentActions()
+
+Returns the actions for driving consent from your own UI: `acceptAll`, `rejectAll`, `acceptSelected`, `save`, `updateCategory`, `reset`, `showPreferences`, `hidePreferences`, `showOptOut`, `hideOptOut` and `dismissBanner`. Calls made before the SDK starts run when it does.
+
+```ts title="src/scripts/consent-buttons.ts"
+import { getConsentActions } from "@cookieyes/astro/client";
+
+const { acceptAll, rejectAll } = getConsentActions();
+
+document.querySelector("#accept")?.addEventListener("click", acceptAll);
+document.querySelector("#reject")?.addEventListener("click", rejectAll);
+```
+
+Pass a `source` to record where your UI is, `"banner"`, `"preferences"` or `"optout"`: `getConsentActions("preferences")`. Left out, decisions are recorded as `"api"`. `dismissBanner` closes the banner without a decision, and nothing is saved.
+
+## onConsentChange()
+
+Listens to consent decisions. `"save"` fires on every save, `"change"` only when a category's value differs. The listener also fires once with the current state when the SDK starts, with `isInitial: true`. The last argument limits it to one category. It returns a function that unsubscribes, and that function also works before the SDK has started.
+
+```ts title="src/scripts/consent-listener.ts"
+import { onConsentChange } from "@cookieyes/astro/client";
+
+const stop = onConsentChange(
+  "change",
+  ({ categories, changedCategories, isInitial }) => {
+    if (!isInitial) console.log("changed", changedCategories, categories);
+  },
+  { category: "advertisement" },
+);
+
+// Later, to stop listening:
+stop();
+```
+
+## openPreferences()
+
+Opens the preferences dialog, for a "Cookie settings" link of your own. Focus returns to the link when the dialog closes.
+
+```astro title="src/components/CookieSettingsLink.astro"
+<button type="button" id="cookie-settings">Cookie settings</button>
+
+<script>
+  import { openPreferences } from "@cookieyes/astro/client";
+
+  document.getElementById("cookie-settings")?.addEventListener("click", openPreferences);
+</script>
+```
+
+The dialog is part of `<CookieYesRoot />`. If you put your own components in its slot, keep `<CookiePreferences />` there.
+
+## openOptOut()
+
+Opens the CCPA opt-out dialog, for a "Do Not Sell" link of your own. The browser always has the dialog available, so it opens even where the server drew none.
+
+```ts title="src/scripts/do-not-sell.ts"
+import { openOptOut } from "@cookieyes/astro/client";
+
+document.querySelector("#do-not-sell")?.addEventListener("click", openOptOut);
+```
+
+## registerStopHandler()
+
+Marks a tool that keeps running after its category is withdrawn, so the [reload notice](/docs/components/reload-notice) offers a reload. Call it at module scope in `src/cookieyes.client.ts`, which runs before the SDK starts:
+
+```ts title="src/cookieyes.client.ts"
+import { registerStopHandler } from "@cookieyes/astro/client";
+
+registerStopHandler({ id: "legacy-pixel", category: "advertisement", needsReload: true });
+
+export default {};
+```
+
+## blockIframes()
+
+Blocks iframes in HTML you do not render yourself, such as Markdown or CMS content. See [Embeds](/docs/embeds). It is a separate entry of the engine, so a site that never imports it does not download it.
+
+## getCookieYes()
+
+Returns a promise of the consent runtime once it has started: the consent manager, the consent store and the list of integrations. Use it when the functions above do not reach what you need, for example to change the language or to list integrations.
+
+```ts title="src/scripts/runtime.ts"
+import { getCookieYes } from "@cookieyes/astro/client";
+
+const { consentStore, getIntegrations } = await getCookieYes();
+console.log(consentStore.getLanguageInfo(), getIntegrations());
+```
+
+It is a promise, unlike `getCookieYes()` in the other packages, which throws when it runs before the runtime exists. In Astro an island can hydrate before the page's own script runs, so waiting is the safe default. If a page has no `<CookieYesRoot />`, the SDK never starts and the promise never resolves.
+
+## Compared with the other packages
+
+The same jobs, under the names each package uses. Names come from each package's exports.
+
+| `@cookieyes/astro/client` | React | Vue | Svelte |
+| --- | --- | --- | --- |
+| `getConsent()` | `useConsent()` | `useConsent()` | `useConsent()` |
+| `getConsentActions()` | `useConsentActions()` | `useConsentActions()` | `useConsentActions()` |
+| `getConsentCategory(id)` | `useConsentCategory(id)` | `useConsentCategory(id)` | `useConsentCategory(id)` |
+| `onConsentChange(type, listener, options)` | none | `useOnConsentChange` | `useOnConsentChange` |
+| `openPreferences()` | `useConsentActions().showPreferences` | the same | the same |
+| `openOptOut()` | `useConsentActions().showOptOut` | the same | the same |
+| `getCookieYes()` | `getCookieYes()`, which is synchronous and throws before init | `getCookieYes()` | `getCookieYes()` |
+| `registerStopHandler(handler)` | `registerStopHandler(handler)` | the same | the same |
+| `blockIframes(manager, store)` | `blockIframes(manager, store)` | the same | the same |
+
+Three differences to know:
+
+- The Astro functions return promises, because they wait for the SDK. The hooks of the other packages return values and update the component.
+- Nothing here updates your markup by itself. `getConsent()` is a snapshot: subscribe with `onConsentChange()` to follow later decisions.
+- A React, Vue or Svelte island inside an Astro page does not get `@cookieyes/react` hooks: there is no provider above it. Import these functions in the island instead.
+
+## Components compared
+
+The components are `.astro` files, imported from `@cookieyes/astro/components`.
+
+| Astro | React, Vue, Svelte | Differences |
+| --- | --- | --- |
+| `CookieYesRoot` | `CookieYesRoot` in Nuxt and SvelteKit | A default slot replaces the stock contents. No other props |
+| `CookieBanner` | `CookieBanner` | `class` and `classNames` only: no `style` or `styles`, so the banner never carries a `style` attribute |
+| `CookiePreferences` | `CookiePreferences` | `class` and `classNames` only. Drawn in the browser when it opens |
+| `CookieOptOut` | `CookieOptOut` | `class` and `classNames` only. Drawn in the browser when it opens |
+| `RecallButton` | `RecallButton` | Drawn by the browser only, so it is not in the server HTML. Takes `class` only, which merges with `cy-widget`; there is no slot for your own icon |
+| `ReloadNotice` | `ReloadNotice` | No props. Drawn by the browser |
+| `GatedScript` | `GatedScript` | `id`, `src` and `category`. No `onLoad`: a prop cannot hold a function across the server boundary |
+| `GatedFrame` | `GatedFrame` | The placeholder is a named slot, `placeholder`, not a prop |
+| none | `YouTubeEmbed` | Not available in Astro yet. Use `GatedFrame` with `youTubeEmbedUrl()`, which `@cookieyes/astro/components` exports |
+| none | `Banner.*`, `Preferences.*`, `OptOut.*` | The headless primitives are not exported |
+
+## Common mistakes
+
+**A function never resolves.**
+The page has no `<CookieYesRoot />`, so the SDK never starts. In development the console says so.
+
+**`getConsent()` shows an old value.**
+It is a snapshot. Subscribe with `onConsentChange()`.
+
+**An island's hook throws `could not find CookieYes`.**
+The island imported a hook from another CookieYes package. There is no provider above an island: import the functions from `@cookieyes/astro/client` instead.
+
+## Next steps
+
+- [Components](/docs/components/cookie-banner): the presets, with their props
+- [Which API should I use?](/docs/getting-started/which-api): the layers, and static and on-request pages
+- [Integrations](/docs/integrations): tools loaded only after consent, with no consent checks in your code

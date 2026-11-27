@@ -157,11 +157,13 @@ const config = {
     ];
     // A framework root has no page of its own: the first thing to read is how to install.
     // Permanent (308), so search engines treat the root as the installation page.
-    const roots = ["nextjs", "react", "vue", "nuxt", "svelte", "sveltekit", "core"].map((fw) => ({
-      source: `/docs/${fw}`,
-      destination: `/docs/${fw}/getting-started/installation`,
-      permanent: true,
-    }));
+    const roots = ["nextjs", "react", "vue", "nuxt", "svelte", "sveltekit", "astro", "core"].map(
+      (fw) => ({
+        source: `/docs/${fw}`,
+        destination: `/docs/${fw}/getting-started/installation`,
+        permanent: true,
+      }),
+    );
     // The primitives overview was folded into the Banner page.
     const moved = ["nextjs", "react"].flatMap((fw) => [
       {

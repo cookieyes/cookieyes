@@ -1,7 +1,7 @@
 ---
 title: PostHog
 description: Load PostHog with consent, or keep a PostHog you already load in sync with the visitor's choice.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 Two integrations cover PostHog. `posthog()` loads PostHog for you from your project key. `posthogSync()` leaves loading to you and only turns capture on and off with consent.
@@ -22,6 +22,11 @@ Then add one of the two to the `initCookieYes()` call you already have. `onRejec
 <Framework when="vue">
 
 Then add one of the two to the config you pass to `app.use(CookieYes, config)`. `onReject` is required. It decides what a "no" means, and PostHog has no safe default for that:
+
+</Framework>
+<Framework when="astro">
+
+Then add one of the two to `integrations` in `src/cookieyes.client.ts`. `onReject` is required. It decides what a "no" means, and PostHog has no safe default for that:
 
 </Framework>
 <Framework when="nuxt">
@@ -79,6 +84,20 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="astro">
+
+```ts title="src/cookieyes.client.ts"
+import type { CookieYesConfig } from "@cookieyes/astro";
+import { posthog } from "@cookieyes/scripts";
+
+export default {
+  integrations: [posthog({ apiKey: "phc_XXXXXXXX", onReject: "stop" })],
+} satisfies Partial<CookieYesConfig>;
+```
+
+`integrations` holds functions, so it goes in `src/cookieyes.client.ts`, not in the Astro config, which reaches the browser as JSON and drops functions. The integration merges the two, so `regulation` and the rest of your configuration stay in `astro.config.ts` from [Installation](/docs/getting-started/installation).
 
 </Framework>
 <Framework when="nuxt">
@@ -176,6 +195,11 @@ Keep your own `posthog.init()` and add `posthogSync()` instead. It injects nothi
 Keep your own `posthog.init()` and add `posthogSync()` instead. It injects nothing: on withdrawal it calls `posthog.opt_out_capturing()`, on grant `posthog.opt_in_capturing()`. Initialise PostHog before `app.use(CookieYes, config)` runs, and start it opted out, so nothing is captured before consent:
 
 </Framework>
+<Framework when="astro">
+
+Keep your own `posthog.init()` and add `posthogSync()` to `integrations` in `src/cookieyes.client.ts` instead. It injects nothing: on withdrawal it calls `posthog.opt_out_capturing()`, on grant `posthog.opt_in_capturing()`. The SDK starts from a module script, which runs after the page is parsed, so initialise PostHog earlier, in an inline script in the `<head>` of your layout (`<script is:inline>`), with PostHog's snippet, and start it opted out, so nothing is captured before consent:
+
+</Framework>
 <Framework when="nuxt">
 
 Keep your own `posthog.init()` and add `posthogSync()` to `cookieyes.integrations` in `app/app.config.ts` instead. It injects nothing: on withdrawal it calls `posthog.opt_out_capturing()`, on grant `posthog.opt_in_capturing()`. The module starts the SDK in its own plugin, before any plugin of yours, so initialise PostHog in the page `<head>`, with PostHog's snippet, and start it opted out, so nothing is captured before consent:
@@ -214,6 +238,12 @@ Cookieless tracking is off in your PostHog project. Turn it on under Settings, W
 
 **The banner never shows, or shows again for a visitor who decided.**
 Your code reads consent from `posthog.has_opted_in_capturing()`. Read it from the SDK instead: see [useConsent](/docs/hooks/use-consent).
+
+</Framework>
+<Framework when="astro">
+
+**The banner never shows, or shows again for a visitor who decided.**
+Your code reads consent from `posthog.has_opted_in_capturing()`. Read it from the SDK instead: see [Client functions](/docs/client-functions).
 
 </Framework>
 <Framework when="core">

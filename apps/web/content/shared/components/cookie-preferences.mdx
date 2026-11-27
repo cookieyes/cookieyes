@@ -1,7 +1,7 @@
 ---
 title: CookiePreferences
 description: The dialog where a visitor turns each cookie category on or off.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 ## What it does
@@ -83,6 +83,38 @@ In SvelteKit, `<CookieYesRoot>` renders it for you. If you render the components
 
 </Framework>
 
+<Framework when="astro">
+
+In Astro, `<CookieYesRoot />` renders it for you. If you put the components inside `<CookieYesRoot>` yourself, its default slot replaces the stock contents, so keep the dialog there:
+
+```astro title="src/layouts/Layout.astro"
+---
+import {
+  CookieBanner,
+  CookiePreferences,
+  CookieYesRoot,
+  RecallButton,
+} from "@cookieyes/astro/components";
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <CookieYesRoot>
+      <CookieBanner />
+      <CookiePreferences />
+      <RecallButton />
+    </CookieYesRoot>
+    <slot />
+  </body>
+</html>
+```
+
+The dialog is drawn in the browser when it opens, so it adds nothing to the server HTML.
+
+</Framework>
+
 ## Change what it shows
 
 <Framework when="nextjs react">
@@ -112,6 +144,12 @@ Nothing on the dialog is set through props. Everything comes from the `config` y
 <Framework when="sveltekit">
 
 Nothing on the dialog is set through props. Everything comes from the config in `src/lib/cookieyes.ts`:
+
+</Framework>
+
+<Framework when="astro">
+
+Nothing on the dialog is set through props. Everything comes from `cookieyes()` in the Astro config and `src/cookieyes.client.ts`:
 
 </Framework>
 
@@ -208,11 +246,33 @@ Render it in any page or layout inside `<CookieYesRoot>`: `useConsentActions` ru
 
 </Framework>
 
+<Framework when="astro">
+
+```astro title="src/components/CookieSettingsLink.astro"
+<button type="button" id="cookie-settings">Cookie settings</button>
+
+<script>
+  import { openPreferences } from "@cookieyes/astro/client";
+
+  document.getElementById("cookie-settings")?.addEventListener("click", openPreferences);
+</script>
+```
+
+`openPreferences()` works even if it runs before the SDK has started: it opens the dialog when the SDK is ready. Focus returns to the button when the dialog closes. See [Client functions](/docs/client-functions#openpreferences).
+
+</Framework>
+
 ## Restyle it
 
 <Framework when="nextjs react">
 
 It accepts `className` and `style` like any element; they are added to the dialog's own styling. For one part, use its `data-cy-part` in your CSS:
+
+</Framework>
+
+<Framework when="astro">
+
+It accepts `class`, which lands on the dialog card and is added to its own styling. To restyle one part, pass `classNames`, keyed by part name in camelCase (`overlay`, `root`, `title`, `close`, `intro`, `category`, `categoryLabel`, `categoryDescription`, `toggle`, `acceptAll`, `rejectAll`, `save`, `branding`). There is no `style` or `styles` prop. Or use its `data-cy-part` in your CSS:
 
 </Framework>
 
@@ -228,7 +288,13 @@ It accepts `class` and `style` like any element; they land on the dialog card an
 }
 ```
 
-The parts are `overlay`, `dialog`, `title`, `close`, `intro`, `category`, `category-label`, `category-description`, `toggle`, `accept-all`, `reject-all`, `save` and `branding`. For your own markup, use the [Preferences primitives](/docs/headless/preferences).
+The parts are `overlay`, `dialog`, `title`, `close`, `intro`, `category`, `category-label`, `category-description`, `toggle`, `accept-all`, `reject-all`, `save` and `branding`.
+
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
+For your own markup, use the [Preferences primitives](/docs/headless/preferences).
+
+</Framework>
 
 ## Changing categories re-prompts every returning visitor
 
@@ -238,6 +304,12 @@ Saved choices are tied to your category list. If you add or remove a category, r
 
 **Customise does nothing.**
 `<CookiePreferences />` is not rendered.
+
+<Framework when="astro">
+
+In development, the browser console says so once: `The preferences dialog was opened, but <CookiePreferences /> is not in <CookieYesRoot /> on this page.` It happens when a default slot of `<CookieYesRoot>` leaves it out.
+
+</Framework>
 
 **A category is missing.**
 Your `categories` list was rejected and the built-in five are shown instead. The console says why. See [Configuration](/docs/getting-started/configuration).
@@ -249,4 +321,8 @@ Correct. It is `required: true`, and required cookies need no consent.
 
 - [CookieOptOut](/docs/components/cookie-opt-out): the dialog for CCPA
 - [RecallButton](/docs/components/recall-button): a ready-made floating button that reopens this dialog
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 - [Preferences primitives](/docs/headless/preferences): the same dialog with your own markup
+
+</Framework>

@@ -29,7 +29,9 @@ export function ComponentPropsTable({ component, framework }: ComponentPropsTabl
       ? "vue"
       : framework === "svelte" || framework === "sveltekit"
         ? "svelte"
-        : "react";
+        : framework === "astro"
+          ? "astro"
+          : "react";
   const options = data[adapter][component];
   if (!options || options.length === 0) {
     throw new Error(

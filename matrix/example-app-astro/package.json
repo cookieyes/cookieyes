@@ -1,0 +1,32 @@
+{
+  "name": "peer-matrix-example-app-astro",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "astro sync && tsc --noEmit",
+    "build": "astro build",
+    "test:behaviour": "vitest run --config tests/vitest.config.mts"
+  },
+  "dependencies": {
+    "@astrojs/node": "__ADAPTER_NODE_VERSION__",
+    "@cookieyes/astro": "__TARBALL_ASTRO__",
+    "@cookieyes/core": "__TARBALL_CORE__",
+    "astro": "__ASTRO_VERSION__"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "jsdom": "29.1.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.10"
+  },
+  "pnpm": {
+    "overrides": {
+      "@cookieyes/core": "__TARBALL_CORE__",
+      "@cookieyes/ui": "__TARBALL_UI__",
+      "@cookieyes/vanilla": "__TARBALL_VANILLA__",
+      "@cookieyes/astro": "__TARBALL_ASTRO__",
+      "@cookieyes/scripts": "__TARBALL_SCRIPTS__"
+    }
+  }
+}

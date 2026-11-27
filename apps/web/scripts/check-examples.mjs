@@ -7,9 +7,9 @@
 // (scripts/generate-framework-docs.mjs). A body is therefore checked once per framework it
 // is published under, after the same two transformations the build applies for that
 // framework — <Framework when="…"> blocks resolved, `@cookieyes/nextjs|react` swapped to the
-// framework's package (src/lib/remark-framework-docs.ts). A Vue, Nuxt, Svelte or SvelteKit page
-// is never swapped, and fails here if a React fence (or, on a Svelte or SvelteKit page, a Vue
-// one) is left in it. A swap that produced code which does not compile fails here, not in front
+// framework's package (src/lib/remark-framework-docs.ts). A Vue, Nuxt, Svelte, SvelteKit or Astro
+// page is never swapped, and fails here if a React fence (or, on a Svelte, SvelteKit or Astro
+// page, a Vue one) is left in it. A swap that produced code which does not compile fails here, not in front
 // of a reader.
 //
 // Usage: node scripts/check-examples.mjs [--framework <name>]... [<page under content/shared>]...
@@ -58,6 +58,7 @@ const ENABLED_FILES = [
   "hooks/use-on-consent-change.mdx",
   "hooks/focused-hooks.mdx",
   "hooks/low-level-hooks.mdx",
+  "client-functions.mdx",
   "accessibility.mdx",
   "headless/banner.mdx",
   "headless/preferences.mdx",
@@ -106,7 +107,7 @@ const ATTR_RE = /(?<name>[a-zA-Z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'))?/g;
 // Keep them identical.
 // ---------------------------------------------------------------------------------------
 
-const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "svelte", "sveltekit", "core"];
+const FRAMEWORKS = ["nextjs", "react", "vue", "nuxt", "svelte", "sveltekit", "astro", "core"];
 const SWAPPABLE = /@cookieyes\/(react|nextjs)(\/styles\.css|\/critical\.css)?(?![\w/-])/g;
 const OPT_OUT = /(^|\s)frameworkSwap=false(\s|$)/;
 const USE_CLIENT = /^"use client";\n\n?/;
@@ -119,6 +120,9 @@ const SVELTE_FORBIDDEN =
 // Kept identical to SVELTEKIT_FORBIDDEN in src/lib/framework-docs.ts; a test compares the two.
 const SVELTEKIT_FORBIDDEN =
   /@cookieyes\/(react|nextjs|vue|nuxt|svelte)(?![\w-])|"use client"|useSyncExternalStore/;
+// Kept identical to ASTRO_FORBIDDEN in src/lib/framework-docs.ts; a test compares the two.
+const ASTRO_FORBIDDEN =
+  /@cookieyes\/(react|nextjs|vue|nuxt|svelte|sveltekit)(?![\w-])|"use client"|useSyncExternalStore/;
 const BLOCK = /<Framework when="([^"]*)">\s*\n((?:(?!<Framework)[\s\S])*?)\n\s*<\/Framework>\n?/g;
 const FENCE = /^(```[^\n]*)\n([\s\S]*?)^```[ \t]*$/gm;
 
@@ -149,9 +153,19 @@ function composeFor(source, framework) {
       framework === "vue" ||
       framework === "nuxt" ||
       framework === "svelte" ||
-      framework === "sveltekit";
+      framework === "sveltekit" ||
+      framework === "astro";
     const lang = /^```(\w*)/.exec(opener)?.[1];
-    if (framework === "sveltekit") {
+    if (framework === "astro") {
+      if (lang === "tsx" || lang === "vue" || lang === "svelte" || ASTRO_FORBIDDEN.test(code)) {
+        throw new Error(
+          `[check-examples] an Astro page has a fence for another framework (tsx, vue, svelte, an ` +
+            `import of @cookieyes/react, @cookieyes/nextjs, @cookieyes/vue, @cookieyes/nuxt, ` +
+            `@cookieyes/svelte or @cookieyes/sveltekit, a "use client" line or ` +
+            `useSyncExternalStore). Wrap it in <Framework when="...">:\n${code.split("\n").slice(0, 3).join("\n")}`,
+        );
+      }
+    } else if (framework === "sveltekit") {
       if (lang === "tsx" || lang === "vue" || SVELTEKIT_FORBIDDEN.test(code)) {
         throw new Error(
           `[check-examples] a SvelteKit page has a React, Vue or plain Svelte fence (tsx, vue, a ` +
@@ -658,6 +672,116 @@ function checkKitVariant(relFile, source) {
   return ok;
 }
 
+// ---------------------------------------------------------------------------------------
+// Astro. An Astro example spreads over the app's own files (`astro.config.ts`, a layout, a page)
+// and reads `Astro.locals.cookieyes`, which the integration types through `injectTypes`, so the
+// Astro variant is checked inside a real Astro app that installs @cookieyes/astro, as Nuxt's and
+// SvelteKit's are. `astro check` syncs the generated types for exactly the files of the group and
+// then type-checks the `.astro` and `.ts` files together. Warnings and hints do not fail it.
+// ---------------------------------------------------------------------------------------
+
+/** What the harness owns. Everything else in the app is one group's files, or a default. */
+const ASTRO_KEEP = new Set([".astro", "node_modules", "package.json", "tsconfig.json"]);
+/**
+ * The files every Astro app has, written before each group so a group may replace them: a page
+ * that shows only the layout still imports it from `src/layouts/Layout.astro`, and the config
+ * is replaced by a fence titled `astro.config.ts`.
+ */
+const ASTRO_DEFAULT_FILES = {
+  "astro.config.ts":
+    'import cookieyes from "@cookieyes/astro";\nimport { defineConfig } from "astro/config";\n\nexport default defineConfig({ integrations: [cookieyes()] });\n',
+  "src/layouts/Layout.astro":
+    '---\nimport { CookieYesRoot } from "@cookieyes/astro/components";\n---\n<html lang="en">\n  <head><meta charset="utf-8" /></head>\n  <body>\n    <CookieYesRoot />\n    <slot />\n  </body>\n</html>\n',
+  "src/pages/index.astro": "<h1>Your app</h1>\n",
+};
+const astroBin = join(webRoot, "node_modules", ".bin", "astro");
+
+/**
+ * Whether this Node meets the installed astro's `engines.node` floor (22.23.4 for 7.4). The repo
+ * still supports Node 20, where `astro check` refuses to start, so the Astro variants are skipped
+ * there with a warning instead of failing every Astro fence; Node 22 and 24 check them.
+ */
+function canRunAstro() {
+  const pkg = JSON.parse(
+    readFileSync(join(webRoot, "node_modules", "astro", "package.json"), "utf8"),
+  );
+  const want = /(\d+)\.(\d+)\.(\d+)/
+    .exec(pkg.engines?.node ?? "")
+    ?.slice(1)
+    .map(Number) ?? [0, 0, 0];
+  const have = process.versions.node.split(".").map(Number);
+  for (let i = 0; i < 3; i++) {
+    if ((have[i] ?? 0) !== (want[i] ?? 0)) return (have[i] ?? 0) > (want[i] ?? 0);
+  }
+  return true;
+}
+
+let astroSupported = null;
+let astroHarness = null;
+
+function prepareAstroHarness() {
+  const dir = join(runDir, "astro-app");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "package.json"), '{ "private": true, "type": "module" }\n');
+  // As in a new Astro project: the strict preset, with the types `astro sync` generates.
+  writeFileSync(
+    join(dir, "tsconfig.json"),
+    JSON.stringify(
+      {
+        extends: "astro/tsconfigs/strict",
+        include: [".astro/types.d.ts", "**/*"],
+        exclude: ["dist"],
+      },
+      null,
+      2,
+    ),
+  );
+  return dir;
+}
+
+function checkAstroVariant(relFile, source) {
+  if (astroSupported === null) {
+    astroSupported = canRunAstro();
+    if (!astroSupported) {
+      console.warn(
+        `[check-examples] WARNING: skipping Astro variants: astro does not run on Node ${process.versions.node}.`,
+      );
+    }
+  }
+  if (!astroSupported) return true;
+  astroHarness ??= prepareAstroHarness();
+  const appDir = astroHarness;
+  let ok = true;
+  for (const group of extractGroups(source, "astro", "src/lib/")) {
+    for (const entry of readdirSync(appDir)) {
+      if (!ASTRO_KEEP.has(entry)) rmSync(join(appDir, entry), { recursive: true, force: true });
+    }
+    const titled = new Set(group.files.map((f) => f.relPath));
+    for (const [file, content] of Object.entries(ASTRO_DEFAULT_FILES)) {
+      if (titled.has(file)) continue;
+      mkdirSync(dirname(join(appDir, file)), { recursive: true });
+      writeFileSync(join(appDir, file), content);
+    }
+    mkdirSync(join(appDir, "src"), { recursive: true });
+    writeFileSync(join(appDir, "src", "reader-tooling.d.ts"), READER_TOOLING);
+    for (const f of group.files) {
+      const target = resolveContained(appDir, f.relPath, relFile, f.line);
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, f.content);
+    }
+    try {
+      execFileSync(astroBin, ["check", "--root", appDir], {
+        cwd: appDir,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (error) {
+      ok = false;
+      reportFailure(error, relFile, "astro", group);
+    }
+  }
+  return ok;
+}
+
 function parseArgs(args) {
   const onlyFrameworks = [];
   const onlyPages = [];
@@ -716,16 +840,18 @@ function main() {
           ? checkNuxtVariant(relFile, composed)
           : framework === "sveltekit"
             ? checkKitVariant(relFile, composed)
-            : checkVariant(
-                relFile,
-                framework,
-                composed,
-                framework === "vue"
-                  ? vueTsconfigPath
-                  : framework === "svelte"
-                    ? svelteTsconfigPath
-                    : reactTsconfigPath,
-              );
+            : framework === "astro"
+              ? checkAstroVariant(relFile, composed)
+              : checkVariant(
+                  relFile,
+                  framework,
+                  composed,
+                  framework === "vue"
+                    ? vueTsconfigPath
+                    : framework === "svelte"
+                      ? svelteTsconfigPath
+                      : reactTsconfigPath,
+                );
       if (!ok) failed = true;
       checkedVariants++;
     }

@@ -319,3 +319,54 @@ describe("checkPeerDependencyMatrix with a SvelteKit combination", () => {
     expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
   });
 });
+
+/** An Astro fixture: the one `astro` peer, with a floor and a newest combination. */
+function astroFixture() {
+  return {
+    peerPackages: [{ name: "@cookieyes/astro", peerDependencies: { astro: "^6.0.0 || ^7.0.0" } }],
+    combinations: [
+      {
+        id: "fixture-astro-6.0.0",
+        role: "floor",
+        app: "astro",
+        packagesUnderTest: ["@cookieyes/astro"],
+        versions: { astro: "6.0.0", adapterNode: "10.0.5" },
+      },
+      {
+        id: "fixture-astro-7.4.13",
+        role: "newest",
+        app: "astro",
+        packagesUnderTest: ["@cookieyes/astro"],
+        versions: { astro: "7.4.13", adapterNode: "11.1.14" },
+      },
+    ],
+  };
+}
+
+describe("checkPeerDependencyMatrix with an Astro combination", () => {
+  it("returns no violations for a consistent Astro fixture", () => {
+    expect(checkPeerDependencyMatrix(astroFixture())).toEqual([]);
+  });
+
+  it("fails when the astro floor is raised without a matching floor combination", () => {
+    const fixture = astroFixture();
+    fixture.peerPackages[0].peerDependencies.astro = "^6.2.0 || ^7.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("versions.astro") && e.includes("6.2.0"))).toBe(true);
+  });
+
+  it("fails the inverse check when a combination pins an Astro outside the range", () => {
+    const fixture = astroFixture();
+    fixture.combinations[1].versions.astro = "8.0.0";
+    const errors = checkPeerDependencyMatrix(fixture);
+    expect(errors.some((e) => e.includes("does not satisfy") && e.includes("^6.0.0"))).toBe(true);
+  });
+
+  it("leaves the SvelteKit fixture's verdict unchanged when Astro legs sit beside it", () => {
+    const fixture = svelteKitFixture();
+    const astro = astroFixture();
+    fixture.peerPackages.push(...astro.peerPackages);
+    fixture.combinations.push(...astro.combinations);
+    expect(checkPeerDependencyMatrix(fixture)).toEqual([]);
+  });
+});

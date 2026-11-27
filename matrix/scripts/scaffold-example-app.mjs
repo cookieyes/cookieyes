@@ -40,6 +40,7 @@ const TEMPLATE_DIRS = {
   nuxt: "example-app-nuxt",
   svelte: "example-app-svelte",
   sveltekit: "example-app-sveltekit",
+  astro: "example-app-astro",
 };
 
 /** The template directory for a combination: one self-contained example app per `app`. */
@@ -57,6 +58,7 @@ const EXCLUDE = new Set([
   ".nuxt",
   ".output",
   ".svelte-kit",
+  ".astro",
   "build",
   "build-static",
   "dist",
@@ -72,67 +74,77 @@ const EXCLUDE = new Set([
  *
  * @param {string} packageJsonText
  * @param {{ tarballs: Record<string, string>, versions: import("../matrix.config.mjs").Combination["versions"],
- *   app?: "next" | "vue" | "nuxt" | "svelte" | "sveltekit" }} combo
+ *   app?: "next" | "vue" | "nuxt" | "svelte" | "sveltekit" | "astro" }} combo
  * @returns {string}
  */
 export function renderPackageJson(packageJsonText, { tarballs, versions, app = "next" }) {
   const replacements =
-    app === "sveltekit"
+    app === "astro"
       ? {
-          __TARBALL_SVELTEKIT__: `file:${tarballs["@cookieyes/sveltekit"]}`,
-          __TARBALL_SVELTE__: `file:${tarballs["@cookieyes/svelte"]}`,
+          __TARBALL_ASTRO__: `file:${tarballs["@cookieyes/astro"]}`,
+          __TARBALL_VANILLA__: `file:${tarballs["@cookieyes/vanilla"]}`,
           __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
           __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
           __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-          __KIT_VERSION__: versions.kit,
-          __SVELTE_VERSION__: versions.svelte,
-          __VITE_VERSION__: versions.vite,
-          __VITE_PLUGIN_SVELTE_VERSION__: versions.vitePluginSvelte,
+          __ASTRO_VERSION__: versions.astro,
           __ADAPTER_NODE_VERSION__: versions.adapterNode,
-          __ADAPTER_STATIC_VERSION__: versions.adapterStatic,
         }
-      : app === "nuxt"
+      : app === "sveltekit"
         ? {
-            __TARBALL_NUXT__: `file:${tarballs["@cookieyes/nuxt"]}`,
-            __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+            __TARBALL_SVELTEKIT__: `file:${tarballs["@cookieyes/sveltekit"]}`,
+            __TARBALL_SVELTE__: `file:${tarballs["@cookieyes/svelte"]}`,
             __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
             __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
             __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-            __NUXT_VERSION__: versions.nuxt,
+            __KIT_VERSION__: versions.kit,
+            __SVELTE_VERSION__: versions.svelte,
+            __VITE_VERSION__: versions.vite,
+            __VITE_PLUGIN_SVELTE_VERSION__: versions.vitePluginSvelte,
+            __ADAPTER_NODE_VERSION__: versions.adapterNode,
+            __ADAPTER_STATIC_VERSION__: versions.adapterStatic,
           }
-        : app === "svelte"
+        : app === "nuxt"
           ? {
-              __TARBALL_SVELTE__: `file:${tarballs["@cookieyes/svelte"]}`,
+              __TARBALL_NUXT__: `file:${tarballs["@cookieyes/nuxt"]}`,
+              __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
               __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
               __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
-              __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
               __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-              __SVELTE_VERSION__: versions.svelte,
-              __VITE_VERSION__: versions.vite,
-              __VITE_PLUGIN_SVELTE_VERSION__: versions.vitePluginSvelte,
+              __NUXT_VERSION__: versions.nuxt,
             }
-          : app === "vue"
+          : app === "svelte"
             ? {
-                __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+                __TARBALL_SVELTE__: `file:${tarballs["@cookieyes/svelte"]}`,
                 __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
                 __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
                 __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
                 __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-                __VUE_VERSION__: versions.vue,
+                __SVELTE_VERSION__: versions.svelte,
+                __VITE_VERSION__: versions.vite,
+                __VITE_PLUGIN_SVELTE_VERSION__: versions.vitePluginSvelte,
               }
-            : {
-                __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
-                __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
-                __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
-                __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
-                __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
-                __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
-                __NEXT_VERSION__: versions.next,
-                __REACT_VERSION__: versions.react,
-                __REACT_DOM_VERSION__: versions.reactDom,
-                __TYPES_REACT_VERSION__: versions.typesReact,
-                __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
-              };
+            : app === "vue"
+              ? {
+                  __TARBALL_VUE__: `file:${tarballs["@cookieyes/vue"]}`,
+                  __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+                  __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+                  __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+                  __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+                  __VUE_VERSION__: versions.vue,
+                }
+              : {
+                  __TARBALL_NEXTJS__: `file:${tarballs["@cookieyes/nextjs"]}`,
+                  __TARBALL_REACT__: `file:${tarballs["@cookieyes/react"]}`,
+                  __TARBALL_UI__: `file:${tarballs["@cookieyes/ui"]}`,
+                  __TARBALL_CORE__: `file:${tarballs["@cookieyes/core"]}`,
+                  __TARBALL_TEST__: `file:${tarballs["@cookieyes/test"]}`,
+                  __TARBALL_SCRIPTS__: `file:${tarballs["@cookieyes/scripts"]}`,
+                  __NEXT_VERSION__: versions.next,
+                  __REACT_VERSION__: versions.react,
+                  __REACT_DOM_VERSION__: versions.reactDom,
+                  __TYPES_REACT_VERSION__: versions.typesReact,
+                  __TYPES_REACT_DOM_VERSION__: versions.typesReactDom,
+                };
 
   let result = packageJsonText;
   for (const [placeholder, value] of Object.entries(replacements)) {

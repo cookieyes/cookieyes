@@ -103,6 +103,7 @@ export function buildAggregateResult({
     nuxt: "Nuxt",
     svelte: "Svelte",
     sveltekit: "SvelteKit",
+    astro: "Astro",
   };
   const nodeByApp = new Map();
   for (const r of orderedResults) {

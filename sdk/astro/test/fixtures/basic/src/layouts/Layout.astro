@@ -1,0 +1,21 @@
+---
+import { ClientRouter } from "astro:transitions";
+import { CookieYesRoot } from "../../../../../dist/components/index.js";
+
+interface Props {
+  title: string;
+  router?: boolean;
+}
+const { title, router = false } = Astro.props;
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    {router && <ClientRouter />}
+  </head>
+  <body>
+    <CookieYesRoot />
+    <main><h1>{title}</h1><slot /></main>
+  </body>
+</html>

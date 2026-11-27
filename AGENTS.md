@@ -20,7 +20,7 @@ Public, Apache-2.0-licensed monorepo (pnpm workspaces + Turborepo). Node 20 or n
 README has the full layout. In short: `sdk/*` are the published packages (`core` is the engine
 with zero runtime dependencies; `ui` is the framework-free banner layer (styles, tokens,
 markup, behaviour) every adapter draws from; `react`, `nextjs`, `vue`, `nuxt`, `svelte`,
-`sveltekit` and `vanilla` are wiring only; plus `scripts`, `translations`, `cli`, `test`, `devtools`, and `backend`, the
+`sveltekit`, `astro` and `vanilla` are wiring only; plus `scripts`, `translations`, `cli`, `test`, `devtools`, and `backend`, the
 self-hosted consent server, which runs on servers only), `apps/web` is
 developers.cookieyes.com (docs source in `apps/web/content/shared`, rules in
 `apps/web/AGENTS.md`), `tools/size` measures bundles, `matrix` checks peer compatibility,
@@ -69,8 +69,8 @@ pnpm package-gate               # check the packed tarballs after pnpm build (co
 - Server and client resolve the same consent state; no hydration mismatch and no banner flash.
   Read `contributing/design/banner-first-paint.md` before touching banner rendering,
   `critical.css` or anything server-rendered.
-- `core`, `ui`, `react`, `nextjs`, `vue`, `nuxt`, `svelte`, `sveltekit`, `vanilla` and `test` pin
-  their public surface in `src/__tests__/exports.test.ts`. Adding or removing an export anywhere is an API change: update
+- `core`, `ui`, `react`, `nextjs`, `vue`, `nuxt`, `svelte`, `sveltekit`, `astro`, `vanilla` and `test`
+  pin their public surface in `src/__tests__/exports.test.ts`. Adding or removing an export anywhere is an API change: update
   that test where it exists, the docs and the changeset.
 - A change to consent behaviour updates `@cookieyes/test` in the same PR, including the
   "Fidelity & limitations" table in `sdk/test/README.md`.
@@ -131,8 +131,8 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 
 ## Bundle size
 
-- `pnpm size` covers `core`, `ui`, `react`, `nextjs` and `vanilla` only
-  (`tools/size/sdk-fingerprint.mjs`). After changing their `src`, their Rollup configs or their
+- `pnpm size` covers `core`, `ui`, `react`, `nextjs`, `vanilla`, `vue`, `nuxt`, `svelte`,
+  `sveltekit`, `astro` and `devtools` (`tools/size/sdk-fingerprint.mjs`). After changing their `src`, their Rollup configs or their
   `package.json` export fields, run `pnpm build && pnpm size` and commit
   `tools/size/size-report.json`; `pnpm build:web` and CI fail on a stale one. Other packages never
   need it, and re-measuring for them only adds noise.
@@ -164,14 +164,14 @@ Things that look safe and are not. Each is recorded in the code; read the commen
 - `describe` names the function, `it` states the behaviour in plain English.
 - Coverage threshold is 80%, never lowered. A behaviour change and its test land in one commit.
 - The Vitest environment per package is deliberate (jsdom: core, react, scripts; node: cli,
-  translations, nextjs, test). Never change a `vitest.config.ts` to pass a test; opt one file in
+  translations, nextjs, test, astro). Never change a `vitest.config.ts` to pass a test; opt one file in
   with `// @vitest-environment jsdom`.
 
 ## Generated files: do not hand-edit
 
 | Path | Regenerate with | After changing |
 |---|---|---|
-| `apps/web/content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,core}/**` | `pnpm --filter @cookieyes/web generate:framework-docs` | anything in `apps/web/content/shared` |
+| `apps/web/content/docs/{nextjs,react,vue,nuxt,svelte,sveltekit,astro,core}/**` | `pnpm --filter @cookieyes/web generate:framework-docs` | anything in `apps/web/content/shared` |
 | `sdk/ui/src/styles/critical.css` | `pnpm --filter @cookieyes/ui build:critical-css` | `cookieyes.css` |
 | `tools/size/size-report.json` | `pnpm build && pnpm size` | `core`, `react` or `nextjs` source |
 | `tools/package-gate/contents.json` | `pnpm build && pnpm package-gate --update` | a file added to or removed from a published package |
@@ -199,7 +199,7 @@ decision worth keeping goes in `contributing/design/` as a note anyone may read.
 
 - Conventional Commits: `type(scope): summary`. Types in use: `feat`, `fix`, `docs`, `perf`,
   `refactor`, `test`, `style`, `chore`, `build`. Scopes in use: `core`, `ui`, `react`, `nextjs`, `vue`,
-  `nuxt`, `svelte`, `sveltekit`, `vanilla`, `scripts`, `cli`, `backend`, `translations`, `test`, `web`, `size`, `matrix`.
+  `nuxt`, `svelte`, `sveltekit`, `astro`, `vanilla`, `scripts`, `cli`, `backend`, `translations`, `test`, `web`, `size`, `matrix`.
   Subject at most 72 characters. Keep the body short, ideally a few short bullet points on what
   changed and why, wrapped at 72. No Co-Authored-By or other AI attribution lines in commits or
   PRs.

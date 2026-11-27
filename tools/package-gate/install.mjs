@@ -71,6 +71,8 @@ const peers = {
   svelte: "5.57.3",
   // The same, for the `@sveltejs/kit` devDependency of @cookieyes/sveltekit.
   "@sveltejs/kit": "2.70.4",
+  // The same, for the `astro` devDependency of @cookieyes/astro.
+  astro: "7.4.13",
 };
 
 /** Reads one file out of a tarball without unpacking it. */

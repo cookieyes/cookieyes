@@ -7,6 +7,7 @@
     "components",
     "headless",
     "hooks",
+    "client-functions",
     "styling",
     "translations",
     "accessibility",

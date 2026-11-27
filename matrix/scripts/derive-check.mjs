@@ -32,6 +32,7 @@ export const PEER_FIELD_MAP = {
   nuxt: "nuxt",
   svelte: "svelte",
   "@sveltejs/kit": "kit",
+  astro: "astro",
 };
 
 /**
@@ -174,6 +175,7 @@ async function main() {
     { name: "@cookieyes/nuxt", path: join(repoRoot, "sdk", "nuxt", "package.json") },
     { name: "@cookieyes/svelte", path: join(repoRoot, "sdk", "svelte", "package.json") },
     { name: "@cookieyes/sveltekit", path: join(repoRoot, "sdk", "sveltekit", "package.json") },
+    { name: "@cookieyes/astro", path: join(repoRoot, "sdk", "astro", "package.json") },
   ].map(({ name, path }) => {
     const pkg = JSON.parse(readFileSync(path, "utf8"));
     return { name, peerDependencies: pkg.peerDependencies ?? {} };

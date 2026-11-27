@@ -143,6 +143,25 @@
       "initial": 29460,
       "total": 30560
     },
+    "astro": {
+      "$comment": [
+        "@cookieyes/astro: `cookieyes()` in astro.config.mjs and <CookieYesRoot /> in the layout,",
+        "no router (fixture `with-astro`, a static build). Measured 18690 / 22300, and the budget",
+        "is set just above them. Its control is an empty Astro site (`baseline-astro`), which loads",
+        "no script at all, so the whole figure is the integration's. The page read is the built",
+        "dist/index.html: `initial` is its module scripts plus the inline head script and the two",
+        "inline styles every HTML response carries (426 + 1803 + 75 bytes gzip, each compressed",
+        "alone), and `total` adds the dialogs chunk (2660) and the theme runtime (950) that load on",
+        "first use. Of the 16386 bytes of page entry, vanilla's own start() is the bulk: its",
+        "13603 is a delta over a Next.js control that already holds React, so it is comparable",
+        "with the page entry here, and the entry is about 2.8 KB above it: the integration's own",
+        "client code on top of vanilla's. With the inline head script and styles (about 2.3 KB)",
+        "the initial figure is about 5.1 KB above vanilla's. The server code (middleware, styles",
+        "route) is not in the client bundle, and neither is the full stylesheet, which is not a script."
+      ],
+      "initial": 18900,
+      "total": 22500
+    },
     "devtools": {
       "$comment": [
         "Amendment A2 (design doc §0, overrides AD-5's 'equality' rule for this one entry):",

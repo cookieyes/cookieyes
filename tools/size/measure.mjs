@@ -103,8 +103,9 @@ const REPO = resolve(HERE, "..", "..");
  * fixtures do: a delta over an empty Next.js app would put React's runtime in a
  * Vue figure, so `baseline-vue` (an empty Vite + Vue app) is the control for
  * `vue`, and a control is an entry whose `control` is `null`. `nuxt` is measured
- * against `baseline-nuxt`, an empty Nuxt app, and `sveltekit` against
- * `baseline-sveltekit`, an empty SvelteKit app, for the same reason. `key` is what
+ * against `baseline-nuxt`, an empty Nuxt app, `sveltekit` against
+ * `baseline-sveltekit`, an empty SvelteKit app, and `astro` against `baseline-astro`, an empty
+ * Astro site, for the same reason. `key` is what
  * appears in the report, in the budgets and on the site, so it names the thing a
  * reader recognises ("core", "interface") rather than the directory.
  */
@@ -174,6 +175,18 @@ const DEFAULT_APPS = [
     key: "sveltekit",
     control: "baseline-sveltekit",
     label: "@cookieyes/sveltekit: handle, load, <CookieYesRoot /> and the styles route",
+  },
+  {
+    dir: "baseline-astro",
+    key: "baseline-astro",
+    control: null,
+    label: "empty Astro site (control for the Astro integration)",
+  },
+  {
+    dir: "with-astro",
+    key: "astro",
+    control: "baseline-astro",
+    label: "@cookieyes/astro: the integration and <CookieYesRoot />",
   },
   {
     dir: "with-nextjs-devtools",
@@ -246,15 +259,20 @@ const brotli = (buf) =>
  * ever gets. Compressing the concatenation would quietly under-report by
  * letting one chunk's dictionary pay for another's.
  */
-function measureFiles(files) {
+function measureFiles(files, inline = []) {
   let raw = 0;
   let gz = 0;
   let br = 0;
   const perFile = [];
-  for (const file of [...files].sort()) {
-    const buf = readFileSync(file);
+  const items = [
+    ...[...files]
+      .sort()
+      .map((file) => ({ name: relative(FIXTURES, file), buf: readFileSync(file) })),
+    ...inline.map(({ name, text }) => ({ name, buf: Buffer.from(text, "utf8") })),
+  ];
+  for (const { name, buf } of items) {
     const entry = {
-      file: relative(FIXTURES, file),
+      file: name,
       raw: buf.length,
       gzip: gzip(buf),
       brotli: brotli(buf),
@@ -356,6 +374,7 @@ function otherRouteHtml(appDir) {
  * "dynamic" code in `@cookieyes/core`, which ships no dynamic import at all.
  */
 function chunkSets(appDir) {
+  if (isAstroApp(appDir)) return astroChunkSets(appDir);
   if (isViteApp(appDir)) return viteChunkSets(appDir);
   if (isSvelteKitApp(appDir)) return svelteKitChunkSets(appDir);
   if (isNuxtApp(appDir)) return nuxtChunkSets(appDir);
@@ -424,6 +443,41 @@ function nuxtChunkSets(appDir) {
 function svelteKitChunkSets(appDir) {
   const client = join(appDir, ".output", "client");
   return moduleChunkSets(join(appDir, ".output", "index.html"), client, join(client, "_app"));
+}
+
+/**
+ * The two chunk sets for an Astro site, plus the inline code its page carries.
+ *
+ * A static build writes `dist/index.html`. Astro hoists a page's scripts into `<script
+ * type="module" src>` tags, so `initial` is what moduleChunkSets reads, except that an empty
+ * site loads no script at all and that is a valid control here, not a failed build. `total` adds
+ * every script in `dist/_astro`. The integration also writes a script and two styles inline in
+ * every HTML response, which no file holds, so they are returned as `inline` and counted on both
+ * sides: a figure without them would hide the bytes that decide first paint. Each is compressed
+ * on its own, as are the chunks, so a shared dictionary never pays for another part. JSON data
+ * blocks are not code and are left out.
+ */
+function astroChunkSets(appDir) {
+  const dist = join(appDir, "dist");
+  const indexHtml = join(dist, "index.html");
+  if (!existsSync(indexHtml)) {
+    throw new Error(
+      `No built HTML at ${relative(REPO, indexHtml)}: the build did not produce a page. ` +
+        `Run without --no-build, or check the build output.`,
+    );
+  }
+  const source = readFileSync(indexHtml, "utf8");
+  const inline = [];
+  for (const match of source.matchAll(/<(script|style)\b([^>]*)>([\s\S]*?)<\/\1>/gi)) {
+    const [, tag, attributes, text] = match;
+    if (/\bsrc=/i.test(attributes) || /\btype="application\/json"/i.test(attributes)) continue;
+    inline.push({ name: `index.html <${tag.toLowerCase()}> #${inline.length + 1}`, text });
+  }
+  const hasScripts = /<(?:script|link)\b[^>]*(?:type="module"|rel="modulepreload")/i.test(source);
+  const sets = hasScripts
+    ? moduleChunkSets(indexHtml, dist, join(dist, "_astro"))
+    : { initial: [], total: [] };
+  return { ...sets, inline };
 }
 
 /** `initial` from a built page's module scripts and preloads, `total` adding every emitted script. */
@@ -509,7 +563,8 @@ function installFixture(appDir, name, tarballs) {
     .replace("__TARBALL_VUE__", `file:${tarballs["@cookieyes/vue"]}`)
     .replace("__TARBALL_NUXT__", `file:${tarballs["@cookieyes/nuxt"]}`)
     .replace("__TARBALL_SVELTE__", `file:${tarballs["@cookieyes/svelte"]}`)
-    .replace("__TARBALL_SVELTEKIT__", `file:${tarballs["@cookieyes/sveltekit"]}`);
+    .replace("__TARBALL_SVELTEKIT__", `file:${tarballs["@cookieyes/sveltekit"]}`)
+    .replace("__TARBALL_ASTRO__", `file:${tarballs["@cookieyes/astro"]}`);
   if (resolved.includes("__TARBALL_")) {
     throw new Error(`fixture "${name}" has an unresolved tarball placeholder in package.json`);
   }
@@ -592,6 +647,7 @@ function installFixture(appDir, name, tarballs) {
     "nuxt",
     "svelte",
     "sveltekit",
+    "astro",
     "scripts",
     "devtools",
   ]) {
@@ -633,17 +689,19 @@ function installFixture(appDir, name, tarballs) {
 // ---------------------------------------------------------------------------
 
 /**
- * Vite, Nuxt and SvelteKit fixtures are recognised by their config; everything else is a
+ * Vite, Nuxt, SvelteKit and Astro fixtures are recognised by their config; everything else is a
  * Next.js app. A SvelteKit fixture also has a `vite.config.ts`, so it is checked first.
  */
+const isAstroApp = (appDir) => existsSync(join(appDir, "astro.config.mjs"));
 const isSvelteKitApp = (appDir) => existsSync(join(appDir, "svelte.config.js"));
 const isViteApp = (appDir) => !isSvelteKitApp(appDir) && existsSync(join(appDir, "vite.config.ts"));
 const isNuxtApp = (appDir) => existsSync(join(appDir, "nuxt.config.ts"));
 
 function build(appDir, name) {
   const vite = isViteApp(appDir) || isSvelteKitApp(appDir);
-  const tool = vite ? "vite" : isNuxtApp(appDir) ? "nuxi" : "next";
+  const tool = isAstroApp(appDir) ? "astro" : vite ? "vite" : isNuxtApp(appDir) ? "nuxi" : "next";
   const outputs = {
+    astro: ["dist", ".astro"],
     vite: isSvelteKitApp(appDir) ? [".svelte-kit", ".output"] : ["dist"],
     nuxi: [".nuxt", ".output"],
     next: [".next"],
@@ -757,6 +815,7 @@ const TARBALL_PACKAGES = [
   "@cookieyes/nuxt",
   "@cookieyes/svelte",
   "@cookieyes/sveltekit",
+  "@cookieyes/astro",
 ];
 
 /** Bytes of file content inside a `.tgz`, read from the tar headers. */
@@ -852,6 +911,7 @@ if (doBuild) {
     "nuxt",
     "svelte",
     "sveltekit",
+    "astro",
     "scripts",
     "test",
     "devtools",
@@ -904,8 +964,8 @@ for (const app of APPS) {
   measured[app.key] = {
     label: app.label,
     fixture: relative(REPO, appDir),
-    initial: measureFiles(sets.initial),
-    total: measureFiles(sets.total),
+    initial: measureFiles(sets.initial, sets.inline),
+    total: measureFiles(sets.total, sets.inline),
   };
 }
 
@@ -988,8 +1048,10 @@ const report = {
       "'total' counts every emitted client chunk including dynamic ones. The Vue entry is " +
       "measured the same way against an empty Vite + Vue app, so Vue's runtime is in its control, " +
       "the Svelte entry against an empty Vite + Svelte app, " +
-      "the Nuxt entry against an empty Nuxt app, and the SvelteKit entry against an empty " +
-      "SvelteKit app, reading the HTML their servers render for /.",
+      "the Nuxt entry against an empty Nuxt app, the SvelteKit entry against an empty " +
+      "SvelteKit app, reading the HTML their servers render for /, and the Astro entry " +
+      "against an empty Astro site, reading its built index.html and counting the inline " +
+      "scripts and styles that page carries.",
     compression: { headline: "gzip", gzipLevel: 9, brotliQuality: 11 },
     next: "16.3.0",
     react: "19.2.8",
@@ -998,6 +1060,7 @@ const report = {
     nuxt: "4.6.4",
     svelte: "5.57.3",
     sveltekit: "2.70.4",
+    astro: "7.4.13",
   },
   measuredAt: new Date().toISOString(),
   node: process.version,

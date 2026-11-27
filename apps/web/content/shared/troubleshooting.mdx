@@ -1,7 +1,7 @@
 ---
 title: Troubleshooting
 description: Common CookieYes setup problems, like a banner that never shows or scripts loading before consent, and the one line to check for each.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro]
 ---
 
 Most problems here are a setup detail, and several show no error at all. Find what you see in the table; each row is one line to check.
@@ -141,6 +141,32 @@ Most problems here are a setup detail, and several show no error at all. Find wh
 
 </Framework>
 
+<Framework when="astro">
+
+| What you see | Cause | Fix |
+| --- | --- | --- |
+| The banner never appears | You already chose in this browser, or closed it in this page view | Delete the `cookieyes-consent` cookie and reload, see [Reset and re-test](#reset-and-re-test) |
+| The banner never appears, no error anywhere | `<CookieYesRoot />` is not in the layout of that page | See [Installation → Common mistakes](/docs/getting-started/installation#common-mistakes) |
+| `Add cookieyes() to integrations in astro.config.mjs` in the server log | The integration is missing, so every component renders nothing | Add `cookieyes()` to `integrations` |
+| An integration or a callback never runs | It is in the Astro config, which reaches the browser as JSON and drops functions | Move it to `src/cookieyes.client.ts`, see [Configuration](/docs/getting-started/configuration) |
+| The banner is unstyled text | The stylesheet route is not reachable, or `stylesHref` points somewhere it is not served | Check the request to `/cookieyes/styles.css`, or your `stylesHref`, in the Network tab |
+| The preferences dialog is unstyled, the banner is fine | Only the inlined critical CSS applied: the full stylesheet did not load | Check the same request |
+| Customise or your own "Cookie settings" link does nothing | `<CookiePreferences />` is not rendered | A default slot in `<CookieYesRoot>` replaces the default components. Render it in the slot |
+| A tracker loads when a switch is flipped, before Save | You read the live values | Use `getConsentCategory()` or `committedConsents`, see [Client functions](/docs/client-functions#getconsentcategory) |
+| A custom category is missing | Your `categories` list was rejected; the console says why | See [Configuration → Consent categories](/docs/getting-started/configuration#consent-categories) |
+| The banner is in English although you set a language | The language is not in `i18n.messages` | Import the catalogue, see [Translations](/docs/translations) |
+| The banner flashes and vanishes for returning visitors | The head script that decides first paint did not run, for example a Content-Security-Policy without its hash, or `categories` set only in `src/cookieyes.client.ts`, which the script cannot see | Allow the script, see [CSP](/docs/styling/csp#hashes-and-nonces), and keep `categories` in the Astro config |
+| The banner appears late, after the page has loaded | The same two causes, in the other direction: the script hides the banner until the SDK starts | Check the console for a CSP violation |
+| A page shows another visitor's banner | An on-request page is served from a shared cache | The page must stay `Cache-Control: private`. Prerender it, or drop the shared directive, see [Which API](/docs/getting-started/which-api#static-and-on-request-pages) |
+| Your CSS rule does nothing | Your stylesheet loads before the SDK's, or a `theme` value sets the same property inline | See [Custom CSS](/docs/styling/custom-css) |
+| A rule in a component's `<style>` block never reaches the banner | Astro scopes that block to the component's own elements | Use a global stylesheet with `data-cy-part` selectors, or `<style is:global>` |
+| Tracking continues after the visitor withdraws consent | A script that already ran cannot be unloaded | Add [`ReloadNotice`](/docs/components/reload-notice) to the root |
+| Every returning visitor is asked again | You changed a category id, or which one is required | Expected. See [CookiePreferences](/docs/components/cookie-preferences#changing-categories-re-prompts-every-returning-visitor) |
+| Focus jumps to the top of the page when a dialog closes | The dialog was opened through the runtime directly | Open it with `openPreferences()` |
+| The banner is not first in Tab order | `<CookieYesRoot />` is not first in `<body>` | Move it to the top of the layout, see [Accessibility](/docs/accessibility) |
+
+</Framework>
+
 ## Console messages
 
 <Framework when="nextjs react">
@@ -210,6 +236,31 @@ An `OptOut.*` piece sits outside `OptOut.Root`. Move it inside. `Preferences.*` 
 
 </Framework>
 
+<Framework when="astro">
+
+**`[cookieyes] Add cookieyes() to integrations in astro.config.mjs.`**
+Logged once on the server when a component renders without the integration. Add `cookieyes()` to `integrations`.
+
+**`[cookieyes] <CookieBanner /> needs <CookieYesRoot /> in your layout.`**
+A development message in the browser, naming whichever component it found: the page has CookieYes components but no `<CookieYesRoot />`. The same message appears for a page reached through `<ClientRouter />` that lacks a root. Render the root once in the layout.
+
+**`[cookieyes] Two <CookieYesRoot /> on this page; the first is used.`**
+Logged on the server. Keep one root.
+
+**`[cookieyes] The preferences dialog was opened, but <CookiePreferences /> is not in <CookieYesRoot /> on this page.`**
+A development message in the browser. A default slot in `<CookieYesRoot>` left the dialog out; add `<CookiePreferences />` to the slot.
+
+**`` [cookieyes] `categories` differ between astro.config.mjs and src/cookieyes.client.ts. Move them to astro.config.mjs, where the head script that decides first paint sees them. ``**
+A development message in the browser. Keep `categories` in the Astro config.
+
+**`` ... in astro.config.mjs holds a function, which is dropped because the config reaches the browser as JSON. Move it to src/cookieyes.client.ts. ``**
+A development warning from the integration, naming the option, such as `cookieyes.onConsentUpdate`. Move that option to `src/cookieyes.client.ts`.
+
+**`[cookieyes] /path reads the visitor's consent and region but is sent with "Cache-Control: ...", so a shared cache can serve one visitor's banner to another.`**
+A development warning on a page rendered on request that sets its own shared `Cache-Control`. Prerender the page, or drop the shared directive.
+
+</Framework>
+
 <Framework when="sveltekit">
 
 **`[cookieyes] loadConsent() found no event.locals.cookieyes. Add cookieyesHandle(config) to src/hooks.server.ts.`**
@@ -238,7 +289,7 @@ You set both `regulation` and `region`. Keep one.
 **`[cookieyes] no translations for language "..."; staying on "..."`**
 You switched to a language that is not in `i18n.messages` and has no `loadLanguage`. Add the catalogue.
 
-<Framework when="nextjs react vue svelte sveltekit">
+<Framework when="nextjs react vue svelte sveltekit astro">
 
 **`[cookieyes] blocked POST https://... (rule "...", category: ...)`**
 Not an error: network blocking stopped a request, as configured. Set `logBlockedRequests: false` to silence it.
@@ -253,9 +304,25 @@ Not an error: network blocking stopped a request, as configured. Set `logBlocked
 document.cookie = "cookieyes-consent=; max-age=0; path=/";
 ```
 
+<Framework when="nextjs react vue nuxt svelte sveltekit">
+
 Or call `useConsentActions().reset()` from a button you show only in development.
 
+</Framework>
+
+<Framework when="astro">
+
+Or call `getConsentActions().reset()` from a button you show only in development.
+
+</Framework>
+
 **See the banner from any location.** Set `regulation: "GDPR"` while developing instead of relying on `region` detection.
+
+<Framework when="astro">
+
+**Devtools.** `@cookieyes/devtools`, the in-page debugging panel, is for React and Next.js only for now. It does not work with Astro.
+
+</Framework>
 
 **Check which version a page runs.** In the console:
 
@@ -301,5 +368,12 @@ The SDK sets this in the browser on every page where it starts, whether or not t
 
 - [Installation](/docs/getting-started/installation): the three-step setup, with its own common mistakes
 - [Configuration](/docs/getting-started/configuration): every option of `src/lib/cookieyes.ts`
+
+</Framework>
+
+<Framework when="astro">
+
+- [Installation](/docs/getting-started/installation): the three-step setup, with its own common mistakes
+- [Configuration](/docs/getting-started/configuration): every option of `cookieyes()`
 
 </Framework>

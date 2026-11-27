@@ -1,7 +1,7 @@
 ---
 title: Microsoft Clarity
 description: Load Microsoft Clarity only after analytics consent, and switch it to cookie-free mode when consent is withdrawn.
-frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, core]
+frameworks: [nextjs, react, vue, nuxt, svelte, sveltekit, astro, core]
 ---
 
 `clarity()` loads Microsoft Clarity after the visitor grants the analytics category and tells Clarity that cookies are allowed. When consent is withdrawn, it tells Clarity that consent is denied: Clarity then deletes its `_clck` and `_clsk` cookies and keeps running without cookies.
@@ -18,6 +18,11 @@ Then install the integrations package and add `clarity()` to the `initCookieYes(
 <Framework when="vue">
 
 Then install the integrations package and add `clarity()` to the config you pass to `app.use(CookieYes, config)`:
+
+</Framework>
+<Framework when="astro">
+
+Then install the integrations package and add `clarity()` to `integrations` in `src/cookieyes.client.ts`:
 
 </Framework>
 <Framework when="nuxt">
@@ -76,6 +81,20 @@ export function setupConsent(app: App): void {
 ```
 
 This is the `consent-manager.ts` from [Installation](/docs/getting-started/installation) with the integration added.
+
+</Framework>
+<Framework when="astro">
+
+```ts title="src/cookieyes.client.ts"
+import type { CookieYesConfig } from "@cookieyes/astro";
+import { clarity } from "@cookieyes/scripts";
+
+export default {
+  integrations: [clarity({ projectId: "abcd123xyz" })],
+} satisfies Partial<CookieYesConfig>;
+```
+
+`integrations` holds functions, so it goes in `src/cookieyes.client.ts`, not in the Astro config, which reaches the browser as JSON and drops functions. The integration merges the two, so `regulation` and the rest of your configuration stay in `astro.config.ts` from [Installation](/docs/getting-started/installation).
 
 </Framework>
 <Framework when="nuxt">

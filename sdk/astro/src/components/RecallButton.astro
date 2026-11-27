@@ -1,0 +1,12 @@
+---
+// The button that reopens the choice once the banner is gone, drawn by the browser. `class` adds
+// classes to it.
+import { _renderSurface } from "../markup.js";
+
+interface Props {
+  class?: string | undefined;
+}
+
+const html = _renderSurface(Astro.locals, "recall", Astro.props);
+---
+<Fragment set:html={html} />

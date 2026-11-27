@@ -1,0 +1,9 @@
+---
+import { GatedFrame, GatedScript } from "../../../../../dist/components/index.js";
+import Layout from "../layouts/Layout.astro";
+---
+<Layout title="No router b">
+  <a id="next" href="/no-router-a">No router a</a>
+  <GatedScript id="probe-b" src="/probe.js" category="analytics" />
+  <GatedFrame src="about:blank" category="analytics" title="Embed" />
+</Layout>
