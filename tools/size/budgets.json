@@ -42,12 +42,19 @@
       "queue: a record is kept in localStorage until the server confirms it, and",
       "retried on the next page start, when the browser is back online, and on a",
       "backoff timer. It is core code, so every fixture carries it; the React budgets",
-      "absorbed it without a raise after the React build became one file per module."
+      "absorbed it without a raise after the React build became one file per module.",
+      "",
+      "Core's budgets were then raised by 138 / 147 bytes with no change to core. The",
+      "committed report measures 7749 / 9419, but CI on Node 22.23.5 measured the same",
+      "source at 7817 / 9487 and, on another commit, 7867 / 9537: the empty-app control",
+      "and the core fixture come out of Turbopack a few dozen bytes apart from run to",
+      "run, and 63 bytes of headroom did not cover it. The new ceiling sits about 80",
+      "bytes above the largest CI reading, so real growth still fails the build."
     ],
     "core": {
-      "$comment": "@cookieyes/core via getOrCreateConsentRuntime(). Measured 7747 / 9407.",
-      "initial": 7812,
-      "total": 9473
+      "$comment": "@cookieyes/core via getOrCreateConsentRuntime(). Measured 7749 / 9419.",
+      "initial": 7950,
+      "total": 9620
     },
     "banner": {
       "$comment": "@cookieyes/react mounting <CookieBanner /> alone. Measured 11837 / 14527.",
