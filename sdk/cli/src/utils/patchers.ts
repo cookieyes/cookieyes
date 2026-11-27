@@ -383,3 +383,116 @@ export function patchSveltekitLayout(src: string, withState: boolean): string | 
   const withScript = src.replace(whole, () => `${open}${newBody}${close}`);
   return withScript.replace(line, () => wrapped);
 }
+
+/** An import to add to a config file: `clause` is `cookieyes` or `{ es }`. */
+export type ImportSpec = { clause: string; from: string };
+
+/**
+ * Add `cookieyes({...})` to the `integrations` array of `defineConfig({...})` in an
+ * `astro.config.*`, creating the array when the config has none, and add the imports `imports`
+ * names. `entry` renders the call for the indentation it will sit at. Returns null when the
+ * package is already there, and also when the file has a shape where an edit could be wrong: no
+ * single `defineConfig({`, a spread that may hold its own `integrations`, an `integrations` that
+ * is not an array literal, a comment inside the array, a body on one line, a multi-line import or
+ * a `cookieyes` name already in use. The caller then prints the manual step.
+ */
+export function patchAstroConfig(
+  src: string,
+  entry: (indent: string) => string,
+  imports: readonly ImportSpec[],
+): string | null {
+  if (src.includes("@cookieyes/astro")) return null;
+  if (hasMultilineImport(src)) return null;
+  if (/(?<![\w$.])cookieyes\b/.test(src)) return null;
+  const calls = [...src.matchAll(/\bdefineConfig\s*\(\s*\{/g)];
+  const call = calls[0];
+  if (calls.length !== 1 || call === undefined) return null;
+  const open = call.index + call[0].length - 1;
+  const indentAt = (at: number): string =>
+    /^[ \t]*/.exec(src.slice(src.lastIndexOf("\n", at - 1) + 1))?.[0] ?? "";
+
+  let key = -1;
+  let spread = false;
+  // The last character seen directly in the object, past comments: a key follows `{` or `,`.
+  let prev = "{";
+  const close = walkBracket(src, open, (i) => {
+    if (src.startsWith("...", i)) spread = true;
+    const found = /^integrations\s*:\s*/.exec(src.slice(i, i + 40));
+    if (found && (prev === "{" || prev === ",")) key = i;
+    if (/\S/.test(src.charAt(i))) prev = src.charAt(i);
+  });
+  if (close === -1 || spread) return null;
+
+  let patched: string;
+  if (key === -1) {
+    // A nested `integrations:` is left to the developer rather than risk a top-level twin.
+    if (/\bintegrations\s*:/.test(src.slice(open, close))) return null;
+    const body = src.slice(open + 1, close);
+    const outer = indentAt(open);
+    const inner = body.trim() === "" ? `${outer}  ` : (/\n([ \t]*)\S/.exec(body)?.[1] ?? "");
+    if (inner === "" || (body.trim() !== "" && !body.includes("\n"))) return null;
+    const array = `integrations: [\n${inner}  ${entry(`${inner}  `)},\n${inner}],`;
+    patched =
+      body.trim() === ""
+        ? `${src.slice(0, open + 1)}\n${inner}${array}\n${outer}${src.slice(close)}`
+        : `${src.slice(0, open + 1)}\n${inner}${array}${src.slice(open + 1)}`;
+  } else {
+    const at = key + (/^integrations\s*:\s*/.exec(src.slice(key, key + 40))?.[0].length ?? 0);
+    if (src.charAt(at) !== "[") return null;
+    const end = walkBracket(src, at);
+    if (end === -1) return null;
+    const items = src.slice(at + 1, end);
+    if (items.includes("//") || items.includes("/*")) return null;
+    const keyIndent = indentAt(key);
+    if (items.trim() === "" || !items.includes("\n")) {
+      const existing = items.trim().replace(/,$/, "");
+      const lines = [...(existing === "" ? [] : [`${keyIndent}  ${existing},`])];
+      lines.push(`${keyIndent}  ${entry(`${keyIndent}  `)},`);
+      patched = `${src.slice(0, at)}[\n${lines.join("\n")}\n${keyIndent}]${src.slice(end + 1)}`;
+    } else {
+      const last = at + 1 + items.trimEnd().length - 1;
+      const indent = indentAt(last);
+      const added =
+        src.charAt(last) === "," ? `\n${indent}${entry(indent)},` : `,\n${indent}${entry(indent)}`;
+      patched = `${src.slice(0, last + 1)}${added}${src.slice(last + 1)}`;
+    }
+  }
+
+  const { quote, semi } = importStyle(src);
+  return imports
+    .map((i) => `import ${i.clause} from ${quote}${i.from}${quote}${semi}`)
+    .reduce(insertImport, patched);
+}
+
+/**
+ * Render `<CookieYesRoot />` first in the `<body>` of an Astro layout and import it in the
+ * frontmatter, creating the frontmatter when the layout has none. Returns null when the layout
+ * already uses it, and also when it has no single `<body>` tag, a multi-line import in its
+ * frontmatter, or a `CookieYesRoot` name of its own, so the caller prints the manual step.
+ */
+export function patchAstroLayout(src: string): string | null {
+  if (src.includes("CookieYesRoot")) return null;
+  const bodies = [...src.matchAll(/<body\b(?:[^>{}]|\{[^{}]*\})*>/g)];
+  const body = bodies[0];
+  if (bodies.length !== 1 || body === undefined) return null;
+
+  const indent = /^[ \t]*/.exec(src.slice(src.lastIndexOf("\n", body.index - 1) + 1))?.[0] ?? "";
+  const at = body.index + body[0].length;
+  // The first child's own indentation, so a layout indented with tabs, as Astro's starter is,
+  // keeps them.
+  const child = /^\r?\n([ \t]*)\S/.exec(src.slice(at))?.[1] ?? "";
+  const root = child.length > indent.length ? child : `${indent}  `;
+  const withRoot = `${src.slice(0, at)}\n${root}<CookieYesRoot />${src.slice(at)}`;
+  const importLine = (quote: string, semi: string) =>
+    `import { CookieYesRoot } from ${quote}@cookieyes/astro/components${quote}${semi}`;
+
+  const fence = /^(---[ \t]*\r?\n)([\s\S]*?)(\r?\n?---[ \t]*(?:\r?\n|$))/.exec(withRoot);
+  if (!fence) return `---\n${importLine('"', ";")}\n---\n${withRoot}`;
+  const [whole = "", open = "", frontmatter = "", close = ""] = fence;
+  if (hasMultilineImport(frontmatter)) return null;
+  const { quote, semi } = importStyle(frontmatter);
+  const added = /^import\s.+$/m.test(frontmatter)
+    ? insertImport(frontmatter, importLine(quote, semi))
+    : `${importLine(quote, semi)}\n${frontmatter}`;
+  return `${open}${added}${close}${withRoot.slice(whole.length)}`;
+}

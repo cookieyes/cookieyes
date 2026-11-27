@@ -16,6 +16,7 @@ import {
 import pc from "picocolors";
 import { detectFramework, type Framework } from "../utils/detect-framework.js";
 import {
+  astroProjectPaths,
   nextProjectPaths,
   nuxtProjectPaths,
   reactProjectPaths,
@@ -27,6 +28,8 @@ import { detectPackageManager, type PackageManager } from "../utils/detect-pm.js
 import { installPackage } from "../utils/install.js";
 import {
   insertImport,
+  patchAstroConfig,
+  patchAstroLayout,
   patchNextjsLayout,
   patchNextjsPagesApp,
   patchNuxtApp,
@@ -414,6 +417,7 @@ function pkgForFramework(framework: Framework): string {
   if (framework === "react") return "@cookieyes/react";
   if (framework === "vue") return "@cookieyes/vue";
   if (framework === "nuxt") return "@cookieyes/nuxt";
+  if (framework === "astro") return "@cookieyes/astro";
   if (framework === "sveltekit") return "@cookieyes/sveltekit";
   if (framework === "svelte") return "@cookieyes/svelte";
   return "@cookieyes/core";
@@ -500,6 +504,7 @@ export function parseInitFlags(args: readonly string[]): InitFlags {
           "react",
           "vue",
           "nuxt",
+          "astro",
           "svelte",
           "sveltekit",
           "vanilla",
@@ -601,6 +606,11 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
                 hint: nuxt ? "detected" : "Nuxt 4",
               },
               {
+                value: "astro" as const,
+                label: "Astro",
+                hint: detected === "astro" ? "detected" : "Astro 6 or 7",
+              },
+              {
                 value: "svelte" as const,
                 label: "Svelte",
                 hint: detected === "svelte" ? "detected" : "Vite + Svelte 5",
@@ -634,6 +644,17 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
     cancel(
       "--framework svelte is not supported in a SvelteKit project. Use --framework sveltekit.",
     );
+    process.exit(1);
+  }
+
+  // Astro brings React, Vue and Svelte in for islands, but the page has no single root component
+  // for those setups to patch; their files would sit next to a banner that never renders.
+  if (
+    detected === "astro" &&
+    (framework === "react" || framework === "vue" || framework === "svelte") &&
+    flags.framework === framework
+  ) {
+    cancel(`--framework ${framework} is not supported in an Astro project. Use --framework astro.`);
     process.exit(1);
   }
 
@@ -1022,6 +1043,74 @@ export async function runInit(args: readonly string[] = []): Promise<void> {
           `  <CookieYesRoot />`,
           `  <NuxtPage />`,
           `</template>`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+  } else if (framework === "astro") {
+    const paths = astroProjectPaths(cwd);
+    // The options sit in `astro.config.*`, where the integration reads them. No `cookieyes.client.ts`
+    // is written: it holds options that are functions, such as integrations, which init never asks for.
+    const entry = (indent: string) => `cookieyes(${buildConfigLiteral(optionInputs, indent)})`;
+    const imports = [
+      { clause: "cookieyes", from: "@cookieyes/astro" },
+      ...optionInputs.locales.map((lang) => ({
+        clause: `{ ${lang} }`,
+        from: `@cookieyes/translations/${lang}`,
+      })),
+    ];
+
+    const config =
+      paths.configPath === null
+        ? "missing"
+        : patchFile(
+            paths.configPath,
+            (src) => patchAstroConfig(src, entry, imports),
+            /@cookieyes\/astro/,
+          );
+    if (config === "patched") {
+      log.success(`Updated ${pc.cyan(paths.configLabel)}: added cookieyes() to integrations`);
+    } else if (config === "already") {
+      log.info(`${pc.yellow(paths.configLabel)} already uses @cookieyes/astro, skipped.`);
+    } else {
+      note(
+        [
+          `Add the integration to ${paths.configLabel}:`,
+          ``,
+          ...imports.map((i) => `import ${i.clause} from "${i.from}";`),
+          `import { defineConfig } from "astro/config";`,
+          ``,
+          `export default defineConfig({`,
+          `  integrations: [${entry("  ")}],`,
+          `});`,
+        ].join("\n"),
+        "Manual step needed",
+      );
+    }
+
+    const layout =
+      paths.layoutPath === null
+        ? "missing"
+        : patchFile(paths.layoutPath, patchAstroLayout, /CookieYesRoot/);
+    if (layout === "patched") {
+      log.success(`Updated ${pc.cyan(paths.layoutLabel ?? "")}: mounted CookieYesRoot`);
+    } else if (layout === "already") {
+      log.info(`${pc.yellow(paths.layoutLabel ?? "")} already uses CookieYesRoot, skipped.`);
+    } else {
+      note(
+        [
+          `Render <CookieYesRoot /> once in your layout, first in the <body>:`,
+          ``,
+          `---`,
+          `import { CookieYesRoot } from "@cookieyes/astro/components";`,
+          `---`,
+          `<html lang="en">`,
+          `  <head>...</head>`,
+          `  <body>`,
+          `    <CookieYesRoot />`,
+          `    <slot />`,
+          `  </body>`,
+          `</html>`,
         ].join("\n"),
         "Manual step needed",
       );

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   insertImport,
+  patchAstroConfig,
+  patchAstroLayout,
   patchNextjsLayout,
   patchNextjsPagesApp,
   patchNuxtApp,
@@ -651,6 +653,249 @@ describe("patchSveltekitLayout", () => {
         `<script>\n  const config = 1;\n  let { children } = $props();\n</script>${render}`,
         true,
       ),
+    ).toBeNull();
+  });
+});
+
+describe("patchAstroConfig", () => {
+  const entry = (indent: string) => `cookieyes({\n${indent}  mode: "cookie-only",\n${indent}})`;
+  const imports = [{ clause: "cookieyes", from: "@cookieyes/astro" }];
+  const call = (indent: string) =>
+    `${indent}cookieyes({\n${indent}  mode: "cookie-only",\n${indent}}),`;
+
+  it("creates the integrations array in the empty config `npm create astro` writes", () => {
+    const starter = [
+      `// @ts-check`,
+      `import { defineConfig } from 'astro/config';`,
+      ``,
+      `// https://astro.build/config`,
+      `export default defineConfig({});`,
+      ``,
+    ].join("\n");
+    expect(patchAstroConfig(starter, entry, imports)).toBe(
+      [
+        `// @ts-check`,
+        `import { defineConfig } from 'astro/config';`,
+        `import cookieyes from '@cookieyes/astro';`,
+        ``,
+        `// https://astro.build/config`,
+        `export default defineConfig({`,
+        `  integrations: [`,
+        call("    "),
+        `  ],`,
+        `});`,
+        ``,
+      ].join("\n"),
+    );
+  });
+
+  it("adds the array as the first key of a config that has other keys", () => {
+    const src = `import { defineConfig } from "astro/config";\n\nexport default defineConfig({\n  site: "https://example.com",\n});\n`;
+    expect(patchAstroConfig(src, entry, imports)).toBe(
+      [
+        `import { defineConfig } from "astro/config";`,
+        `import cookieyes from "@cookieyes/astro";`,
+        ``,
+        `export default defineConfig({`,
+        `  integrations: [`,
+        call("    "),
+        `  ],`,
+        `  site: "https://example.com",`,
+        `});`,
+        ``,
+      ].join("\n"),
+    );
+  });
+
+  it("appends to a multi-line array, keeping its trailing comma style", () => {
+    const withComma = `import { defineConfig } from "astro/config";\nexport default defineConfig({\n  integrations: [\n    react(),\n  ],\n});\n`;
+    expect(patchAstroConfig(withComma, entry, imports)).toBe(
+      [
+        `import { defineConfig } from "astro/config";`,
+        `import cookieyes from "@cookieyes/astro";`,
+        `export default defineConfig({`,
+        `  integrations: [`,
+        `    react(),`,
+        call("    "),
+        `  ],`,
+        `});`,
+        ``,
+      ].join("\n"),
+    );
+    const withoutComma = `import { defineConfig } from "astro/config";\nexport default defineConfig({\n  integrations: [\n    react()\n  ],\n});\n`;
+    expect(patchAstroConfig(withoutComma, entry, imports)).toContain(
+      `    react(),\n    cookieyes({\n      mode: "cookie-only",\n    })\n  ],`,
+    );
+  });
+
+  it("puts a one-line or empty array on lines of its own", () => {
+    const oneLine = `import { defineConfig } from "astro/config";\nexport default defineConfig({\n  integrations: [react(), mdx()],\n});\n`;
+    expect(patchAstroConfig(oneLine, entry, imports)).toContain(
+      `  integrations: [\n    react(), mdx(),\n${call("    ")}\n  ],`,
+    );
+    const empty = `import { defineConfig } from "astro/config";\nexport default defineConfig({\n  integrations: [],\n});\n`;
+    expect(patchAstroConfig(empty, entry, imports)).toContain(
+      `  integrations: [\n${call("    ")}\n  ],`,
+    );
+  });
+
+  it("adds every import it is given, in order", () => {
+    const out = patchAstroConfig(
+      `import { defineConfig } from "astro/config";\nexport default defineConfig({});\n`,
+      entry,
+      [...imports, { clause: "{ es }", from: "@cookieyes/translations/es" }],
+    );
+    expect(out).toContain(
+      `import cookieyes from "@cookieyes/astro";\nimport { es } from "@cookieyes/translations/es";\n`,
+    );
+  });
+
+  it("finds the top-level integrations key past nested objects, strings and comments", () => {
+    const src = [
+      `export default defineConfig({`,
+      `  // a } in a comment, and one in a string: "}"`,
+      `  vite: { define: { x: "a } b" } },`,
+      `  /* integrations: [x()] */`,
+      `  integrations: [react()],`,
+      `})`,
+    ].join("\n");
+    expect(patchAstroConfig(src, entry, imports)).toContain(`    react(),\n    cookieyes({`);
+  });
+
+  it("returns null when the integration is already there", () => {
+    const patched = patchAstroConfig(
+      `export default defineConfig({});\n`,
+      entry,
+      imports,
+    ) as string;
+    expect(patchAstroConfig(patched, entry, imports)).toBeNull();
+  });
+
+  it("returns null for shapes it cannot edit safely", () => {
+    const wrap = (body: string) =>
+      `import { defineConfig } from "astro/config";\nexport default defineConfig(${body});\n`;
+    // No object literal to edit.
+    expect(patchAstroConfig(wrap("shared"), entry, imports)).toBeNull();
+    expect(patchAstroConfig(`export default { integrations: [] };`, entry, imports)).toBeNull();
+    // A spread may carry its own integrations.
+    expect(patchAstroConfig(wrap("{\n  ...base,\n  site: 'x',\n}"), entry, imports)).toBeNull();
+    // Not an array literal, a comment in the array, a nested key and unbalanced brackets.
+    expect(patchAstroConfig(wrap("{\n  integrations: shared,\n}"), entry, imports)).toBeNull();
+    expect(
+      patchAstroConfig(wrap("{\n  integrations: [a() /* b */],\n}"), entry, imports),
+    ).toBeNull();
+    expect(
+      patchAstroConfig(wrap("{\n  vite: { integrations: {} },\n}"), entry, imports),
+    ).toBeNull();
+    expect(patchAstroConfig(`defineConfig({\n  integrations: [a()`, entry, imports)).toBeNull();
+    // A body on one line, two configs and a multi-line import.
+    expect(patchAstroConfig(wrap("{ site: 'x' }"), entry, imports)).toBeNull();
+    expect(patchAstroConfig(`defineConfig({});\ndefineConfig({});`, entry, imports)).toBeNull();
+    expect(
+      patchAstroConfig(
+        `import {\n  defineConfig,\n} from "astro/config";\ndefineConfig({});\n`,
+        entry,
+        imports,
+      ),
+    ).toBeNull();
+    // The name is taken.
+    expect(
+      patchAstroConfig(`const cookieyes = 1;\ndefineConfig({});\n`, entry, imports),
+    ).toBeNull();
+  });
+});
+
+describe("patchAstroLayout", () => {
+  it("renders CookieYesRoot first in the body of Astro's starter layout, in its tabs", () => {
+    const starter = [
+      `---`,
+      `---`,
+      ``,
+      `<html lang="en">`,
+      `\t<head>`,
+      `\t\t<meta charset="UTF-8" />`,
+      `\t</head>`,
+      `\t<body>`,
+      `\t\t<slot />`,
+      `\t</body>`,
+      `</html>`,
+      ``,
+    ].join("\n");
+    expect(patchAstroLayout(starter)).toBe(
+      [
+        `---`,
+        `import { CookieYesRoot } from "@cookieyes/astro/components";`,
+        `---`,
+        ``,
+        `<html lang="en">`,
+        `\t<head>`,
+        `\t\t<meta charset="UTF-8" />`,
+        `\t</head>`,
+        `\t<body>`,
+        `\t\t<CookieYesRoot />`,
+        `\t\t<slot />`,
+        `\t</body>`,
+        `</html>`,
+        ``,
+      ].join("\n"),
+    );
+  });
+
+  it("adds the import after the frontmatter's last import, in its quote style, and keeps body attributes", () => {
+    const src = [
+      `---`,
+      `import Header from '../components/Header.astro'`,
+      `const { title } = Astro.props`,
+      `---`,
+      `<html>`,
+      `  <head></head>`,
+      `  <body class={title}>`,
+      `    <Header />`,
+      `    <slot />`,
+      `  </body>`,
+      `</html>`,
+      ``,
+    ].join("\n");
+    expect(patchAstroLayout(src)).toBe(
+      [
+        `---`,
+        `import Header from '../components/Header.astro'`,
+        `import { CookieYesRoot } from '@cookieyes/astro/components'`,
+        `const { title } = Astro.props`,
+        `---`,
+        `<html>`,
+        `  <head></head>`,
+        `  <body class={title}>`,
+        `    <CookieYesRoot />`,
+        `    <Header />`,
+        `    <slot />`,
+        `  </body>`,
+        `</html>`,
+        ``,
+      ].join("\n"),
+    );
+  });
+
+  it("starts the frontmatter when a frontmatter has no imports, or the layout has none", () => {
+    expect(patchAstroLayout(`---\nconst a = 1;\n---\n<body>\n  <slot />\n</body>\n`)).toBe(
+      `---\nimport { CookieYesRoot } from "@cookieyes/astro/components";\nconst a = 1;\n---\n<body>\n  <CookieYesRoot />\n  <slot />\n</body>\n`,
+    );
+    expect(patchAstroLayout(`<html><body><slot /></body></html>\n`)).toBe(
+      `---\nimport { CookieYesRoot } from "@cookieyes/astro/components";\n---\n<html><body>\n  <CookieYesRoot /><slot /></body></html>\n`,
+    );
+  });
+
+  it("returns null when the layout already uses CookieYesRoot", () => {
+    expect(patchAstroLayout(`<body>\n  <CookieYesRoot />\n</body>\n`)).toBeNull();
+  });
+
+  it("returns null for layouts it cannot edit safely", () => {
+    // No body of its own, or more than one.
+    expect(patchAstroLayout(`<Base><slot /></Base>\n`)).toBeNull();
+    expect(patchAstroLayout(`<body></body>\n<body></body>\n`)).toBeNull();
+    // A multi-line import would be cut in half.
+    expect(
+      patchAstroLayout(`---\nimport {\n  a,\n} from "./a";\n---\n<body><slot /></body>\n`),
     ).toBeNull();
   });
 });

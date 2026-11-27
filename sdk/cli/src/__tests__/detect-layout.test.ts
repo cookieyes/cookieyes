@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  astroProjectPaths,
   detectNextLayout,
   detectNextRouter,
   detectReactLayout,
@@ -328,5 +329,66 @@ describe("nuxtProjectPaths", () => {
     expect(p.configPath).toBeNull();
     expect(p.configLabel).toBe("nuxt.config.ts");
     expect(p.appConfigLabel).toBe("app.config.ts");
+  });
+});
+
+describe("astroProjectPaths", () => {
+  const shell = `<html>\n  <body>\n    <slot />\n  </body>\n</html>\n`;
+
+  it("finds the config and the one layout that has a body", () => {
+    touch("astro.config.mjs");
+    touch("src/layouts/Layout.astro", `---\n---\n${shell}`);
+    const p = astroProjectPaths(tmp);
+    expect(p.configPath).toBe(join(tmp, "astro.config.mjs"));
+    expect(p.configLabel).toBe("astro.config.mjs");
+    expect(p.layoutPath).toBe(join(tmp, "src", "layouts", "Layout.astro"));
+    expect(p.layoutLabel).toBe("src/layouts/Layout.astro");
+  });
+
+  it("finds a TypeScript config", () => {
+    touch("astro.config.ts");
+    expect(astroProjectPaths(tmp).configLabel).toBe("astro.config.ts");
+  });
+
+  it("has no config path when the project has no Astro config", () => {
+    const p = astroProjectPaths(tmp);
+    expect(p.configPath).toBeNull();
+    expect(p.configLabel).toBe("astro.config.mjs");
+  });
+
+  it("has no layout when there is no layouts folder or no layout with a body", () => {
+    expect(astroProjectPaths(tmp).layoutPath).toBeNull();
+    touch("src/layouts/Nested.astro", `<div><slot /></div>\n`);
+    touch("src/layouts/notes.md", "<body>");
+    const p = astroProjectPaths(tmp);
+    expect(p.layoutPath).toBeNull();
+    expect(p.layoutLabel).toBeNull();
+  });
+
+  it("skips a layout that only wraps another one", () => {
+    touch(
+      "src/layouts/Docs.astro",
+      `---\nimport Base from "./Base.astro";\n---\n<Base><slot /></Base>\n`,
+    );
+    touch("src/layouts/Base.astro", shell);
+    expect(astroProjectPaths(tmp).layoutLabel).toBe("src/layouts/Base.astro");
+  });
+
+  it("prefers a conventionally named layout among several", () => {
+    touch("src/layouts/Blog.astro", shell);
+    touch("src/layouts/BaseLayout.astro", shell);
+    expect(astroProjectPaths(tmp).layoutLabel).toBe("src/layouts/BaseLayout.astro");
+  });
+
+  it("leaves the choice to the developer when several layouts have none of those names", () => {
+    touch("src/layouts/Blog.astro", shell);
+    touch("src/layouts/Docs.astro", shell);
+    expect(astroProjectPaths(tmp).layoutPath).toBeNull();
+  });
+
+  it("keeps the layout that already has the root, so a second run finds the same file", () => {
+    touch("src/layouts/Blog.astro", shell);
+    touch("src/layouts/Docs.astro", shell.replace("<slot />", "<CookieYesRoot /><slot />"));
+    expect(astroProjectPaths(tmp).layoutLabel).toBe("src/layouts/Docs.astro");
   });
 });
